@@ -1,0 +1,10 @@
+// Common shared components — barrel export
+export { default as PageHeader }     from './PageHeader'
+export { default as Breadcrumb }     from './Breadcrumb'
+export { default as DataTable }      from './DataTable'
+export type { Column }               from './DataTable'
+export { default as FormDrawer }     from './FormDrawer'
+export { default as StatusBadge }    from './StatusBadge'
+export { default as SearchFilter }   from './SearchFilter'
+export { default as EmptyState }     from './EmptyState'
+export { default as LoadingSpinner } from './LoadingSpinner'

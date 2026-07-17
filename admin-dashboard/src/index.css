@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', 'Kantumruy Pro', sans-serif;
+    --background:  0 0% 100%;
+    --foreground:  222 47% 11%;
+    --card:        0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border:      214 32% 91%;
+    --input:       214 32% 91%;
+    --ring:        221 83% 53%;
+    --primary:     221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary:   210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted:       210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent:      210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --radius:      0.5rem;
+  }
+
+  .dark {
+    --background:  222 47% 8%;
+    --foreground:  210 40% 98%;
+    --card:        222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --border:      217 33% 17%;
+    --input:       217 33% 17%;
+    --ring:        224 71% 60%;
+    --primary:     224 71% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary:   217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted:       217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent:      217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 210 40% 98%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground; }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-white/20 dark:border-border shadow-card rounded-xl;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply bg-card rounded-xl p-6 shadow-card border border-border hover:shadow-card-lg transition-shadow duration-200;
+  }
+
+  /* Table styles */
+  .data-table th {
+    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 bg-muted/50;
+  }
+  .data-table td {
+    @apply px-4 py-3 text-sm text-foreground border-b border-border;
+  }
+  .data-table tr:hover td {
+    @apply bg-muted/30;
+  }
+
+  /* Badge variants */
+  .badge-success { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400; }
+  .badge-warning { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400; }
+  .badge-danger  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400; }
+  .badge-info    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400; }
+  .badge-muted   { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground; }
+
+  /* Sidebar item */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-text text-sm font-medium
+           transition-all duration-150 cursor-pointer select-none;
+  }
+  .sidebar-item:hover { @apply bg-sidebar-hover text-white; }
+  .sidebar-item.active { @apply bg-sidebar-active text-white shadow-glow; }
+
+  /* Form input base */
+  .form-input {
+    @apply w-full px-3 py-2 text-sm bg-background border border-input rounded-lg
+           placeholder:text-muted-foreground focus:outline-none focus:ring-2
+           focus:ring-primary/30 focus:border-primary transition-colors;
+  }
+
+  /* General Form Fields */
+  .input {
+    @apply w-full px-3 py-2 text-sm bg-background border border-input rounded-lg
+           placeholder:text-muted-foreground focus:outline-none focus:ring-2
+           focus:ring-primary/30 focus:border-primary transition-colors;
+  }
+  .label {
+    @apply block text-sm font-semibold text-foreground mb-1.5;
+  }
+  .checkbox {
+    @apply h-4 w-4 rounded border-input text-primary focus:ring-primary/30 bg-background transition-colors;
+  }
+
+  /* Button Styles */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 select-none gap-2;
+  }
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border active:scale-95;
+  }
+  .btn-danger {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm active:scale-95;
+  }
+  .btn-icon {
+    @apply h-9 w-9 p-0 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95;
+  }
+
+  /* Modal Backdrop and Content Overlay */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4;
+  }
+  .modal-content {
+    @apply bg-card border border-border rounded-xl shadow-2xl p-6 relative flex flex-col;
+  }
+
+  /* Skeleton animation */
+  .skeleton {
+    @apply bg-muted animate-pulse rounded;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent;
+  }
+  .bg-gradient-primary {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}

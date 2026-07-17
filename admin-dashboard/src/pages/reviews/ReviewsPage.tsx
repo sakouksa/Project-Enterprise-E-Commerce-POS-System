@@ -1,0 +1,285 @@
+import React, { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
+import { Search, Trash2, RefreshCw, Star, CheckCircle, XCircle, MessageSquare, Loader2, Filter } from 'lucide-react'
+import api from '@/api/client'
+import { useToast } from '@/hooks/useToast'
+import Pagination from '@/components/shared/Pagination'
+import { useServerPagination } from '@/hooks/useServerPagination'
+import TableWrapper from '@/components/shared/TableWrapper'
+import SearchInput from '@/components/shared/SearchInput'
+import ResetButton from '@/components/shared/ResetButton'
+import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
+import EmptyState from '@/components/shared/EmptyState'
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import { useTranslation } from 'react-i18next'
+
+interface Review {
+  id: number
+  rating: number
+  title?: string
+  comment?: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  user?: { name: string; email: string }
+  product?: { name: string }
+}
+
+const ReviewsPage: React.FC = () => {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const qc = useQueryClient()
+    const {
+    page,
+    setPage,
+    perPage,
+    setPerPage,
+    search,
+    setSearch,
+    debouncedSearch,
+    reset,
+    adjustAfterDelete,
+  } = useServerPagination({ storageKey: 'reviews' })
+    const [statusFilter, setStatusFilter] = useState('')
+  const [ratingFilter, setRatingFilter] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<Review | null>(null)
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['reviews', page, debouncedSearch, perPage, statusFilter, ratingFilter],
+    queryFn: () => api.get('/reviews', {
+      params: {
+        page,
+        search,
+        status: statusFilter || undefined,
+        rating: ratingFilter || undefined,
+        per_page: 15,
+      },
+    }).then(r => r.data),
+    placeholderData: (prev) => prev,
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: (id: number) => api.post(`/reviews/${id}/approve`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews'] })
+      toast.success('Review approved successfully.')
+    },
+    onError: () => {
+      toast.error(t('toast.error'))
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: (id: number) => api.post(`/reviews/${id}/reject`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews'] })
+      toast.success('Review rejected successfully.')
+    },
+    onError: () => {
+      toast.error(t('toast.error'))
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/reviews/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews'] })
+      toast.success(t('toast.deleted', { item: t('nav.reviews') }))
+      setDeleteTarget(null)
+      adjustAfterDelete(reviews.length)
+    },
+    onError: () => {
+      toast.error(t('toast.error'))
+      setDeleteTarget(null)
+    },
+  })
+
+  const reviews: Review[] = data?.data ?? []
+  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
+
+  const resetFilters = () => {
+    setSearch('')
+    setStatusFilter('')
+    setRatingFilter('')
+    setPage(1)
+  }
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-0.5 text-amber-400">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} size={14} className={i < rating ? 'fill-current' : 'text-muted-foreground/30'} />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{t('nav.reviews')}</h1>
+          <p className="text-muted-foreground text-sm">
+            {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-56">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              placeholder={t('common.search')}
+              className="form-input pl-9"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+            className="form-input w-40"
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select
+            value={ratingFilter}
+            onChange={e => { setRatingFilter(e.target.value); setPage(1) }}
+            className="form-input w-32"
+          >
+            <option value="">All Ratings</option>
+            {[5, 4, 3, 2, 1].map(r => (
+              <option key={r} value={r}>{r} Stars</option>
+            ))}
+          </select>
+          <button
+            onClick={resetFilters}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+          >
+            <Filter size={14} />
+            Reset
+          </button>
+          <button
+            onClick={() => qc.invalidateQueries({ queryKey: ['reviews'] })}
+            className="p-2 text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <TableWrapper isFetching={isFetching}>
+        <table className="w-full data-table">
+            <thead>
+              <tr>
+                <th className="text-left">{t('reviews.reviewer')}</th>
+                <th className="text-left">{t('reviews.product')}</th>
+                <th className="text-left">{t('reviews.rating')}</th>
+                <th className="text-left">{t('reviews.comment')}</th>
+                <th className="text-left">{t('common.status')}</th>
+                <th className="text-left">Date</th>
+                <th className="text-right">{t('common.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton h-4 w-28 rounded" /></td>
+                    <td><div className="skeleton h-4 w-28 rounded" /></td>
+                    <td><div className="skeleton h-4 w-16 rounded" /></td>
+                    <td><div className="skeleton h-4 w-48 rounded" /></td>
+                    <td><div className="skeleton h-4 w-12 rounded" /></td>
+                    <td><div className="skeleton h-4 w-20 rounded" /></td>
+                    <td><div className="skeleton h-4 w-24 rounded ml-auto" /></td>
+                  </tr>
+                ))
+              ) : (
+                reviews.map((review) => (
+                  <tr key={review.id}>
+                    <td>
+                      <p className="font-medium text-foreground">{review.user?.name ?? 'Guest User'}</p>
+                      <p className="text-xs text-muted-foreground">{review.user?.email}</p>
+                    </td>
+                    <td className="text-sm font-medium text-foreground">{review.product?.name ?? '-'}</td>
+                    <td>{renderStars(review.rating)}</td>
+                    <td>
+                      {review.title && <p className="font-semibold text-xs mb-0.5 text-foreground">{review.title}</p>}
+                      <p className="text-xs text-muted-foreground line-clamp-2 max-w-xs">{review.comment || 'No comment'}</p>
+                    </td>
+                    <td>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        review.status === 'approved' ? 'badge-success' :
+                        review.status === 'pending' ? 'badge-warning' : 'badge-danger'
+                      }`}>
+                        {t(`reviews.${review.status}`)}
+                      </span>
+                    </td>
+                    <td className="text-xs text-muted-foreground">{new Date(review.created_at).toLocaleDateString()}</td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {review.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => approveMutation.mutate(review.id)}
+                              disabled={approveMutation.isPending}
+                              className="p-1 hover:bg-green-50 text-green-600 rounded"
+                              title="Approve"
+                            >
+                              <CheckCircle size={14} />
+                            </button>
+                            <button
+                              onClick={() => rejectMutation.mutate(review.id)}
+                              disabled={rejectMutation.isPending}
+                              className="p-1 hover:bg-red-50 text-red-600 rounded"
+                              title="Reject"
+                            >
+                              <XCircle size={14} />
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => setDeleteTarget(review)}
+                          className="p-1 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!isLoading && reviews.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center">
+                    <MessageSquare size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+                    <p className="text-muted-foreground">{t('common.noData')}</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+      </TableWrapper>
+        <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+      </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t('confirm.deleteTitle', { item: 'Review' })}
+        message="Are you sure you want to delete this review? This action cannot be undone."
+        confirmText={t('confirm.confirmDelete')}
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </div>
+  )
+}
+
+export default ReviewsPage

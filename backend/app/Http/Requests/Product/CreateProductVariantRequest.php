@@ -14,16 +14,16 @@ class CreateProductVariantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id' => ['integer', 'exists:products,id'],
-            'name' => ['string'],
-            'sku' => ['string'],
-            'barcode' => ['string'],
-            'cost_price' => ['numeric'],
-            'selling_price' => ['numeric'],
-            'compare_price' => ['numeric'],
-            'weight' => ['numeric'],
-            'image' => ['string'],
-            'is_active' => ['boolean']
+            'product_id'    => ['required', 'integer', 'exists:products,id'],
+            'name'          => ['required', 'string', 'max:255'],
+            'sku'           => ['required', 'string', 'max:255', 'unique:product_variants,sku'],
+            'barcode'       => ['nullable', 'string', 'max:255', 'unique:product_variants,barcode'],
+            'cost_price'    => ['sometimes', 'numeric', 'min:0'],
+            'selling_price' => ['required', 'numeric', 'min:0'],
+            'compare_price' => ['nullable', 'numeric', 'min:0'],
+            'weight'        => ['nullable', 'numeric', 'min:0'],
+            'image'         => ['nullable', 'string'],
+            'is_active'     => ['sometimes', 'boolean']
         ];
     }
 }

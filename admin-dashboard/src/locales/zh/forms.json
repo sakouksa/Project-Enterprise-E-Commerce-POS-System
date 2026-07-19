@@ -1,0 +1,12 @@
+{
+  "checkbox": "复选框",
+  "datePicker": "挑选指定日期",
+  "dropdown": "请在下拉列表中进行选择",
+  "helperText": "辅助填写说明指南",
+  "inputLabel": "输入框标签名",
+  "placeholder": "请输入相关详情内容...",
+  "radio": "单选钮",
+  "sectionTitle": "表单板块标题",
+  "switch": "状态开关",
+  "timePicker": "选择具体时间"
+}

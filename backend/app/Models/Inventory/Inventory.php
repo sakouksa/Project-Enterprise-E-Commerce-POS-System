@@ -9,11 +9,9 @@ use App\Models\Company\Warehouse;
 use App\Models\Product\Product;
 use App\Models\Product\ProductVariant;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
-
 class Inventory extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'company_id', 'warehouse_id', 'product_id', 'product_variant_id',

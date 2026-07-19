@@ -96,7 +96,7 @@ class ProductResource extends JsonResource
                 'body' => $r->body,
                 'created_at' => $r->created_at?->toIso8601String(),
             ])),
-            'stock' => $this->whenLoaded('inventories', fn() => (float) $this->inventories->sum('quantity')),
+            'stock' => isset($this->stock) ? (float) $this->stock : $this->whenLoaded('inventories', fn() => (float) $this->inventories->sum('quantity')),
             'prices'   => $this->whenLoaded('prices', fn() => $this->prices->map(fn($p) => [
                 'id'            => $p->id,
                 'price_type'    => $p->price_type,

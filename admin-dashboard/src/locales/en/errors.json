@@ -1,0 +1,12 @@
+{
+  "403": "Forbidden - You do not have permission to access this resource.",
+  "404": "Page Not Found - The page you are looking for does not exist.",
+  "419": "Session Expired - Please refresh and log in again.",
+  "422": "Unprocessable Entity - Form validation failed.",
+  "429": "Too Many Requests - You have sent too many requests in a short time.",
+  "500": "Internal Server Error - Something went wrong on our servers.",
+  "forbidden": "Access Denied / Forbidden",
+  "maintenance": "Under Maintenance - We will be back online shortly.",
+  "serverError": "Critical System Server Error",
+  "unauthorized": "Unauthorized - Please log in to gain access."
+}

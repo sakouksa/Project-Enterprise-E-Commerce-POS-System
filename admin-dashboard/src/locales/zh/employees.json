@@ -1,0 +1,16 @@
+{
+  "addEmployee": "录入员工",
+  "attendance": "考勤打卡管理",
+  "attendance_payroll": "Attendance & Payroll",
+  "department": "所属部门",
+  "departments": "部门设置",
+  "designation": "岗位职称",
+  "editEmployee": "编辑员工信息",
+  "employeeCode": "工号",
+  "employeeList": "员工花名册",
+  "payroll": "薪水代发核算",
+  "positions": "职级树",
+  "salary": "基本工资额",
+  "title": "员工管理",
+  "top_employees": "Top Performer"
+}

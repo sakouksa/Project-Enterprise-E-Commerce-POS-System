@@ -1,0 +1,16 @@
+{
+  "addEmployee": "Thêm nhân viên",
+  "attendance": "Bảng chấm công",
+  "attendance_payroll": "Attendance & Payroll",
+  "department": "Phòng ban",
+  "departments": "Danh sách phòng ban",
+  "designation": "Chức danh",
+  "editEmployee": "Sửa nhân viên",
+  "employeeCode": "Mã nhân viên",
+  "employeeList": "Danh sách nhân viên",
+  "payroll": "Bảng tính lương",
+  "positions": "Danh sách chức vụ",
+  "salary": "Lương cơ bản",
+  "title": "Nhân viên",
+  "top_employees": "Top Performer"
+}

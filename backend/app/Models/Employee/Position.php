@@ -26,4 +26,9 @@ class Position extends Model
     {
         return $this->belongsTo(\App\Models\Employee\Department::class);
     }
+
+    public function employees(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Employee\Employee::class);
+    }
 }

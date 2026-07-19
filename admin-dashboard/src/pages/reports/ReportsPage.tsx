@@ -8,7 +8,7 @@ import {
 import {
   BarChart3, Download, RefreshCw, FileText,
   TrendingUp, TrendingDown, DollarSign, Package,
-  Calendar, Loader2, ShoppingBag,
+  Calendar, Loader2, ShoppingBag, CheckCircle,
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -41,7 +41,7 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
 
   const { data: purchaseReport, isLoading: purchaseLoading, refetch: refetchPurchases } = useQuery({
     queryKey: ['report-purchases', filters],
-    queryFn: () => api.get('/reports/purchases', { params: filters }).then(r => r.data.data),
+    queryFn: () => api.get('/purchase-report', { params: filters }).then(r => r.data.data),
     enabled: currentType === 'purchase' || currentType === 'purchases',
   })
 
@@ -297,9 +297,9 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
       {(currentType === 'purchase' || currentType === 'purchases') && (
         <div className="space-y-5">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {purchaseLoading
-              ? Array.from({ length: 2 }).map((_, i) => (
+              ? Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-card p-6 rounded-xl border border-border space-y-3">
                     <div className="skeleton h-4 w-24 rounded" />
                     <div className="skeleton h-8 w-32 rounded" />
@@ -307,13 +307,15 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
                 ))
               : [
                   { label: 'Total Purchases',  value: `Rp ${(purchaseReport?.total_purchases ?? 0).toLocaleString('id-ID')}`, icon: <ShoppingBag size={20} className="text-blue-500" />, color: 'bg-blue-50 dark:bg-blue-900/20' },
+                  { label: 'Total Paid',       value: `Rp ${(purchaseReport?.total_paid ?? 0).toLocaleString('id-ID')}`,      icon: <CheckCircle size={20} className="text-green-500" />, color: 'bg-green-50 dark:bg-green-900/20' },
+                  { label: 'Total Due',        value: `Rp ${(purchaseReport?.total_due ?? 0).toLocaleString('id-ID')}`,       icon: <DollarSign size={20} className="text-red-500" />, color: 'bg-red-50 dark:bg-red-900/20' },
                   { label: 'Purchases Count',  value: purchaseReport?.purchases_count ?? 0,                                 icon: <FileText size={20} className="text-indigo-500" />, color: 'bg-indigo-50 dark:bg-indigo-900/20' },
                 ].map(card => (
                   <div key={card.label} className="bg-card p-6 rounded-xl border border-border">
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
-                        <p className="text-2xl font-bold mt-1 text-foreground">{card.value}</p>
+                        <p className="text-xl font-bold mt-1 text-foreground">{card.value}</p>
                       </div>
                       <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center`}>
                         {card.icon}
@@ -324,34 +326,56 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
             }
           </div>
 
-          {/* Chart */}
-          <div className="bg-card rounded-xl border border-border p-5">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-1.5">
-              <BarChart3 size={18} className="text-muted-foreground" />
-              Daily Purchase Performance
-            </h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={purchaseReport?.daily_breakdown ?? [
-                  { date: 'Mon', total: 2000000 },
-                  { date: 'Tue', total: 1500000 },
-                  { date: 'Wed', total: 3000000 },
-                  { date: 'Thu', total: 2500000 },
-                  { date: 'Fri', total: 4000000 },
-                  { date: 'Sat', total: 4500000 },
-                  { date: 'Sun', total: 1800000 },
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    tickFormatter={v => `${(v / 1000000).toFixed(1)}M`} />
-                  <Tooltip
-                    contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
-                    formatter={(v: any) => [`Rp ${Number(v).toLocaleString('id-ID')}`, 'Purchases']}
-                  />
-                  <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Chart */}
+            <div className="bg-card rounded-xl border border-border p-5 lg:col-span-2">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-1.5">
+                <BarChart3 size={18} className="text-muted-foreground" />
+                Monthly Purchase Trend
+              </h3>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={purchaseReport?.monthly_trend ?? []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tickFormatter={v => `${(v / 1000000).toFixed(1)}M`} />
+                    <Tooltip
+                      contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                      formatter={(v: any) => [`Rp ${Number(v).toLocaleString('id-ID')}`, 'Value']}
+                    />
+                    <Legend />
+                    <Bar dataKey="total" fill="#3b82f6" name="Total Ordered" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="paid" fill="#10b981" name="Total Paid" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Suppliers */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-1.5">
+                <TrendingUp size={18} className="text-muted-foreground" />
+                Top Suppliers
+              </h3>
+              <div className="space-y-4">
+                {purchaseReport?.top_suppliers?.map((supplier: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border">
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground">{supplier.supplier_name}</h4>
+                      <p className="text-xs text-muted-foreground">{supplier.count} Orders</p>
+                    </div>
+                    <span className="font-bold text-sm text-foreground">
+                      Rp {supplier.total.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                ))}
+                {(!purchaseReport?.top_suppliers || purchaseReport.top_suppliers.length === 0) && (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    No supplier statistics available
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

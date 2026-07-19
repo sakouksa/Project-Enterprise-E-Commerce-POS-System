@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Purchase;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Supplier\Supplier;
+use App\Http\Resources\Supplier\SupplierResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,20 +15,36 @@ class SupplierController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $suppliers = Supplier::when($request->status === 'deleted', function ($q) {
-                $q->onlyTrashed();
-            })
-            ->when($request->status && $request->status !== 'deleted', function ($q) use ($request) {
-                $q->where('is_active', $request->status === 'active');
-            })
-            ->when($request->search, function ($q, $v) {
-                $q->where(function($sub) use ($v) {
-                    $sub->where('name', 'like', "%{$v}%")
-                        ->orWhere('code', 'like', "%{$v}%")
-                        ->orWhere('email', 'like', "%{$v}%");
-                });
-            })
-            ->paginate($request->integer('per_page', 10));
+        $query = Supplier::with('contacts');
+
+        if ($request->status === 'deleted') {
+            $query->onlyTrashed();
+        } elseif ($request->status && $request->status !== 'all') {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function($sub) use ($search) {
+                $sub->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedFields = ['id', 'name', 'code', 'email', 'city', 'tax_number', 'is_active', 'created_at'];
+        if (in_array($sortBy, $allowedFields)) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $suppliers = $query->paginate($request->integer('per_page', 10));
+
+        // Wrap paginator collection in SupplierResource
+        $suppliers->setCollection(SupplierResource::collection($suppliers->getCollection())->collection);
 
         return $this->paginatedResponse($suppliers);
     }
@@ -38,7 +55,7 @@ class SupplierController extends BaseApiController
     public function show(int $id): JsonResponse
     {
         $supplier = Supplier::with('contacts')->findOrFail($id);
-        return $this->successResponse($supplier);
+        return $this->successResponse(new SupplierResource($supplier));
     }
 
     /**
@@ -64,11 +81,36 @@ class SupplierController extends BaseApiController
             'bank_account_name'   => 'nullable|string|max:150',
             'notes'               => 'nullable|string',
             'is_active'           => 'sometimes|boolean',
+            'contacts'            => 'sometimes|array',
+            'contacts.*.name'       => 'required|string|max:100',
+            'contacts.*.title'      => 'nullable|string|max:100',
+            'contacts.*.email'      => 'nullable|email|max:100',
+            'contacts.*.phone'      => 'nullable|string|max:50',
+            'contacts.*.is_primary' => 'sometimes|boolean',
         ]);
 
-        $supplier = Supplier::create($data);
+        $supplier = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $request) {
+            $contacts = $data['contacts'] ?? [];
+            unset($data['contacts']);
 
-        return $this->successResponse($supplier, 'Supplier created successfully', 201);
+            $supplier = Supplier::create($data);
+
+            foreach ($contacts as $contactData) {
+                $supplier->contacts()->create([
+                    'name'       => $contactData['name'],
+                    'title'      => $contactData['title'] ?? null,
+                    'email'      => $contactData['email'] ?? null,
+                    'phone'      => $contactData['phone'] ?? null,
+                    'is_primary' => (bool)($contactData['is_primary'] ?? false),
+                ]);
+            }
+
+            return $supplier;
+        });
+
+        $supplier->load('contacts');
+
+        return $this->successResponse(new SupplierResource($supplier), 'Supplier created successfully', 201);
     }
 
     /**
@@ -95,11 +137,37 @@ class SupplierController extends BaseApiController
             'bank_account_name'   => 'nullable|string|max:150',
             'notes'               => 'nullable|string',
             'is_active'           => 'sometimes|boolean',
+            'contacts'            => 'sometimes|array',
+            'contacts.*.name'       => 'required|string|max:100',
+            'contacts.*.title'      => 'nullable|string|max:100',
+            'contacts.*.email'      => 'nullable|email|max:100',
+            'contacts.*.phone'      => 'nullable|string|max:50',
+            'contacts.*.is_primary' => 'sometimes|boolean',
         ]);
 
-        $supplier->update($data);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($supplier, $data, $request) {
+            $contacts = $data['contacts'] ?? null;
+            unset($data['contacts']);
 
-        return $this->successResponse($supplier, 'Supplier updated successfully');
+            $supplier->update($data);
+
+            if ($contacts !== null) {
+                $supplier->contacts()->delete();
+                foreach ($contacts as $contactData) {
+                    $supplier->contacts()->create([
+                        'name'       => $contactData['name'],
+                        'title'      => $contactData['title'] ?? null,
+                        'email'      => $contactData['email'] ?? null,
+                        'phone'      => $contactData['phone'] ?? null,
+                        'is_primary' => (bool)($contactData['is_primary'] ?? false),
+                    ]);
+                }
+            }
+        });
+
+        $supplier->load('contacts');
+
+        return $this->successResponse(new SupplierResource($supplier), 'Supplier updated successfully');
     }
 
     /**

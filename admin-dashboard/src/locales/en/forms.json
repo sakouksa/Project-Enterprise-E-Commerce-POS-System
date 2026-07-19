@@ -1,0 +1,12 @@
+{
+  "checkbox": "Checkbox",
+  "datePicker": "Select Date",
+  "dropdown": "Select Option",
+  "helperText": "Helper instructions",
+  "inputLabel": "Input Label",
+  "placeholder": "Enter details...",
+  "radio": "Radio Select",
+  "sectionTitle": "Section Title",
+  "switch": "Toggle Switch",
+  "timePicker": "Select Time"
+}

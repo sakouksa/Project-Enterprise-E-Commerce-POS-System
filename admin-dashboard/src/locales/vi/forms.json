@@ -1,0 +1,12 @@
+{
+  "checkbox": "Hộp kiểm",
+  "datePicker": "Chọn ngày trên lịch",
+  "dropdown": "Chọn giá trị trong danh sách",
+  "helperText": "Thông tin hướng dẫn nhập liệu",
+  "inputLabel": "Nhãn trường nhập",
+  "placeholder": "Nhập thông tin tại đây...",
+  "radio": "Nút chọn một (Radio)",
+  "sectionTitle": "Tiêu đề phần",
+  "switch": "Công tắc bật/tắt (Switch)",
+  "timePicker": "Chọn thời gian"
+}

@@ -30,11 +30,22 @@ class CustomerAddressService
 
     public function create(array $data): CustomerAddress
     {
+        if (!empty($data['is_default'])) {
+            CustomerAddress::where('customer_id', $data['customer_id'])
+                ->where('is_default', true)
+                ->update(['is_default' => false]);
+        }
         return $this->repository->create($data);
     }
 
     public function update(int|string $id, array $data): CustomerAddress
     {
+        if (!empty($data['is_default'])) {
+            $address = $this->getById($id);
+            CustomerAddress::where('customer_id', $address->customer_id)
+                ->where('is_default', true)
+                ->update(['is_default' => false]);
+        }
         return $this->repository->update($id, $data);
     }
 

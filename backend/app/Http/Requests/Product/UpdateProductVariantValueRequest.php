@@ -14,9 +14,9 @@ class UpdateProductVariantValueRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_variant_id' => ['integer', 'exists:product_variants,id'],
-            'attribute_id' => ['integer', 'exists:attributes,id'],
-            'attribute_value_id' => ['integer', 'exists:attribute_values,id']
+            'product_variant_id' => ['sometimes', 'required', 'integer', 'exists:product_variants,id'],
+            'attribute_id'         => ['sometimes', 'required', 'integer', 'exists:attributes,id'],
+            'attribute_value_id' => ['sometimes', 'required', 'integer', 'exists:attribute_values,id']
         ];
     }
 }

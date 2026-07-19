@@ -14,12 +14,12 @@ class UpdateAttendanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['integer', 'exists:employees,id'],
-            'date' => ['string'],
-            'check_in' => ['string'],
-            'check_out' => ['string'],
-            'status' => ['string'],
-            'notes' => ['string']
+            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'date'        => ['required', 'date'],
+            'check_in'    => ['nullable', 'string'],
+            'check_out'   => ['nullable', 'string'],
+            'status'      => ['required', 'string', 'in:present,absent,late,leave,holiday'],
+            'notes'       => ['nullable', 'string']
         ];
     }
 }

@@ -9,6 +9,20 @@ class PurchaseReturnItemResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id'                 => $this->id,
+            'purchase_return_id' => $this->purchase_return_id,
+            'purchase_item_id'   => $this->purchase_item_id,
+            'product_id'         => $this->product_id,
+            'product_variant_id' => $this->product_variant_id,
+            'product_name'       => $this->product?->name ?? $this->purchaseItem?->product_name ?? null,
+            'sku'                => $this->product?->sku ?? $this->purchaseItem?->sku ?? null,
+            'quantity'           => (float)$this->quantity,
+            'unit_cost'          => (float)$this->unit_cost,
+            'total'              => (float)$this->total,
+            'notes'              => $this->notes,
+            'variant'            => $this->relationLoaded('variant') ? $this->variant : null,
+            'product'            => $this->relationLoaded('product') ? $this->product : null,
+        ];
     }
 }

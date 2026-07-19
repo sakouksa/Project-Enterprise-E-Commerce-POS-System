@@ -13,17 +13,20 @@ class UpdateProductVariantRequest extends FormRequest
 
     public function rules(): array
     {
+        $id = $this->route('product_variant');
+        $variantId = is_object($id) ? $id->id : $id;
+
         return [
-            'product_id' => ['integer', 'exists:products,id'],
-            'name' => ['string'],
-            'sku' => ['string'],
-            'barcode' => ['string'],
-            'cost_price' => ['numeric'],
-            'selling_price' => ['numeric'],
-            'compare_price' => ['numeric'],
-            'weight' => ['numeric'],
-            'image' => ['string'],
-            'is_active' => ['boolean']
+            'product_id'    => ['sometimes', 'required', 'integer', 'exists:products,id'],
+            'name'          => ['sometimes', 'required', 'string', 'max:255'],
+            'sku'           => ["sometimes", "required", "string", "max:255", "unique:product_variants,sku,{$variantId}"],
+            'barcode'       => ["nullable", "string", "max:255", "unique:product_variants,barcode,{$variantId}"],
+            'cost_price'    => ['sometimes', 'numeric', 'min:0'],
+            'selling_price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'compare_price' => ['nullable', 'numeric', 'min:0'],
+            'weight'        => ['nullable', 'numeric', 'min:0'],
+            'image'         => ['nullable', 'string'],
+            'is_active'     => ['sometimes', 'boolean']
         ];
     }
 }

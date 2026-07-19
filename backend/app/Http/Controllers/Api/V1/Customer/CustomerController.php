@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Customer\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CustomerController extends BaseApiController
 {
@@ -14,12 +15,18 @@ class CustomerController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $customers = Customer::with(['group'])
+        $customers = Customer::with(['group', 'user'])
             ->when($request->status === 'deleted', function ($q) {
                 $q->onlyTrashed();
             })
-            ->when($request->status && $request->status !== 'deleted', function ($q) use ($request) {
-                $q->where('is_active', $request->status === 'active');
+            ->when($request->status && $request->status !== 'deleted' && $request->status !== 'all', function ($q) use ($request) {
+                $q->where('is_active', $request->status === 'active' || $request->status === '1');
+            })
+            ->when($request->customer_group_id, function ($q, $groupId) {
+                $q->where('customer_group_id', $groupId);
+            })
+            ->when($request->gender, function ($q, $gender) {
+                $q->where('gender', $gender);
             })
             ->when($request->search, function ($q, $search) {
                 $q->where(function($sub) use ($search) {
@@ -28,6 +35,13 @@ class CustomerController extends BaseApiController
                         ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
+            ->when($request->start_date, function ($q, $date) {
+                $q->whereDate('created_at', '>=', $date);
+            })
+            ->when($request->end_date, function ($q, $date) {
+                $q->whereDate('created_at', '<=', $date);
+            })
+            ->orderBy($request->get('sort_by', 'created_at'), $request->get('sort_order', 'desc'))
             ->paginate($request->integer('per_page', 10));
 
         return $this->paginatedResponse($customers);
@@ -38,7 +52,7 @@ class CustomerController extends BaseApiController
      */
     public function show(int $id): JsonResponse
     {
-        $customer = Customer::with(['group', 'addresses'])->findOrFail($id);
+        $customer = Customer::with(['group', 'user', 'addresses'])->findOrFail($id);
         return $this->successResponse($customer);
     }
 
@@ -50,16 +64,22 @@ class CustomerController extends BaseApiController
         $data = $request->validate([
             'company_id'        => 'required|exists:companies,id',
             'customer_group_id' => 'nullable|exists:customer_groups,id',
+            'user_id'           => 'nullable|exists:users,id',
             'name'              => 'required|string|max:100',
             'email'             => 'nullable|email|max:100',
             'phone'             => 'nullable|string|max:50',
             'gender'            => 'nullable|string|in:male,female,other',
             'birth_date'        => 'nullable|date',
+            'photo'             => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'tax_number'        => 'nullable|string|max:100',
-            'loyalty_points'    => 'nullable|numeric|min:0',
             'notes'             => 'nullable|string',
             'is_active'         => 'sometimes|boolean',
         ]);
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('customers', 'public');
+            $data['photo'] = Storage::url($path);
+        }
 
         $customer = Customer::create($data);
 
@@ -75,16 +95,40 @@ class CustomerController extends BaseApiController
 
         $data = $request->validate([
             'customer_group_id' => 'nullable|exists:customer_groups,id',
+            'user_id'           => 'nullable|exists:users,id',
             'name'              => 'sometimes|required|string|max:100',
             'email'             => 'nullable|email|max:100',
             'phone'             => 'nullable|string|max:50',
             'gender'            => 'nullable|string|in:male,female,other',
             'birth_date'        => 'nullable|date',
+            'photo'             => 'nullable',
             'tax_number'        => 'nullable|string|max:100',
-            'loyalty_points'    => 'nullable|numeric|min:0',
             'notes'             => 'nullable|string',
             'is_active'         => 'sometimes|boolean',
         ]);
+
+        if ($request->hasFile('photo')) {
+            $request->validate([
+                'photo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+            ]);
+
+            if ($customer->photo) {
+                $oldPath = str_replace(Storage::url(''), '', $customer->photo);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('photo')->store('customers', 'public');
+            $data['photo'] = Storage::url($path);
+        } elseif ($request->exists('photo') && $request->photo === null) {
+            if ($customer->photo) {
+                $oldPath = str_replace(Storage::url(''), '', $customer->photo);
+                Storage::disk('public')->delete($oldPath);
+            }
+            $data['photo'] = null;
+        } else {
+            // Remove photo from data if it's a string (URL) to avoid overwriting with the URL string
+            unset($data['photo']);
+        }
 
         $customer->update($data);
 
@@ -132,6 +176,10 @@ class CustomerController extends BaseApiController
     {
         try {
             $customer = Customer::withTrashed()->findOrFail($id);
+            if ($customer->photo) {
+                $oldPath = str_replace(Storage::url(''), '', $customer->photo);
+                Storage::disk('public')->delete($oldPath);
+            }
             $customer->forceDelete();
             return $this->successResponse(null, 'Customer permanently deleted successfully');
         } catch (\Exception $e) {
@@ -140,5 +188,15 @@ class CustomerController extends BaseApiController
                 'message' => $e->getMessage()
             ], 400);
         }
+    }
+
+    /**
+     * GET /api/v1/customers/{id}/orders
+     */
+    public function orders(int $id): JsonResponse
+    {
+        $customer = Customer::findOrFail($id);
+        $orders = \App\Models\Order\Order::where('customer_id', $id)->latest()->paginate(10);
+        return $this->paginatedResponse($orders);
     }
 }

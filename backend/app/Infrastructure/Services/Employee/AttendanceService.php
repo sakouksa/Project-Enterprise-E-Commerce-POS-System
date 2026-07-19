@@ -18,9 +18,9 @@ class AttendanceService
         return $this->repository->all(relations: $relations);
     }
 
-    public function getPaginated(int $perPage = 15, array $relations = []): LengthAwarePaginator
+    public function getPaginated(int $perPage = 15, array $filters = [], string $sort = 'date', string $order = 'desc'): LengthAwarePaginator
     {
-        return $this->repository->paginate($perPage, relations: $relations);
+        return $this->repository->paginateWithFilters($filters, $perPage, $sort, $order);
     }
 
     public function getById(int|string $id, array $relations = []): Attendance
@@ -41,5 +41,10 @@ class AttendanceService
     public function delete(int|string $id): bool
     {
         return $this->repository->delete($id);
+    }
+
+    public function bulkDelete(array $ids): int
+    {
+        return $this->repository->bulkDelete($ids);
     }
 }

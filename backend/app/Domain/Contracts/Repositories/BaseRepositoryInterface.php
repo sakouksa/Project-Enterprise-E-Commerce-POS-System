@@ -25,4 +25,10 @@ interface BaseRepositoryInterface
     public function restore(int|string $id): bool;
 
     public function forceDelete(int|string $id): bool;
+
+    public function bulkDelete(array $ids): int;
+
+    public function bulkRestore(array $ids): int;
+
+    public function bulkForceDelete(array $ids): int;
 }

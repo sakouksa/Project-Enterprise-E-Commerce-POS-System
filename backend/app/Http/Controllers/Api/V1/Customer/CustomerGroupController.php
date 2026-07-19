@@ -17,10 +17,16 @@ class CustomerGroupController extends BaseApiController
         $groups = CustomerGroup::when($request->status === 'deleted', function ($q) {
                 $q->onlyTrashed();
             })
-            ->when($request->status && $request->status !== 'deleted', function ($q) use ($request) {
-                $q->where('is_active', $request->status === 'active');
+            ->when($request->status && $request->status !== 'deleted' && $request->status !== 'all', function ($q) use ($request) {
+                $q->where('is_active', $request->status === 'active' || $request->status === '1');
             })
-            ->when($request->search, fn($q, $v) => $q->where('name', 'like', "%{$v}%"))
+            ->when($request->search, function ($q, $search) {
+                $q->where(function($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy($request->get('sort_by', 'created_at'), $request->get('sort_order', 'desc'))
             ->paginate($request->integer('per_page', 20));
 
         return $this->paginatedResponse($groups);
@@ -44,7 +50,7 @@ class CustomerGroupController extends BaseApiController
             'company_id'       => 'required|exists:companies,id',
             'name'             => 'required|string|max:100',
             'description'      => 'nullable|string',
-            'discount_percent' => 'sometimes|numeric|min:0|max:100',
+            'discount_percent' => 'required|numeric|min:0|max:100',
             'is_active'        => 'sometimes|boolean',
         ]);
 
@@ -63,7 +69,7 @@ class CustomerGroupController extends BaseApiController
         $data = $request->validate([
             'name'             => 'sometimes|required|string|max:100',
             'description'      => 'nullable|string',
-            'discount_percent' => 'sometimes|numeric|min:0|max:100',
+            'discount_percent' => 'sometimes|required|numeric|min:0|max:100',
             'is_active'        => 'sometimes|boolean',
         ]);
 

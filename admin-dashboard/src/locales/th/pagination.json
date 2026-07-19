@@ -1,0 +1,11 @@
+{
+  "firstPage": "หน้าแรกสุด",
+  "lastPage": "หน้าสุดท้าย",
+  "nextPage": "หน้าถัดไป",
+  "pageOf": "หน้า {{current}} จาก {{total}}",
+  "prevPage": "หน้าก่อนหน้า",
+  "rowsPerPage": "จำนวนแถวต่อหน้า:",
+  "showing_of": "จากทั้งหมด",
+  "showing_prefix": "แสดง",
+  "showing_records": "รายการ"
+}

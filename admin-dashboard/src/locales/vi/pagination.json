@@ -1,0 +1,11 @@
+{
+  "firstPage": "Trang đầu",
+  "lastPage": "Trang cuối",
+  "nextPage": "Trang sau",
+  "pageOf": "Trang {{current}} / {{total}}",
+  "prevPage": "Trang trước",
+  "rowsPerPage": "Số dòng hiển thị:",
+  "showing_of": "trong tổng số",
+  "showing_prefix": "Hiển thị từ",
+  "showing_records": "bản ghi"
+}

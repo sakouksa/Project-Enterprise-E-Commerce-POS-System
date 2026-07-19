@@ -98,7 +98,7 @@
   /* Sidebar item */
   .sidebar-item {
     @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-text text-sm font-medium
-           transition-all duration-150 cursor-pointer select-none;
+           transition-all duration-150 cursor-pointer select-none whitespace-nowrap;
   }
   .sidebar-item:hover { @apply bg-sidebar-hover text-white; }
   .sidebar-item.active { @apply bg-sidebar-active text-white shadow-glow; }

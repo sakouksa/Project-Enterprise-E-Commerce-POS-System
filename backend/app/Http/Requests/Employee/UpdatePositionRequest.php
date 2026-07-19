@@ -14,12 +14,12 @@ class UpdatePositionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'department_id' => ['integer', 'exists:departments,id'],
-            'name' => ['string'],
-            'code' => ['string'],
-            'description' => ['string'],
-            'is_active' => ['boolean']
+            'company_id'    => ['required', 'integer', 'exists:companies,id'],
+            'department_id' => ['required', 'integer', 'exists:departments,id'],
+            'name'          => ['required', 'string', 'max:255'],
+            'code'          => ['nullable', 'string', 'max:50'],
+            'description'   => ['nullable', 'string'],
+            'is_active'     => ['boolean']
         ];
     }
 }

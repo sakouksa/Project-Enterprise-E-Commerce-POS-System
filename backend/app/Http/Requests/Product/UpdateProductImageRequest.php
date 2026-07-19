@@ -14,11 +14,11 @@ class UpdateProductImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id' => ['integer', 'exists:products,id'],
-            'image' => ['string'],
-            'alt_text' => ['string'],
-            'sort_order' => ['integer'],
-            'is_primary' => ['boolean']
+            'product_id' => ['sometimes', 'required', 'integer', 'exists:products,id'],
+            'image'      => ['sometimes', 'required', 'string', 'max:255'],
+            'alt_text'   => ['nullable', 'string', 'max:255'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'is_primary' => ['sometimes', 'boolean']
         ];
     }
 }

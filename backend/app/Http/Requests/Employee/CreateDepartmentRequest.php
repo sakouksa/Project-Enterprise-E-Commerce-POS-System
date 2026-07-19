@@ -14,12 +14,12 @@ class CreateDepartmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'branch_id' => ['integer', 'exists:branches,id'],
-            'name' => ['string'],
-            'code' => ['string'],
-            'description' => ['string'],
-            'is_active' => ['boolean']
+            'company_id'  => ['required', 'integer', 'exists:companies,id'],
+            'branch_id'   => ['required', 'integer', 'exists:branches,id'],
+            'name'        => ['required', 'string', 'max:255'],
+            'code'        => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string'],
+            'is_active'   => ['boolean']
         ];
     }
 }

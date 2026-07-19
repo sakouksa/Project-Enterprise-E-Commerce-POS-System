@@ -1,5 +1,5 @@
-import React from 'react'
-import { Globe, Clock, Sun, Moon, Bell, CheckSquare, Square, Save } from 'lucide-react'
+import React, { useState, useRef, useEffect } from 'react'
+import { Globe, Clock, Sun, Moon, Bell, CheckSquare, Square, Save, ChevronDown, Check } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 import { useTranslation } from 'react-i18next'
 
@@ -16,6 +16,23 @@ interface ProfileSettingsProps {
   isSaving: boolean
 }
 
+const LANGUAGES = [
+  { code: 'en', name: 'English', nativeName: 'English', flagUrl: 'https://flagcdn.com/w40/us.png' },
+  { code: 'km', name: 'Khmer', nativeName: 'ភាសាខ្មែរ', flagUrl: 'https://flagcdn.com/w40/kh.png' },
+  { code: 'th', name: 'Thai', nativeName: 'ไทย', flagUrl: 'https://flagcdn.com/w40/th.png' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flagUrl: 'https://flagcdn.com/w40/vn.png' },
+  { code: 'zh', name: 'Chinese', nativeName: '中文', flagUrl: 'https://flagcdn.com/w40/cn.png' },
+] as const
+
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
+  { value: 'Asia/Phnom_Penh', label: 'Asia/Phnom Penh (GMT+7)' },
+  { value: 'Asia/Bangkok', label: 'Asia/Bangkok (GMT+7)' },
+  { value: 'Asia/Singapore', label: 'Asia/Singapore (GMT+8)' },
+  { value: 'America/New_York', label: 'America/New York (EST/EDT)' },
+  { value: 'Europe/London', label: 'Europe/London (GMT/BST)' },
+]
+
 export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
   timezone,
   setTimezone,
@@ -31,6 +48,28 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
   const { t } = useTranslation()
   const { themeMode, updateThemeMode, language, setLanguage } = useThemeStore()
 
+  const [langOpen, setLangOpen] = useState(false)
+  const [tzOpen, setTzOpen] = useState(false)
+
+  const langRef = useRef<HTMLDivElement>(null)
+  const tzRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false)
+      }
+      if (tzRef.current && !tzRef.current.contains(e.target as Node)) {
+        setTzOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0]
+  const currentTz = TIMEZONES.find((t) => t.value === timezone) ?? TIMEZONES[0]
+
   return (
     <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm space-y-6">
       <h3 className="text-lg font-bold text-foreground pb-4 border-b border-border/40">
@@ -39,41 +78,113 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-border/40">
         {/* Preferred Language */}
-        <div className="space-y-2">
+        <div className="space-y-2 relative" ref={langRef}>
           <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             <Globe size={14} className="text-primary" />
             {t('profile.settings_tab.language', 'Preferred Language')}
           </label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as 'en' | 'km')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          <button
+            type="button"
+            onClick={() => {
+              setLangOpen(!langOpen)
+              setTzOpen(false)
+            }}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left"
           >
-            <option value="en">English (US)</option>
-            <option value="km">ភាសាខ្មែរ (Khmer)</option>
-          </select>
+            <div className="flex items-center gap-2">
+              <img
+                src={currentLang.flagUrl}
+                alt={currentLang.name}
+                className="w-5 h-3.5 object-cover rounded-sm shadow-sm border border-foreground/10 flex-shrink-0"
+              />
+              <span>{currentLang.nativeName} ({currentLang.name})</span>
+            </div>
+            <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-200 ${langOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {langOpen && (
+            <div className="absolute left-0 mt-1 w-full bg-card border border-border rounded-xl shadow-lg z-50 p-1.5 backdrop-blur-md max-h-60 overflow-y-auto">
+              {LANGUAGES.map((lang) => {
+                const isSelected = lang.code === language
+                return (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => {
+                      setLanguage(lang.code)
+                      setLangOpen(false)
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 text-left mb-0.5 last:mb-0
+                      ${
+                        isSelected
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={lang.flagUrl}
+                        alt={lang.name}
+                        className="w-5 h-3.5 object-cover rounded-sm shadow-sm border border-foreground/10 flex-shrink-0"
+                      />
+                      <span>{lang.nativeName}</span>
+                      <span className="text-[10px] text-muted-foreground/60">({lang.name})</span>
+                    </div>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Timezone */}
-        <div className="space-y-2">
+        <div className="space-y-2 relative" ref={tzRef}>
           <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             <Clock size={14} className="text-primary" />
             {t('profile.settings_tab.timezone', 'Timezone Configuration')}
           </label>
-          <select
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          <button
+            type="button"
+            onClick={() => {
+              setTzOpen(!tzOpen)
+              setLangOpen(false)
+            }}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left"
           >
-            <option value="UTC">UTC (Coordinated Universal Time)</option>
-            <option value="Asia/Phnom_Penh">Asia/Phnom Penh (GMT+7)</option>
-            <option value="Asia/Bangkok">Asia/Bangkok (GMT+7)</option>
-            <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
-            <option value="America/New_York">America/New York (EST/EDT)</option>
-            <option value="Europe/London">Europe/London (GMT/BST)</option>
-          </select>
+            <span>{currentTz.label}</span>
+            <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-200 ${tzOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {tzOpen && (
+            <div className="absolute left-0 mt-1 w-full bg-card border border-border rounded-xl shadow-lg z-50 p-1.5 backdrop-blur-md max-h-60 overflow-y-auto">
+              {TIMEZONES.map((tzOpt) => {
+                const isSelected = tzOpt.value === timezone
+                return (
+                  <button
+                    key={tzOpt.value}
+                    type="button"
+                    onClick={() => {
+                      setTimezone(tzOpt.value)
+                      setTzOpen(false)
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 text-left mb-0.5 last:mb-0
+                      ${
+                        isSelected
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                  >
+                    <span>{tzOpt.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
+
 
       <div className="space-y-6">
         {/* Visual Mode */}

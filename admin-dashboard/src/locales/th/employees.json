@@ -1,0 +1,16 @@
+{
+  "addEmployee": "เพิ่มประวัติพนักงาน",
+  "attendance": "เวลาเข้างาน/ลงเวลา",
+  "attendance_payroll": "Attendance & Payroll",
+  "department": "แผนกงาน",
+  "departments": "รายชื่อแผนก",
+  "designation": "ตำแหน่งงาน",
+  "editEmployee": "แก้ไขข้อมูลพนักงาน",
+  "employeeCode": "รหัสพนักงาน",
+  "employeeList": "รายชื่อพนักงานทั้งหมด",
+  "payroll": "ประมวลผลเงินเดือน (Payroll)",
+  "positions": "ระดับตำแหน่ง",
+  "salary": "ฐานเงินเดือน",
+  "title": "พนักงาน",
+  "top_employees": "Top Performer"
+}

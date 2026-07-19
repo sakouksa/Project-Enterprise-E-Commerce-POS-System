@@ -26,4 +26,14 @@ class Department extends Model
     {
         return $this->belongsTo(\App\Models\Company\Branch::class);
     }
+
+    public function positions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Employee\Position::class);
+    }
+
+    public function employees(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Employee\Employee::class);
+    }
 }

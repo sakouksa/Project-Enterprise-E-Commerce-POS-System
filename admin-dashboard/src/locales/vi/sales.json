@@ -1,0 +1,15 @@
+{
+  "cashRegisters": "Két tiền mặt/Ca làm việc",
+  "discount": "Chiết khấu",
+  "due": "Còn nợ",
+  "grandTotal": "Tổng cộng thanh toán",
+  "items": "Mặt hàng",
+  "paid": "Đã trả",
+  "payments": "Thanh toán giao dịch",
+  "posTerminal": "Điểm bán hàng (POS)",
+  "saleReturns": "Khách trả lại hàng",
+  "salesOrders": "Đơn hàng bán lẻ",
+  "subtotal": "Cộng tiền hàng",
+  "tax": "Thuế giá trị gia tăng",
+  "title": "Doanh số bán hàng"
+}

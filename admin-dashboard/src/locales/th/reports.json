@@ -1,0 +1,9 @@
+{
+  "financialSummary": "สรุปงบการเงิน",
+  "inventoryReport": "รายงานสินค้าคงคลัง",
+  "monthlyTrend": "แนวโน้มยอดขายรายเดือน",
+  "profitLoss": "งบกำไรขาดทุน",
+  "purchaseReport": "รายงานการสั่งซื้อ",
+  "salesReport": "รายงานยอดขาย",
+  "title": "รายงานสรุป"
+}

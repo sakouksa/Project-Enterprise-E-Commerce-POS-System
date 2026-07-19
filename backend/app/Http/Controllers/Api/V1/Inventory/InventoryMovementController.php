@@ -18,10 +18,28 @@ class InventoryMovementController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $query = \App\Models\Inventory\InventoryMovement::with(['product', 'warehouse'])
-            ->when($request->product_id, fn($q, $productId) => $q->where('product_id', $productId))
-            ->when($request->warehouse_id, fn($q, $warehouseId) => $q->where('warehouse_id', $warehouseId))
-            ->orderBy('created_at', 'desc');
+        $query = \App\Models\Inventory\InventoryMovement::with([
+            'product.category',
+            'product.brand',
+            'product.unit',
+            'variant',
+            'warehouse',
+            'user'
+        ])
+        ->when($request->product_id, fn($q, $productId) => $q->where('product_id', $productId))
+        ->when($request->warehouse_id, fn($q, $warehouseId) => $q->where('warehouse_id', $warehouseId))
+        ->when($request->type, fn($q, $type) => $q->where('type', $type))
+        ->when($request->user_id, fn($q, $userId) => $q->where('user_id', $userId))
+        ->when($request->start_date, fn($q, $start) => $q->whereDate('created_at', '>=', $start))
+        ->when($request->end_date, fn($q, $end) => $q->whereDate('created_at', '<=', $end))
+        ->when($request->search, function ($q, $search) {
+            $q->where(function ($sq) use ($search) {
+                $sq->whereHas('product', fn($pq) => $pq->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"))
+                   ->orWhere('notes', 'like', "%{$search}%")
+                   ->orWhere('reference_type', 'like', "%{$search}%");
+            });
+        })
+        ->orderBy('created_at', 'desc');
 
         $records = $query->paginate($request->integer('per_page', 10));
 

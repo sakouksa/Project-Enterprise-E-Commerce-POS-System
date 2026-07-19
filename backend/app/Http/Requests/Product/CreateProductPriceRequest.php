@@ -14,15 +14,15 @@ class CreateProductPriceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id' => ['integer', 'exists:products,id'],
-            'product_variant_id' => ['integer', 'exists:product_variants,id'],
-            'price_type' => ['string'],
-            'min_qty' => ['integer'],
-            'price' => ['numeric'],
-            'currency_code' => ['string'],
-            'start_date' => ['string'],
-            'end_date' => ['string'],
-            'is_active' => ['boolean']
+            'product_id'         => ['required', 'integer', 'exists:products,id'],
+            'product_variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
+            'price_type'         => ['required', 'string', 'max:255'],
+            'min_qty'            => ['sometimes', 'integer', 'min:1'],
+            'price'              => ['required', 'numeric', 'min:0'],
+            'currency_code'      => ['sometimes', 'string', 'max:10'],
+            'start_date'         => ['nullable', 'date'],
+            'end_date'           => ['nullable', 'date', 'after_or_equal:start_date'],
+            'is_active'          => ['sometimes', 'boolean']
         ];
     }
 }

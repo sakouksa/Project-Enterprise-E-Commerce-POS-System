@@ -1,0 +1,12 @@
+{
+  "403": "Bị cấm truy cập - Bạn không có quyền xem tài nguyên này.",
+  "404": "Không tìm thấy trang - Trang web bạn truy cập không tồn tại hoặc đã bị xóa.",
+  "419": "Phiên làm việc hết hạn - Vui lòng làm mới trang và đăng nhập lại.",
+  "422": "Thao tác không hợp lệ - Xác thực dữ liệu form đầu vào thất bại.",
+  "429": "Yêu cầu quá tải - Bạn đã gửi quá nhiều yêu cầu hệ thống trong thời gian ngắn.",
+  "500": "Lỗi hệ thống nội bộ - Đã xảy ra lỗi ngoài ý muốn trên máy chủ của chúng tôi.",
+  "forbidden": "Truy cập bị từ chối / Bị cấm",
+  "maintenance": "Hệ thống đang bảo trì - Chúng tôi sẽ sớm trực tuyến trở lại.",
+  "serverError": "Lỗi hệ thống máy chủ nghiêm trọng",
+  "unauthorized": "Không được phép - Vui lòng đăng nhập để có quyền truy cập."
+}

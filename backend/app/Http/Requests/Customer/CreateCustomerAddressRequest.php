@@ -14,18 +14,18 @@ class CreateCustomerAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['integer', 'exists:customers,id'],
-            'label' => ['string'],
-            'name' => ['string'],
-            'phone' => ['string'],
-            'address' => ['string'],
-            'city' => ['string'],
-            'province' => ['string'],
-            'country' => ['string'],
-            'postal_code' => ['string'],
-            'latitude' => ['numeric'],
-            'longitude' => ['numeric'],
-            'is_default' => ['boolean']
+            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'label'       => ['required', 'string', 'in:Home,Office,Warehouse,Other'],
+            'name'        => ['required', 'string', 'max:255'],
+            'phone'       => ['required', 'string', 'max:50'],
+            'address'     => ['required', 'string'],
+            'city'        => ['required', 'string', 'max:255'],
+            'province'    => ['required', 'string', 'max:255'],
+            'country'     => ['required', 'string', 'max:255'],
+            'postal_code' => ['required', 'string', 'max:20'],
+            'latitude'    => ['nullable', 'numeric'],
+            'longitude'   => ['nullable', 'numeric'],
+            'is_default'  => ['sometimes', 'boolean']
         ];
     }
 }

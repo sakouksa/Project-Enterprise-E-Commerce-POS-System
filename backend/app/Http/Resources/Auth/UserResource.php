@@ -9,12 +9,21 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $avatarUrl = $this->avatar;
+        if ($avatarUrl && !str_starts_with($avatarUrl, 'http') && !str_starts_with($avatarUrl, 'https')) {
+            if (str_starts_with($avatarUrl, '/storage') || str_starts_with($avatarUrl, 'storage')) {
+                $avatarUrl = asset($avatarUrl);
+            } else {
+                $avatarUrl = asset('storage/' . $avatarUrl);
+            }
+        }
+
         return [
             'id'           => $this->id,
             'name'         => $this->name,
             'email'        => $this->email,
             'phone'        => $this->phone,
-            'avatar'       => $this->avatar ? asset('storage/' . $this->avatar) : null,
+            'avatar'       => $avatarUrl,
             'is_active'    => $this->is_active,
             'last_login_at' => $this->last_login_at?->toIso8601String(),
             'roles'        => $this->whenLoaded('roles', fn() => $this->getRoleNames()),

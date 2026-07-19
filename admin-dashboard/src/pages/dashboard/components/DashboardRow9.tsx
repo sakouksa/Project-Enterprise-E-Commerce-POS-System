@@ -1,0 +1,55 @@
+import React from 'react'
+import { Smartphone, Download, Users, BellRing } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+
+export const DashboardRow9: React.FC = () => {
+  const { t } = useTranslation()
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Mobile App Downloads */}
+      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+            {t('mobile.app_downloads', 'App Downloads')}
+          </span>
+          <h4 className="text-xl font-bold text-foreground mt-1">45,210</h4>
+          <span className="text-[9px] text-green-500 font-bold mt-1 block">↑ +15.2% download growth this week</span>
+        </div>
+        <div className="p-3 bg-blue-500/10 rounded-2xl flex items-center justify-center">
+          <Download className="w-6 h-6 text-blue-500" />
+        </div>
+      </div>
+
+      {/* App Daily & Monthly Active Users */}
+      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+            {t('mobile.active_users', 'App Active Users')}
+          </span>
+          <h4 className="text-xl font-bold text-foreground mt-1">12,450 DAU</h4>
+          <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">89,200 Monthly Active Users</p>
+        </div>
+        <div className="p-3 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+          <Users className="w-6 h-6 text-emerald-500" />
+        </div>
+      </div>
+
+      {/* Push Notifications Sent */}
+      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+            {t('mobile.push_notifications', 'Push Notifications')}
+          </span>
+          <h4 className="text-xl font-bold text-foreground mt-1">12 Campaigns</h4>
+          <span className="text-[9px] text-purple-500 font-bold mt-1 block">98.4% delivery success rate</span>
+        </div>
+        <div className="p-3 bg-purple-500/10 rounded-2xl flex items-center justify-center">
+          <BellRing className="w-6 h-6 text-purple-500" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default DashboardRow9

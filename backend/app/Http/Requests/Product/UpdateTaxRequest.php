@@ -14,11 +14,10 @@ class UpdateTaxRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'name' => ['string'],
-            'rate' => ['numeric'],
-            'type' => ['string'],
-            'is_active' => ['boolean']
+            'name'       => ['sometimes', 'required', 'string', 'max:255'],
+            'rate'       => ['sometimes', 'required', 'numeric', 'min:0', 'max:9999.9999'],
+            'type'       => ['sometimes', 'required', 'string', 'in:percentage,fixed'],
+            'is_active'  => ['sometimes', 'boolean']
         ];
     }
 }

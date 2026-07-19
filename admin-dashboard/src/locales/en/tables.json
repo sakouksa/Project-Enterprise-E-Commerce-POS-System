@@ -1,0 +1,10 @@
+{
+  "columnNames": "Column Names",
+  "emptyData": "No data available in table",
+  "filter": "Filter table data",
+  "loading": "Loading records...",
+  "pagination": "Pagination Controls",
+  "search": "Search table records...",
+  "sort": "Click to sort",
+  "tableName": "Table Name"
+}

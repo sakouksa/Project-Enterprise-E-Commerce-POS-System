@@ -1,0 +1,11 @@
+{
+  "firstPage": "First page",
+  "lastPage": "Last page",
+  "nextPage": "Next page",
+  "pageOf": "Page {{current}} of {{total}}",
+  "prevPage": "Previous page",
+  "rowsPerPage": "Rows per page:",
+  "showing_of": "of",
+  "showing_prefix": "Showing",
+  "showing_records": "records"
+}

@@ -14,10 +14,10 @@ class CreateAttributeValueRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'attribute_id' => ['integer', 'exists:attributes,id'],
-            'value' => ['string'],
-            'color_code' => ['string'],
-            'sort_order' => ['integer']
+            'attribute_id' => ['required', 'integer', 'exists:attributes,id'],
+            'value'        => ['required', 'string', 'max:255'],
+            'color_code'   => ['nullable', 'string', 'max:10'],
+            'sort_order'   => ['sometimes', 'integer', 'min:0']
         ];
     }
 }

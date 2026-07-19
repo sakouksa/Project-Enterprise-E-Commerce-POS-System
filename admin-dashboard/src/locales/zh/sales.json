@@ -1,0 +1,15 @@
+{
+  "cashRegisters": "收银机管理",
+  "discount": "折扣减免",
+  "due": "未付余额",
+  "grandTotal": "应付总额",
+  "items": "件商品",
+  "paid": "已付金额",
+  "payments": "收付款流水",
+  "posTerminal": "收银前台 (POS)",
+  "saleReturns": "客户销售退货",
+  "salesOrders": "销售订单列表",
+  "subtotal": "商品小计",
+  "tax": "税费",
+  "title": "销售管理"
+}

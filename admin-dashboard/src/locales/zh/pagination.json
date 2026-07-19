@@ -1,0 +1,11 @@
+{
+  "firstPage": "首页",
+  "lastPage": "尾页",
+  "nextPage": "下一页",
+  "pageOf": "第 {{current}} 页 / 共 {{total}} 页",
+  "prevPage": "上一页",
+  "rowsPerPage": "每页显示行数:",
+  "showing_of": "条，总共",
+  "showing_prefix": "显示第",
+  "showing_records": "条数据记录"
+}

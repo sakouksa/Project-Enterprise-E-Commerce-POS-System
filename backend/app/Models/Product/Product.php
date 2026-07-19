@@ -117,7 +117,15 @@ class Product extends Model
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
               ->orWhere('sku', 'like', "%{$search}%")
-              ->orWhere('barcode', 'like', "%{$search}%");
+              ->orWhere('barcode', 'like', "%{$search}%")
+              ->orWhere('slug', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%")
+              ->orWhereHas('category', function ($qc) use ($search) {
+                  $qc->where('name', 'like', "%{$search}%");
+              })
+              ->orWhereHas('brand', function ($qb) use ($search) {
+                  $qb->where('name', 'like', "%{$search}%");
+              });
         });
     }
 

@@ -14,24 +14,24 @@ class CreateEmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'branch_id' => ['integer', 'exists:branches,id'],
-            'department_id' => ['integer', 'exists:departments,id'],
-            'position_id' => ['integer', 'exists:positions,id'],
-            'user_id' => ['integer', 'exists:users,id'],
-            'employee_number' => ['string'],
-            'name' => ['string'],
-            'email' => ['string'],
-            'phone' => ['string'],
-            'nik' => ['string'],
-            'gender' => ['string'],
-            'birth_date' => ['string'],
-            'address' => ['string'],
-            'photo' => ['string'],
-            'join_date' => ['string'],
-            'resign_date' => ['string'],
-            'status' => ['string'],
-            'basic_salary' => ['numeric']
+            'company_id'      => ['required', 'integer', 'exists:companies,id'],
+            'branch_id'       => ['required', 'integer', 'exists:branches,id'],
+            'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
+            'position_id'     => ['nullable', 'integer', 'exists:positions,id'],
+            'user_id'         => ['nullable', 'integer', 'exists:users,id'],
+            'employee_number' => ['required', 'string', 'max:100', 'unique:employees,employee_number'],
+            'name'            => ['required', 'string', 'max:255'],
+            'email'           => ['nullable', 'email', 'max:255'],
+            'phone'           => ['nullable', 'string', 'max:50'],
+            'nik'             => ['nullable', 'string', 'max:50'],
+            'gender'          => ['nullable', 'string', 'in:male,female'],
+            'birth_date'      => ['nullable', 'date'],
+            'address'         => ['nullable', 'string'],
+            'photo'           => ['nullable', 'string'],
+            'join_date'       => ['nullable', 'date'],
+            'resign_date'     => ['nullable', 'date'],
+            'status'          => ['nullable', 'string', 'in:active,inactive,resigned'],
+            'basic_salary'    => ['nullable', 'numeric', 'min:0']
         ];
     }
 }

@@ -1,0 +1,10 @@
+{
+  "columnNames": "Tên cột dữ liệu",
+  "emptyData": "Không có dữ liệu trong bảng",
+  "filter": "Bộ lọc dữ liệu bảng",
+  "loading": "Đang tải dữ liệu...",
+  "pagination": "Điều khiển phân trang",
+  "search": "Tìm kiếm trong bảng...",
+  "sort": "Nhấp để sắp xếp",
+  "tableName": "Tên bảng dữ liệu"
+}

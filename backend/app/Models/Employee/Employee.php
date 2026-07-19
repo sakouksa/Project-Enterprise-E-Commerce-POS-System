@@ -46,4 +46,19 @@ class Employee extends Model
     {
         return $this->belongsTo(\App\Models\User::class);
     }
+
+    public function attendances(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Employee\Attendance::class);
+    }
+
+    public function attendance(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Employee\Attendance::class);
+    }
+
+    public function payrolls(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Employee\Payroll::class);
+    }
 }

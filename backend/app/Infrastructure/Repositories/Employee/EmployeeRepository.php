@@ -11,4 +11,47 @@ class EmployeeRepository extends BaseRepository
     {
         parent::__construct($model);
     }
+
+    public function paginateWithFilters(
+        array $filters = [],
+        int $perPage = 10,
+        string $sort = 'created_at',
+        string $order = 'desc'
+    ): \Illuminate\Pagination\LengthAwarePaginator {
+        $query = $this->model
+            ->with(['company:id,name', 'branch:id,name', 'department:id,name', 'position:id,name', 'user:id,name,email'])
+            ->when($filters['search'] ?? null, function ($q, $search) {
+                $q->where(function ($sq) use ($search) {
+                    $sq->where('employee_number', 'like', "%{$search}%")
+                       ->orWhere('name', 'like', "%{$search}%")
+                       ->orWhere('email', 'like', "%{$search}%")
+                       ->orWhere('phone', 'like', "%{$search}%")
+                       ->orWhere('nik', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['company_id'] ?? null, fn($q, $v) => $q->where('company_id', $v))
+            ->when($filters['branch_id'] ?? null, fn($q, $v) => $q->where('branch_id', $v))
+            ->when($filters['department_id'] ?? null, fn($q, $v) => $q->where('department_id', $v))
+            ->when($filters['position_id'] ?? null, fn($q, $v) => $q->where('position_id', $v))
+            ->when($filters['gender'] ?? null, fn($q, $v) => $q->where('gender', $v))
+            ->when($filters['status'] ?? null, function ($q, $status) {
+                if ($status === 'deleted') {
+                    $q->onlyTrashed();
+                } else {
+                    $q->where('status', $status);
+                }
+            })
+            ->when($filters['join_date_start'] ?? null, fn($q, $v) => $q->where('join_date', '>=', $v))
+            ->when($filters['join_date_end'] ?? null, fn($q, $v) => $q->where('join_date', '<=', $v))
+            ->when($filters['created_date_start'] ?? null, fn($q, $v) => $q->whereDate('created_at', '>=', $v))
+            ->when($filters['created_date_end'] ?? null, fn($q, $v) => $q->whereDate('created_at', '<=', $v))
+            ->when($filters['salary_min'] ?? null, fn($q, $v) => $q->where('basic_salary', '>=', $v))
+            ->when($filters['salary_max'] ?? null, fn($q, $v) => $q->where('basic_salary', '<=', $v));
+
+        $allowedSorts = ['employee_number', 'name', 'email', 'phone', 'basic_salary', 'join_date', 'created_at', 'status'];
+        $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
+
+        return $query->orderBy($sort, $order === 'asc' ? 'asc' : 'desc')
+                     ->paginate($perPage);
+    }
 }

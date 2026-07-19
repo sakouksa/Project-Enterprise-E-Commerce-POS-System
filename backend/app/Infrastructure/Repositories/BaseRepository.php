@@ -71,4 +71,19 @@ abstract class BaseRepository implements BaseRepositoryInterface
     {
         return $this->model->withTrashed()->findOrFail($id)->forceDelete();
     }
+
+    public function bulkDelete(array $ids): int
+    {
+        return $this->model->whereIn($this->model->getKeyName(), $ids)->delete();
+    }
+
+    public function bulkRestore(array $ids): int
+    {
+        return $this->model->onlyTrashed()->whereIn($this->model->getKeyName(), $ids)->restore();
+    }
+
+    public function bulkForceDelete(array $ids): int
+    {
+        return $this->model->onlyTrashed()->whereIn($this->model->getKeyName(), $ids)->forceDelete();
+    }
 }

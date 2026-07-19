@@ -1,0 +1,15 @@
+{
+  "cashRegisters": "ម៉ាស៊ីនគិតប្រាក់",
+  "discount": "បញ្ចុះតម្លៃ",
+  "due": "នៅខ្វះ",
+  "grandTotal": "សរុបចុងក្រោយ",
+  "items": "មុខទំនិញ",
+  "paid": "បានទូទាត់",
+  "payments": "ការទូទាត់",
+  "posTerminal": "ស្ថានីយ POS",
+  "saleReturns": "ការត្រឡប់ការលក់",
+  "salesOrders": "ការលក់ទាំងអស់",
+  "subtotal": "សរុបរង",
+  "tax": "ពន្ធ",
+  "title": "ការលក់"
+}

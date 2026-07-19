@@ -1,0 +1,11 @@
+{
+  "firstPage": "ទំព័រដំបូង",
+  "lastPage": "ទំព័រចុងក្រោយ",
+  "nextPage": "ទំព័របន្ទាប់",
+  "pageOf": "ទំព័រ {{current}} នៃ {{total}}",
+  "prevPage": "ទំព័រមុន",
+  "rowsPerPage": "ជួរក្នុងមួយទំព័រ:",
+  "showing_of": "ដល់",
+  "showing_prefix": "បង្ហាញពី",
+  "showing_records": "នៃកំណត់ត្រាសរុប"
+}

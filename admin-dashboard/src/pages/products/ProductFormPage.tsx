@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, Layers, Image as ImageIcon, DollarSign, History,
-  Sparkles, MessageSquare, Loader2, Plus, Trash2, Star, Check
+  Sparkles, Loader2, Plus, Trash2, Star, Check, Scale, Shield, Text,
+  HelpCircle, AlertCircle, RefreshCw, Upload, Percent
 } from 'lucide-react'
 import api from '@/api/client'
 import { productService } from '@/services/productService'
 import { useToast } from '@/hooks/useToast'
-import { Breadcrumb, PageHeader, LoadingSpinner, DataTable, StatusBadge } from '@/components/common'
-import AttributesPage from '@/pages/attributes/AttributesPage'
+import { Breadcrumb, PageHeader, LoadingSpinner } from '@/components/common'
 
 interface ProductForm {
   name:                string
@@ -66,6 +67,7 @@ const BLANK_FORM: ProductForm = {
 }
 
 const ProductFormPage: React.FC = () => {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const isEdit = !!id
   const productId = id ? parseInt(id) : null
@@ -73,7 +75,7 @@ const ProductFormPage: React.FC = () => {
   const qc = useQueryClient()
   const toast = useToast()
 
-  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'inventory' | 'images' | 'variants' | 'attributes' | 'seo' | 'activity'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'inventory' | 'dimensions' | 'seo' | 'images' | 'variants' | 'tier_pricing'>('general')
   const [form, setForm] = useState<ProductForm>(BLANK_FORM)
 
   // Sub-tab inline item states
@@ -128,10 +130,10 @@ const ProductFormPage: React.FC = () => {
         barcode:             productDetail.barcode || '',
         description:         productDetail.description || '',
         short_description:   productDetail.short_description || '',
-        category_id:         String(productDetail.category?.id ?? ''),
-        brand_id:            String(productDetail.brand?.id ?? ''),
-        unit_id:             String(productDetail.unit?.id ?? ''),
-        tax_id:              String(productDetail.tax?.id ?? ''),
+        category_id:         String(productDetail.category_id ?? productDetail.category?.id ?? ''),
+        brand_id:            String(productDetail.brand_id ?? productDetail.brand?.id ?? ''),
+        unit_id:             String(productDetail.unit_id ?? productDetail.unit?.id ?? ''),
+        tax_id:              String(productDetail.tax_id ?? productDetail.tax?.id ?? ''),
         cost_price:          String(productDetail.cost_price ?? ''),
         selling_price:       String(productDetail.selling_price ?? ''),
         compare_price:       String(productDetail.compare_price ?? ''),
@@ -162,6 +164,7 @@ const ProductFormPage: React.FC = () => {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['products-stats'] })
       if (productId) {
         qc.invalidateQueries({ queryKey: ['product-detail-page', productId] })
       }
@@ -362,21 +365,21 @@ const ProductFormPage: React.FC = () => {
   }
 
   const getAbsoluteImageUrl = (urlOrPath?: any) => {
-    if (!urlOrPath) return '';
+    if (!urlOrPath) return ''
     if (typeof urlOrPath !== 'string') {
-      if (urlOrPath.image) urlOrPath = urlOrPath.image;
-      else if (urlOrPath.image_path) urlOrPath = urlOrPath.image_path;
-      else if (urlOrPath.url) urlOrPath = urlOrPath.url;
-      else return '';
+      if (urlOrPath.image) urlOrPath = urlOrPath.image
+      else if (urlOrPath.image_path) urlOrPath = urlOrPath.image_path
+      else if (urlOrPath.url) urlOrPath = urlOrPath.url
+      else return ''
     }
-    if (typeof urlOrPath !== 'string') return '';
+    if (typeof urlOrPath !== 'string') return ''
     if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) {
-      return urlOrPath;
+      return urlOrPath
     }
-    const cleaned = urlOrPath.startsWith('/') ? urlOrPath.substring(1) : urlOrPath;
-    const path = cleaned.startsWith('storage/') ? cleaned : `storage/${cleaned}`;
-    const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.split('/api')[0] : 'http://127.0.0.1:8001';
-    return `${baseUrl}/${path}`;
+    const cleaned = urlOrPath.startsWith('/') ? urlOrPath.substring(1) : urlOrPath
+    const path = cleaned.startsWith('storage/') ? cleaned : `storage/${cleaned}`
+    const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.split('/api')[0] : 'http://127.0.0.1:8001'
+    return `${baseUrl}/${path}`
   }
 
   if (isEdit && isLoadingDetail) {
@@ -387,38 +390,38 @@ const ProductFormPage: React.FC = () => {
     <div className="space-y-6">
       <Breadcrumb
         items={[
-          { label: 'Products', path: '/products' },
-          { label: isEdit ? 'Edit Product' : 'Create Product' },
+          { label: t('products.title'), path: '/products' },
+          { label: isEdit ? t('products.editProduct') : t('products.addProduct') },
         ]}
       />
 
       <PageHeader
-        title={isEdit ? `Edit Product: ${productDetail?.name}` : 'Create Product Workspace'}
-        subtitle="Specify product attributes, pricing levels, inventory targets, and image assets."
+        title={isEdit ? `${t('products.editProduct')}: ${productDetail?.name}` : t('products.createProductWorkspace')}
+        subtitle={t('products.formSubtitle')}
         action={
           <button
             onClick={() => navigate('/products')}
             className="flex items-center gap-1.5 px-3.5 py-2 text-sm text-muted-foreground border border-border
-                       rounded-lg hover:bg-muted transition-colors font-medium"
+                       rounded-lg hover:bg-muted transition-colors font-medium bg-card"
           >
             <ArrowLeft size={15} />
-            Back to Products
+            {t('products.backToProducts')}
           </button>
         }
       />
 
       {/* Primary Tab Bar */}
       {isEdit && (
-        <div className="flex border-b border-border bg-card rounded-t-xl px-4 overflow-x-auto gap-2">
+        <div className="flex border-b border-border bg-card rounded-t-2xl px-4 overflow-x-auto gap-2 shadow-sm">
           {[
-            { id: 'general',    label: 'General',    icon: <Layers size={14} /> },
-            { id: 'pricing',    label: 'Pricing',    icon: <DollarSign size={14} /> },
-            { id: 'inventory',  label: 'Inventory',  icon: <History size={14} /> },
-            { id: 'images',     label: 'Images',     icon: <ImageIcon size={14} /> },
-            { id: 'variants',   label: 'Variants',   icon: <Sparkles size={14} /> },
-            { id: 'attributes', label: 'Attributes', icon: <Sparkles size={14} /> },
-            { id: 'seo',        label: 'SEO',        icon: <Sparkles size={14} /> },
-            { id: 'activity',   label: 'Activity',   icon: <MessageSquare size={14} /> },
+            { id: 'general',      label: t('products.general'),      icon: <Layers size={14} /> },
+            { id: 'pricing',      label: t('products.pricing'),      icon: <DollarSign size={14} /> },
+            { id: 'inventory',    label: t('products.inventory'),    icon: <History size={14} /> },
+            { id: 'dimensions',   label: t('products.dimensions'),   icon: <Scale size={14} /> },
+            { id: 'seo',          label: t('products.seo'),          icon: <Shield size={14} /> },
+            { id: 'images',       label: t('products.images'),       icon: <ImageIcon size={14} /> },
+            { id: 'variants',     label: t('products.variants'),     icon: <Sparkles size={14} /> },
+            { id: 'tier_pricing', label: t('products.tierPricing'), icon: <Percent size={14} /> },
           ].map(tab => (
             <button
               key={tab.id}
@@ -426,7 +429,7 @@ const ProductFormPage: React.FC = () => {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 -mb-[2px] transition-colors whitespace-nowrap
                           ${activeTab === tab.id
-                            ? 'border-blue-600 text-blue-600'
+                            ? 'border-indigo-600 text-indigo-600 font-bold'
                             : 'border-transparent text-muted-foreground hover:text-foreground'}`}
             >
               {tab.icon}
@@ -436,7 +439,7 @@ const ProductFormPage: React.FC = () => {
         </div>
       )}
 
-      <div className={`bg-card border border-border p-6 shadow-sm ${isEdit ? 'rounded-b-xl border-t-0' : 'rounded-xl'}`}>
+      <div className={`bg-card border border-border p-6 shadow-sm ${isEdit ? 'rounded-b-2xl border-t-0' : 'rounded-2xl'}`}>
         {!isEdit && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -645,7 +648,7 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.track_inventory}
                   onChange={e => setField('track_inventory', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
                 />
                 <span className="text-sm font-semibold text-foreground">Track Stock Level</span>
               </label>
@@ -655,7 +658,7 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_featured}
                   onChange={e => setField('is_featured', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
                 />
                 <span className="text-sm font-semibold text-foreground">Featured Spotlight Listing</span>
               </label>
@@ -665,42 +668,10 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_digital}
                   onChange={e => setField('is_digital', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
                 />
                 <span className="text-sm font-semibold text-foreground">Digital Product (No physical shipping)</span>
               </label>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-border pt-4">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Title (SEO)</label>
-                <input
-                  value={form.meta_title}
-                  onChange={e => setField('meta_title', e.target.value)}
-                  placeholder="SEO Search result title..."
-                  className="form-input w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Keywords (SEO)</label>
-                <input
-                  value={form.meta_keywords}
-                  onChange={e => setField('meta_keywords', e.target.value)}
-                  placeholder="Keywords separated by comma..."
-                  className="form-input w-full"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Description (SEO)</label>
-              <textarea
-                value={form.meta_description}
-                onChange={e => setField('meta_description', e.target.value)}
-                rows={2}
-                placeholder="Meta description tags..."
-                className="form-input w-full resize-none"
-              />
             </div>
 
             <div>
@@ -735,7 +706,7 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
                 Create & Continue
@@ -744,7 +715,7 @@ const ProductFormPage: React.FC = () => {
           </form>
         )}
 
-        {/* ─── EDIT MODE: Tab 1: General (Basic Information + Dimensions) ─── */}
+        {/* ─── EDIT MODE: Tab 1: General ─── */}
         {isEdit && activeTab === 'general' && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -861,7 +832,7 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_featured}
                   onChange={e => setField('is_featured', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
                 />
                 <span className="text-sm font-semibold text-foreground">Featured Spotlight Listing</span>
               </label>
@@ -871,7 +842,7 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_digital}
                   onChange={e => setField('is_digital', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
                 />
                 <span className="text-sm font-semibold text-foreground">Digital Product (No physical shipping)</span>
               </label>
@@ -898,59 +869,11 @@ const ProductFormPage: React.FC = () => {
               />
             </div>
 
-            {/* Dimensions Section */}
-            <div className="border-t border-border pt-6 space-y-4">
-              <h4 className="text-sm font-semibold text-foreground">Dimensions & Logistics</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weight (kg)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={form.weight}
-                    onChange={e => setField('weight', e.target.value)}
-                    placeholder="0.000"
-                    className="form-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Length (cm)</label>
-                  <input
-                    type="number"
-                    value={form.length}
-                    onChange={e => setField('length', e.target.value)}
-                    placeholder="0"
-                    className="form-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Width (cm)</label>
-                  <input
-                    type="number"
-                    value={form.width}
-                    onChange={e => setField('width', e.target.value)}
-                    placeholder="0"
-                    className="form-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Height (cm)</label>
-                  <input
-                    type="number"
-                    value={form.height}
-                    onChange={e => setField('height', e.target.value)}
-                    placeholder="0"
-                    className="form-input w-full"
-                  />
-                </div>
-              </div>
-            </div>
-
             <div className="flex justify-end gap-3 pt-5 border-t border-border">
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
                 Save General Info
@@ -959,137 +882,102 @@ const ProductFormPage: React.FC = () => {
           </form>
         )}
 
-        {/* ─── EDIT MODE: Tab 2: Pricing (Base Pricing + Pricing Rules) ─── */}
+        {/* ─── EDIT MODE: Tab 2: Pricing ─── */}
         {isEdit && activeTab === 'pricing' && (
-          <div className="space-y-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Cost Price ($)</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Cost Price ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.cost_price}
+                  onChange={e => setField('cost_price', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Selling Price ($) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.selling_price}
+                  onChange={e => setField('selling_price', e.target.value)}
+                  required
+                  placeholder="0.00"
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Compare Price ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.compare_price}
+                  onChange={e => setField('compare_price', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input w-full"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-5 border-t border-border">
+              <button
+                type="submit"
+                disabled={saveMutation.isPending}
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+              >
+                {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
+                Save Pricing
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ─── EDIT MODE: Tab 3: Inventory ─── */}
+        {isEdit && activeTab === 'inventory' && productId && (
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 bg-muted/10 p-5 rounded-2xl border border-border/60">
+              <h4 className="text-sm font-bold text-foreground">Stock Tracking Settings</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <label className="flex items-center gap-3 cursor-pointer py-2">
                   <input
-                    type="number"
-                    step="0.01"
-                    value={form.cost_price}
-                    onChange={e => setField('cost_price', e.target.value)}
-                    placeholder="0.00"
-                    className="form-input w-full"
+                    type="checkbox"
+                    checked={form.track_inventory}
+                    onChange={e => setField('track_inventory', e.target.checked)}
+                    className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
                   />
-                </div>
+                  <span className="text-sm font-semibold text-foreground">Track Stock Level</span>
+                </label>
+
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Selling Price ($) *</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Low Stock Threshold</label>
                   <input
                     type="number"
-                    step="0.01"
-                    value={form.selling_price}
-                    onChange={e => setField('selling_price', e.target.value)}
-                    required
-                    placeholder="0.00"
+                    value={form.low_stock_threshold}
+                    onChange={e => setField('low_stock_threshold', e.target.value)}
                     className="form-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Compare Price ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.compare_price}
-                    onChange={e => setField('compare_price', e.target.value)}
-                    placeholder="0.00"
-                    className="form-input w-full"
+                    disabled={!form.track_inventory}
                   />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 pt-5 border-t border-border">
+              <div className="flex justify-end pt-2">
                 <button
                   type="submit"
                   disabled={saveMutation.isPending}
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors"
                 >
                   {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                  Save Pricing
+                  Save Settings
                 </button>
               </div>
             </form>
 
-            <div className="border-t border-border pt-6 space-y-4">
-              <div>
-                <h4 className="text-base font-semibold text-foreground font-sans">Multi-Tier Pricing Matrix</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Define discounts or bulk order parameters for wholesale and retail accounts.</p>
-              </div>
-
-              <form onSubmit={handleAddTierPrice} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
-                <select
-                  value={newTierPrice.price_type}
-                  onChange={e => setNewTierPrice({ ...newTierPrice, price_type: e.target.value })}
-                  className="form-input text-xs cursor-pointer"
-                >
-                  <option value="wholesale">Wholesale Discount</option>
-                  <option value="member">Exclusive Member Rate</option>
-                  <option value="retail">Special Retail Campaign</option>
-                </select>
-                <input
-                  type="number"
-                  placeholder="Min Quantity (e.g. 10)"
-                  value={newTierPrice.min_qty}
-                  onChange={e => setNewTierPrice({ ...newTierPrice, min_qty: e.target.value })}
-                  className="form-input text-xs"
-                  required
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Tier Unit Price ($)"
-                  value={newTierPrice.price}
-                  onChange={e => setNewTierPrice({ ...newTierPrice, price: e.target.value })}
-                  className="form-input text-xs"
-                  required
-                />
-                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
-                  Add Pricing Rule
-                </button>
-              </form>
-
-              <table className="w-full data-table text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/10">
-                    <th className="text-left py-2.5 px-3">Price Classification</th>
-                    <th className="text-left py-2.5 px-3">Volume Condition</th>
-                    <th className="text-left py-2.5 px-3">Adjusted Rate</th>
-                    <th className="text-right py-2.5 px-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {productDetail?.prices?.map((p: any) => (
-                    <tr key={p.id} className="border-b border-border/40">
-                      <td className="py-2.5 px-3 text-foreground font-semibold capitalize">{p.price_type}</td>
-                      <td className="py-2.5 px-3">{p.min_qty} items or more</td>
-                      <td className="py-2.5 px-3 font-mono font-bold">${Number(p.price).toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-right">
-                        <button type="button" onClick={() => deletePriceMutation.mutate(p.id)} className="text-red-500 hover:text-red-700 font-semibold text-xs">
-                          Delete Rule
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {(!productDetail?.prices || productDetail.prices.length === 0) && (
-                    <tr>
-                      <td colSpan={4} className="text-center py-6 text-muted-foreground text-xs">No wholesale or volume rules have been defined yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ─── EDIT MODE: Tab 3: Inventory Logistics ─── */}
-        {isEdit && activeTab === 'inventory' && productId && (
-          <div className="space-y-6">
             <div className="space-y-3">
               <div>
                 <h4 className="text-base font-semibold text-foreground">Warehouse Stock Ledger</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Directly update physical stock count details or audit specific changes.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Log custom warehouse addition or subtraction inventory adjustments.</p>
               </div>
 
               <form onSubmit={handleAddAdjustment} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
@@ -1120,7 +1008,7 @@ const ProductFormPage: React.FC = () => {
                   className="form-input text-xs"
                   required
                 />
-                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
                   Log Adjustment
                 </button>
               </form>
@@ -1128,7 +1016,7 @@ const ProductFormPage: React.FC = () => {
 
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">Stock Movement History</h4>
-              <div className="border border-border rounded-xl overflow-hidden">
+              <div className="border border-border rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full data-table text-xs">
                   <thead>
                     <tr className="border-b border-border bg-muted/20">
@@ -1144,7 +1032,7 @@ const ProductFormPage: React.FC = () => {
                         <td className="py-2.5 px-3 text-muted-foreground">{new Date(m.created_at).toLocaleString()}</td>
                         <td className="py-2.5 px-3">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
-                            m.type === 'addition' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                            m.type === 'addition' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
                           }`}>
                             {m.type.toUpperCase()}
                           </span>
@@ -1165,7 +1053,115 @@ const ProductFormPage: React.FC = () => {
           </div>
         )}
 
-        {/* ─── EDIT MODE: Tab 4: Images ─── */}
+        {/* ─── EDIT MODE: Tab 4: Dimensions ─── */}
+        {isEdit && activeTab === 'dimensions' && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weight (kg)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  value={form.weight}
+                  onChange={e => setField('weight', e.target.value)}
+                  placeholder="0.000"
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Length (cm)</label>
+                <input
+                  type="number"
+                  value={form.length}
+                  onChange={e => setField('length', e.target.value)}
+                  placeholder="0"
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Width (cm)</label>
+                <input
+                  type="number"
+                  value={form.width}
+                  onChange={e => setField('width', e.target.value)}
+                  placeholder="0"
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Height (cm)</label>
+                <input
+                  type="number"
+                  value={form.height}
+                  onChange={e => setField('height', e.target.value)}
+                  placeholder="0"
+                  className="form-input w-full"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-5 border-t border-border">
+              <button
+                type="submit"
+                disabled={saveMutation.isPending}
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+              >
+                {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
+                Save Dimensions
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ─── EDIT MODE: Tab 5: SEO ─── */}
+        {isEdit && activeTab === 'seo' && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Title (SEO)</label>
+                <input
+                  value={form.meta_title}
+                  onChange={e => setField('meta_title', e.target.value)}
+                  placeholder="SEO Search result title..."
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Keywords (SEO)</label>
+                <input
+                  value={form.meta_keywords}
+                  onChange={e => setField('meta_keywords', e.target.value)}
+                  placeholder="Keywords separated by comma..."
+                  className="form-input w-full"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Description (SEO)</label>
+              <textarea
+                value={form.meta_description}
+                onChange={e => setField('meta_description', e.target.value)}
+                rows={4}
+                placeholder="Meta description tags..."
+                className="form-input w-full resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-5 border-t border-border">
+              <button
+                type="submit"
+                disabled={saveMutation.isPending}
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+              >
+                {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
+                Save SEO Settings
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ─── EDIT MODE: Tab 6: Images ─── */}
         {isEdit && activeTab === 'images' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -1173,7 +1169,7 @@ const ProductFormPage: React.FC = () => {
                 <h4 className="text-base font-semibold text-foreground">Photo Gallery</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">Upload product images, set the catalog thumbnail, or sort ordering.</p>
               </div>
-              <label className="flex items-center gap-2 px-4 py-2 border border-border text-sm font-semibold rounded-lg hover:bg-muted transition-colors cursor-pointer">
+              <label className="flex items-center gap-2 px-4 py-2 border border-border text-sm font-semibold rounded-lg hover:bg-muted transition-colors cursor-pointer bg-card">
                 <ImageIcon size={15} />
                 Upload Images
                 <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageFileChange} />
@@ -1187,11 +1183,11 @@ const ProductFormPage: React.FC = () => {
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors flex flex-col items-center justify-center gap-2
-                          ${dragActive ? 'border-blue-500 bg-blue-500/5' : 'border-border bg-muted/5'}`}
+                          ${dragActive ? 'border-indigo-500 bg-indigo-500/5' : 'border-border bg-muted/5'}`}
             >
-              <ImageIcon className="text-muted-foreground/45 animate-pulse" size={32} />
+              <Upload className="text-muted-foreground/45 animate-pulse" size={32} />
               <p className="text-sm font-medium text-foreground">
-                Drag and drop your product images here, or <label className="text-blue-600 hover:underline cursor-pointer">browse<input type="file" multiple accept="image/*" className="hidden" onChange={handleImageFileChange} /></label>
+                Drag and drop your product images here, or <label className="text-indigo-600 hover:underline cursor-pointer">browse<input type="file" multiple accept="image/*" className="hidden" onChange={handleImageFileChange} /></label>
               </p>
               <p className="text-xs text-muted-foreground">Supports JPG, PNG, WEBP up to 5MB</p>
             </div>
@@ -1204,7 +1200,7 @@ const ProductFormPage: React.FC = () => {
                     <img src={getAbsoluteImageUrl(img.url || img.image)} className="w-full h-full object-cover" alt="catalog" />
                     
                     {img.is_primary && (
-                      <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
+                      <span className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
                         Primary
                       </span>
                     )}
@@ -1215,7 +1211,7 @@ const ProductFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => updateImageMutation.mutate({ imgId: img.id, data: { is_primary: true } })}
-                          className="bg-blue-600/90 text-white p-2 rounded-lg hover:bg-blue-600 shadow transition-colors"
+                          className="bg-indigo-600/90 text-white p-2 rounded-lg hover:bg-indigo-600 shadow transition-colors"
                           title="Make Primary"
                         >
                           <Star size={14} fill="currentColor" />
@@ -1267,13 +1263,13 @@ const ProductFormPage: React.FC = () => {
           </div>
         )}
 
-        {/* ─── EDIT MODE: Tab 5: Variants ─── */}
+        {/* ─── EDIT MODE: Tab 7: Variants ─── */}
         {isEdit && activeTab === 'variants' && productId && (
           <div className="space-y-6">
             <div className="space-y-3">
               <div>
                 <h4 className="text-base font-semibold text-foreground font-sans">Generate SKU Variants</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Introduce product dimension, colour, capacity, or custom variant options.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create custom product variations (e.g. Red, XL, 128GB).</p>
               </div>
 
               <form onSubmit={handleAddVariant} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
@@ -1300,7 +1296,7 @@ const ProductFormPage: React.FC = () => {
                   className="form-input text-xs"
                   required
                 />
-                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
                   Generate Variant SKU
                 </button>
               </form>
@@ -1341,98 +1337,76 @@ const ProductFormPage: React.FC = () => {
           </div>
         )}
 
-        {/* ─── EDIT MODE: Tab 6: Attributes ─── */}
-        {isEdit && activeTab === 'attributes' && (
-          <AttributesPage isTab />
-        )}
-
-        {/* ─── EDIT MODE: Tab 7: Advanced SEO ─── */}
-        {isEdit && activeTab === 'seo' && (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Title (SEO)</label>
-                <input
-                  value={form.meta_title}
-                  onChange={e => setField('meta_title', e.target.value)}
-                  placeholder="SEO Search result title..."
-                  className="form-input w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Keywords (SEO)</label>
-                <input
-                  value={form.meta_keywords}
-                  onChange={e => setField('meta_keywords', e.target.value)}
-                  placeholder="Keywords separated by comma..."
-                  className="form-input w-full"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Description (SEO)</label>
-              <textarea
-                value={form.meta_description}
-                onChange={e => setField('meta_description', e.target.value)}
-                rows={4}
-                placeholder="Meta description tags..."
-                className="form-input w-full resize-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-5 border-t border-border">
-              <button
-                type="submit"
-                disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
-              >
-                {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                Save SEO Settings
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* ─── EDIT MODE: Tab 8: Activity & Reviews ─── */}
-        {isEdit && activeTab === 'activity' && productId && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-3 mb-4 border-b border-border pb-4">
-              <div className="text-center bg-blue-600/10 px-5 py-4.5 rounded-2xl border border-blue-600/20">
-                <span className="text-4xl font-extrabold text-blue-600">
-                  {productDetail?.rating_avg ? Number(productDetail.rating_avg).toFixed(1) : '—'}
-                </span>
-                <p className="text-[10px] text-muted-foreground mt-1 font-semibold uppercase tracking-wider">Average Rating</p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">Customer reviews & Feedback</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Manage and moderate customer submissions.</p>
-              </div>
-            </div>
-
+        {/* ─── EDIT MODE: Tab 8: Tier Pricing ─── */}
+        {isEdit && activeTab === 'tier_pricing' && (
+          <div className="space-y-8">
             <div className="space-y-4">
-              {productDetail?.reviews?.map((r: any) => (
-                <div key={r.id} className="border border-border/60 p-4 rounded-xl bg-muted/10 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-sm text-foreground">{r.customer_name}</span>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(r.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} size={11} className={i < r.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-600'} />
-                      ))}
-                    </div>
-                  </div>
-                  <h5 className="font-semibold text-sm text-foreground">{r.title ?? 'No title'}</h5>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{r.body ?? 'No feedback description supplied.'}</p>
-                </div>
-              ))}
-              {(!productDetail?.reviews || productDetail.reviews.length === 0) && (
-                <div className="py-12 text-center text-muted-foreground text-sm">
-                  There are no customer reviews logged for this product.
-                </div>
-              )}
+              <div>
+                <h4 className="text-base font-semibold text-foreground font-sans">Multi-Tier Pricing Matrix</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">Define discounts or bulk order parameters for wholesale and retail accounts.</p>
+              </div>
+
+              <form onSubmit={handleAddTierPrice} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
+                <select
+                  value={newTierPrice.price_type}
+                  onChange={e => setNewTierPrice({ ...newTierPrice, price_type: e.target.value })}
+                  className="form-input text-xs cursor-pointer"
+                >
+                  <option value="wholesale">Wholesale Discount</option>
+                  <option value="member">Exclusive Member Rate</option>
+                  <option value="retail">Special Retail Campaign</option>
+                </select>
+                <input
+                  type="number"
+                  placeholder="Min Quantity (e.g. 10)"
+                  value={newTierPrice.min_qty}
+                  onChange={e => setNewTierPrice({ ...newTierPrice, min_qty: e.target.value })}
+                  className="form-input text-xs"
+                  required
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Tier Unit Price ($)"
+                  value={newTierPrice.price}
+                  onChange={e => setNewTierPrice({ ...newTierPrice, price: e.target.value })}
+                  className="form-input text-xs"
+                  required
+                />
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
+                  Add Pricing Rule
+                </button>
+              </form>
+
+              <table className="w-full data-table text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/10">
+                    <th className="text-left py-2.5 px-3">Price Classification</th>
+                    <th className="text-left py-2.5 px-3">Volume Condition</th>
+                    <th className="text-left py-2.5 px-3">Adjusted Rate</th>
+                    <th className="text-right py-2.5 px-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productDetail?.prices?.map((p: any) => (
+                    <tr key={p.id} className="border-b border-border/40">
+                      <td className="py-2.5 px-3 text-foreground font-semibold capitalize">{p.price_type}</td>
+                      <td className="py-2.5 px-3">{p.min_qty} items or more</td>
+                      <td className="py-2.5 px-3 font-mono font-bold">${Number(p.price).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button type="button" onClick={() => deletePriceMutation.mutate(p.id)} className="text-red-500 hover:text-red-700 font-semibold text-xs">
+                          Delete Rule
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!productDetail?.prices || productDetail.prices.length === 0) && (
+                    <tr>
+                      <td colSpan={4} className="text-center py-6 text-muted-foreground text-xs">No wholesale or volume rules have been defined yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

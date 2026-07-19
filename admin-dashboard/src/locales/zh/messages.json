@@ -1,0 +1,22 @@
+{
+  "confirmArchiveMsg": "您确定要归档 \"{{name}}\" 吗？",
+  "confirmArchiveTitle": "归档 {{item}}",
+  "confirmDeleteMsg": "您确定要删除 \"{{name}}\" 吗？此操作无法撤销。",
+  "confirmDeleteTitle": "删除 {{item}}",
+  "confirmRestoreMsg": "您确定要恢复 \"{{name}}\" 吗？",
+  "confirmRestoreTitle": "恢复 {{item}}",
+  "created": "{{item}} 创建成功。",
+  "deleted": "{{item}} 删除成功。",
+  "downloadStarted": "开始下载...",
+  "error": "出了点问题。请重试。",
+  "exportSuccess": "数据导出成功。",
+  "importSuccess": "导入完成。",
+  "networkError": "网络错误。请检查您的连接。",
+  "permissionDenied": "权限被拒绝。",
+  "saved": "保存成功。",
+  "success": "成功",
+  "updated": "{{item}} 更新成功。",
+  "uploadSuccess": "上传成功。",
+  "validationFailed": "验证失败。请检查您的输入。",
+  "warning": "警告"
+}

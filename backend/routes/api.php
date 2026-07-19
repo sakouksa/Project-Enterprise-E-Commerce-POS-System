@@ -88,33 +88,95 @@ Route::prefix('v1')->group(function () {
         Route::post('warehouses/{id}/restore', [WarehouseController::class, 'restore']);
         Route::delete('warehouses/{id}/force', [WarehouseController::class, 'forceDelete']);
 
-        // ─── Products ──────────────────────────────────────────────────────
-        Route::apiResource('products',   ProductController::class);
-        Route::post('products/{id}/restore',       [ProductController::class, 'restore']);
-        Route::delete('products/{id}/force',       [ProductController::class, 'forceDelete']);
+        // ─── Products ──────────────────────────────────────
+        Route::get('products/stats',       [ProductController::class, 'stats']);
+        Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete']);
+        Route::post('products/bulk-restore', [ProductController::class, 'bulkRestore']);
+        Route::get('products/export',      [ProductController::class, 'export']);
+        Route::post('products/import',     [ProductController::class, 'import']);
+        Route::post('products/{id}/restore', [ProductController::class, 'restore']);
+        Route::delete('products/{id}/force', [ProductController::class, 'forceDelete']);
         Route::post('products/{product}/images',   [ProductController::class, 'uploadImages']);
         Route::delete('products/{product}/images/{image}', [ProductController::class, 'deleteImage']);
         Route::get('products/{product}/variants',  [ProductController::class, 'variants']);
-        Route::apiResource('categories', CategoryController::class);
+        Route::apiResource('products',   ProductController::class);
+
+        Route::post('categories/bulk-delete', [CategoryController::class, 'bulkDelete']);
+        Route::post('categories/bulk-restore', [CategoryController::class, 'bulkRestore']);
+        Route::get('categories/export',      [CategoryController::class, 'export']);
+        Route::post('categories/import',     [CategoryController::class, 'import']);
         Route::post('categories/{id}/restore', [CategoryController::class, 'restore']);
         Route::delete('categories/{id}/force', [CategoryController::class, 'forceDelete']);
-        Route::apiResource('brands',     BrandController::class);
+        Route::apiResource('categories', CategoryController::class);
+
+        Route::post('brands/bulk-delete', [BrandController::class, 'bulkDelete']);
+        Route::post('brands/bulk-restore', [BrandController::class, 'bulkRestore']);
+        Route::get('brands/export',      [BrandController::class, 'export']);
+        Route::post('brands/import',     [BrandController::class, 'import']);
         Route::post('brands/{id}/restore', [BrandController::class, 'restore']);
         Route::delete('brands/{id}/force', [BrandController::class, 'forceDelete']);
+        Route::apiResource('brands',     BrandController::class);
+
+        Route::post('taxes/bulk-delete', [\App\Http\Controllers\Api\V1\Product\TaxController::class, 'bulkDelete']);
+        Route::post('taxes/bulk-restore', [\App\Http\Controllers\Api\V1\Product\TaxController::class, 'bulkRestore']);
+        Route::get('taxes/export',      [\App\Http\Controllers\Api\V1\Product\TaxController::class, 'export']);
+        Route::post('taxes/import',     [\App\Http\Controllers\Api\V1\Product\TaxController::class, 'import']);
+        Route::post('taxes/{id}/restore', [\App\Http\Controllers\Api\V1\Product\TaxController::class, 'restore']);
+        Route::delete('taxes/{id}/force', [\App\Http\Controllers\Api\V1\Product\TaxController::class, 'forceDelete']);
+        Route::apiResource('taxes', \App\Http\Controllers\Api\V1\Product\TaxController::class);
+
+        Route::post('units/bulk-delete', [\App\Http\Controllers\Api\V1\Product\UnitController::class, 'bulkDelete']);
+        Route::post('units/bulk-restore', [\App\Http\Controllers\Api\V1\Product\UnitController::class, 'bulkRestore']);
+        Route::get('units/export',      [\App\Http\Controllers\Api\V1\Product\UnitController::class, 'export']);
+        Route::post('units/import',     [\App\Http\Controllers\Api\V1\Product\UnitController::class, 'import']);
+        Route::post('units/{id}/restore', [\App\Http\Controllers\Api\V1\Product\UnitController::class, 'restore']);
+        Route::delete('units/{id}/force', [\App\Http\Controllers\Api\V1\Product\UnitController::class, 'forceDelete']);
+        Route::apiResource('units', \App\Http\Controllers\Api\V1\Product\UnitController::class);
+
+        Route::post('attributes/bulk-delete', [AttributeController::class, 'bulkDelete']);
+        Route::post('attributes/bulk-restore', [AttributeController::class, 'bulkRestore']);
+        Route::get('attributes/export',      [AttributeController::class, 'export']);
+        Route::post('attributes/import',     [AttributeController::class, 'import']);
+        Route::post('attributes/{id}/restore', [AttributeController::class, 'restore']);
+        Route::delete('attributes/{id}/force', [AttributeController::class, 'forceDelete']);
         Route::apiResource('attributes', AttributeController::class);
 
         // ─── Inventory ─────────────────────────────────────────────────────
+        Route::get('inventory/stats',          [InventoryController::class, 'stats']);
+        Route::get('inventory/export',         [InventoryController::class, 'export']);
+        Route::post('inventory/import',        [InventoryController::class, 'import']);
         Route::get('inventory',                [InventoryController::class, 'index']);
-        Route::get('inventory/{id}',           [InventoryController::class, 'show']);
         Route::get('inventory/low-stock',      [InventoryController::class, 'lowStock']);
         Route::get('inventory/product/{pid}',  [InventoryController::class, 'byProduct']);
-        Route::apiResource('stock-adjustments', StockAdjustmentController::class);
+        Route::get('inventory/{id}',           [InventoryController::class, 'show']);
+
+        Route::post('stock-adjustments/bulk-delete', [StockAdjustmentController::class, 'bulkDelete']);
+        Route::post('stock-adjustments/bulk-restore', [StockAdjustmentController::class, 'bulkRestore']);
+        Route::get('stock-adjustments/export', [StockAdjustmentController::class, 'export']);
+        Route::post('stock-adjustments/import', [StockAdjustmentController::class, 'import']);
+        Route::post('stock-adjustments/{id}/restore', [StockAdjustmentController::class, 'restore']);
+        Route::delete('stock-adjustments/{id}/force', [StockAdjustmentController::class, 'forceDelete']);
         Route::post('stock-adjustments/{id}/approve', [StockAdjustmentController::class, 'approve']);
-        Route::apiResource('stock-transfers',  StockTransferController::class);
+        Route::apiResource('stock-adjustments', StockAdjustmentController::class);
+
+        Route::post('stock-transfers/bulk-delete', [StockTransferController::class, 'bulkDelete']);
+        Route::post('stock-transfers/bulk-restore', [StockTransferController::class, 'bulkRestore']);
+        Route::get('stock-transfers/export', [StockTransferController::class, 'export']);
+        Route::post('stock-transfers/import', [StockTransferController::class, 'import']);
+        Route::post('stock-transfers/{id}/restore', [StockTransferController::class, 'restore']);
+        Route::delete('stock-transfers/{id}/force', [StockTransferController::class, 'forceDelete']);
         Route::post('stock-transfers/{id}/ship',    [StockTransferController::class, 'ship']);
         Route::post('stock-transfers/{id}/receive', [StockTransferController::class, 'receive']);
-        Route::apiResource('stock-opnames',    StockOpnameController::class);
+        Route::apiResource('stock-transfers',  StockTransferController::class);
+
+        Route::post('stock-opnames/bulk-delete', [StockOpnameController::class, 'bulkDelete']);
+        Route::post('stock-opnames/bulk-restore', [StockOpnameController::class, 'bulkRestore']);
+        Route::get('stock-opnames/export', [StockOpnameController::class, 'export']);
+        Route::post('stock-opnames/import', [StockOpnameController::class, 'import']);
+        Route::post('stock-opnames/{id}/restore', [StockOpnameController::class, 'restore']);
+        Route::delete('stock-opnames/{id}/force', [StockOpnameController::class, 'forceDelete']);
         Route::post('stock-opnames/{id}/complete', [StockOpnameController::class, 'complete']);
+        Route::apiResource('stock-opnames',    StockOpnameController::class);
 
         // ─── Suppliers & Purchases ─────────────────────────────────────────
         Route::apiResource('suppliers',        SupplierController::class);
@@ -123,9 +185,19 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('purchases',        PurchaseController::class);
         Route::post('purchases/{id}/receive',  [PurchaseController::class, 'receive']);
         Route::post('purchases/{id}/cancel',   [PurchaseController::class, 'cancel']);
+        Route::post('purchases/{id}/record-payment', [PurchaseController::class, 'recordPayment']);
+        
+        // Global Purchase Returns endpoints (used by frontend and API specs)
+        Route::get('purchases/returns',        [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'index']);
+        Route::apiResource('purchase-returns',  \App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class);
+        Route::post('purchase-returns/{id}/approve', [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'approve']);
+        Route::post('purchase-returns/{id}/cancel',  [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'cancel']);
+        
         Route::prefix('purchases/{purchase}')->group(function () {
             Route::apiResource('returns', \App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class);
         });
+
+        Route::get('purchase-report', [\App\Http\Controllers\Api\V1\Report\PurchaseReportController::class, 'index']);
 
         // ─── Customers ─────────────────────────────────────────────────────
         Route::apiResource('customers',        CustomerController::class);
@@ -222,10 +294,45 @@ Route::prefix('v1')->group(function () {
         Route::delete('activity-logs/{id}',[ActivityLogController::class, 'destroy']);
 
         // ─── Automated Sync Routes ─────────────────────────────────────────
+        // ─── Automated Sync Routes ─────────────────────────────────────────
+        // Departments
+        Route::post('departments/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\DepartmentController::class, 'bulkDelete']);
+        Route::post('departments/bulk-restore', [\App\Http\Controllers\Api\V1\Employee\DepartmentController::class, 'bulkRestore']);
+        Route::get('departments/export', [\App\Http\Controllers\Api\V1\Employee\DepartmentController::class, 'export']);
+        Route::post('departments/import', [\App\Http\Controllers\Api\V1\Employee\DepartmentController::class, 'import']);
+        Route::post('departments/{id}/restore', [\App\Http\Controllers\Api\V1\Employee\DepartmentController::class, 'restore']);
+        Route::delete('departments/{id}/force', [\App\Http\Controllers\Api\V1\Employee\DepartmentController::class, 'forceDelete']);
         Route::apiResource('departments', \App\Http\Controllers\Api\V1\Employee\DepartmentController::class);
+
+        // Positions
+        Route::post('positions/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\PositionController::class, 'bulkDelete']);
+        Route::post('positions/bulk-restore', [\App\Http\Controllers\Api\V1\Employee\PositionController::class, 'bulkRestore']);
+        Route::get('positions/export', [\App\Http\Controllers\Api\V1\Employee\PositionController::class, 'export']);
+        Route::post('positions/import', [\App\Http\Controllers\Api\V1\Employee\PositionController::class, 'import']);
+        Route::post('positions/{id}/restore', [\App\Http\Controllers\Api\V1\Employee\PositionController::class, 'restore']);
+        Route::delete('positions/{id}/force', [\App\Http\Controllers\Api\V1\Employee\PositionController::class, 'forceDelete']);
         Route::apiResource('positions', \App\Http\Controllers\Api\V1\Employee\PositionController::class);
+
+        // Employees
+        Route::get('employees/stats', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'stats']);
+        Route::post('employees/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'bulkDelete']);
+        Route::post('employees/bulk-restore', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'bulkRestore']);
+        Route::get('employees/export', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'export']);
+        Route::post('employees/import', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'import']);
+        Route::post('employees/{id}/restore', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'restore']);
+        Route::delete('employees/{id}/force', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'forceDelete']);
         Route::apiResource('employees', \App\Http\Controllers\Api\V1\Employee\EmployeeController::class);
+
+        // Attendances
+        Route::post('attendances/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'bulkDelete']);
+        Route::get('attendances/export', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'export']);
+        Route::post('attendances/import', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'import']);
         Route::apiResource('attendances', \App\Http\Controllers\Api\V1\Employee\AttendanceController::class);
+
+        // Payrolls
+        Route::post('payrolls/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\PayrollController::class, 'bulkDelete']);
+        Route::get('payrolls/export', [\App\Http\Controllers\Api\V1\Employee\PayrollController::class, 'export']);
+        Route::post('payrolls/import', [\App\Http\Controllers\Api\V1\Employee\PayrollController::class, 'import']);
         Route::apiResource('payrolls', \App\Http\Controllers\Api\V1\Employee\PayrollController::class);
         Route::apiResource('blog-categories', \App\Http\Controllers\Api\V1\CMS\BlogCategoryController::class);
         Route::apiResource('blog-tags', \App\Http\Controllers\Api\V1\CMS\BlogTagController::class);
@@ -245,8 +352,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('countries', \App\Http\Controllers\Api\V1\Setting\CountryController::class);
         Route::apiResource('provinces', \App\Http\Controllers\Api\V1\Setting\ProvinceController::class);
         Route::apiResource('cities', \App\Http\Controllers\Api\V1\Setting\CityController::class);
-        Route::apiResource('taxes', \App\Http\Controllers\Api\V1\Product\TaxController::class);
-        Route::apiResource('units', \App\Http\Controllers\Api\V1\Product\UnitController::class);
+
         Route::apiResource('promotions', \App\Http\Controllers\Api\V1\Marketing\PromotionController::class);
         Route::apiResource('transactions', \App\Http\Controllers\Api\V1\Payment\TransactionController::class);
 

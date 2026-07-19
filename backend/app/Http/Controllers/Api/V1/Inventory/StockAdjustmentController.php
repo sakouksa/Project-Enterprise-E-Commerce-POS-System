@@ -20,26 +20,25 @@ class StockAdjustmentController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $adjustments = StockAdjustment::with(['warehouse', 'user', 'items.product', 'items.variant'])
+        $query = StockAdjustment::with(['warehouse', 'user', 'items.product', 'items.variant'])
             ->when($request->search, function ($q, $search) {
                 $q->where('reference_number', 'like', "%{$search}%")
                   ->orWhere('reason', 'like', "%{$search}%");
             })
-            ->paginate($request->integer('per_page', 10));
+            ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->when($request->trash == 'true', fn($q) => $q->onlyTrashed());
 
-        $resourceCollection = StockAdjustmentResource::collection($adjustments);
+        $adjustments = $query->paginate($request->integer('per_page', 10));
 
         return response()->json([
             'success'    => true,
             'message'    => 'Success',
-            'data'       => $resourceCollection->resolve(),
+            'data'       => StockAdjustmentResource::collection($adjustments)->resolve(),
             'pagination' => [
                 'total'        => $adjustments->total(),
                 'per_page'     => $adjustments->perPage(),
                 'current_page' => $adjustments->currentPage(),
                 'last_page'    => $adjustments->lastPage(),
-                'from'         => $adjustments->firstItem(),
-                'to'           => $adjustments->lastItem(),
             ],
         ]);
     }
@@ -54,9 +53,14 @@ class StockAdjustmentController extends BaseApiController
             'type'         => 'required|in:addition,subtraction,recount',
             'reason'       => 'nullable|string',
             'notes'        => 'nullable|string',
-            'product_id'   => 'required|exists:products,id',
+            'items'        => 'nullable|array',
+            'items.*.product_id' => 'required_with:items|exists:products,id',
+            'items.*.variant_id' => 'nullable|exists:product_variants,id',
+            'items.*.quantity'   => 'required_with:items|numeric|min:0.0001',
+            // Fallback for single item format
+            'product_id'   => 'required_without:items|exists:products,id',
             'variant_id'   => 'nullable|exists:product_variants,id',
-            'quantity'     => 'required|numeric|min:0.0001',
+            'quantity'     => 'required_without:items|numeric|min:0.0001',
         ]);
 
         $refNumber = 'ADJ-' . date('Ymd') . '-' . mt_rand(1000, 9999);
@@ -69,76 +73,71 @@ class StockAdjustmentController extends BaseApiController
                 'reference_number' => $refNumber,
                 'date'             => date('Y-m-d'),
                 'type'             => $validated['type'],
-                'reason'           => $validated['reason'] ?? $validated['notes'] ?? '',
-                'status'           => 'approved', // Auto-approve to make adjustment immediate for POS/ERP flow
-                'approved_by'      => Auth::id() ?? 1,
-                'approved_at'      => now(),
+                'reason'           => $validated['reason'] ?? $validated['notes'] ?? 'Manual Adjustment',
+                'status'           => 'draft', // Created as draft first
             ]);
 
-            // Query current stock levels
-            $currentStock = Inventory::where([
-                'warehouse_id'       => $validated['warehouse_id'],
-                'product_id'         => $validated['product_id'],
-                'product_variant_id' => $validated['variant_id'] ?? null,
-            ])->first();
-
-            $qtyBefore = $currentStock ? $currentStock->quantity : 0;
-            $qtyAdjusted = $validated['quantity'];
-
-            if ($validated['type'] === 'subtraction') {
-                $qtyAfter = $qtyBefore - $qtyAdjusted;
-            } else if ($validated['type'] === 'recount') {
-                $qtyAfter = $qtyAdjusted;
-                $qtyAdjusted = $qtyAfter - $qtyBefore;
+            $items = [];
+            if (isset($validated['items'])) {
+                foreach ($validated['items'] as $item) {
+                    $items[] = [
+                        'product_id' => $item['product_id'],
+                        'variant_id' => $item['variant_id'] ?? null,
+                        'quantity' => (float) $item['quantity'],
+                    ];
+                }
             } else {
-                $qtyAfter = $qtyBefore + $qtyAdjusted;
+                $items[] = [
+                    'product_id' => $validated['product_id'],
+                    'variant_id' => $validated['variant_id'] ?? null,
+                    'quantity' => (float) $validated['quantity'],
+                ];
             }
 
-            // Create adjustment item
-            StockAdjustmentItem::create([
-                'stock_adjustment_id' => $adj->id,
-                'product_id'          => $validated['product_id'],
-                'product_variant_id'  => $validated['variant_id'] ?? null,
-                'quantity_before'     => $qtyBefore,
-                'quantity_adjusted'   => $qtyAdjusted,
-                'quantity_after'      => $qtyAfter,
-                'notes'               => $validated['reason'] ?? null,
-            ]);
-
-            // Update or Create Inventory record
-            if ($currentStock) {
-                $currentStock->update(['quantity' => $qtyAfter]);
-            } else {
-                Inventory::create([
-                    'company_id'         => 1,
+            foreach ($items as $item) {
+                // Get current quantity
+                $currentStock = Inventory::where([
                     'warehouse_id'       => $validated['warehouse_id'],
-                    'product_id'         => $validated['product_id'],
-                    'product_variant_id' => $validated['variant_id'] ?? null,
-                    'quantity'           => $qtyAfter,
-                    'reserved_quantity'  => 0,
+                    'product_id'         => $item['product_id'],
+                    'product_variant_id' => $item['variant_id'] ?? null,
+                ])->first();
+
+                $qtyBefore = $currentStock ? (float) $currentStock->quantity : 0.0;
+                $qtyAdjusted = $item['quantity'];
+
+                if ($validated['type'] === 'subtraction') {
+                    $qtyAfter = $qtyBefore - $qtyAdjusted;
+                } elseif ($validated['type'] === 'recount') {
+                    $qtyAfter = $qtyAdjusted;
+                    $qtyAdjusted = $qtyAfter - $qtyBefore;
+                } else {
+                    $qtyAfter = $qtyBefore + $qtyAdjusted;
+                }
+
+                StockAdjustmentItem::create([
+                    'stock_adjustment_id' => $adj->id,
+                    'product_id'          => $item['product_id'],
+                    'product_variant_id'  => $item['variant_id'] ?? null,
+                    'quantity_before'     => $qtyBefore,
+                    'quantity_adjusted'   => $qtyAdjusted,
+                    'quantity_after'      => $qtyAfter,
+                    'notes'               => $validated['reason'] ?? null,
                 ]);
             }
-
-            // Record movement
-            InventoryMovement::create([
-                'company_id'         => 1,
-                'warehouse_id'       => $validated['warehouse_id'],
-                'product_id'         => $validated['product_id'],
-                'product_variant_id' => $validated['variant_id'] ?? null,
-                'user_id'            => Auth::id() ?? 1,
-                'reference_type'     => StockAdjustment::class,
-                'reference_id'       => $adj->id,
-                'type'               => 'adjustment',
-                'quantity'           => $qtyAdjusted,
-                'quantity_before'    => $qtyBefore,
-                'quantity_after'     => $qtyAfter,
-                'notes'              => $validated['reason'] ?? 'Stock adjustment auto-approved',
-            ]);
 
             return $adj;
         });
 
-        return $this->successResponse(new StockAdjustmentResource($adjustment), 'Stock adjustment processed successfully', 201);
+        return $this->successResponse(new StockAdjustmentResource($adjustment), 'Stock adjustment created as draft', 201);
+    }
+
+    /**
+     * GET /api/v1/stock-adjustments/{id}
+     */
+    public function show(int $id): JsonResponse
+    {
+        $adjustment = StockAdjustment::with(['warehouse', 'user', 'items.product', 'items.variant'])->findOrFail($id);
+        return $this->successResponse(new StockAdjustmentResource($adjustment));
     }
 
     /**
@@ -147,8 +146,8 @@ class StockAdjustmentController extends BaseApiController
     public function approve(int $id): JsonResponse
     {
         $adjustment = StockAdjustment::findOrFail($id);
-        if ($adjustment->status === 'approved') {
-            return $this->errorResponse('Adjustment is already approved.');
+        if ($adjustment->status !== 'draft') {
+            return $this->errorResponse('Only draft adjustments can be approved.');
         }
 
         DB::transaction(function () use ($adjustment) {
@@ -166,8 +165,8 @@ class StockAdjustmentController extends BaseApiController
                     'product_variant_id' => $item->product_variant_id,
                 ])->first();
 
-                $qtyBefore = $currentStock ? $currentStock->quantity : 0;
-                $qtyAfter = $qtyBefore + $item->quantity_adjusted;
+                $qtyBefore = $currentStock ? (float) $currentStock->quantity : 0.0;
+                $qtyAfter = $qtyBefore + (float) $item->quantity_adjusted;
 
                 if ($currentStock) {
                     $currentStock->update(['quantity' => $qtyAfter]);
@@ -195,11 +194,98 @@ class StockAdjustmentController extends BaseApiController
                     'quantity'           => $item->quantity_adjusted,
                     'quantity_before'    => $qtyBefore,
                     'quantity_after'     => $qtyAfter,
-                    'notes'              => 'Stock adjustment approved',
+                    'notes'              => $adjustment->reason ?? 'Stock adjustment approved',
                 ]);
             }
         });
 
         return $this->successResponse(new StockAdjustmentResource($adjustment), 'Stock adjustment approved successfully');
+    }
+
+    /**
+     * DELETE /api/v1/stock-adjustments/{id}
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $adjustment = StockAdjustment::findOrFail($id);
+        $adjustment->delete();
+        return $this->successResponse(null, 'Stock adjustment soft deleted successfully');
+    }
+
+    /**
+     * POST /api/v1/stock-adjustments/{id}/restore
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $adjustment = StockAdjustment::onlyTrashed()->findOrFail($id);
+        $adjustment->restore();
+        return $this->successResponse(new StockAdjustmentResource($adjustment), 'Stock adjustment restored successfully');
+    }
+
+    /**
+     * DELETE /api/v1/stock-adjustments/{id}/force
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        $adjustment = StockAdjustment::onlyTrashed()->findOrFail($id);
+        $adjustment->forceDelete();
+        return $this->successResponse(null, 'Stock adjustment permanently deleted');
+    }
+
+    /**
+     * POST /api/v1/stock-adjustments/bulk-delete
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array']);
+        StockAdjustment::whereIn('id', $request->ids)->delete();
+        return $this->successResponse(null, 'Selected adjustments soft deleted');
+    }
+
+    /**
+     * POST /api/v1/stock-adjustments/bulk-restore
+     */
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array']);
+        StockAdjustment::onlyTrashed()->whereIn('id', $request->ids)->restore();
+        return $this->successResponse(null, 'Selected adjustments restored');
+    }
+
+    /**
+     * GET /api/v1/stock-adjustments/export
+     */
+    public function export(Request $request)
+    {
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=stock_adjustments_" . date('Ymd_His') . ".csv",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['ID', 'Reference Number', 'Date', 'Type', 'Warehouse', 'Reason', 'Status']);
+
+            StockAdjustment::with('warehouse')
+                ->chunk(100, function($adjustments) use ($file) {
+                    foreach ($adjustments as $adj) {
+                        fputcsv($file, [
+                            $adj->id,
+                            $adj->reference_number,
+                            $adj->date,
+                            $adj->type,
+                            $adj->warehouse ? $adj->warehouse->name : 'N/A',
+                            $adj->reason,
+                            $adj->status
+                        ]);
+                    }
+                });
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

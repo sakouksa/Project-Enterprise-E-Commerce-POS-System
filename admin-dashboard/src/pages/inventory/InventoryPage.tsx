@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Eye, RefreshCw, X, Package, ArrowLeftRight, CheckCircle, AlertTriangle, Loader2, RotateCcw, FilterX } from 'lucide-react'
+import {
+  Plus, Search, Eye, RefreshCw, Package, ArrowLeftRight, CheckCircle,
+  AlertTriangle, Loader2, Filter, Download, Upload, Columns, Edit, Trash2
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -11,50 +13,24 @@ import Breadcrumb from '@/components/common/Breadcrumb'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
-import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 
-interface InventoryItem {
-  id: number
-  product?: { name: string; sku: string }
-  warehouse?: { name: string }
-  stock_qty: number
-  min_stock_qty: number
-}
-
-interface StockAdjustment {
-  id: number
-  product?: { name: string; sku: string }
-  warehouse?: { name: string }
-  quantity: number
-  type: string
-  notes?: string
-  status: string
-  created_at: string
-}
-
-interface StockTransfer {
-  id: number
-  from_warehouse?: { name: string }
-  to_warehouse?: { name: string }
-  status: string
-  created_at: string
-}
-
-interface StockOpname {
-  id: number
-  warehouse?: { name: string }
-  status: string
-  created_at: string
-}
+// Sub Components
+import InventoryDashboard from './components/InventoryDashboard'
+import InventoryDetailPage from './components/InventoryDetailPage'
+import StockAdjustmentForm from './components/StockAdjustmentForm'
+import StockTransferForm from './components/StockTransferForm'
+import StockOpnameForm from './components/StockOpnameForm'
 
 const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
+
+  const activeTab = tab || 'levels'
 
   const {
     page,
@@ -65,200 +41,248 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
     setSearch,
     debouncedSearch,
     reset,
-    adjustAfterDelete,
-  } = useServerPagination({ storageKey: `inventory_${tab || 'levels'}` })
+  } = useServerPagination({ storageKey: `inventory_${activeTab}` })
 
-  const [modalOpen, setModalOpen] = useState(false)
+  // Active form view / detail drawer states
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
+  const [activeFormType, setActiveFormType] = useState<'adjustment' | 'transfer' | 'opname' | null>(null)
+  const [activeFormId, setActiveFormId] = useState<number | null>(null)
 
-  // Form states (stock adjustment / transfer / opname)
-  const [productId, setProductId] = useState('')
-  const [warehouseId, setWarehouseId] = useState('')
-  const [toWarehouseId, setToWarehouseId] = useState('')
-  const [qty, setQty] = useState('')
-  const [type, setType] = useState('addition') // addition or subtraction
-  const [notes, setNotes] = useState('')
+  // Filters State
+  const [selectedWarehouse, setSelectedWarehouse] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedBrand, setSelectedBrand] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
 
-  // Queries
-  const { data: products } = useQuery({
-    queryKey: ['products-list'],
-    queryFn: () => api.get('/products').then(r => r.data.data),
-  })
+  // Column Visibility States
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    'warehouse', 'product', 'sku', 'qty', 'reserved', 'available', 'status', 'actions'
+  ])
+  const [showColMenu, setShowColMenu] = useState(false)
 
+  // Global Lists Queries for Filters
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses-list'],
     queryFn: () => api.get('/warehouses').then(r => r.data.data),
   })
 
-  // Tab-specific queries
+  const { data: categories } = useQuery({
+    queryKey: ['categories-list'],
+    queryFn: () => api.get('/categories').then(r => r.data.data),
+  })
+
+  const { data: brands } = useQuery({
+    queryKey: ['brands-list'],
+    queryFn: () => api.get('/brands').then(r => r.data.data),
+  })
+
+  // Tab Queries
+  const { data: statsData, isLoading: loadingStats } = useQuery({
+    queryKey: ['inventory-stats'],
+    queryFn: () => api.get('/inventory/stats').then(r => r.data.data),
+    enabled: activeTab === 'levels',
+  })
+
   const { data: stockLevels, isLoading: loadingLevels, isFetching: fetchingLevels } = useQuery({
-    queryKey: ['inventory-levels', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/inventory', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
-    placeholderData: (prev) => prev,
-    enabled: !tab,
+    queryKey: ['inventory-levels', page, debouncedSearch, perPage, selectedWarehouse, selectedCategory, selectedBrand, selectedStatus],
+    queryFn: () => api.get('/inventory', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        warehouse_id: selectedWarehouse,
+        category_id: selectedCategory,
+        brand_id: selectedBrand,
+        status: selectedStatus
+      }
+    }).then(r => r.data),
+    enabled: activeTab === 'levels',
   })
 
   const { data: adjustmentsData, isLoading: loadingAdjustments, isFetching: fetchingAdjustments } = useQuery({
-    queryKey: ['inventory-adjustments', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/stock-adjustments', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
-    placeholderData: (prev) => prev,
-    enabled: tab === 'adjustments',
+    queryKey: ['inventory-adjustments', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus],
+    queryFn: () => api.get('/stock-adjustments', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        warehouse_id: selectedWarehouse,
+        status: selectedStatus
+      }
+    }).then(r => r.data),
+    enabled: activeTab === 'adjustments',
   })
 
   const { data: transfersData, isLoading: loadingTransfers, isFetching: fetchingTransfers } = useQuery({
-    queryKey: ['inventory-transfers', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/stock-transfers', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
-    placeholderData: (prev) => prev,
-    enabled: tab === 'transfers',
+    queryKey: ['inventory-transfers', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus],
+    queryFn: () => api.get('/stock-transfers', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        from_warehouse_id: selectedWarehouse,
+        status: selectedStatus
+      }
+    }).then(r => r.data),
+    enabled: activeTab === 'transfers',
   })
 
   const { data: opnamesData, isLoading: loadingOpnames, isFetching: fetchingOpnames } = useQuery({
-    queryKey: ['inventory-opnames', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/stock-opnames', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
-    placeholderData: (prev) => prev,
-    enabled: tab === 'opnames',
+    queryKey: ['inventory-opnames', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus],
+    queryFn: () => api.get('/stock-opnames', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        warehouse_id: selectedWarehouse,
+        status: selectedStatus
+      }
+    }).then(r => r.data),
+    enabled: activeTab === 'opnames',
   })
 
   const { data: movementsData, isLoading: loadingMovements, isFetching: fetchingMovements } = useQuery({
-    queryKey: ['inventory-movements-list', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/inventory-movements', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
-    placeholderData: (prev) => prev,
-    enabled: tab === 'movements',
+    queryKey: ['inventory-movements-list', page, debouncedSearch, perPage, selectedWarehouse],
+    queryFn: () => api.get('/inventory-movements', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        warehouse_id: selectedWarehouse
+      }
+    }).then(r => r.data),
+    enabled: activeTab === 'movements',
   })
+
+  // Bulk / Operations Mutations
+  const deleteAdjustmentMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/stock-adjustments/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
+      toast.success('Adjustment deleted successfully')
+    }
+  })
+
+  const deleteTransferMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/stock-transfers/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
+      toast.success('Transfer deleted successfully')
+    }
+  })
+
+  const deleteOpnameMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/stock-opnames/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
+      toast.success('Opname count snapshot deleted')
+    }
+  })
+
+  const handleExport = () => {
+    let url = '/inventory/export'
+    if (activeTab === 'adjustments') url = '/stock-adjustments/export'
+    else if (activeTab === 'transfers') url = '/stock-transfers/export'
+    else if (activeTab === 'opnames') url = '/stock-opnames/export'
+
+    api.get(url, { responseType: 'blob' }).then((res) => {
+      const blob = new Blob([res.data], { type: 'text/csv' })
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `${activeTab}_export_${new Date().toISOString().split('T')[0]}.csv`
+      link.click()
+    })
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    const file = e.target.files[0]
+    const formData = new FormData()
+    formData.append('file', file)
+
+    let url = '/inventory/import'
+    if (activeTab === 'adjustments') url = '/stock-adjustments/import'
+    else if (activeTab === 'transfers') url = '/stock-transfers/import'
+    else if (activeTab === 'opnames') url = '/stock-opnames/import'
+
+    api.post(url, formData).then((res) => {
+      qc.invalidateQueries()
+      toast.success(res.data.message || 'CSV imported successfully.')
+    }).catch(() => {
+      toast.error('Failed to import CSV records.')
+    })
+  }
+
+  const handleResetFilters = () => {
+    reset()
+    setSelectedWarehouse('')
+    setSelectedCategory('')
+    setSelectedBrand('')
+    setSelectedStatus('')
+  }
+
+  const toggleColumn = (col: string) => {
+    setVisibleColumns(prev =>
+      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
+    )
+  }
 
   const isFetching = fetchingLevels || fetchingAdjustments || fetchingTransfers || fetchingOpnames || fetchingMovements
   const isLoading = loadingLevels || loadingAdjustments || loadingTransfers || loadingOpnames || loadingMovements
 
-  // Mutations
-  const adjustMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/stock-adjustments', payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-      closeModal()
-      toast.success('Stock adjustment created successfully.')
-    },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Failed to create adjustment.'
-      toast.error(msg)
-    },
-  })
-
-  const transferMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/stock-transfers', payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
-      closeModal()
-      toast.success('Stock transfer created successfully.')
-    },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Failed to create stock transfer.'
-      toast.error(msg)
-    },
-  })
-
-  const opnameMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/stock-opnames', payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
-      closeModal()
-      toast.success('Stock opname created successfully.')
-    },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Failed to create stock opname.'
-      toast.error(msg)
-    },
-  })
-
-  const openModal = () => {
-    setProductId('')
-    setWarehouseId('')
-    setToWarehouseId('')
-    setQty('')
-    setType('addition')
-    setNotes('')
-    setModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setModalOpen(false)
-  }
-
-  const resetFilters = () => {
-    setSearch('')
-    setPage(1)
-  }
-
-  const handleSubmitAdjustment = (e: React.FormEvent) => {
-    e.preventDefault()
-    adjustMutation.mutate({
-      company_id: 1,
-      product_id: parseInt(productId),
-      warehouse_id: parseInt(warehouseId),
-      quantity: parseFloat(qty),
-      type,
-      notes,
-    })
-  }
-
-  const handleSubmitTransfer = (e: React.FormEvent) => {
-    e.preventDefault()
-    const fromId = parseInt(warehouseId)
-    const toId = parseInt(toWarehouseId)
-    if (fromId === toId) {
-      toast.error(t('The from warehouse and to warehouse must be different.'))
-      return
-    }
-    transferMutation.mutate({
-      company_id: 1,
-      from_warehouse_id: fromId,
-      to_warehouse_id: toId,
-      items: [
-        {
-          product_id: parseInt(productId),
-          quantity: parseFloat(qty),
-        }
-      ],
-      notes,
-    })
-  }
-
-  const handleSubmitOpname = (e: React.FormEvent) => {
-    e.preventDefault()
-    opnameMutation.mutate({
-      company_id: 1,
-      warehouse_id: parseInt(warehouseId),
-      date: new Date().toISOString().split('T')[0],
-      notes,
-    })
-  }
-
   const getPagination = () => {
-    if (!tab) return stockLevels?.pagination
-    if (tab === 'adjustments') return adjustmentsData?.pagination
-    if (tab === 'transfers') return transfersData?.pagination
-    if (tab === 'opnames') return opnamesData?.pagination
-    if (tab === 'movements') return movementsData?.pagination
+    if (activeTab === 'levels') return stockLevels?.pagination
+    if (activeTab === 'adjustments') return adjustmentsData?.pagination
+    if (activeTab === 'transfers') return transfersData?.pagination
+    if (activeTab === 'opnames') return opnamesData?.pagination
+    if (activeTab === 'movements') return movementsData?.pagination
     return null
   }
 
   const pagination = getPagination() ?? { total: 0, current_page: 1, last_page: 1 }
 
+  // Render Sub form workspaces
+  if (activeFormType === 'adjustment') {
+    return (
+      <div className="p-6 bg-background min-h-screen">
+        <StockAdjustmentForm adjustmentId={activeFormId} onClose={() => { setActiveFormType(null); setActiveFormId(null); }} />
+      </div>
+    )
+  }
+
+  if (activeFormType === 'transfer') {
+    return (
+      <div className="p-6 bg-background min-h-screen">
+        <StockTransferForm transferId={activeFormId} onClose={() => { setActiveFormType(null); setActiveFormId(null); }} />
+      </div>
+    )
+  }
+
+  if (activeFormType === 'opname') {
+    return (
+      <div className="p-6 bg-background min-h-screen">
+        <StockOpnameForm opnameId={activeFormId} onClose={() => { setActiveFormType(null); setActiveFormId(null); }} />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <Breadcrumb
         items={[
           { label: t('Inventory') },
           {
-            label: !tab ? t('Stock Levels') :
-              tab === 'adjustments' ? t('Stock Adjustments') :
-                tab === 'transfers' ? t('Stock Transfers') :
-                  tab === 'opnames' ? t('Stock Opnames') :
+            label: activeTab === 'levels' ? t('Stock Levels') :
+              activeTab === 'adjustments' ? t('Stock Adjustments') :
+                activeTab === 'transfers' ? t('Stock Transfers') :
+                  activeTab === 'opnames' ? t('Stock Opnames') :
                     t('Stock Ledger (Movements)')
           }
         ]}
       />
 
-      {/* Workspace Tabs */}
-      <div className="flex border-b border-border bg-card rounded-t-xl px-4 overflow-x-auto gap-2">
+      {/* Tabs */}
+      <div className="flex border-b border-border bg-card rounded-t-xl px-4 overflow-x-auto gap-2 shadow-sm">
         {[
           { id: 'levels', label: t('Stock Levels'), icon: <Package size={14} />, path: '/inventory' },
           { id: 'adjustments', label: t('Stock Adjustments'), icon: <Plus size={14} />, path: '/inventory/adjustments' },
@@ -266,7 +290,7 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
           { id: 'opnames', label: t('Stock Opnames'), icon: <CheckCircle size={14} />, path: '/inventory/opnames' },
           { id: 'movements', label: t('Stock Ledger (Movements)'), icon: <RefreshCw size={14} />, path: '/inventory/movements' },
         ].map(item => {
-          const isActive = (!tab && item.id === 'levels') || tab === item.id;
+          const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
@@ -283,232 +307,455 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         })}
       </div>
 
+      {/* Dashboard Stats */}
+      {activeTab === 'levels' && statsData && (
+        <InventoryDashboard stats={statsData} />
+      )}
+
       {/* Header */}
       <PageHeader
         title={
-          !tab ? t('Stock Levels') :
-            tab === 'adjustments' ? t('Stock Adjustments') :
-              tab === 'transfers' ? t('Stock Transfers') :
-                tab === 'opnames' ? t('Stock Opnames') :
+          activeTab === 'levels' ? t('Stock Levels') :
+            activeTab === 'adjustments' ? t('Stock Adjustments') :
+              activeTab === 'transfers' ? t('Stock Transfers') :
+                activeTab === 'opnames' ? t('Stock Opnames') :
                   t('Stock Ledger (Movements)')
         }
-        subtitle={t('Manage product storage distribution, track inventory levels, and process corrections')}
+        subtitle={t('Manage storage distribution, view discrepancies, and track history ledger.')}
         action={
-          (tab && tab !== 'movements') && (
+          activeTab !== 'movements' && activeTab !== 'levels' && (
             <button
-              onClick={openModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white
-                         bg-gradient-primary rounded-lg hover:opacity-90 transition-opacity shadow-sm"
+              onClick={() => {
+                if (activeTab === 'adjustments') setActiveFormType('adjustment')
+                else if (activeTab === 'transfers') setActiveFormType('transfer')
+                else if (activeTab === 'opnames') setActiveFormType('opname')
+              }}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white
+                         bg-gradient-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
             >
               <Plus size={16} />
-              {tab === 'adjustments' ? t('New Adjustment') :
-                tab === 'transfers' ? t('New Transfer') :
+              {activeTab === 'adjustments' ? t('New Adjustment') :
+                activeTab === 'transfers' ? t('New Transfer') :
                   t('Record Opname')}
             </button>
           )
         }
       />
 
-      {/* Filters */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <div className="flex items-center gap-3">
-          <SearchInput value={search} onChange={setSearch} placeholder={t('common.search')} />
-          <ResetButton onClick={reset} label={t("common.reset")} />
+      {/* Advanced Filters */}
+      <div className="bg-card rounded-2xl border border-border/60 p-4 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {/* Global Search */}
+          <div className="md:col-span-2 relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('common.search')}
+              className="pl-9 form-input"
+            />
+          </div>
+
+          {/* Warehouse Location Filter */}
+          <div>
+            <select
+              value={selectedWarehouse}
+              onChange={(e) => setSelectedWarehouse(e.target.value)}
+              className="form-input text-xs"
+            >
+              <option value="">{t('inventory.all_warehouses', 'All Warehouses')}</option>
+              {(warehouses ?? []).map((w: any) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Category Filter (Levels tab only) */}
+          {activeTab === 'levels' && (
+            <div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="form-input text-xs"
+              >
+                <option value="">{t('inventory.all_categories', 'All Categories')}</option>
+                {(categories ?? []).map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Brand Filter (Levels tab only) */}
+          {activeTab === 'levels' && (
+            <div>
+              <select
+                value={selectedBrand}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                className="form-input text-xs"
+              >
+                <option value="">{t('inventory.all_brands', 'All Brands')}</option>
+                {(brands ?? []).map((b: any) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Status Filter */}
+          {activeTab !== 'movements' && (
+            <div>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="form-input text-xs"
+              >
+                <option value="">{t('inventory.all_statuses', 'All Statuses')}</option>
+                {activeTab === 'levels' ? (
+                  <>
+                    <option value="low_stock">Low Stock</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                    <option value="overstock">Overstock</option>
+                    <option value="healthy">Healthy Stock</option>
+                  </>
+                ) : activeTab === 'transfers' ? (
+                  <>
+                    <option value="draft">Draft</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="received">Received</option>
+                    <option value="cancelled">Cancelled</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="draft">Draft</option>
+                    <option value="approved">Approved / Done</option>
+                    <option value="cancelled">Cancelled</option>
+                  </>
+                )}
+              </select>
+            </div>
+          )}
+
+          {/* Tool actions and Reset */}
+          <div className="flex items-center gap-2">
+            <ResetButton onClick={handleResetFilters} label={t("common.reset")} />
+            
+            {/* Column Selector */}
+            {activeTab === 'levels' && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowColMenu(!showColMenu)}
+                  className="p-2 border border-border bg-card rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground"
+                >
+                  <Columns size={16} />
+                </button>
+                {showColMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-lg z-50 p-2 space-y-1">
+                    {[
+                      { key: 'warehouse', label: 'Warehouse' },
+                      { key: 'product', label: 'Product Name' },
+                      { key: 'sku', label: 'SKU' },
+                      { key: 'qty', label: 'Qty' },
+                      { key: 'reserved', label: 'Reserved Qty' },
+                      { key: 'available', label: 'Available Qty' },
+                      { key: 'status', label: 'Status' },
+                    ].map(col => (
+                      <label key={col.key} className="flex items-center gap-2 p-1.5 hover:bg-muted rounded-lg text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.includes(col.key)}
+                          onChange={() => toggleColumn(col.key)}
+                        />
+                        {col.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CSV Actions */}
+            <button
+              onClick={handleExport}
+              className="p-2 border border-border bg-card rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Export CSV"
+            >
+              <Download size={16} />
+            </button>
+
+            <label className="p-2 border border-border bg-card rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer" title="Import CSV">
+              <Upload size={16} />
+              <input type="file" onChange={handleImport} accept=".csv" className="hidden" />
+            </label>
+          </div>
         </div>
       </div>
 
-      {/* Table Card */}
+      {/* Main Table Wrapper */}
       <TableWrapper isFetching={isFetching}>
-        {!tab && (
+        {activeTab === 'levels' && (
           <table className="w-full data-table">
             <thead>
-              <tr>
-                <th className="text-left">Product</th>
-                <th className="text-left">SKU</th>
-                <th className="text-left">Warehouse</th>
-                <th className="text-left">Stock Quantity</th>
-                <th className="text-left">Status</th>
+              <tr className="bg-muted/15 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                {visibleColumns.includes('warehouse') && <th className="text-left py-3 px-4">{t('products.warehouse', 'Warehouse')}</th>}
+                {visibleColumns.includes('product') && <th className="text-left py-3 px-4">{t('products.title', 'Product')}</th>}
+                {visibleColumns.includes('sku') && <th className="text-left py-3 px-4">{t('products.sku', 'SKU')}</th>}
+                {visibleColumns.includes('qty') && <th className="text-left py-3 px-4">{t('inventory.qty', 'Quantity')}</th>}
+                {visibleColumns.includes('reserved') && <th className="text-left py-3 px-4">{t('inventory.reserved', 'Reserved')}</th>}
+                {visibleColumns.includes('available') && <th className="text-left py-3 px-4">{t('inventory.available', 'Available')}</th>}
+                {visibleColumns.includes('status') && <th className="text-left py-3 px-4">{t('inventory.status', 'Status')}</th>}
+                {visibleColumns.includes('actions') && <th className="text-right py-3 px-4"></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <LoadingSkeleton cols={visibleColumns.length} />
+              ) : (stockLevels?.data ?? []).map((item: any) => (
+                <tr
+                  key={item.id}
+                  onClick={() => setSelectedItemId(item.id)}
+                  className="hover:bg-muted/10 transition-colors border-b border-border/30 last:border-0 cursor-pointer"
+                >
+                  {visibleColumns.includes('warehouse') && <td className="py-3.5 px-4 text-sm text-foreground">{item.warehouse?.name}</td>}
+                  {visibleColumns.includes('product') && (
+                    <td className="py-3.5 px-4 text-sm font-semibold text-foreground flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-muted/30 border border-border flex items-center justify-center overflow-hidden">
+                        {item.product?.primary_image?.url ? (
+                          <img src={item.product.primary_image.url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Package size={14} className="text-muted-foreground/50" />
+                        )}
+                      </div>
+                      <div>
+                        <span>{item.product?.name}</span>
+                        {item.variant && <span className="block text-xs text-muted-foreground font-normal">{item.variant.name}</span>}
+                      </div>
+                    </td>
+                  )}
+                  {visibleColumns.includes('sku') && <td className="py-3.5 px-4 text-xs font-mono text-muted-foreground">{item.product?.sku}</td>}
+                  {visibleColumns.includes('qty') && <td className="py-3.5 px-4 text-sm font-bold text-foreground">{parseFloat(item.quantity)}</td>}
+                  {visibleColumns.includes('reserved') && <td className="py-3.5 px-4 text-sm font-medium text-amber-500">{parseFloat(item.reserved_quantity)}</td>}
+                  {visibleColumns.includes('available') && <td className="py-3.5 px-4 text-sm font-bold text-emerald-500">{parseFloat(item.available_quantity)}</td>}
+                  {visibleColumns.includes('status') && (
+                    <td className="py-3.5 px-4 text-xs">
+                      {parseFloat(item.quantity) <= parseFloat(item.reorder_point) ? (
+                        <span className="badge-danger inline-flex items-center gap-1">
+                          <AlertTriangle size={12} /> Low Stock
+                        </span>
+                      ) : (
+                        <span className="badge-success">In Stock</span>
+                      )}
+                    </td>
+                  )}
+                  {visibleColumns.includes('actions') && (
+                    <td className="py-3.5 px-4 text-right">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedItemId(item.id); }} className="p-1.5 hover:bg-muted rounded-xl transition-colors">
+                        <Eye size={14} className="text-muted-foreground" />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {!isLoading && (stockLevels?.data ?? []).length === 0 && (
+                <EmptyState cols={visibleColumns.length} message="No inventory records found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
+              )}
+            </tbody>
+          </table>
+        )}
+
+        {/* Adjustments Tab */}
+        {activeTab === 'adjustments' && (
+          <table className="w-full data-table">
+            <thead>
+              <tr className="bg-muted/15 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left py-3 px-4">{t('inventory.reference', 'Reference')}</th>
+                <th className="text-left py-3 px-4">{t('products.warehouse', 'Warehouse')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.type', 'Adjustment Type')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.reason', 'Reason')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.status', 'Status')}</th>
+                <th className="text-right py-3 px-4"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <LoadingSkeleton cols={6} />
+              ) : (adjustmentsData?.data ?? []).map((adj: any) => (
+                <tr key={adj.id} className="hover:bg-muted/10 transition-colors border-b border-border/30 last:border-0">
+                  <td className="py-3.5 px-4 text-sm font-semibold text-foreground">{adj.reference_number}</td>
+                  <td className="py-3.5 px-4 text-sm text-foreground">{adj.warehouse?.name}</td>
+                  <td className="py-3.5 px-4 text-sm font-medium capitalize">{adj.type}</td>
+                  <td className="py-3.5 px-4 text-sm text-muted-foreground">{adj.reason}</td>
+                  <td className="py-3.5 px-4 text-xs">
+                    <span className={`badge ${adj.status === 'approved' ? 'badge-success' : 'badge-warning'}`}>
+                      {adj.status}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right space-x-1">
+                    <button
+                      onClick={() => { setActiveFormType('adjustment'); setActiveFormId(adj.id); }}
+                      className="p-1.5 hover:bg-muted rounded-xl transition-colors"
+                    >
+                      <Edit size={14} className="text-muted-foreground hover:text-foreground" />
+                    </button>
+                    <button
+                      onClick={() => deleteAdjustmentMutation.mutate(adj.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-xl transition-colors text-muted-foreground hover:text-red-500"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!isLoading && (adjustmentsData?.data ?? []).length === 0 && (
+                <EmptyState cols={6} message="No stock adjustments found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
+              )}
+            </tbody>
+          </table>
+        )}
+
+        {/* Transfers Tab */}
+        {activeTab === 'transfers' && (
+          <table className="w-full data-table">
+            <thead>
+              <tr className="bg-muted/15 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left py-3 px-4">{t('inventory.reference', 'Reference')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.from', 'From Warehouse')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.to', 'To Warehouse')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.status', 'Status')}</th>
+                <th className="text-right py-3 px-4"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <LoadingSkeleton cols={5} />
-              ) : (stockLevels?.data ?? []).map((item: InventoryItem) => (
-                <tr key={item.id} className="hover:bg-muted/10 transition-colors">
-                  <td className="font-medium text-foreground text-sm flex items-center gap-2">
-                    <Package size={16} className="text-blue-500" />
-                    {item.product?.name ?? '—'}
+              ) : (transfersData?.data ?? []).map((tr: any) => (
+                <tr key={tr.id} className="hover:bg-muted/10 transition-colors border-b border-border/30 last:border-0">
+                  <td className="py-3.5 px-4 text-sm font-semibold text-foreground">{tr.reference_number}</td>
+                  <td className="py-3.5 px-4 text-sm text-foreground">{tr.from_warehouse?.name}</td>
+                  <td className="py-3.5 px-4 text-sm text-foreground">{tr.to_warehouse?.name}</td>
+                  <td className="py-3.5 px-4 text-xs">
+                    <span className={`badge ${tr.status === 'received' ? 'badge-success' : tr.status === 'in_transit' ? 'badge-info' : 'badge-warning'}`}>
+                      {tr.status}
+                    </span>
                   </td>
-                  <td className="text-muted-foreground font-mono text-xs">{item.product?.sku ?? '—'}</td>
-                  <td className="text-muted-foreground text-sm">{item.warehouse?.name ?? '—'}</td>
-                  <td className="font-semibold text-sm">{item.stock_qty}</td>
-                  <td>
-                    {item.stock_qty <= item.min_stock_qty ? (
-                      <span className="badge-danger flex items-center gap-1 w-fit text-xs font-medium">
-                        <AlertTriangle size={12} /> Low Stock
-                      </span>
-                    ) : (
-                      <span className="badge-success text-xs font-medium">In Stock</span>
-                    )}
+                  <td className="py-3.5 px-4 text-right space-x-1">
+                    <button
+                      onClick={() => { setActiveFormType('transfer'); setActiveFormId(tr.id); }}
+                      className="p-1.5 hover:bg-muted rounded-xl transition-colors"
+                    >
+                      <Edit size={14} className="text-muted-foreground hover:text-foreground" />
+                    </button>
+                    <button
+                      onClick={() => deleteTransferMutation.mutate(tr.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-xl transition-colors text-muted-foreground hover:text-red-500"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}
-              {!isLoading && (stockLevels?.data ?? []).length === 0 && (
-                <EmptyState cols={5} message="No inventory items found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
+              {!isLoading && (transfersData?.data ?? []).length === 0 && (
+                <EmptyState cols={5} message="No stock transfers found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
               )}
             </tbody>
           </table>
         )}
 
-        {tab === 'adjustments' && (
+        {/* Opnames Tab */}
+        {activeTab === 'opnames' && (
           <table className="w-full data-table">
             <thead>
-              <tr>
-                <th className="text-left">Product</th>
-                <th className="text-left">Warehouse</th>
-                <th className="text-left">Qty</th>
-                <th className="text-left">Type</th>
-                <th className="text-left">Notes</th>
-                <th className="text-left">Status</th>
-                <th className="text-right">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <LoadingSkeleton cols={7} />
-              ) : (adjustmentsData?.data ?? []).map((adj: StockAdjustment) => (
-                <tr key={adj.id} className="hover:bg-muted/10 transition-colors">
-                  <td className="font-medium text-foreground text-sm">{adj.product?.name ?? '—'}</td>
-                  <td className="text-muted-foreground text-sm">{adj.warehouse?.name ?? '—'}</td>
-                  <td className="font-semibold text-sm">{adj.quantity}</td>
-                  <td className="text-sm font-medium">
-                    <span className={adj.type === 'addition' ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>
-                      {adj.type === 'addition' ? '+' : '-'}
-                    </span>
-                  </td>
-                  <td className="text-muted-foreground text-xs truncate max-w-[150px]">{adj.notes ?? '—'}</td>
-                  <td>
-                    <span className={adj.status === 'approved' ? 'badge-success' : 'badge-warning'}>
-                      {adj.status}
-                    </span>
-                  </td>
-                  <td className="text-right text-xs text-muted-foreground font-mono">{new Date(adj.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {!isLoading && (adjustmentsData?.data ?? []).length === 0 && (
-                <EmptyState cols={7} message="No adjustments found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
-              )}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 'transfers' && (
-          <table className="w-full data-table">
-            <thead>
-              <tr>
-                <th className="text-left">From Warehouse</th>
-                <th className="text-left">To Warehouse</th>
-                <th className="text-left">Status</th>
-                <th className="text-right">Date</th>
+              <tr className="bg-muted/15 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left py-3 px-4">{t('inventory.reference', 'Reference')}</th>
+                <th className="text-left py-3 px-4">{t('products.warehouse', 'Warehouse')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.status', 'Status')}</th>
+                <th className="text-right py-3 px-4"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <LoadingSkeleton cols={4} />
-              ) : (transfersData?.data ?? []).map((tr: StockTransfer) => (
-                <tr key={tr.id} className="hover:bg-muted/10 transition-colors">
-                  <td className="font-medium text-foreground text-sm flex items-center gap-2">
-                    <ArrowLeftRight size={14} className="text-blue-500" />
-                    {tr.from_warehouse?.name ?? '—'}
-                  </td>
-                  <td className="text-foreground text-sm">{tr.to_warehouse?.name ?? '—'}</td>
-                  <td>
-                    <span className={tr.status === 'received' ? 'badge-success' : 'badge-warning'}>
-                      {tr.status}
-                    </span>
-                  </td>
-                  <td className="text-right text-xs text-muted-foreground font-mono">{new Date(tr.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {!isLoading && (transfersData?.data ?? []).length === 0 && (
-                <EmptyState cols={4} message="No stock transfers found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
-              )}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 'opnames' && (
-          <table className="w-full data-table">
-            <thead>
-              <tr>
-                <th className="text-left">Warehouse</th>
-                <th className="text-left">Status</th>
-                <th className="text-right">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <LoadingSkeleton cols={3} />
-              ) : (opnamesData?.data ?? []).map((op: StockOpname) => (
-                <tr key={op.id} className="hover:bg-muted/10 transition-colors">
-                  <td className="font-medium text-foreground text-sm flex items-center gap-2">
-                    <Package size={16} className="text-indigo-500" />
-                    {op.warehouse?.name ?? '—'}
-                  </td>
-                  <td>
-                    <span className={op.status === 'completed' ? 'badge-success' : 'badge-warning'}>
+              ) : (opnamesData?.data ?? []).map((op: any) => (
+                <tr key={op.id} className="hover:bg-muted/10 transition-colors border-b border-border/30 last:border-0">
+                  <td className="py-3.5 px-4 text-sm font-semibold text-foreground">{op.reference_number}</td>
+                  <td className="py-3.5 px-4 text-sm text-foreground">{op.warehouse?.name}</td>
+                  <td className="py-3.5 px-4 text-xs">
+                    <span className={`badge ${op.status === 'done' ? 'badge-success' : 'badge-warning'}`}>
                       {op.status}
                     </span>
                   </td>
-                  <td className="text-right text-xs text-muted-foreground font-mono">{new Date(op.created_at).toLocaleDateString()}</td>
+                  <td className="py-3.5 px-4 text-right space-x-1">
+                    <button
+                      onClick={() => { setActiveFormType('opname'); setActiveFormId(op.id); }}
+                      className="p-1.5 hover:bg-muted rounded-xl transition-colors"
+                    >
+                      <Edit size={14} className="text-muted-foreground hover:text-foreground" />
+                    </button>
+                    <button
+                      onClick={() => deleteOpnameMutation.mutate(op.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-xl transition-colors text-muted-foreground hover:text-red-500"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {!isLoading && (opnamesData?.data ?? []).length === 0 && (
-                <EmptyState cols={3} message="No stock opnames found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
+                <EmptyState cols={4} message="No stock opnames found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
               )}
             </tbody>
           </table>
         )}
 
-        {tab === 'movements' && (
+        {/* Ledger tab */}
+        {activeTab === 'movements' && (
           <table className="w-full data-table">
             <thead>
-              <tr>
-                <th className="text-left">Product</th>
-                <th className="text-left">SKU</th>
-                <th className="text-left">Warehouse</th>
-                <th className="text-left">Type</th>
-                <th className="text-left">Qty</th>
-                <th className="text-left">Reference</th>
-                <th className="text-right">Date</th>
+              <tr className="bg-muted/15 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left py-3 px-4">{t('products.title', 'Product')}</th>
+                <th className="text-left py-3 px-4">{t('products.warehouse', 'Warehouse')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.type', 'Type')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.qty', 'Quantity')}</th>
+                <th className="text-left py-3 px-4">{t('inventory.reference', 'Reference')}</th>
+                <th className="text-right py-3 px-4">{t('products.created', 'Date')}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <LoadingSkeleton cols={7} />
+                <LoadingSkeleton cols={6} />
               ) : (movementsData?.data ?? []).map((m: any) => (
-                <tr key={m.id} className="hover:bg-muted/10 transition-colors">
-                  <td className="font-medium text-foreground text-sm">{m.product?.name ?? '—'}</td>
-                  <td className="text-muted-foreground font-mono text-xs">{m.product?.sku ?? '—'}</td>
-                  <td className="text-muted-foreground text-sm">{m.warehouse?.name ?? '—'}</td>
-                  <td className="text-sm">
-                    <span className={`badge ${m.type === 'addition' || m.type === 'purchase' ? 'badge-success' : 'badge-danger'}`}>
+                <tr key={m.id} className="hover:bg-muted/10 transition-colors border-b border-border/30 last:border-0">
+                  <td className="py-3.5 px-4 text-sm font-semibold text-foreground">
+                    {m.product?.name}
+                    {m.variant && <span className="block text-xs font-normal text-muted-foreground">{m.variant.name}</span>}
+                  </td>
+                  <td className="py-3.5 px-4 text-sm text-foreground">{m.warehouse?.name}</td>
+                  <td className="py-3.5 px-4 text-xs">
+                    <span className={`badge ${m.quantity > 0 ? 'badge-success' : 'badge-danger'}`}>
                       {m.type}
                     </span>
                   </td>
-                  <td className="font-semibold text-sm">{m.quantity}</td>
-                  <td className="text-muted-foreground text-xs">{m.reference_type || 'Manual'} ({m.reference_id || 'Adjustment'})</td>
-                  <td className="text-right text-xs text-muted-foreground font-mono">{new Date(m.created_at).toLocaleString()}</td>
+                  <td className="py-3.5 px-4 text-sm font-bold text-foreground">
+                    {m.quantity > 0 ? `+${parseFloat(m.quantity)}` : parseFloat(m.quantity)}
+                  </td>
+                  <td className="py-3.5 px-4 text-xs font-mono text-muted-foreground">
+                    {m.notes || 'Discrepancy audit'}
+                  </td>
+                  <td className="py-3.5 px-4 text-right text-xs text-muted-foreground font-mono">
+                    {new Date(m.created_at).toLocaleString()}
+                  </td>
                 </tr>
               ))}
               {!isLoading && (movementsData?.data ?? []).length === 0 && (
-                <EmptyState cols={7} message="No stock movement logs found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
+                <EmptyState cols={6} message="No stock ledger records found" icon={<Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
               )}
             </tbody>
           </table>
         )}
       </TableWrapper>
 
+      {/* Pagination Footer */}
       <Pagination
         currentPage={pagination.current_page}
         lastPage={pagination.last_page}
@@ -518,224 +765,10 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         onPerPageChange={setPerPage}
       />
 
-      {/* Form Action Modals */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-xl w-full max-w-md overflow-hidden shadow-2xl"
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {tab === 'adjustments' ? 'Stock Adjustment' :
-                    tab === 'transfers' ? 'Stock Transfer' :
-                      tab === 'opnames' ? 'Record Stock Opname' :
-                        'Stock Level Adjustment'}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Adjustments Form */}
-              {(!tab || tab === 'adjustments') && (
-                <form onSubmit={handleSubmitAdjustment} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Product</label>
-                    <select
-                      value={productId}
-                      onChange={(e) => setProductId(e.target.value)}
-                      required
-                      className="form-input"
-                    >
-                      <option value="">Select Product</option>
-                      {(products ?? []).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Warehouse</label>
-                    <select
-                      value={warehouseId}
-                      onChange={(e) => setWarehouseId(e.target.value)}
-                      required
-                      className="form-input"
-                    >
-                      <option value="">Select Warehouse</option>
-                      {(warehouses ?? []).map((w: any) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">Quantity</label>
-                      <input
-                        type="number"
-                        value={qty}
-                        onChange={(e) => setQty(e.target.value)}
-                        required
-                        className="form-input"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
-                      <select
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                        className="form-input"
-                      >
-                        <option value="addition">Addition (+)</option>
-                        <option value="subtraction">Subtraction (-)</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Notes</label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Reason for adjustment..."
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors">
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={adjustMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg shadow-sm flex items-center gap-1.5">
-                      {adjustMutation.isPending && <Loader2 size={14} className="animate-spin" />}
-                      Submit Adjustment
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Transfers Form */}
-              {tab === 'transfers' && (
-                <form onSubmit={handleSubmitTransfer} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Product</label>
-                    <select
-                      value={productId}
-                      onChange={(e) => setProductId(e.target.value)}
-                      required
-                      className="form-input"
-                    >
-                      <option value="">Select Product</option>
-                      {(products ?? []).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Source Warehouse</label>
-                    <select
-                      value={warehouseId}
-                      onChange={(e) => setWarehouseId(e.target.value)}
-                      required
-                      className="form-input"
-                    >
-                      <option value="">Select Source</option>
-                      {(warehouses ?? []).map((w: any) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Destination Warehouse</label>
-                    <select
-                      value={toWarehouseId}
-                      onChange={(e) => setToWarehouseId(e.target.value)}
-                      required
-                      className="form-input"
-                    >
-                      <option value="">Select Destination</option>
-                      {(warehouses ?? []).map((w: any) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Quantity</label>
-                    <input
-                      type="number"
-                      value={qty}
-                      onChange={(e) => setQty(e.target.value)}
-                      required
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Notes</label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Transfer reference/reason..."
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors">
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={transferMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg shadow-sm flex items-center gap-1.5">
-                      {transferMutation.isPending && <Loader2 size={14} className="animate-spin" />}
-                      Submit Transfer
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Opnames Form */}
-              {tab === 'opnames' && (
-                <form onSubmit={handleSubmitOpname} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Target Warehouse</label>
-                    <select
-                      value={warehouseId}
-                      onChange={(e) => setWarehouseId(e.target.value)}
-                      required
-                      className="form-input"
-                    >
-                      <option value="">Select Warehouse</option>
-                      {(warehouses ?? []).map((w: any) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Notes</label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Stock Opname description..."
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors">
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={opnameMutation.isPending} className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg shadow-sm flex items-center gap-1.5">
-                      {opnameMutation.isPending && <Loader2 size={14} className="animate-spin" />}
-                      Submit Opname
-                    </button>
-                  </div>
-                </form>
-              )}
-
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Details Side Overlay Panel */}
+      {selectedItemId && (
+        <InventoryDetailPage itemId={selectedItemId} onClose={() => setSelectedItemId(null)} />
+      )}
     </div>
   )
 }

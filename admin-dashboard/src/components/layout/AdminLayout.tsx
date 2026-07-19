@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
+import Header from './Header'
 
 // ─── Navigation Types ────────────────────────────────────────────────────────
 
@@ -333,7 +334,7 @@ const SidebarItem: React.FC<{ item: NavItem; collapsed: boolean }> = ({ item, co
                   key={child.path}
                   to={child.path}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors
+                    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap
                      ${isActive
                        ? 'text-blue-400 bg-blue-600/15 font-medium'
                        : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -504,62 +505,7 @@ const AdminLayout: React.FC = () => {
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="h-16 flex items-center justify-between px-6 bg-card border-b border-border flex-shrink-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="relative hidden md:block">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder={t('common.search_anything', 'Search anything...')}
-                className="pl-9 pr-4 py-2 text-sm bg-muted border-0 rounded-lg w-64
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background
-                           placeholder:text-muted-foreground transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Language switcher */}
-            <button
-              onClick={() => setLanguage(language === 'en' ? 'km' : 'en')}
-              className="w-10 h-9 px-1.5 rounded-lg flex items-center justify-center text-muted-foreground
-                         hover:text-foreground hover:bg-muted transition-colors font-semibold text-xs uppercase gap-1"
-              title={language === 'en' ? t('common.switch_to_khmer', 'Switch to Khmer') : t('common.switch_to_english', 'Switch to English')}
-            >
-              <Globe size={15} />
-              <span>{language}</span>
-            </button>
-
-            {/* Dark mode */}
-            <button
-              onClick={toggleDark}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground
-                         hover:text-foreground hover:bg-muted transition-colors"
-              title={darkMode ? t('common.light_mode', 'Light mode') : t('common.dark_mode', 'Dark mode')}
-            >
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
-            {/* Notifications */}
-            <button className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground
-                               hover:text-foreground hover:bg-muted transition-colors relative">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
-
-            <div 
-              onClick={() => navigate('/profile')}
-              className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center cursor-pointer overflow-hidden"
-            >
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white text-xs font-semibold">{user?.name?.[0] ?? 'U'}</span>
-              )}
-            </div>
-          </div>
-        </header>
+        <Header onToggleSidebar={() => setCollapsed(c => !c)} />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-background">

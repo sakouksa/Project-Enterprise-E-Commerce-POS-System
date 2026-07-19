@@ -1,0 +1,10 @@
+{
+  "columnNames": "数据列标题",
+  "emptyData": "当前表格内暂无有效记录",
+  "filter": "数据筛选器",
+  "loading": "云端数据拉取中...",
+  "pagination": "表格分页控件",
+  "search": "在表格结果中搜索...",
+  "sort": "点击变更排序方式",
+  "tableName": "表格数据名"
+}

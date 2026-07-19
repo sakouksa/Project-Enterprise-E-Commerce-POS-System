@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, Truck, ToggleLeft, ToggleRight,
-  Loader2, Eye, Mail, Phone, MapPin, DollarSign, BookOpen, Building
+  Loader2, Eye, Mail, Phone, MapPin, DollarSign, BookOpen, Building,
+  ChevronUp, ChevronDown
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -17,6 +18,14 @@ import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
+
+interface SupplierContact {
+  id:                  number
+  name:                string
+  email?:              string
+  phone?:              string
+  position?:           string
+}
 
 interface Supplier {
   id:                  number
@@ -37,6 +46,7 @@ interface Supplier {
   bank_account_name?:   string
   notes?:              string
   is_active:           boolean
+  contacts?:           SupplierContact[]
 }
 
 const SuppliersPage: React.FC = () => {
@@ -58,6 +68,45 @@ const SuppliersPage: React.FC = () => {
   const [viewSupplier, setViewSupplier] = useState<Supplier | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null)
 
+  const [sortBy, setSortBy] = useState('created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [contacts, setContacts] = useState<any[]>([])
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('asc')
+    }
+    setPage(1)
+  }
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field) return null
+    return sortOrder === 'asc' ? <ChevronUp size={14} className="inline ml-1" /> : <ChevronDown size={14} className="inline ml-1" />
+  }
+
+  const addContactRow = () => {
+    setContacts([...contacts, { name: '', title: '', email: '', phone: '', is_primary: contacts.length === 0 }])
+  }
+
+  const removeContactRow = (idx: number) => {
+    setContacts(contacts.filter((_, i) => i !== idx))
+  }
+
+  const updateContactField = (idx: number, field: string, value: any) => {
+    const updated = [...contacts]
+    if (field === 'is_primary') {
+      updated.forEach((c, i) => {
+        c.is_primary = i === idx ? value : false
+      })
+    } else {
+      updated[idx][field] = value
+    }
+    setContacts(updated)
+  }
+
   // Form states
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
@@ -77,8 +126,16 @@ const SuppliersPage: React.FC = () => {
   const [isActive, setIsActive] = useState(true)
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['suppliers', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/suppliers', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryKey: ['suppliers', page, debouncedSearch, perPage, sortBy, sortOrder],
+    queryFn: () => api.get('/suppliers', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        sort_by: sortBy,
+        sort_order: sortOrder
+      }
+    }).then(r => r.data),
     placeholderData: (prev) => prev,
   })
 
@@ -137,6 +194,7 @@ const SuppliersPage: React.FC = () => {
     setBankAccountName('')
     setNotes('')
     setIsActive(true)
+    setContacts([])
     setModalOpen(true)
   }
 
@@ -158,12 +216,14 @@ const SuppliersPage: React.FC = () => {
     setBankAccountName(supplier.bank_account_name ?? '')
     setNotes(supplier.notes ?? '')
     setIsActive(supplier.is_active)
+    setContacts(supplier.contacts ?? [])
     setModalOpen(true)
   }
 
   const closeModal = () => {
     setModalOpen(false)
     setEditingSupplier(null)
+    setContacts([])
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -186,6 +246,13 @@ const SuppliersPage: React.FC = () => {
       bank_account_name: bankAccountName || null,
       notes: notes || null,
       is_active: isActive,
+      contacts: contacts.map(c => ({
+        name: c.name,
+        title: c.title || c.position || null,
+        email: c.email || null,
+        phone: c.phone || null,
+        is_primary: !!c.is_primary,
+      }))
     }
 
     if (editingSupplier) {
@@ -232,14 +299,26 @@ const SuppliersPage: React.FC = () => {
       <TableWrapper isFetching={isFetching}>
         <table className="w-full data-table">
             <thead>
-              <tr>
-                <th className="text-left">Supplier</th>
-                <th className="text-left">Code</th>
-                <th className="text-left">Contacts</th>
-                <th className="text-left">Location</th>
-                <th className="text-left">Tax Number</th>
-                <th className="text-left">Status</th>
-                <th className="text-right">Actions</th>
+              <tr className="bg-muted/30 border-b border-border">
+                <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                  Supplier {renderSortIcon('name')}
+                </th>
+                <th onClick={() => handleSort('code')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                  Code {renderSortIcon('code')}
+                </th>
+                <th onClick={() => handleSort('email')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                  Contacts {renderSortIcon('email')}
+                </th>
+                <th onClick={() => handleSort('city')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                  Location {renderSortIcon('city')}
+                </th>
+                <th onClick={() => handleSort('tax_number')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                  Tax Number {renderSortIcon('tax_number')}
+                </th>
+                <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                  Status {renderSortIcon('is_active')}
+                </th>
+                <th className="text-right py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -504,6 +583,96 @@ const SuppliersPage: React.FC = () => {
                   />
                 </div>
 
+                <div className="border-t border-border pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-foreground">Supplier Contacts</label>
+                    <button
+                      type="button"
+                      onClick={addContactRow}
+                      className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1"
+                    >
+                      <Plus size={12} /> Add Contact
+                    </button>
+                  </div>
+
+                  {contacts.length === 0 ? (
+                    <div className="text-center py-4 bg-muted/20 border border-dashed border-border rounded-lg text-xs text-muted-foreground">
+                      No contacts added yet. Click Add Contact to add one.
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                      {contacts.map((contact, idx) => (
+                        <div key={idx} className="p-3 bg-muted/30 border border-border rounded-xl space-y-2 relative">
+                          <button
+                            type="button"
+                            onClick={() => removeContactRow(idx)}
+                            className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-red-500 rounded"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-muted-foreground font-semibold">Name</label>
+                              <input
+                                value={contact.name}
+                                onChange={(e) => updateContactField(idx, 'name', e.target.value)}
+                                className="form-input text-xs p-1"
+                                placeholder="Contact Name"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-muted-foreground font-semibold">Position</label>
+                              <input
+                                value={contact.title || contact.position || ''}
+                                onChange={(e) => updateContactField(idx, 'title', e.target.value)}
+                                className="form-input text-xs p-1"
+                                placeholder="e.g. Sales Manager"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-muted-foreground font-semibold">Email</label>
+                              <input
+                                type="email"
+                                value={contact.email || ''}
+                                onChange={(e) => updateContactField(idx, 'email', e.target.value)}
+                                className="form-input text-xs p-1"
+                                placeholder="Email"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-muted-foreground font-semibold">Phone</label>
+                              <input
+                                value={contact.phone || ''}
+                                onChange={(e) => updateContactField(idx, 'phone', e.target.value)}
+                                className="form-input text-xs p-1"
+                                placeholder="Phone number"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <input
+                              type="checkbox"
+                              id={`contact-primary-${idx}`}
+                              checked={!!contact.is_primary}
+                              onChange={(e) => updateContactField(idx, 'is_primary', e.target.checked)}
+                              className="rounded text-primary focus:ring-primary h-3.5 w-3.5"
+                            />
+                            <label htmlFor={`contact-primary-${idx}`} className="text-[10px] font-semibold text-muted-foreground select-none">
+                              Primary Contact
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between border-t border-border pt-4">
                   <span className="text-sm font-medium text-muted-foreground">Active Status</span>
                   <button
@@ -614,6 +783,35 @@ const SuppliersPage: React.FC = () => {
                       <span className="text-muted-foreground">Beneficiary Name:</span>
                       <span className="font-medium">{viewSupplier.bank_account_name ?? '—'}</span>
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Contacts</h4>
+                  <div className="space-y-2">
+                    {(!viewSupplier.contacts || viewSupplier.contacts.length === 0) ? (
+                      <div className="text-xs text-muted-foreground bg-muted/20 border border-border p-3 rounded-lg text-center">
+                        No contact persons registered.
+                      </div>
+                    ) : (
+                      viewSupplier.contacts.map((contact: any, index: number) => (
+                        <div key={index} className="bg-muted/30 p-3 rounded-lg border border-border space-y-1 relative">
+                          {contact.is_primary && (
+                            <span className="absolute top-2 right-2 text-[9px] font-bold bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded-full uppercase">
+                              Primary
+                            </span>
+                          )}
+                          <div className="text-sm font-semibold text-foreground">{contact.name}</div>
+                          {(contact.title || contact.position) && (
+                            <div className="text-xs text-muted-foreground font-medium">{contact.title || contact.position}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground space-y-0.5 pt-0.5">
+                            {contact.email && <p>Email: {contact.email}</p>}
+                            {contact.phone && <p>Phone: {contact.phone}</p>}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 

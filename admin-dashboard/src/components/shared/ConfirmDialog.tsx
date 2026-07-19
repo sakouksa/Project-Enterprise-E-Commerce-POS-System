@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, X, Loader2 } from 'lucide-react'
 
@@ -25,7 +26,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div
@@ -94,7 +95,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 

@@ -14,11 +14,11 @@ class CreateUnitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'name' => ['string'],
-            'symbol' => ['string'],
-            'description' => ['string'],
-            'is_active' => ['boolean']
+            'company_id'  => ['required', 'integer', 'exists:companies,id'],
+            'name'        => ['required', 'string', 'max:255'],
+            'symbol'      => ['required', 'string', 'max:20'],
+            'description' => ['nullable', 'string'],
+            'is_active'   => ['sometimes', 'boolean']
         ];
     }
 }

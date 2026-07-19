@@ -14,11 +14,10 @@ class UpdateUnitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'name' => ['string'],
-            'symbol' => ['string'],
-            'description' => ['string'],
-            'is_active' => ['boolean']
+            'name'        => ['sometimes', 'required', 'string', 'max:255'],
+            'symbol'      => ['sometimes', 'required', 'string', 'max:20'],
+            'description' => ['nullable', 'string'],
+            'is_active'   => ['sometimes', 'boolean']
         ];
     }
 }

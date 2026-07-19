@@ -3,8 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AdminLayout from '@/components/layout/AdminLayout'   // ← canonical grouped layout
 import { useAuthStore } from '@/stores/authStore'
+import { useThemeStore } from '@/stores/themeStore'
 import ToastContainer from '@/components/ui/ToastContainer'
 import ThemeSynchronizer from '@/components/shared/ThemeSynchronizer'
+
 
 // ─── Lazy Pages ─────────────────────────────────────────────────────────────
 
@@ -20,6 +22,7 @@ const ProductFormPage     = React.lazy(() => import('@/pages/products/ProductFor
 const CategoriesPage      = React.lazy(() => import('@/modules/categories/pages/CategoriesPage'))
 const BrandsPage          = React.lazy(() => import('@/pages/brands/BrandsPage'))
 const AttributesPage      = React.lazy(() => import('@/pages/attributes/AttributesPage'))
+const TaxesPage           = React.lazy(() => import('@/pages/products/TaxesPage'))
 
 // Inventory
 const InventoryPage       = React.lazy(() => import('@/pages/inventory/InventoryPage'))
@@ -118,12 +121,13 @@ const PageFallback = () => (
   </div>
 )
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// ─── AppContent & App ─────────────────────────────────────────────────────────
 
-const App: React.FC = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeSynchronizer />
-    <BrowserRouter>
+const AppContent: React.FC = () => {
+  const language = useThemeStore((s) => s.language)
+
+  return (
+    <div key={language} className="h-full">
       <ToastContainer />
       <React.Suspense fallback={<PageFallback />}>
         <Routes>
@@ -145,6 +149,7 @@ const App: React.FC = () => (
             <Route path="/categories"              element={<CategoriesPage />} />
             <Route path="/brands"                  element={<BrandsPage />} />
             <Route path="/units"                   element={<UnitsPage />} />
+            <Route path="/taxes"                   element={<TaxesPage />} />
             <Route path="/attributes"              element={<AttributesPage />} />
 
             {/* ── Inventory ─────────────────────────────────────────────── */}
@@ -220,6 +225,15 @@ const App: React.FC = () => (
           </Route>
         </Routes>
       </React.Suspense>
+    </div>
+  )
+}
+
+const App: React.FC = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeSynchronizer />
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   </QueryClientProvider>
 )

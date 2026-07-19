@@ -1,0 +1,15 @@
+{
+  "cashRegisters": "Cash Registers",
+  "discount": "Discount",
+  "due": "Due",
+  "grandTotal": "Grand Total",
+  "items": "Items",
+  "paid": "Paid",
+  "payments": "Payments",
+  "posTerminal": "POS Terminal",
+  "saleReturns": "Sale Returns",
+  "salesOrders": "Sales Orders",
+  "subtotal": "Subtotal",
+  "tax": "Tax",
+  "title": "Sales"
+}

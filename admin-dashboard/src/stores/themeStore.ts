@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import i18n from '../lib/i18n'
+import i18n, { ensureLanguageLoaded, buildActiveDict } from '../lib/i18n'
 import { useAuthStore } from './authStore'
+
 
 export interface FontConfig {
   family: string
@@ -97,7 +98,7 @@ export interface WidgetConfig {
 interface ThemeState {
   // Theme Mode
   themeMode: 'light' | 'dark' | 'system'
-  language: 'en' | 'km'
+  language: 'en' | 'km' | 'th' | 'vi' | 'zh'
   primaryColor: string
   
   // Custom configurations
@@ -113,7 +114,7 @@ interface ThemeState {
   widgetsList: WidgetConfig[]
 
   // Action methods
-  setLanguage: (lang: 'en' | 'km') => void
+  setLanguage: (lang: 'en' | 'km' | 'th' | 'vi' | 'zh') => void
   updateThemeMode: (mode: 'light' | 'dark' | 'system') => void
   updatePrimaryColor: (color: string) => void
   updateFont: (config: Partial<FontConfig>) => void
@@ -144,7 +145,7 @@ export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       themeMode: 'light',
-      language: (localStorage.getItem('enterprise-pos-lang') as 'en' | 'km') || 'en',
+      language: (localStorage.getItem('enterprise-pos-lang') as 'en' | 'km' | 'th' | 'vi' | 'zh') || 'en',
       primaryColor: '#3b82f6',
 
       font: {
@@ -233,10 +234,12 @@ export const useThemeStore = create<ThemeState>()(
 
       widgetsList: defaultWidgets,
 
-      setLanguage: (lang) => {
-        set({ language: lang })
+      setLanguage: async (lang) => {
+        await ensureLanguageLoaded(lang)
         localStorage.setItem('enterprise-pos-lang', lang)
-        i18n.changeLanguage(lang)
+        await i18n.changeLanguage(lang)
+        buildActiveDict()
+        set({ language: lang })
       },
 
       updateThemeMode: (mode) => {

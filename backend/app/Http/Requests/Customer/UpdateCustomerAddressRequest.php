@@ -14,18 +14,18 @@ class UpdateCustomerAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['integer', 'exists:customers,id'],
-            'label' => ['string'],
-            'name' => ['string'],
-            'phone' => ['string'],
-            'address' => ['string'],
-            'city' => ['string'],
-            'province' => ['string'],
-            'country' => ['string'],
-            'postal_code' => ['string'],
-            'latitude' => ['numeric'],
-            'longitude' => ['numeric'],
-            'is_default' => ['boolean']
+            'customer_id' => ['sometimes', 'required', 'integer', 'exists:customers,id'],
+            'label'       => ['sometimes', 'required', 'string', 'in:Home,Office,Warehouse,Other'],
+            'name'        => ['sometimes', 'required', 'string', 'max:255'],
+            'phone'       => ['sometimes', 'required', 'string', 'max:50'],
+            'address'     => ['sometimes', 'required', 'string'],
+            'city'        => ['sometimes', 'required', 'string', 'max:255'],
+            'province'    => ['sometimes', 'required', 'string', 'max:255'],
+            'country'     => ['sometimes', 'required', 'string', 'max:255'],
+            'postal_code' => ['sometimes', 'required', 'string', 'max:20'],
+            'latitude'    => ['nullable', 'numeric'],
+            'longitude'   => ['nullable', 'numeric'],
+            'is_default'  => ['sometimes', 'boolean']
         ];
     }
 }

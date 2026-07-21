@@ -18,5 +18,7 @@
   "updated": "{{item}} 更新成功。",
   "uploadSuccess": "上传成功。",
   "validationFailed": "验证失败。请检查您的输入。",
-  "warning": "警告"
+  "warning": "警告",
+  "restored": "{{item}} 恢复成功。",
+  "permanentlyDeleted": "{{item}} 永久删除成功。"
 }

@@ -20,7 +20,8 @@ class ExpenseController extends BaseApiController
     {
         $records = $this->service->getPaginated(
             $request->integer('per_page', 10),
-            $request->only(['search', 'status'])
+            $request->only(['search', 'status']),
+            ['category']
         );
         
         $resourceCollection = ExpenseResource::collection($records);

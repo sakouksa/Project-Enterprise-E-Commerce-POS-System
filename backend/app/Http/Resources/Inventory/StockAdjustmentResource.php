@@ -35,6 +35,26 @@ class StockAdjustmentResource extends JsonResource
                 'name' => $this->user?->name,
             ]),
 
+            // Items relation
+            'items' => $this->whenLoaded('items', fn() => $this->items->map(fn($item) => [
+                'id'                 => $item->id,
+                'product_id'         => $item->product_id,
+                'product_variant_id' => $item->product_variant_id,
+                'quantity_before'    => (float) $item->quantity_before,
+                'quantity_adjusted'  => (float) $item->quantity_adjusted,
+                'quantity_after'     => (float) $item->quantity_after,
+                'notes'              => $item->notes,
+                'product'            => $item->product ? [
+                    'id'   => $item->product->id,
+                    'name' => $item->product->name,
+                    'sku'  => $item->product->sku,
+                ] : null,
+                'variant'            => $item->variant ? [
+                    'id'   => $item->variant->id,
+                    'name' => $item->variant->name,
+                ] : null,
+            ])),
+
             // Flat fields for simple frontend table (mapped from first item)
             'product' => $firstItem && $firstItem->product ? [
                 'id'   => $firstItem->product->id,

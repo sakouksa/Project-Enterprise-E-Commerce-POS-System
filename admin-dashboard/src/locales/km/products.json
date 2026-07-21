@@ -66,5 +66,8 @@
   "unlimited": "មិនកំណត់",
   "updated": "Updated At",
   "variants": "ជម្រើសផលិតផល",
-  "warehouse": "Warehouse"
+  "warehouse": "Warehouse",
+  "filterProducts": "តម្រងផលិតផល",
+  "dateRange": "ចន្លោះកាលបរិច្ឆេទ",
+  "stockLevel": "កម្រិតស្តុក"
 }

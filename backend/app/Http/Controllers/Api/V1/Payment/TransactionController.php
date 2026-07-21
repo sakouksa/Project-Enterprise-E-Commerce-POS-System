@@ -18,7 +18,10 @@ class TransactionController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $records = $this->service->getPaginated($request->get('per_page', 15));
+        $records = $this->service->getPaginated(
+            $request->integer('per_page', 15),
+            ['payment.paymentMethod']
+        );
         return $this->successResponse(
             TransactionResource::collection($records),
             'Transaction list retrieved successfully'

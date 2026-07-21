@@ -17,6 +17,7 @@ class BaseApiController extends Controller
         string $message = 'Success',
         int $statusCode = 200
     ): JsonResponse {
+        $message = __($message);
         $paginator = null;
         $items = $data;
 
@@ -69,6 +70,7 @@ class BaseApiController extends Controller
         mixed $errors = null,
         int $statusCode = 400
     ): JsonResponse {
+        $message = __($message);
         return response()->json([
             'success' => false,
             'message' => $message,
@@ -81,6 +83,7 @@ class BaseApiController extends Controller
      */
     protected function paginatedResponse(mixed $data, string $message = 'Success'): JsonResponse
     {
+        $message = __($message);
         return response()->json([
             'success'      => true,
             'message'      => $message,
@@ -111,6 +114,7 @@ class BaseApiController extends Controller
      */
     protected function paginatedResourceResponse(mixed $resourceCollection, mixed $paginator, string $message = 'Success'): JsonResponse
     {
+        $message = __($message);
         return response()->json([
             'success'      => true,
             'message'      => $message,

@@ -295,8 +295,8 @@ const UnitsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
 
                 <button
                   onClick={openCreateModal}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white
-                             bg-gradient-primary rounded-lg hover:opacity-90 transition-opacity shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white
+                             bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Plus size={16} />
                   Add Unit
@@ -364,8 +364,8 @@ const UnitsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
           {isTab && (
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white
-                         bg-gradient-primary rounded-lg hover:opacity-90 transition-opacity shadow-sm ml-auto"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white
+                         bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm ml-auto"
             >
               <Plus size={16} />
               Add Unit

@@ -18,5 +18,7 @@
   "updated": "อัปเดต {{item}} สำเร็จแล้ว",
   "uploadSuccess": "อัปโหลดสำเร็จแล้ว",
   "validationFailed": "การตรวจสอบข้อมูลล้มเหลว กรุณาตรวจสอบข้อมูลที่กรอก",
-  "warning": "คำเตือน"
+  "warning": "คำเตือน",
+  "restored": "กู้คืน {{item}} สำเร็จแล้ว",
+  "permanentlyDeleted": "ลบ {{item}} ถาวรสำเร็จแล้ว"
 }

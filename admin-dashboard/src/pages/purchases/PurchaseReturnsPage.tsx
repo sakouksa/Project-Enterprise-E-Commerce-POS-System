@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Eye, RefreshCw, X, ArrowLeftRight, Loader2,
   CheckCircle, Trash2, Printer, Calendar, Tag, Info, Trash,
-  ChevronUp, ChevronDown
+  ChevronUp, ChevronDown, RotateCcw, DollarSign, Wallet, Truck,
+  Warehouse, Filter, Settings, Download
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -12,9 +13,11 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import SearchInput from '@/components/shared/SearchInput'
+import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 
 interface PurchaseReturnItem {
@@ -63,6 +66,108 @@ const PurchaseReturnsPage: React.FC = () => {
   const [approveTarget, setApproveTarget] = useState<PurchaseReturn | null>(null)
   const [cancelTarget, setCancelTarget] = useState<PurchaseReturn | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PurchaseReturn | null>(null)
+
+  const formatCurrency = (val: number | string, curr: string = 'USD') => {
+    const num = typeof val === 'number' ? val : parseFloat(val) || 0
+    if (curr === 'KHR') {
+      return '៛' + new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0
+      }).format(Math.round(num))
+    }
+    return '$' + new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num)
+  }
+
+  // Advanced filters state
+  const [statusFilter, setStatusFilter] = useState('')
+  const [refundStatusFilter, setRefundStatusFilter] = useState('')
+  const [supplierFilter, setSupplierFilter] = useState('')
+  const [purchaseRefFilter, setPurchaseRefFilter] = useState('')
+  const [invoiceNoFilter, setInvoiceNoFilter] = useState('')
+  const [warehouseFilter, setWarehouseFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [brandFilter, setBrandFilter] = useState('')
+  const [productFilter, setProductFilter] = useState('')
+  const [minReturnAmountFilter, setMinReturnAmountFilter] = useState('')
+  const [maxReturnAmountFilter, setMaxReturnAmountFilter] = useState('')
+  const [returnDateStartFilter, setReturnDateStartFilter] = useState('')
+  const [returnDateEndFilter, setReturnDateEndFilter] = useState('')
+  const [createdDateStartFilter, setCreatedDateStartFilter] = useState('')
+  const [createdDateEndFilter, setCreatedDateEndFilter] = useState('')
+  const [createdByFilter, setCreatedByFilter] = useState('')
+
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState({
+    reference: true,
+    purchase: true,
+    supplier: true,
+    date: true,
+    amount: true,
+    status: true,
+    actions: true
+  })
+
+  const toggleColumn = (key: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const activeFiltersCount = [
+    statusFilter,
+    refundStatusFilter,
+    supplierFilter,
+    purchaseRefFilter,
+    invoiceNoFilter,
+    warehouseFilter,
+    categoryFilter,
+    brandFilter,
+    productFilter,
+    minReturnAmountFilter,
+    maxReturnAmountFilter,
+    returnDateStartFilter,
+    returnDateEndFilter,
+    createdDateStartFilter,
+    createdDateEndFilter,
+    createdByFilter
+  ].filter(Boolean).length
+
+  const handleResetFilters = () => {
+    setStatusFilter('')
+    setRefundStatusFilter('')
+    setSupplierFilter('')
+    setPurchaseRefFilter('')
+    setInvoiceNoFilter('')
+    setWarehouseFilter('')
+    setCategoryFilter('')
+    setBrandFilter('')
+    setProductFilter('')
+    setMinReturnAmountFilter('')
+    setMaxReturnAmountFilter('')
+    setReturnDateStartFilter('')
+    setReturnDateEndFilter('')
+    setCreatedDateStartFilter('')
+    setCreatedDateEndFilter('')
+    setCreatedByFilter('')
+    reset()
+  }
+
+  // Lookups for Filter selectors
+  const { data: filterSuppliers } = useQuery({
+    queryKey: ['filter-suppliers-list'],
+    queryFn: () => api.get('/suppliers', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+  })
+
+  const { data: filterWarehouses } = useQuery({
+    queryKey: ['filter-warehouses-list'],
+    queryFn: () => api.get('/warehouses', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+  })
+
+  const { data: filterUsers } = useQuery({
+    queryKey: ['filter-users-list'],
+    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+  })
 
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -147,14 +252,37 @@ const PurchaseReturnsPage: React.FC = () => {
 
   // Fetch returns list
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['purchase-returns', page, debouncedSearch, perPage, sortBy, sortOrder],
+    queryKey: [
+      'purchase-returns', page, debouncedSearch, perPage, sortBy, sortOrder,
+      statusFilter, refundStatusFilter, supplierFilter, purchaseRefFilter,
+      invoiceNoFilter, warehouseFilter, categoryFilter, brandFilter,
+      productFilter, minReturnAmountFilter, maxReturnAmountFilter,
+      returnDateStartFilter, returnDateEndFilter, createdDateStartFilter,
+      createdDateEndFilter, createdByFilter
+    ],
     queryFn: () => api.get('/purchase-returns', {
       params: {
         page,
         search: debouncedSearch,
         per_page: perPage,
         sort_by: sortBy,
-        sort_order: sortOrder
+        sort_order: sortOrder,
+        status: statusFilter || undefined,
+        refund_status: refundStatusFilter || undefined,
+        supplier_id: supplierFilter || undefined,
+        purchase_reference: purchaseRefFilter || undefined,
+        invoice_number: invoiceNoFilter || undefined,
+        warehouse_id: warehouseFilter || undefined,
+        category: categoryFilter || undefined,
+        brand: brandFilter || undefined,
+        product: productFilter || undefined,
+        min_amount: minReturnAmountFilter || undefined,
+        max_amount: maxReturnAmountFilter || undefined,
+        return_date_start: returnDateStartFilter || undefined,
+        return_date_end: returnDateEndFilter || undefined,
+        created_date_start: createdDateStartFilter || undefined,
+        created_date_end: createdDateEndFilter || undefined,
+        created_by: createdByFilter || undefined
       }
     }).then(r => r.data),
     placeholderData: (prev) => prev,
@@ -247,6 +375,132 @@ const PurchaseReturnsPage: React.FC = () => {
     },
   })
 
+  const handleExport = () => {
+    toast.info(t('purchases.toast.returnExportDownloading', 'Downloading purchase returns...'))
+
+    api.get('/purchase-returns', {
+      params: {
+        page: 1,
+        search: debouncedSearch,
+        per_page: pagination.total || 1000,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        status: statusFilter || undefined,
+        refund_status: refundStatusFilter || undefined,
+        supplier_id: supplierFilter || undefined,
+        purchase_reference: purchaseRefFilter || undefined,
+        invoice_number: invoiceNoFilter || undefined,
+        warehouse_id: warehouseFilter || undefined,
+        category: categoryFilter || undefined,
+        brand: brandFilter || undefined,
+        product: productFilter || undefined,
+        min_amount: minReturnAmountFilter || undefined,
+        max_amount: maxReturnAmountFilter || undefined,
+        return_date_start: returnDateStartFilter || undefined,
+        return_date_end: returnDateEndFilter || undefined,
+        created_date_start: createdDateStartFilter || undefined,
+        created_date_end: createdDateEndFilter || undefined,
+        created_by: createdByFilter || undefined
+      }
+    })
+    .then(res => {
+      const allReturns = res.data?.data || []
+      if (allReturns.length === 0) {
+        toast.warning(t('purchases.toast.returnExportEmpty', 'No data to export.'))
+        return
+      }
+
+      let tbodyHtml = '';
+      allReturns.forEach((item: any) => {
+        const totalAmountUSD = (Number(item.total_amount) || 0) / 4100
+        const itemsCount = item.items?.length || 0
+
+        const statusClass = item.status === 'completed' || item.status === 'approved' ? 'badge-completed' :
+                            item.status === 'cancelled' ? 'badge-cancelled' : 'badge-draft'
+
+        tbodyHtml += '<tr>' +
+          '<td class="ref-cell">' + item.reference_number + '</td>' +
+          '<td class="ref-cell">' + (item.purchase?.reference_number ?? '—') + '</td>' +
+          '<td>' + (item.supplier?.name ?? '—') + '</td>' +
+          '<td class="date-cell">' + new Date(item.date).toLocaleDateString() + '</td>' +
+          '<td class="text-center">' + itemsCount + '</td>' +
+          '<td class="currency-cell">' + totalAmountUSD + '</td>' +
+          '<td class="text-center"><span class="badge ' + statusClass + '">' + (item.status || 'draft').toUpperCase() + '</span></td>' +
+          '<td>' + (item.reason || '—') + '</td>' +
+          '<td>' + (item.user?.name ?? '—') + '</td>' +
+          '</tr>';
+      });
+
+      const grandTotalSum = allReturns.reduce((sum: number, item: any) => sum + ((Number(item.total_amount) || 0) / 4100), 0);
+
+      const summaryHtml = '<tr class="summary-row">' +
+        '<td colspan="5" style="text-align: right; padding-right: 15px;">TOTALS:</td>' +
+        '<td class="currency-cell">' + grandTotalSum + '</td>' +
+        '<td colspan="3"></td>' +
+        '</tr>';
+
+      const html = '<html>' +
+        '<head>' +
+        '<meta charset="utf-8" />' +
+        '<style>' +
+        '  table { border-collapse: collapse; width: 100%; font-family: "Segoe UI", Tahoma, Geneva, sans-serif; }' +
+        '  .title-cell { background-color: #0f172a; color: #ffffff; font-size: 16pt; font-weight: bold; text-align: center; padding: 15px; }' +
+        '  .subtitle-cell { background-color: #1e293b; color: #cbd5e1; font-size: 10pt; text-align: center; padding: 8px; font-style: italic; }' +
+        '  th { background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 10pt; border: 1px solid #cbd5e1; padding: 10px; text-transform: uppercase; }' +
+        '  td { border: 1px solid #e2e8f0; padding: 8px; font-size: 9.5pt; color: #334155; }' +
+        '  tr:nth-child(even) { background-color: #f8fafc; }' +
+        '  .currency-cell { mso-number-format: "\\$\\#\\,\\#\\#0\\.00"; text-align: right; font-weight: bold; }' +
+        '  .date-cell { text-align: center; mso-number-format: "yyyy-mm-dd"; }' +
+        '  .text-center { text-align: center; }' +
+        '  .ref-cell { font-family: monospace; font-weight: bold; color: #1e40af; }' +
+        '  .badge { font-weight: bold; text-align: center; }' +
+        '  .badge-completed, .badge-approved { background-color: #d1fae5; color: #065f46; }' +
+        '  .badge-cancelled { background-color: #fee2e2; color: #991b1b; }' +
+        '  .badge-draft { background-color: #f1f5f9; color: #334155; }' +
+        '  .summary-row { background-color: #e2e8f0; font-weight: bold; border-top: 2px solid #2563eb; }' +
+        '</style>' +
+        '</head>' +
+        '<body>' +
+        '  <table>' +
+        '    <thead>' +
+        '      <tr><th colspan="9" class="title-cell">ENTERPRISE POS - PURCHASE RETURNS REPORT</th></tr>' +
+        '      <tr><th colspan="9" class="subtitle-cell">Generated on: ' + new Date().toLocaleString() + ' | Total Records: ' + allReturns.length + '</th></tr>' +
+        '      <tr>' +
+        '        <th style="width: 140px;">Return Reference</th>' +
+        '        <th style="width: 140px;">Purchase Ref</th>' +
+        '        <th style="width: 180px;">Supplier</th>' +
+        '        <th style="width: 100px;">Date</th>' +
+        '        <th style="width: 80px; text-align: center;">Items</th>' +
+        '        <th style="width: 120px; text-align: right;">Total Amount</th>' +
+        '        <th style="width: 120px; text-align: center;">Status</th>' +
+        '        <th style="width: 200px;">Reason</th>' +
+        '        <th style="width: 130px;">Created By</th>' +
+        '      </tr>' +
+        '    </thead>' +
+        '    <tbody>' +
+        tbodyHtml +
+        summaryHtml +
+        '    </tbody>' +
+        '  </table>' +
+        '</body>' +
+        '</html>';
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+      const link = document.createElement("a")
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `purchase_returns_export_${new Date().toISOString().slice(0, 10)}.xls`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      toast.success(t('purchases.toast.returnExportSuccess', 'Purchase returns exported to Excel successfully.'))
+    })
+    .catch((err) => {
+      console.error(err)
+      toast.error(t('purchases.toast.returnExportError', 'Failed to export purchase returns.'))
+    })
+  }
+
   const openCreateModal = () => {
     setPurchaseId('')
     setReason('')
@@ -327,157 +581,380 @@ const PurchaseReturnsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Purchase Returns</h1>
-          <p className="text-muted-foreground text-sm">
-            {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
-          </p>
+    <div className="space-y-6">
+      {/* ─── BREADCRUMB & HEADER ────────────────────────────────────────────── */}
+      <div className="print:hidden space-y-2">
+        <Breadcrumb items={[{ label: 'Purchases' }, { label: 'Returns' }]} />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <RotateCcw className="h-6 w-6 text-primary" />
+              Purchase Returns Management
+            </h1>
+            <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+              Manage returned purchase items, supplier returns, refund status, inventory adjustments, and return transactions across the Enterprise POS and Inventory system.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+            >
+              <Download size={15} />
+              <span>{t('buttons.export', 'Export')}</span>
+            </button>
+
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <Plus size={16} />
+              {t('purchases.createReturn', 'Create Return')}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-semibold shadow transition-all"
-        >
-          <Plus size={16} />
-          {t('purchases.createReturn')}
-        </button>
       </div>
 
-      {/* Search Filter */}
-      <div className="bg-card rounded-xl border border-border p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-56">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      {/* ─── DASHBOARD METRICS ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
+        {/* Card 1: Total Purchase Returns */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Purchase Returns</p>
+            <p className="text-2xl font-extrabold text-foreground tracking-tight">{returns.length}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <span className="text-emerald-500 font-bold">
+                {returns.filter(r => r.status === 'completed' || r.status === 'approved').length} Active
+              </span>
+              <span>•</span>
+              <span className="text-rose-500">
+                {returns.filter(r => r.status === 'cancelled').length} Cancelled
+              </span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-500">
+            <RotateCcw size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 2: Return Amount */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Return Amount</p>
+            <p className="text-xl font-extrabold text-foreground tracking-tight truncate max-w-[190px]">
+              {formatCurrency(returns.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0) / 4100, 'USD')}
+            </p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <span className="text-emerald-500 font-bold">Refunded: {formatCurrency(returns.reduce((sum, r) => sum + (r.status === 'completed' ? Number(r.total_amount) : 0), 0) / 4100, 'USD')}</span>
+              <span>•</span>
+              <span className="text-rose-500">Pending: {formatCurrency(returns.reduce((sum, r) => sum + (r.status !== 'completed' ? Number(r.total_amount) : 0), 0) / 4100, 'USD')}</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-purple-500/10 text-purple-500">
+            <Wallet size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 3: Supplier Return Overview */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Supplier Return Activity</p>
+            <p className="text-2xl font-extrabold text-foreground tracking-tight">
+              {new Set(returns.map(r => r.supplier?.name).filter(Boolean)).size} Suppliers
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Avg Return: {formatCurrency(returns.length ? (returns.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0) / returns.length) / 4100 : 0, 'USD')}
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <Truck size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 4: Inventory Impact */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Inventory Impact</p>
+            <p className="text-2xl font-extrabold text-foreground tracking-tight">
+              {returns.reduce((sum, r) => sum + (r.items?.reduce((s, item) => s + (Number(item.quantity) || 0), 0) || 0), 0)} Items
+            </p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span className="text-emerald-500 font-bold">Restored: {returns.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.items?.reduce((s, item) => s + (Number(item.quantity) || 0), 0) || 0), 0)}</span>
+              <span>•</span>
+              <span className="text-rose-500">Damaged: 0</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-rose-500/10 text-rose-500">
+            <Warehouse size={22} />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Premium Search & Action Toolbar */}
+      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+        {/* Left side: Search & Advanced Filter Toggle & Reset */}
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          <div className="relative flex-1 min-w-[280px] sm:max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
+              type="text"
               value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-              placeholder="Search by Return Number or Reason..."
-              className="form-input pl-9"
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search Return Ref, Purchase Ref, Supplier, Product, SKU..."
+              className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
             />
           </div>
+
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all duration-200 shadow-sm
+                       ${activeFiltersCount > 0 
+                         ? 'bg-primary/10 border-primary/30 text-primary font-semibold' 
+                         : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+          >
+            <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+            <span>Filter</span>
+            {activeFiltersCount > 0 && (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-full leading-none">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
+          <ResetButton onClick={handleResetFilters} label="Reset" />
+        </div>
+
+        {/* Right side: Actions (Refresh, Print, Column settings, Export CSV, Create Return) */}
+        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
           <button
             onClick={() => qc.invalidateQueries({ queryKey: ['purchase-returns'] })}
-            className="p-2 text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+            className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+            title="Refresh"
           >
             <RefreshCw size={14} />
           </button>
-        </div>
+
+          {/* Column Settings Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
+              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm select-none"
+              title="Columns"
+            >
+              <Settings size={14} />
+            </button>
+            {columnDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">Toggle Columns</p>
+                  {Object.keys(visibleColumns).map(col => (
+                    <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns[col as keyof typeof visibleColumns]}
+                        onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                        className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                      />
+                      <span>
+                        {col === 'reference' ? 'Return Reference' :
+                         col === 'purchase' ? 'Purchase Ref' :
+                         col === 'supplier' ? 'Supplier' :
+                         col === 'date' ? 'Date' :
+                         col === 'amount' ? 'Total Amount' :
+                         col === 'status' ? 'Status' :
+                         'Actions'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+            </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+      {/* Table Container UI */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden print:hidden">
         <TableWrapper isFetching={isFetching}>
           <table className="w-full data-table">
             <thead>
               <tr className="bg-muted/30 border-b border-border">
-                <th onClick={() => handleSort('reference_number')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
-                  Reference {renderSortIcon('reference_number')}
-                </th>
-                <th onClick={() => handleSort('purchase_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
-                  Purchase {renderSortIcon('purchase_id')}
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
-                  Supplier
-                </th>
-                <th onClick={() => handleSort('date')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
-                  Date {renderSortIcon('date')}
-                </th>
-                <th onClick={() => handleSort('total_amount')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
-                  Total {renderSortIcon('total_amount')}
-                </th>
-                <th onClick={() => handleSort('status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
-                  Status {renderSortIcon('status')}
-                </th>
+                {visibleColumns.reference && (
+                  <th onClick={() => handleSort('reference_number')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                    Reference {renderSortIcon('reference_number')}
+                  </th>
+                )}
+                {visibleColumns.purchase && (
+                  <th onClick={() => handleSort('purchase_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                    Purchase {renderSortIcon('purchase_id')}
+                  </th>
+                )}
+                {visibleColumns.supplier && (
+                  <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                    Supplier
+                  </th>
+                )}
+                {visibleColumns.date && (
+                  <th onClick={() => handleSort('date')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                    Date {renderSortIcon('date')}
+                  </th>
+                )}
+                {visibleColumns.amount && (
+                  <th onClick={() => handleSort('total_amount')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                    Total {renderSortIcon('total_amount')}
+                  </th>
+                )}
+                {visibleColumns.status && (
+                  <th onClick={() => handleSort('status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
+                    Status {renderSortIcon('status')}
+                  </th>
+                )}
                 <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">
                   Created By
                 </th>
-                <th className="text-right py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">Action</th>
+                {visibleColumns.actions && (
+                  <th className="text-right py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none">Action</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>
+                    {visibleColumns.reference && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                    {visibleColumns.purchase && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
+                    {visibleColumns.supplier && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                    {visibleColumns.date && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
+                    {visibleColumns.amount && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
+                    {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
                     <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>
-                    <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>
-                    <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                    <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                    <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                    <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>
-                    <td className="p-4"><div className="skeleton h-4 w-12 rounded ml-auto" /></td>
+                    {visibleColumns.actions && <td className="p-4"><div className="skeleton h-4 w-12 rounded ml-auto" /></td>}
                   </tr>
                 ))
               ) : returns.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-16 text-center">
                     <ArrowLeftRight size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                    <p className="text-muted-foreground">No purchase returns found</p>
+                    <p className="text-muted-foreground text-sm font-semibold mb-3">No purchase returns found</p>
+                    <button
+                      onClick={openCreateModal}
+                      className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow hover:opacity-90 transition-opacity"
+                    >
+                      Create Purchase Return
+                    </button>
                   </td>
                 </tr>
               ) : (
                 returns.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="py-4 px-4 font-semibold text-primary font-mono text-sm">
-                      {item.reference_number}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-foreground">
-                      {item.purchase?.reference_number ?? '—'}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-foreground">
-                      {item.supplier?.name ?? '—'}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-muted-foreground font-mono">
-                      {new Date(item.date).toLocaleDateString()}
-                    </td>
-                    <td className="py-4 px-4 text-sm font-bold text-foreground">
-                      Rp {item.total_amount.toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={STATUS_BADGE[item.status]}>
-                        {item.status}
-                      </span>
-                    </td>
+                    {visibleColumns.reference && (
+                      <td className="py-4 px-4 font-semibold text-primary font-mono text-sm">
+                        {item.reference_number}
+                      </td>
+                    )}
+                    {visibleColumns.purchase && (
+                      <td className="py-4 px-4 text-sm text-foreground">
+                        {item.purchase?.reference_number ?? '—'}
+                      </td>
+                    )}
+                    {visibleColumns.supplier && (
+                      <td className="py-4 px-4 text-sm text-foreground">
+                        {item.supplier?.name ?? '—'}
+                      </td>
+                    )}
+                    {visibleColumns.date && (
+                      <td className="py-4 px-4 text-sm text-muted-foreground font-mono">
+                        {new Date(item.date).toLocaleDateString()}
+                      </td>
+                    )}
+                    {visibleColumns.amount && (
+                      <td className="py-4 px-4 text-sm font-bold text-foreground">
+                        {formatCurrency(item.total_amount / 4100, 'USD')}
+                      </td>
+                    )}
+                    {visibleColumns.status && (
+                      <td className="py-4 px-4">
+                        {item.status === 'completed' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold capitalize">
+                            Completed
+                          </span>
+                        ) : item.status === 'approved' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold capitalize">
+                            Approved
+                          </span>
+                        ) : item.status === 'cancelled' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold capitalize">
+                            Cancelled
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold capitalize">
+                            {item.status || 'Pending'}
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td className="py-4 px-4 text-sm text-muted-foreground">
                       {item.user?.name ?? '—'}
                     </td>
-                    <td className="py-4 px-4 text-right flex items-center justify-end gap-1.5 pt-3">
-                      <button
-                        onClick={() => setSelectedReturn(item)}
-                        className="p-1 px-2.5 hover:bg-muted border border-border rounded-lg text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs font-semibold bg-card"
-                      >
-                        <Eye size={13} />
-                        {t('common.view')}
-                      </button>
-                      {item.status === 'draft' && (
-                        <>
-                          <button
-                            onClick={() => setApproveTarget(item)}
-                            className="p-1 px-2.5 hover:bg-green-500/10 hover:text-green-600 border border-transparent rounded-lg text-green-500 transition-colors flex items-center gap-1 text-xs font-bold bg-green-500/5"
-                          >
-                            <CheckCircle size={13} />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(item)}
-                            className="p-1 px-2 hover:bg-red-500/10 hover:text-red-600 border border-transparent rounded-lg text-red-500 transition-colors flex items-center gap-1 text-xs font-semibold bg-red-500/5"
-                          >
-                            <Trash size={13} />
-                          </button>
-                        </>
-                      )}
-                      {item.status === 'approved' && (
+                    {visibleColumns.actions && (
+                      <td className="py-4 px-4 text-right flex items-center justify-end gap-1.5 pt-3">
                         <button
-                          onClick={() => setCancelTarget(item)}
-                          className="p-1 px-2.5 hover:bg-red-500/10 hover:text-red-600 border border-transparent rounded-lg text-red-500 transition-colors flex items-center gap-1 text-xs font-bold bg-red-500/5"
+                          onClick={() => setSelectedReturn(item)}
+                          className="p-1 px-2.5 hover:bg-muted border border-border rounded-lg text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs font-semibold bg-card"
                         >
-                          <X size={13} />
-                          Cancel
+                          <Eye size={13} />
+                          {t('common.view')}
                         </button>
-                      )}
-                    </td>
+                        {item.status === 'draft' && (
+                          <>
+                            <button
+                              onClick={() => setApproveTarget(item)}
+                              className="p-1 px-2.5 hover:bg-green-500/10 hover:text-green-600 border border-transparent rounded-lg text-green-500 transition-colors flex items-center gap-1 text-xs font-bold bg-green-500/5"
+                            >
+                              <CheckCircle size={13} />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(item)}
+                              className="p-1 px-2 hover:bg-red-500/10 hover:text-red-600 border border-transparent rounded-lg text-red-500 transition-colors flex items-center gap-1 text-xs font-semibold bg-red-500/5"
+                            >
+                              <Trash size={13} />
+                            </button>
+                          </>
+                        )}
+                        {item.status === 'approved' && (
+                          <button
+                            onClick={() => setCancelTarget(item)}
+                            className="p-1 px-2.5 hover:bg-red-500/10 hover:text-red-600 border border-transparent rounded-lg text-red-500 transition-colors flex items-center gap-1 text-xs font-bold bg-red-500/5"
+                          >
+                            <X size={13} />
+                            Cancel
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -739,12 +1216,6 @@ const PurchaseReturnsPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => window.print()}
-                    className="p-1.5 hover:bg-muted border border-border rounded-lg text-muted-foreground hover:text-foreground transition-all"
-                  >
-                    <Printer size={15} />
-                  </button>
                   <button onClick={() => setSelectedReturn(null)} className="text-muted-foreground hover:text-foreground">
                     <X size={18} />
                   </button>
@@ -890,6 +1361,278 @@ const PurchaseReturnsPage: React.FC = () => {
         onCancel={() => setDeleteTarget(null)}
         variant="danger"
       />
+      {/* Advanced Purchase Return Filters Drawer (Right Sidebar Panel) */}
+      <AnimatePresence>
+        {filterDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40"
+              onClick={() => setFilterDrawerOpen(false)}
+            />
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-5 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Filter size={16} className="text-primary" />
+                  <h3 className="font-bold text-base text-foreground">
+                    Advanced Purchase Return Filters
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                {/* Return Status */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Return Status</h4>
+                  <div className="space-y-1.5">
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                    >
+                      <option value="">All Return Statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Refund Status */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Refund Status</h4>
+                  <div className="space-y-1.5">
+                    <select
+                      value={refundStatusFilter}
+                      onChange={(e) => { setRefundStatusFilter(e.target.value); setPage(1); }}
+                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                    >
+                      <option value="">All Refund Statuses</option>
+                      <option value="refunded">Refunded</option>
+                      <option value="partial_refund">Partial Refund</option>
+                      <option value="pending_refund">Pending Refund</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Supplier Filter */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Supplier Filter</h4>
+                  <div className="space-y-1.5">
+                    <select
+                      value={supplierFilter}
+                      onChange={(e) => { setSupplierFilter(e.target.value); setPage(1); }}
+                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                    >
+                      <option value="">All Suppliers</option>
+                      {(filterSuppliers ?? []).map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Purchase Information */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Purchase Information</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Purchase Ref</span>
+                      <input
+                        type="text"
+                        value={purchaseRefFilter}
+                        onChange={(e) => { setPurchaseRefFilter(e.target.value); setPage(1); }}
+                        placeholder="PO Ref"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Invoice No</span>
+                      <input
+                        type="text"
+                        value={invoiceNoFilter}
+                        onChange={(e) => { setInvoiceNoFilter(e.target.value); setPage(1); }}
+                        placeholder="Invoice #"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warehouse Filter */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Warehouse Filter</h4>
+                  <div className="space-y-1.5">
+                    <select
+                      value={warehouseFilter}
+                      onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
+                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                    >
+                      <option value="">All Warehouses</option>
+                      {(filterWarehouses ?? []).map((w: any) => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Product Filter */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Product Filter</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Category</span>
+                      <input
+                        type="text"
+                        value={categoryFilter}
+                        onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+                        placeholder="Category"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Brand</span>
+                      <input
+                        type="text"
+                        value={brandFilter}
+                        onChange={(e) => { setBrandFilter(e.target.value); setPage(1); }}
+                        placeholder="Brand"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Product</span>
+                      <input
+                        type="text"
+                        value={productFilter}
+                        onChange={(e) => { setProductFilter(e.target.value); setPage(1); }}
+                        placeholder="Product"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount Filter */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Amount Filter</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Min Amount</span>
+                      <input
+                        type="number"
+                        value={minReturnAmountFilter}
+                        onChange={(e) => { setMinReturnAmountFilter(e.target.value); setPage(1); }}
+                        placeholder="Min"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Max Amount</span>
+                      <input
+                        type="number"
+                        value={maxReturnAmountFilter}
+                        onChange={(e) => { setMaxReturnAmountFilter(e.target.value); setPage(1); }}
+                        placeholder="Max"
+                        className="form-input text-xs rounded-xl bg-card border-border py-1.5 text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Filters */}
+                <div className="space-y-3 pb-3 border-b border-border/60">
+                  <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Date Filters</h4>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-semibold block">Return Date Between</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        value={returnDateStartFilter}
+                        onChange={(e) => { setReturnDateStartFilter(e.target.value); setPage(1); }}
+                        className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      />
+                      <input
+                        type="date"
+                        value={returnDateEndFilter}
+                        onChange={(e) => { setReturnDateEndFilter(e.target.value); setPage(1); }}
+                        className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1 mt-2">
+                    <span className="text-[10px] text-muted-foreground font-semibold block">Created Date Between</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        value={createdDateStartFilter}
+                        onChange={(e) => { setCreatedDateStartFilter(e.target.value); setPage(1); }}
+                        className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      />
+                      <input
+                        type="date"
+                        value={createdDateEndFilter}
+                        onChange={(e) => { setCreatedDateEndFilter(e.target.value); setPage(1); }}
+                        className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Created By */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Created By</label>
+                  <select
+                    value={createdByFilter}
+                    onChange={(e) => { setCreatedByFilter(e.target.value); setPage(1); }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Users</option>
+                    {(filterUsers ?? []).map((u: any) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-5 border-t border-border flex items-center justify-between bg-muted/10">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-all"
+                >
+                  Reset All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-xl shadow-sm hover:opacity-95 active:scale-95 transition-all"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

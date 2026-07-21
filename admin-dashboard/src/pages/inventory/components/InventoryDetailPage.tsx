@@ -5,6 +5,18 @@ import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 
+const formatShortDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '—'
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return '—'
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`
+}
+
 interface InventoryDetailPageProps {
   itemId: number
   onClose: () => void
@@ -120,19 +132,19 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">{t('inventory.reorder_point', 'Reorder Point')}</span>
-                  <span className="font-medium text-foreground">{parseFloat(detail.reorder_point)}</span>
+                  <span className="font-medium text-foreground">{parseFloat(detail.reorder_point) || 0}</span>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">{t('inventory.reorder_qty', 'Reorder Quantity')}</span>
-                  <span className="font-medium text-foreground">{parseFloat(detail.reorder_qty)}</span>
+                  <span className="font-medium text-foreground">{parseFloat(detail.reorder_qty) || 0}</span>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">{t('products.created', 'Created At')}</span>
-                  <span className="font-medium text-foreground">{new Date(detail.created_at).toLocaleDateString()}</span>
+                  <span className="font-medium text-foreground">{formatShortDate(detail.created_at)}</span>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground block">{t('products.updated', 'Updated At')}</span>
-                  <span className="font-medium text-foreground">{new Date(detail.updated_at).toLocaleDateString()}</span>
+                  <span className="font-medium text-foreground">{formatShortDate(detail.updated_at)}</span>
                 </div>
               </div>
             </div>
@@ -155,7 +167,7 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold uppercase tracking-wider text-muted-foreground">{String(t(`inventory.movement_${m.type}`, m.type))}</span>
-                        <span className="text-muted-foreground font-mono">{new Date(m.created_at).toLocaleString()}</span>
+                        <span className="text-muted-foreground font-mono">{formatShortDate(m.created_at)}</span>
                       </div>
                       <p className="text-sm text-foreground font-medium">
                         {m.quantity > 0 ? '+' : ''}{parseFloat(m.quantity)} ({t('inventory.before', 'Before')}: {parseFloat(m.quantity_before)} → {t('inventory.after', 'After')}: {parseFloat(m.quantity_after)})

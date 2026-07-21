@@ -41,7 +41,12 @@ class EmployeeController extends BaseApiController
             return $this->errorResponse('Unauthorized', null, 403);
         }
 
-        $record = $this->service->create($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo')->store('employees', 'public');
+        }
+
+        $record = $this->service->create($data);
         return $this->successResponse(
             new EmployeeResource($record),
             'Employee created successfully',
@@ -68,11 +73,37 @@ class EmployeeController extends BaseApiController
             return $this->errorResponse('Unauthorized', null, 403);
         }
 
-        $record = $this->service->update($id, $request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('photo')) {
+            $employee = $this->service->getById($id);
+            if ($employee && $employee->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($employee->photo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($employee->photo);
+            }
+            $data['photo'] = $request->file('photo')->store('employees', 'public');
+        }
+
+        $record = $this->service->update($id, $data);
         return $this->successResponse(
             new EmployeeResource($record),
             'Employee updated successfully'
         );
+    }
+
+    public function uploadPhoto(Request $request): JsonResponse
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120',
+        ]);
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('employees', 'public');
+            return $this->successResponse([
+                'path' => $path,
+                'url'  => \Illuminate\Support\Facades\Storage::url($path),
+            ], 'Photo uploaded successfully');
+        }
+
+        return $this->errorResponse('No file uploaded', null, 400);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
@@ -153,6 +184,7 @@ class EmployeeController extends BaseApiController
         $totalEmployees = \App\Models\Employee\Employee::count();
         $activeEmployees = \App\Models\Employee\Employee::where('status', 'active')->count();
         $resignedEmployees = \App\Models\Employee\Employee::where('status', 'resigned')->count();
+        $newTodayEmployees = \App\Models\Employee\Employee::whereDate('created_at', today())->count();
         
         $totalDepartments = \App\Models\Employee\Department::count();
         $totalPositions = \App\Models\Employee\Position::count();
@@ -161,21 +193,42 @@ class EmployeeController extends BaseApiController
         $presentToday = \App\Models\Employee\Attendance::where('date', $today)->where('status', 'present')->count();
         $absentToday = \App\Models\Employee\Attendance::where('date', $today)->where('status', 'absent')->count();
         $lateToday = \App\Models\Employee\Attendance::where('date', $today)->where('status', 'late')->count();
+        $leaveToday = \App\Models\Employee\Attendance::where('date', $today)->where('status', 'leave')->count();
+        $holidayToday = \App\Models\Employee\Attendance::where('date', $today)->where('status', 'holiday')->count();
 
-        $payrollPending = \App\Models\Employee\Payroll::where('status', 'draft')->count();
+        $payrollDraft = \App\Models\Employee\Payroll::where('status', 'draft')->count();
+        $payrollApproved = \App\Models\Employee\Payroll::where('status', 'approved')->count();
+        $payrollPaid = \App\Models\Employee\Payroll::where('status', 'paid')->count();
+
+        $currentMonth = now()->format('Y-m');
+        $monthlySalaryExpense = \App\Models\Employee\Payroll::where('period_month', $currentMonth)
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('net_salary');
+        if ($monthlySalaryExpense == 0) {
+            $monthlySalaryExpense = \App\Models\Employee\Employee::where('status', 'active')->sum('basic_salary');
+        }
+
+        $averageSalary = \App\Models\Employee\Employee::where('status', 'active')->avg('basic_salary') ?? 0;
 
         return $this->successResponse([
-            'total_employees'    => $totalEmployees,
-            'active_employees'   => $activeEmployees,
-            'resigned_employees' => $resignedEmployees,
-            'total_departments'  => $totalDepartments,
-            'total_positions'    => $totalPositions,
-            'attendance_today'   => [
+            'total_employees'      => $totalEmployees,
+            'active_employees'     => $activeEmployees,
+            'resigned_employees'   => $resignedEmployees,
+            'new_today_employees'  => $newTodayEmployees,
+            'total_departments'    => $totalDepartments,
+            'total_positions'      => $totalPositions,
+            'attendance_today'     => [
                 'present' => $presentToday,
                 'absent'  => $absentToday,
                 'late'    => $lateToday,
+                'leave'   => $leaveToday,
+                'holiday' => $holidayToday,
             ],
-            'payroll_pending'    => $payrollPending
+            'payroll_draft'        => $payrollDraft,
+            'payroll_approved'     => $payrollApproved,
+            'payroll_paid'         => $payrollPaid,
+            'monthly_salary_expense'=> (float)$monthlySalaryExpense,
+            'average_salary'       => (float)$averageSalary,
         ], 'Employee statistics retrieved successfully');
     }
 

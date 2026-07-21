@@ -1,5 +1,6 @@
 {
   "add_item": "Add Item",
+  "subtitle": "Manage warehouse stocks and track history ledger.",
   "adj_desc": "Adjust warehouse stock quantities with approval logs.",
   "adjustmentReason": "Adjustment Reason",
   "adjustments": "Adjustments",

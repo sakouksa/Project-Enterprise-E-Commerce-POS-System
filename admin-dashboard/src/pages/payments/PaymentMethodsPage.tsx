@@ -1,16 +1,12 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Edit2, Trash2, RefreshCw, X, CreditCard, Loader2 } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, RefreshCw, X, CreditCard, Loader2, DollarSign } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
-import SearchInput from '@/components/shared/SearchInput'
-import ResetButton from '@/components/shared/ResetButton'
-import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
-import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { useTranslation } from 'react-i18next'
 
@@ -18,15 +14,19 @@ interface PaymentMethod {
   id: number
   name: string
   code: string
+  type: string
+  fee_percent: number
+  fee_fixed: number
   is_active: boolean
-  description?: string
+  available_pos: boolean
+  available_online: boolean
 }
 
-const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
+const PaymentMethodsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
   const { t } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
-    const {
+  const {
     page,
     setPage,
     perPage,
@@ -34,18 +34,28 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     search,
     setSearch,
     debouncedSearch,
-    reset,
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'paymentmethods' })
-    const [modalOpen, setModalOpen] = useState(false)
+
+  const [modalOpen, setModalOpen] = useState(false)
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PaymentMethod | null>(null)
 
-  // Form states
+  // Form states matching 100% database fields
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [type, setType] = useState('cash')
+  const [feePercent, setFeePercent] = useState('0.00')
+  const [feeFixed, setFeeFixed] = useState('0.00')
   const [isActive, setIsActive] = useState(true)
-  const [description, setDescription] = useState('')
+  const [availablePos, setAvailablePos] = useState(true)
+  const [availableOnline, setAvailableOnline] = useState(true)
+
+  React.useEffect(() => {
+    if (triggerAdd && triggerAdd > 0) {
+      openCreateModal()
+    }
+  }, [triggerAdd])
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['payment-methods', page, debouncedSearch, perPage],
@@ -109,8 +119,12 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     setEditingMethod(null)
     setName('')
     setCode('')
+    setType('cash')
+    setFeePercent('0.00')
+    setFeeFixed('0.00')
     setIsActive(true)
-    setDescription('')
+    setAvailablePos(true)
+    setAvailableOnline(true)
     setModalOpen(true)
   }
 
@@ -118,8 +132,12 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     setEditingMethod(method)
     setName(method.name)
     setCode(method.code)
-    setIsActive(method.is_active)
-    setDescription(method.description ?? '')
+    setType(method.type || 'cash')
+    setFeePercent(String(method.fee_percent ?? '0.00'))
+    setFeeFixed(String(method.fee_fixed ?? '0.00'))
+    setIsActive(!!method.is_active)
+    setAvailablePos(!!method.available_pos)
+    setAvailableOnline(!!method.available_online)
     setModalOpen(true)
   }
 
@@ -135,8 +153,12 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     const payload = {
       name,
       code,
+      type,
+      fee_percent: Number(feePercent),
+      fee_fixed: Number(feeFixed),
       is_active: isActive,
-      description,
+      available_pos: availablePos,
+      available_online: availableOnline,
     }
 
     if (editingMethod) {
@@ -180,25 +202,22 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
           >
             <RefreshCw size={14} />
           </button>
-          {isTab && (
-            <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 ml-auto">
-              <Plus size={16} />
-              {t('common.add')}
-            </button>
-          )}
+          {/* Add button is now handled by the parent page header */}
         </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border overflow-hidden">
-      <TableWrapper isFetching={isFetching}>
-        <table className="w-full data-table">
+        <TableWrapper isFetching={isFetching}>
+          <table className="w-full data-table">
             <thead>
               <tr>
-                <th className="text-left">{t('common.name')}</th>
-                <th className="text-left">Code</th>
-                <th className="text-left">{t('common.status')}</th>
-                <th className="text-left">{t('common.description')}</th>
-                <th className="text-right">{t('common.actions')}</th>
+                <th className="w-[25%] text-left py-4 px-5">{t('common.name')}</th>
+                <th className="w-[15%] text-left py-4 px-5">Code</th>
+                <th className="w-[15%] text-left py-4 px-5">Type</th>
+                <th className="w-[15%] text-left py-4 px-5">Fees</th>
+                <th className="w-[15%] text-left py-4 px-5">Channels</th>
+                <th className="w-[10%] text-left py-4 px-5">{t('common.status')}</th>
+                <th className="w-[100px] text-right py-4 px-5">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -208,40 +227,53 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     <td><div className="skeleton h-4 w-28 rounded" /></td>
                     <td><div className="skeleton h-4 w-12 rounded" /></td>
                     <td><div className="skeleton h-4 w-16 rounded" /></td>
-                    <td><div className="skeleton h-4 w-40 rounded" /></td>
+                    <td><div className="skeleton h-4 w-20 rounded" /></td>
+                    <td><div className="skeleton h-4 w-24 rounded" /></td>
+                    <td><div className="skeleton h-4 w-16 rounded" /></td>
                     <td><div className="skeleton h-4 w-12 rounded ml-auto" /></td>
                   </tr>
                 ))
               ) : (
                 methods.map((method) => (
-                  <tr key={method.id}>
-                    <td className="font-medium text-foreground">{method.name}</td>
-                    <td className="font-mono text-sm">{method.code}</td>
-                    <td>
+                  <tr key={method.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="font-semibold text-foreground py-4 px-5">{method.name}</td>
+                    <td className="font-mono text-xs text-primary py-4 px-5">{method.code}</td>
+                    <td className="font-semibold text-xs capitalize text-muted-foreground py-4 px-5">{method.type?.replace('_', ' ') || 'cash'}</td>
+                    <td className="text-xs font-semibold py-4 px-5">
+                      {Number(method.fee_percent) > 0 ? `${Number(method.fee_percent)}%` : ''}
+                      {Number(method.fee_percent) > 0 && Number(method.fee_fixed) > 0 ? ' + ' : ''}
+                      {Number(method.fee_fixed) > 0 ? `$${Number(method.fee_fixed).toFixed(2)}` : (Number(method.fee_percent) === 0 ? 'Free' : '')}
+                    </td>
+                    <td className="text-xs text-muted-foreground font-medium py-4 px-5">
+                      {method.available_pos && <span className="bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-md text-[10px] mr-1">POS</span>}
+                      {method.available_online && <span className="bg-purple-500/10 text-purple-600 px-2 py-0.5 rounded-md text-[10px]">Online</span>}
+                    </td>
+                    <td className="py-4 px-5">
                       <button
                         onClick={() => toggleStatusMutation.mutate({ id: method.id, active: !method.is_active })}
-                        className={`text-sm font-semibold rounded-full px-2.5 py-0.5 ${
-                          method.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        className={`text-xs font-semibold rounded-full px-2.5 py-0.5 border ${
+                          method.is_active ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
                         }`}
                       >
                         {method.is_active ? t('common.active') : t('common.inactive')}
                       </button>
                     </td>
-                    <td className="text-muted-foreground text-sm">{method.description || '-'}</td>
-                    <td className="text-right flex items-center justify-end gap-2">
-                      <button onClick={() => openEditModal(method)} className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground">
-                        <Edit2 size={14} />
-                      </button>
-                      <button onClick={() => setDeleteTarget(method)} className="p-1 hover:bg-red-50 rounded text-muted-foreground hover:text-red-500">
-                        <Trash2 size={14} />
-                      </button>
+                    <td className="text-right py-4 px-5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button onClick={() => openEditModal(method)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors border border-border">
+                          <Edit2 size={13} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(method)} className="p-1.5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 rounded-lg transition-colors border border-border">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               )}
               {!isLoading && methods.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center">
+                  <td colSpan={7} className="py-16 text-center">
                     <CreditCard size={40} className="mx-auto mb-3 text-muted-foreground/30" />
                     <p className="text-muted-foreground">{t('common.noData')}</p>
                   </td>
@@ -249,7 +281,7 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
               )}
             </tbody>
           </table>
-      </TableWrapper>
+        </TableWrapper>
         <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
       </div>
 
@@ -273,53 +305,107 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('common.name')}</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('common.name')} *</label>
                   <input
                     value={name}
                     onChange={e => setName(e.target.value)}
                     required
-                    placeholder="e.g. Bank Transfer"
-                    className="form-input"
+                    placeholder="e.g. Bank Transfer, ABA Mobile"
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Code</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Code *</label>
                   <input
                     value={code}
                     onChange={e => setCode(e.target.value)}
                     required
-                    placeholder="e.g. bank_transfer"
-                    className="form-input"
+                    placeholder="e.g. bank_transfer, aba_mobile"
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('common.description')}</label>
-                  <textarea
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    placeholder="Provide details..."
-                    className="form-input h-20 resize-none"
-                  />
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Gateway Type *</label>
+                  <select
+                    value={type}
+                    onChange={e => setType(e.target.value)}
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
+                    required
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="credit_card">Credit Card</option>
+                    <option value="debit_card">Debit Card</option>
+                    <option value="ewallet">E-Wallet</option>
+                    <option value="qris">QR / QRIS</option>
+                    <option value="other">Other</option>
+                  </select>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fee Percent (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={feePercent}
+                      onChange={e => setFeePercent(e.target.value)}
+                      placeholder="e.g. 1.50"
+                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fee Fixed ($)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={feeFixed}
+                      onChange={e => setFeeFixed(e.target.value)}
+                      placeholder="e.g. 0.25"
+                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 pt-2">
                   <input
                     type="checkbox"
                     id="isActive"
                     checked={isActive}
                     onChange={e => setIsActive(e.target.checked)}
-                    className="rounded text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30"
                   />
-                  <label htmlFor="isActive" className="text-sm font-medium text-foreground">{t('common.active')}</label>
+                  <label htmlFor="isActive" className="text-sm font-semibold text-foreground cursor-pointer text-muted-foreground hover:text-foreground transition-colors">{t('common.active')}</label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="availablePos"
+                      checked={availablePos}
+                      onChange={e => setAvailablePos(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                    />
+                    <label htmlFor="availablePos" className="text-xs font-semibold text-muted-foreground cursor-pointer uppercase tracking-wider">POS Channel</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="availableOnline"
+                      checked={availableOnline}
+                      onChange={e => setAvailableOnline(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                    />
+                    <label htmlFor="availableOnline" className="text-xs font-semibold text-muted-foreground cursor-pointer uppercase tracking-wider">Online Store</label>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                  <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted">
+                  <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium border border-border rounded-xl hover:bg-muted transition-colors">
                     {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
                   >
                     {(createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
                     {t('common.save')}

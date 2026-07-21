@@ -26,5 +26,7 @@
   "updated": "{{item}} updated successfully.",
   "uploadSuccess": "Upload successful.",
   "validationFailed": "Validation failed. Please check your inputs.",
-  "warning": "This item will be moved to the Recycle Bin, where it can be recovered or permanently deleted."
+  "warning": "This item will be moved to the Recycle Bin, where it can be recovered or permanently deleted.",
+  "restored": "{{item}} restored successfully.",
+  "permanentlyDeleted": "{{item}} permanently deleted."
 }

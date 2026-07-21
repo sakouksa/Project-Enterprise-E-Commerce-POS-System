@@ -9,6 +9,10 @@ class TransactionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        $data = parent::toArray($request);
+        $data['payment_method'] = $this->payment && $this->payment->paymentMethod 
+            ? $this->payment->paymentMethod 
+            : null;
+        return $data;
     }
 }

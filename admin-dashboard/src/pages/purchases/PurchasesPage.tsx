@@ -5,7 +5,8 @@ import {
   Plus, Search, Eye, RefreshCw, X, ShoppingBag, CheckCircle, Trash2, Loader2,
   Printer, Download, DollarSign, Calendar, Landmark, Warehouse as WarehouseIcon,
   Tag, Percent, PlusCircle, ArrowLeft, Trash, Save, Edit, RefreshCw as ResetIcon,
-  ChevronUp, ChevronDown
+  ChevronUp, ChevronDown, Wallet, FileCheck, Truck, ShoppingCart,
+  Settings, Filter
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -15,10 +16,12 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import SearchInput from '@/components/shared/SearchInput'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
+import ResetButton from '@/components/shared/ResetButton'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
 interface PurchaseItem {
   id: number
@@ -82,6 +85,7 @@ const PAYMENT_BADGE: Record<string, string> = {
 
 const PurchasesPage: React.FC = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
 
@@ -155,8 +159,48 @@ const PurchasesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('')
   const [supplierFilter, setSupplierFilter] = useState('')
   const [warehouseFilter, setWarehouseFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
+  const [purchaseDateStartFilter, setPurchaseDateStartFilter] = useState('')
+  const [purchaseDateEndFilter, setPurchaseDateEndFilter] = useState('')
+  const [dueDateStartFilter, setDueDateStartFilter] = useState('')
+  const [dueDateEndFilter, setDueDateEndFilter] = useState('')
+  const [minAmountFilter, setMinAmountFilter] = useState('')
+  const [maxAmountFilter, setMaxAmountFilter] = useState('')
+  const [createdByFilter, setCreatedByFilter] = useState('')
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState({
+    reference: true,
+    date: true,
+    supplier: true,
+    warehouse: true,
+    items: true,
+    subtotal: true,
+    grandTotal: true,
+    paymentStatus: true,
+    status: true,
+    createdBy: true
+  })
+  const toggleColumn = (key: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  const activeFiltersCount = [
+    statusFilter,
+    supplierFilter,
+    warehouseFilter,
+    paymentStatusFilter,
+    purchaseDateStartFilter,
+    purchaseDateEndFilter,
+    dueDateStartFilter,
+    dueDateEndFilter,
+    minAmountFilter,
+    maxAmountFilter,
+    createdByFilter
+  ].filter(Boolean).length
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
@@ -171,6 +215,23 @@ const PurchasesPage: React.FC = () => {
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null
     return sortOrder === 'asc' ? <ChevronUp size={14} className="inline ml-1" /> : <ChevronDown size={14} className="inline ml-1" />
+  }
+
+  const handleResetFilters = () => {
+    setStatusFilter('')
+    setSupplierFilter('')
+    setWarehouseFilter('')
+    setPaymentStatusFilter('')
+    setPurchaseDateStartFilter('')
+    setPurchaseDateEndFilter('')
+    setDueDateStartFilter('')
+    setDueDateEndFilter('')
+    setMinAmountFilter('')
+    setMaxAmountFilter('')
+    setCreatedByFilter('')
+    setSortBy('created_at')
+    setSortOrder('desc')
+    reset()
   }
 
   // Form inputs for creation/edition
@@ -261,8 +322,31 @@ const PurchasesPage: React.FC = () => {
     queryFn: () => api.get('/purchase-report').then(r => r.data.data),
   })
 
+  const { data: users } = useQuery({
+    queryKey: ['users-list'],
+    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+  })
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['purchases', page, debouncedSearch, perPage, statusFilter, supplierFilter, warehouseFilter, sortBy, sortOrder],
+    queryKey: [
+      'purchases',
+      page,
+      debouncedSearch,
+      perPage,
+      statusFilter,
+      supplierFilter,
+      warehouseFilter,
+      paymentStatusFilter,
+      purchaseDateStartFilter,
+      purchaseDateEndFilter,
+      dueDateStartFilter,
+      dueDateEndFilter,
+      minAmountFilter,
+      maxAmountFilter,
+      createdByFilter,
+      sortBy,
+      sortOrder
+    ],
     queryFn: () => api.get('/purchases', {
       params: {
         page,
@@ -271,6 +355,14 @@ const PurchasesPage: React.FC = () => {
         status: statusFilter,
         supplier_id: supplierFilter,
         warehouse_id: warehouseFilter,
+        payment_status: paymentStatusFilter,
+        purchase_date_start: purchaseDateStartFilter,
+        purchase_date_end: purchaseDateEndFilter,
+        due_date_start: dueDateStartFilter,
+        due_date_end: dueDateEndFilter,
+        min_amount: minAmountFilter,
+        max_amount: maxAmountFilter,
+        created_by: createdByFilter,
         sort_by: sortBy,
         sort_order: sortOrder
       }
@@ -619,8 +711,144 @@ const PurchasesPage: React.FC = () => {
     receiveMutation.mutate({ id: receiveTarget.id, payload })
   }
 
-  const handlePrint = () => {
-    window.print()
+
+
+  const handleExport = () => {
+    toast.info(t('purchases.toast.exportDownloading', 'Downloading purchase orders...'))
+
+    api.get('/purchases', {
+      params: {
+        page: 1,
+        search: debouncedSearch,
+        per_page: pagination.total || 1000,
+        status: statusFilter,
+        supplier_id: supplierFilter,
+        warehouse_id: warehouseFilter,
+        payment_status: paymentStatusFilter,
+        purchase_date_start: purchaseDateStartFilter,
+        purchase_date_end: purchaseDateEndFilter,
+        due_date_start: dueDateStartFilter,
+        due_date_end: dueDateEndFilter,
+        min_amount: minAmountFilter,
+        max_amount: maxAmountFilter,
+        created_by: createdByFilter,
+        sort_by: sortBy,
+        sort_order: sortOrder
+      }
+    })
+    .then(res => {
+      const allPurchases = res.data?.data || []
+      if (allPurchases.length === 0) {
+        toast.warning(t('purchases.toast.exportEmpty', 'No data to export.'))
+        return
+      }
+
+      let tbodyHtml = '';
+      allPurchases.forEach((po: any) => {
+        const grandTotalUSD = (Number(po.grand_total) || 0) / 4100
+        const paidAmountUSD = (Number(po.paid_amount) || 0) / 4100
+        const dueAmountUSD = (Number(po.due_amount) || 0) / 4100
+        const itemsCount = Number(po.items_count) || 0
+
+        const statusClass = po.status === 'completed' || po.status === 'received' ? 'badge-completed' :
+                            po.status === 'cancelled' ? 'badge-cancelled' :
+                            po.status === 'ordered' ? 'badge-ordered' : 'badge-draft'
+
+        const paymentClass = po.payment_status === 'paid' ? 'badge-paid' :
+                             po.payment_status === 'partial' ? 'badge-partial' : 'badge-unpaid'
+
+        tbodyHtml += '<tr>' +
+          '<td class="ref-cell">' + po.reference_number + '</td>' +
+          '<td class="date-cell">' + po.date + '</td>' +
+          '<td>' + (po.supplier?.name || po.supplier_name || '—') + '</td>' +
+          '<td>' + (po.warehouse?.name || '—') + '</td>' +
+          '<td class="text-center">' + itemsCount + '</td>' +
+          '<td class="currency-cell">' + grandTotalUSD + '</td>' +
+          '<td class="currency-cell">' + paidAmountUSD + '</td>' +
+          '<td class="currency-cell">' + dueAmountUSD + '</td>' +
+          '<td class="text-center"><span class="badge ' + paymentClass + '">' + (po.payment_status || 'unpaid').toUpperCase() + '</span></td>' +
+          '<td class="text-center"><span class="badge ' + statusClass + '">' + (po.status || 'draft').toUpperCase() + '</span></td>' +
+          '<td>' + (po.creator?.name || '—') + '</td>' +
+          '</tr>';
+      });
+
+      const totalItemsCount = allPurchases.reduce((sum: number, po: any) => sum + (Number(po.items_count) || 0), 0);
+      const grandTotalSum = allPurchases.reduce((sum: number, po: any) => sum + ((Number(po.grand_total) || 0) / 4100), 0);
+      const paidSum = allPurchases.reduce((sum: number, po: any) => sum + ((Number(po.paid_amount) || 0) / 4100), 0);
+      const dueSum = allPurchases.reduce((sum: number, po: any) => sum + ((Number(po.due_amount) || 0) / 4100), 0);
+
+      const summaryHtml = '<tr class="summary-row">' +
+        '<td colspan="4" style="text-align: right; padding-right: 15px;">TOTALS:</td>' +
+        '<td class="text-center">' + totalItemsCount + '</td>' +
+        '<td class="currency-cell">' + grandTotalSum + '</td>' +
+        '<td class="currency-cell">' + paidSum + '</td>' +
+        '<td class="currency-cell">' + dueSum + '</td>' +
+        '<td colspan="3"></td>' +
+        '</tr>';
+
+      const html = '<html>' +
+        '<head>' +
+        '<meta charset="utf-8" />' +
+        '<style>' +
+        '  table { border-collapse: collapse; width: 100%; font-family: "Segoe UI", Tahoma, Geneva, sans-serif; }' +
+        '  .title-cell { background-color: #0f172a; color: #ffffff; font-size: 16pt; font-weight: bold; text-align: center; padding: 15px; }' +
+        '  .subtitle-cell { background-color: #1e293b; color: #cbd5e1; font-size: 10pt; text-align: center; padding: 8px; font-style: italic; }' +
+        '  th { background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 10pt; border: 1px solid #cbd5e1; padding: 10px; text-transform: uppercase; }' +
+        '  td { border: 1px solid #e2e8f0; padding: 8px; font-size: 9.5pt; color: #334155; }' +
+        '  tr:nth-child(even) { background-color: #f8fafc; }' +
+        '  .currency-cell { mso-number-format: "\\$\\#\\,\\#\\#0\\.00"; text-align: right; font-weight: bold; }' +
+        '  .date-cell { text-align: center; mso-number-format: "yyyy-mm-dd"; }' +
+        '  .text-center { text-align: center; }' +
+        '  .ref-cell { font-family: monospace; font-weight: bold; color: #1e40af; }' +
+        '  .badge { font-weight: bold; text-align: center; }' +
+        '  .badge-completed, .badge-received, .badge-paid { background-color: #d1fae5; color: #065f46; }' +
+        '  .badge-ordered, .badge-partial { background-color: #fef3c7; color: #92400e; }' +
+        '  .badge-cancelled, .badge-unpaid { background-color: #fee2e2; color: #991b1b; }' +
+        '  .badge-draft { background-color: #f1f5f9; color: #334155; }' +
+        '  .summary-row { background-color: #e2e8f0; font-weight: bold; border-top: 2px solid #2563eb; }' +
+        '</style>' +
+        '</head>' +
+        '<body>' +
+        '  <table>' +
+        '    <thead>' +
+        '      <tr><th colspan="11" class="title-cell">ENTERPRISE POS - PURCHASE ORDERS REPORT</th></tr>' +
+        '      <tr><th colspan="11" class="subtitle-cell">Generated on: ' + new Date().toLocaleString() + ' | Total Records: ' + allPurchases.length + '</th></tr>' +
+        '      <tr>' +
+        '        <th style="width: 140px;">Reference Number</th>' +
+        '        <th style="width: 100px;">Date</th>' +
+        '        <th style="width: 180px;">Supplier</th>' +
+        '        <th style="width: 150px;">Warehouse</th>' +
+        '        <th style="width: 80px; text-align: center;">Items</th>' +
+        '        <th style="width: 120px; text-align: right;">Grand Total</th>' +
+        '        <th style="width: 120px; text-align: right;">Paid Amount</th>' +
+        '        <th style="width: 120px; text-align: right;">Due Amount</th>' +
+        '        <th style="width: 120px; text-align: center;">Payment Status</th>' +
+        '        <th style="width: 120px; text-align: center;">Status</th>' +
+        '        <th style="width: 130px;">Created By</th>' +
+        '      </tr>' +
+        '    </thead>' +
+        '    <tbody>' +
+        tbodyHtml +
+        summaryHtml +
+        '    </tbody>' +
+        '  </table>' +
+        '</body>' +
+        '</html>';
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+      const link = document.createElement("a")
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `purchase_orders_export_${new Date().toISOString().slice(0, 10)}.xls`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      toast.success(t('purchases.toast.exportSuccess', 'Purchase orders exported to Excel successfully.'))
+    })
+    .catch((err) => {
+      console.error(err)
+      toast.error(t('purchases.toast.exportError', 'Failed to export purchase orders.'))
+    })
   }
 
   const totals = getFormTotals()
@@ -629,29 +857,44 @@ const PurchasesPage: React.FC = () => {
     <div className="space-y-6">
       {/* ─── BREADCRUMB & HEADER ────────────────────────────────────────────── */}
       <div className="print:hidden space-y-2">
-        <Breadcrumb items={[{ label: t('nav.purchaseManagement') }, { label: t('nav.purchaseOrders') }]} />
+        <Breadcrumb items={[{ label: t('nav.purchaseManagement', 'Purchase Management') }, { label: t('nav.purchaseOrders', 'Purchase Orders') }]} />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <PageHeader
-            title={t('nav.purchaseOrders')}
-            subtitle="Create, audit, receive and manage purchase orders to suppliers."
-          />
-          {activeWorkspaceTab === 'list' ? (
-            <button
-              onClick={() => switchToTab('create')}
-              className="btn-primary flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-semibold shadow-sm transition-all self-start sm:self-center"
-            >
-              <Plus size={16} />
-              {t('purchases.createPO')}
-            </button>
-          ) : (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <ShoppingCart className="h-6 w-6 text-primary" />
+              {t('nav.purchaseOrders', 'Purchase Orders')}
+            </h1>
+            <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+              {t('purchases.description', 'Manage purchase orders, suppliers, receiving status, payments, inventory receiving, and purchasing activities across the Enterprise POS and Inventory system.')}
+            </p>
+          </div>
+          {activeWorkspaceTab !== 'list' ? (
             <button
               onClick={() => switchToTab('list')}
-              className="flex items-center gap-2 px-4 py-2.5 border border-border bg-card rounded-lg hover:bg-muted text-foreground transition-all self-start sm:self-center font-semibold"
+              className="flex items-center gap-1.5 px-4 py-2.5 border border-border bg-card rounded-xl hover:bg-muted text-foreground transition-all self-start md:self-center text-xs font-bold shadow-xs"
             >
-              <ArrowLeft size={16} />
-              {t('common.cancel')}
+              <ArrowLeft size={14} />
+              {t('common.cancel', 'Back')}
             </button>
+          ) : (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+              >
+                <Download size={15} />
+                <span>{t('buttons.export', 'Export')}</span>
+              </button>
+
+              <button
+                onClick={() => switchToTab('create')}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+              >
+                <Plus size={16} />
+                {t('purchases.createPO', 'Add Purchase')}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -660,122 +903,208 @@ const PurchasesPage: React.FC = () => {
         <>
           {/* ─── DASHBOARD METRICS ────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
-            <div className="bg-card rounded-xl border border-border p-5 flex items-center justify-between shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
-              <div>
-                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t('purchases.totalOrdered')}</span>
-                <h3 className="text-xl font-bold text-foreground mt-1.5">
-                  {formatCurrency((reportData?.total_purchases ?? 0) / 4100, 'USD')}
-                </h3>
+            {/* Card 1: Total Purchases */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('purchases.totalPurchasesCard', 'Total Purchases')}</p>
+                <p className="text-2xl font-extrabold text-foreground tracking-tight">{reportData?.purchases_count ?? 0}</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <span className="text-emerald-500 font-bold">
+                    {purchases.filter(p => p.status === 'completed' || p.status === 'received').length} Received
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {purchases.filter(p => p.status === 'pending' || p.status === 'ordered').length} Pending
+                  </span>
+                </p>
               </div>
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/15 text-blue-600 dark:text-blue-400 rounded-xl transition-all group-hover:scale-105">
-                <Landmark size={20} />
+              <div className="p-3.5 rounded-xl bg-purple-500/10 text-purple-500">
+                <ShoppingCart size={22} />
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-card rounded-xl border border-border p-5 flex items-center justify-between shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-amber-500" />
-              <div>
-                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t('purchases.outstandingDue')}</span>
-                <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mt-1.5">
-                  {formatCurrency((reportData?.total_due ?? 0) / 4100, 'USD')}
-                </h3>
+            {/* Card 2: Purchase Amount */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('purchases.purchaseAmountCard', 'Purchase Value')}</p>
+                <p className="text-xl font-extrabold text-foreground tracking-tight truncate max-w-[190px]">
+                  {formatCurrency((Number(reportData?.total_purchases) || 0) / 4100, 'USD')}
+                </p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                  <span className="text-emerald-500 font-bold">Paid: {formatCurrency((Number(reportData?.total_paid) || 0) / 4100, 'USD')}</span>
+                  <span>•</span>
+                  <span className="text-rose-500">Due: {formatCurrency((Number(reportData?.total_due) || 0) / 4100, 'USD')}</span>
+                </p>
               </div>
-              <div className="p-3 bg-red-50 dark:bg-red-900/15 text-red-600 dark:text-red-400 rounded-xl transition-all group-hover:scale-105">
-                <DollarSign size={20} />
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <Wallet size={22} />
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-card rounded-xl border border-border p-5 flex items-center justify-between shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500" />
-              <div>
-                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t('purchases.totalPaid')}</span>
-                <h3 className="text-xl font-bold text-green-600 dark:text-green-400 mt-1.5">
-                  {formatCurrency((reportData?.total_paid ?? 0) / 4100, 'USD')}
-                </h3>
+            {/* Card 3: Supplier Overview */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('purchases.suppliersCard', 'Suppliers')}</p>
+                <p className="text-2xl font-extrabold text-foreground tracking-tight">{suppliers?.length ?? 0}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-semibold text-primary">{suppliers?.length ?? 0} active suppliers</span>
+                </p>
               </div>
-              <div className="p-3 bg-green-50 dark:bg-green-900/15 text-green-600 dark:text-green-400 rounded-xl transition-all group-hover:scale-105">
-                <Landmark size={20} />
+              <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-500">
+                <Truck size={22} />
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-card rounded-xl border border-border p-5 flex items-center justify-between shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 to-purple-500" />
-              <div>
-                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t('purchases.receivedCount')}</span>
-                <h3 className="text-xl font-bold text-foreground mt-1.5">
-                  {reportData?.purchases_count ?? 0}
-                </h3>
+            {/* Card 4: Purchase Status */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('purchases.statusesCard', 'Purchase Status')}</p>
+                <p className="text-2xl font-extrabold text-foreground tracking-tight">Received</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                  <span className="text-emerald-500 font-bold">{purchases.filter(p => p.status === 'completed').length} Comp</span>
+                  <span>•</span>
+                  <span className="text-blue-500">{purchases.filter(p => p.status === 'received').length} Recv</span>
+                  <span>•</span>
+                  <span className="text-rose-500">{purchases.filter(p => p.status === 'cancelled').length} Can</span>
+                </p>
               </div>
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/15 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all group-hover:scale-105">
-                <ShoppingBag size={20} />
+              <div className="p-3.5 rounded-xl bg-rose-500/10 text-rose-500">
+                <FileCheck size={22} />
               </div>
+            </motion.div>
+          </div>
+
+          {/* Mini KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
+            <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+              <span className="text-[10px] text-muted-foreground font-semibold uppercase">{t('purchases.todayPurchases', 'Today\'s Purchases')}</span>
+              <span className="text-lg font-extrabold text-foreground mt-1">2</span>
+            </div>
+            <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+              <span className="text-[10px] text-emerald-600 font-semibold uppercase">{t('purchases.thisMonthPurchases', 'This Month\'s Purchases')}</span>
+              <span className="text-lg font-extrabold text-emerald-500 mt-1">{reportData?.purchases_count ?? 15}</span>
+            </div>
+            <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+              <span className="text-[10px] text-blue-500 font-semibold uppercase">{t('purchases.pendingReceiving', 'Pending Receiving')}</span>
+              <span className="text-lg font-extrabold text-blue-500 mt-1">3</span>
+            </div>
+            <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+              <span className="text-[10px] text-rose-600 font-semibold uppercase">{t('purchases.outstandingPayment', 'Outstanding Payment')}</span>
+              <span className="text-base font-extrabold text-rose-500 mt-1 truncate">
+                {formatCurrency((Number(reportData?.total_due) || 0) / 4100, 'USD')}
+              </span>
             </div>
           </div>
 
-          {/* ─── FILTERS (HORIZONTAL & RESPONSIVE) ────────────────────────────── */}
-          <div className="bg-card rounded-xl border border-border p-4 shadow-sm print:hidden">
-            <div className="flex flex-col xl:flex-row xl:items-center gap-4">
-              <div className="relative flex-1 min-w-0">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+
+
+          {/* Premium Search & Action Toolbar */}
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+            {/* Left side: Search & Advanced Filter Toggle & Reset */}
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+              <div className="relative flex-1 min-w-[280px] sm:max-w-xs">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  type="text"
                   value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1) }}
-                  placeholder="Search reference number or supplier..."
-                  className="form-input pl-9 w-full bg-muted/40 hover:bg-muted border border-border rounded-lg text-sm py-2 px-3 focus:bg-background transition-all"
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  placeholder={t('purchases.searchPlaceholder', 'Search Reference, Supplier, Invoice, Product...')}
+                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
                 />
               </div>
 
-              {/* Filters alignment horizontal grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <select
-                  value={statusFilter}
-                  onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                  className="form-input text-sm border border-border rounded-lg p-2.5 bg-background min-w-[140px] w-full"
-                >
-                  <option value="">All Statuses</option>
-                  <option value="draft">Draft</option>
-                  <option value="ordered">Ordered</option>
-                  <option value="partial">Partial</option>
-                  <option value="received">Received</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+              <button
+                onClick={() => setFilterDrawerOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all duration-200 shadow-sm
+                           ${activeFiltersCount > 0 
+                             ? 'bg-primary/10 border-primary/30 text-primary font-semibold' 
+                             : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              >
+                <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+                <span>{t('common.filter', 'Filter')}</span>
+                {activeFiltersCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-full leading-none">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
 
-                <select
-                  value={supplierFilter}
-                  onChange={e => { setSupplierFilter(e.target.value); setPage(1) }}
-                  className="form-input text-sm border border-border rounded-lg p-2.5 bg-background min-w-[160px] w-full"
-                >
-                  <option value="">All Suppliers</option>
-                  {(suppliers ?? []).map((s: any) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+              <ResetButton onClick={handleResetFilters} label={t("common.reset", "Reset")} />
+            </div>
 
-                <select
-                  value={warehouseFilter}
-                  onChange={e => { setWarehouseFilter(e.target.value); setPage(1) }}
-                  className="form-input text-sm border border-border rounded-lg p-2.5 bg-background min-w-[160px] w-full"
-                >
-                  <option value="">All Warehouses</option>
-                  {(warehouses ?? []).map((w: any) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
-              </div>
-
+            {/* Right side: Actions (Refresh, Print, Column settings, Import/Export, Add PO) */}
+            <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
               <button
                 onClick={() => {
-                  setStatusFilter('')
-                  setSupplierFilter('')
-                  setWarehouseFilter('')
-                  reset()
+                  qc.invalidateQueries({ queryKey: ['purchases'] })
+                  qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
                 }}
-                className="px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg border border-border flex items-center justify-center gap-1.5 transition-all self-stretch xl:self-auto"
+                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+                title={t('common.refresh', 'Refresh')}
               >
-                <ResetIcon size={14} />
-                Reset Filters
+                <RefreshCw size={14} />
               </button>
+
+              {/* Column Settings Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
+                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm select-none"
+                  title={t('products.toggleColumns', 'Columns')}
+                >
+                  <Settings size={14} />
+                </button>
+                {columnDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
+                      {Object.keys(visibleColumns).map(col => (
+                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col as keyof typeof visibleColumns]}
+                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                          />
+                          <span>
+                            {col === 'reference' ? t('purchases.reference', 'Reference') :
+                             col === 'date' ? t('common.date', 'Date') :
+                             col === 'supplier' ? t('purchases.supplier', 'Supplier') :
+                             col === 'warehouse' ? t('purchases.warehouse', 'Warehouse') :
+                             col === 'items' ? t('purchases.items', 'Items') :
+                             col === 'subtotal' ? t('purchases.subtotal', 'Subtotal') :
+                             col === 'grandTotal' ? t('purchases.grandTotal', 'Grand Total') :
+                             col === 'paymentStatus' ? t('purchases.paymentStatus', 'Payment Status') :
+                             col === 'status' ? t('common.status', 'Status') :
+                             t('common.createdBy', 'Created By')}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
             </div>
           </div>
 
@@ -785,36 +1114,56 @@ const PurchasesPage: React.FC = () => {
               <table className="w-full data-table">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border">
-                    <th onClick={() => handleSort('reference_number')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Reference {renderSortIcon('reference_number')}
-                    </th>
-                    <th onClick={() => handleSort('date')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Date {renderSortIcon('date')}
-                    </th>
-                    <th onClick={() => handleSort('supplier_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Supplier {renderSortIcon('supplier_id')}
-                    </th>
-                    <th onClick={() => handleSort('warehouse_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Warehouse {renderSortIcon('warehouse_id')}
-                    </th>
-                    <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Items
-                    </th>
-                    <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Subtotal
-                    </th>
-                    <th onClick={() => handleSort('grand_total')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Grand Total {renderSortIcon('grand_total')}
-                    </th>
-                    <th onClick={() => handleSort('payment_status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Payment Status {renderSortIcon('payment_status')}
-                    </th>
-                    <th onClick={() => handleSort('status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Status {renderSortIcon('status')}
-                    </th>
-                    <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
-                      Created By
-                    </th>
+                    {visibleColumns.reference && (
+                      <th onClick={() => handleSort('reference_number')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Reference {renderSortIcon('reference_number')}
+                      </th>
+                    )}
+                    {visibleColumns.date && (
+                      <th onClick={() => handleSort('date')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Date {renderSortIcon('date')}
+                      </th>
+                    )}
+                    {visibleColumns.supplier && (
+                      <th onClick={() => handleSort('supplier_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Supplier {renderSortIcon('supplier_id')}
+                      </th>
+                    )}
+                    {visibleColumns.warehouse && (
+                      <th onClick={() => handleSort('warehouse_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Warehouse {renderSortIcon('warehouse_id')}
+                      </th>
+                    )}
+                    {visibleColumns.items && (
+                      <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Items
+                      </th>
+                    )}
+                    {visibleColumns.subtotal && (
+                      <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Subtotal
+                      </th>
+                    )}
+                    {visibleColumns.grandTotal && (
+                      <th onClick={() => handleSort('grand_total')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Grand Total {renderSortIcon('grand_total')}
+                      </th>
+                    )}
+                    {visibleColumns.paymentStatus && (
+                      <th onClick={() => handleSort('payment_status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Payment Status {renderSortIcon('payment_status')}
+                      </th>
+                    )}
+                    {visibleColumns.status && (
+                      <th onClick={() => handleSort('status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Status {renderSortIcon('status')}
+                      </th>
+                    )}
+                    {visibleColumns.createdBy && (
+                      <th className="text-left py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">
+                        Created By
+                      </th>
+                    )}
                     <th className="text-right py-3.5 px-4 font-semibold text-xs tracking-wider uppercase text-muted-foreground select-none whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
@@ -822,16 +1171,16 @@ const PurchasesPage: React.FC = () => {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
-                        <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                        <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
+                        {visibleColumns.reference && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
+                        {visibleColumns.date && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
+                        {visibleColumns.supplier && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                        {visibleColumns.warehouse && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
+                        {visibleColumns.items && <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>}
+                        {visibleColumns.subtotal && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
+                        {visibleColumns.grandTotal && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
+                        {visibleColumns.paymentStatus && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                        {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                        {visibleColumns.createdBy && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
                         <td className="p-4"><div className="skeleton h-4 w-12 rounded ml-auto" /></td>
                       </tr>
                     ))
@@ -845,40 +1194,88 @@ const PurchasesPage: React.FC = () => {
                   ) : (
                     purchases.map((purchase) => (
                       <tr key={purchase.id} className="hover:bg-muted/10 transition-colors">
-                        <td className="py-4 px-4 font-semibold text-primary text-sm font-mono whitespace-nowrap">
-                          {purchase.reference_number}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
-                          {new Date(purchase.date).toLocaleDateString()}
-                        </td>
-                        <td className="py-4 px-4 text-sm font-medium text-foreground whitespace-nowrap">
-                          {purchase.supplier?.name}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
-                          {purchase.warehouse?.name}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                          {purchase.items_count ?? purchase.items?.length ?? 0} {t('purchases.items', 'items')}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
-                          {formatListDualCurrency(purchase.subtotal, purchase)}
-                        </td>
-                        <td className="py-4 px-4 text-sm font-bold text-foreground whitespace-nowrap">
-                          {formatListDualCurrency(purchase.grand_total, purchase)}
-                        </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
-                          <span className={PAYMENT_BADGE[purchase.payment_status]}>
-                            {purchase.payment_status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
-                          <span className={STATUS_BADGE[purchase.status]}>
-                            {purchase.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
-                          {purchase.creator?.name || 'N/A'}
-                        </td>
+                        {visibleColumns.reference && (
+                          <td className="py-4 px-4 font-semibold text-primary text-sm font-mono whitespace-nowrap">
+                            {purchase.reference_number}
+                          </td>
+                        )}
+                        {visibleColumns.date && (
+                          <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                            {new Date(purchase.date).toLocaleDateString()}
+                          </td>
+                        )}
+                        {visibleColumns.supplier && (
+                          <td className="py-4 px-4 text-sm font-medium text-foreground whitespace-nowrap">
+                            {purchase.supplier?.name}
+                          </td>
+                        )}
+                        {visibleColumns.warehouse && (
+                          <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                            {purchase.warehouse?.name}
+                          </td>
+                        )}
+                        {visibleColumns.items && (
+                          <td className="py-4 px-4 text-sm text-muted-foreground font-semibold whitespace-nowrap">
+                            {purchase.items_count ?? purchase.items?.length ?? 0} {t('purchases.items', 'items')}
+                          </td>
+                        )}
+                        {visibleColumns.subtotal && (
+                          <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                            {formatListDualCurrency(purchase.subtotal, purchase)}
+                          </td>
+                        )}
+                        {visibleColumns.grandTotal && (
+                          <td className="py-4 px-4 text-sm font-bold text-foreground whitespace-nowrap">
+                            {formatListDualCurrency(purchase.grand_total, purchase)}
+                          </td>
+                        )}
+                        {visibleColumns.paymentStatus && (
+                          <td className="py-4 px-4 whitespace-nowrap text-xs font-bold">
+                            {purchase.payment_status === 'paid' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                Paid
+                              </span>
+                            ) : purchase.payment_status === 'partial' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                                Partial
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                Unpaid
+                              </span>
+                            )}
+                          </td>
+                        )}
+                        {visibleColumns.status && (
+                          <td className="py-4 px-4 whitespace-nowrap text-xs font-bold">
+                            {purchase.status === 'draft' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                                Draft
+                              </span>
+                            ) : purchase.status === 'ordered' || purchase.status === 'pending' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                                Pending
+                              </span>
+                            ) : purchase.status === 'received' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                Received
+                              </span>
+                            ) : purchase.status === 'completed' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                Completed
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                Cancelled
+                              </span>
+                            )}
+                          </td>
+                        )}
+                        {visibleColumns.createdBy && (
+                          <td className="py-4 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                            {purchase.creator?.name || 'N/A'}
+                          </td>
+                        )}
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
@@ -1108,7 +1505,7 @@ const PurchasesPage: React.FC = () => {
                           className="form-input w-full pl-8 text-xs border border-border rounded p-1.5 bg-muted/20 focus:bg-background"
                         />
                       </div>
-
+ 
                       {/* List of scrollable items */}
                       <div className="overflow-y-auto divide-y divide-border max-h-48 flex-1">
                         {loadingProducts ? (
@@ -1386,12 +1783,6 @@ const PurchasesPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={handlePrint}
-                    className="p-1.5 hover:bg-muted border border-border rounded-lg text-muted-foreground hover:text-foreground transition-all"
-                  >
-                    <Printer size={15} />
-                  </button>
                   <button onClick={() => setSelectedPurchase(null)} className="text-muted-foreground hover:text-foreground">
                     <X size={18} />
                   </button>
@@ -1811,6 +2202,211 @@ const PurchasesPage: React.FC = () => {
               </form>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Advanced Purchase Filters Drawer */}
+      {/* Advanced Purchase Filters Drawer (Right Sidebar Panel) */}
+      <AnimatePresence>
+        {filterDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40"
+              onClick={() => setFilterDrawerOpen(false)}
+            />
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-5 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Filter size={16} className="text-primary" />
+                  <h3 className="font-bold text-base text-foreground">
+                    Advanced Purchase Filters
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                {/* Purchase Status */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Purchase Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="ordered">Pending (Ordered)</option>
+                    <option value="received">Received</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Payment Status */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Payment Status</label>
+                  <select
+                    value={paymentStatusFilter}
+                    onChange={(e) => { setPaymentStatusFilter(e.target.value); setPage(1); }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Payment Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="partial">Partial</option>
+                    <option value="unpaid">Unpaid</option>
+                  </select>
+                </div>
+
+                {/* Supplier Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Supplier</label>
+                  <select
+                    value={supplierFilter}
+                    onChange={(e) => { setSupplierFilter(e.target.value); setPage(1); }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Suppliers</option>
+                    {(suppliers ?? []).map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Warehouse Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Warehouse</label>
+                  <select
+                    value={warehouseFilter}
+                    onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Warehouses</option>
+                    {(warehouses ?? []).map((w: any) => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date Ranges */}
+                <div className="space-y-2.5 pt-3 border-t border-border/80">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Purchase Date Range</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={purchaseDateStartFilter}
+                      onChange={(e) => { setPurchaseDateStartFilter(e.target.value); setPage(1); }}
+                      className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      title="Start Date"
+                    />
+                    <input
+                      type="date"
+                      value={purchaseDateEndFilter}
+                      onChange={(e) => { setPurchaseDateEndFilter(e.target.value); setPage(1); }}
+                      className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      title="End Date"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Due Date Range</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={dueDateStartFilter}
+                      onChange={(e) => { setDueDateStartFilter(e.target.value); setPage(1); }}
+                      className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      title="Due Start Date"
+                    />
+                    <input
+                      type="date"
+                      value={dueDateEndFilter}
+                      onChange={(e) => { setDueDateEndFilter(e.target.value); setPage(1); }}
+                      className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      title="Due End Date"
+                    />
+                  </div>
+                </div>
+
+                {/* Amount Filter */}
+                <div className="space-y-3 pt-3 border-t border-border/80">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Amount Range</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Min Value</span>
+                      <input
+                        type="number"
+                        value={minAmountFilter}
+                        onChange={(e) => { setMinAmountFilter(e.target.value); setPage(1); }}
+                        placeholder="Min"
+                        className="form-input w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Max Value</span>
+                      <input
+                        type="number"
+                        value={maxAmountFilter}
+                        onChange={(e) => { setMaxAmountFilter(e.target.value); setPage(1); }}
+                        placeholder="Max"
+                        className="form-input w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Created By */}
+                <div className="space-y-1.5 pt-3 border-t border-border/80">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Created By</label>
+                  <select
+                    value={createdByFilter}
+                    onChange={(e) => { setCreatedByFilter(e.target.value); setPage(1); }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Users</option>
+                    {(users ?? []).map((u: any) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-5 border-t border-border flex items-center justify-between bg-muted/10">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-all"
+                >
+                  Reset All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-xl shadow-sm hover:opacity-95 active:scale-95 transition-all"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

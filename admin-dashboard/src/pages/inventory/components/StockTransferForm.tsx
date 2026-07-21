@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Trash2, CheckCircle, Clock, Loader2, ArrowLeftRight, Truck, User, Package } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CheckCircle, Clock, Loader2, ArrowLeftRight, Truck, User, Package, Info, FileText, Warehouse } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
@@ -248,49 +248,95 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: General Info */}
-        <div className="lg:col-span-1 bg-card border border-border/50 rounded-2xl p-5 space-y-4 shadow-sm h-fit">
-          <h3 className="text-sm font-bold text-foreground font-semibold uppercase tracking-wider">{t('inventory.general_info', 'General Info')}</h3>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.from_warehouse', 'Source Warehouse')}</label>
-            <select
-              value={fromWarehouseId}
-              onChange={(e) => setFromWarehouseId(e.target.value)}
-              required
-              disabled={!isDraft}
-              className="form-input"
-            >
-              <option value="">Select Source</option>
-              {(warehouses ?? []).map((w: any) => (
-                <option key={w.id} value={w.id}>{w.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.to_warehouse', 'Destination Warehouse')}</label>
-            <select
-              value={toWarehouseId}
-              onChange={(e) => setToWarehouseId(e.target.value)}
-              required
-              disabled={!isDraft}
-              className="form-input"
-            >
-              <option value="">Select Destination</option>
-              {(warehouses ?? []).map((w: any) => (
-                <option key={w.id} value={w.id}>{w.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.notes', 'Notes')}</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={!isDraft}
-              rows={3}
-              placeholder="Detailed notes/reference..."
-              className="form-input"
-            />
-          </div>
+        <div className="lg:col-span-1 bg-card border border-border/50 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
+          <h3 className="text-sm font-bold text-foreground font-semibold uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-border">
+            <Info size={16} className="text-indigo-500" />
+            {t('inventory.general_info', 'General Info')}
+          </h3>
+
+          {!isDraft ? (
+            <div className="space-y-4">
+              {/* Source Warehouse */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
+                  <Warehouse size={16} />
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.from_warehouse', 'Source Warehouse')}</span>
+                  <span className="text-sm font-semibold text-foreground mt-0.5 block">
+                    {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Unknown Warehouse'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Destination Warehouse */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
+                  <Warehouse size={16} />
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.to_warehouse', 'Destination Warehouse')}</span>
+                  <span className="text-sm font-semibold text-foreground mt-0.5 block">
+                    {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Unknown Warehouse'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
+                  <FileText size={16} />
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.notes', 'Notes')}</span>
+                  <span className="text-sm text-muted-foreground mt-1 block leading-relaxed whitespace-pre-wrap font-normal italic">
+                    "{notes || '—'}"
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.from_warehouse', 'Source Warehouse')}</label>
+                <select
+                  value={fromWarehouseId}
+                  onChange={(e) => setFromWarehouseId(e.target.value)}
+                  required
+                  className="form-input"
+                >
+                  <option value="">Select Source</option>
+                  {(warehouses ?? []).map((w: any) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.to_warehouse', 'Destination Warehouse')}</label>
+                <select
+                  value={toWarehouseId}
+                  onChange={(e) => setToWarehouseId(e.target.value)}
+                  required
+                  className="form-input"
+                >
+                  <option value="">Select Destination</option>
+                  {(warehouses ?? []).map((w: any) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.notes', 'Notes')}</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Detailed notes/reference..."
+                  className="form-input"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Side: Items Management */}
@@ -315,63 +361,81 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
                 <tr className="border-b border-border/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/20">
                   <th className="py-2.5 px-3">{t('products.title', 'Product')}</th>
                   <th className="py-2.5 px-3 w-32">{t('inventory.qty_requested', 'Req Qty')}</th>
-                  {isInTransit && <th className="py-2.5 px-3 w-32">{t('inventory.qty_received', 'Rec Qty')}</th>}
+                  {(isInTransit || isReceived) && <th className="py-2.5 px-3 w-32">{t('inventory.qty_received', 'Rec Qty')}</th>}
                   {isDraft && <th className="py-2.5 px-3 w-12 text-center"></th>}
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
-                  <tr key={idx} className="border-b border-border/20 last:border-0 hover:bg-muted/10">
-                    <td className="py-2 px-3">
-                      <select
-                        value={item.product_id}
-                        onChange={(e) => handleItemChange(idx, 'product_id', e.target.value)}
-                        required
-                        disabled={!isDraft}
-                        className="form-input text-xs"
-                      >
-                        <option value="">Select Product</option>
-                        {(products ?? []).map((p: any) => (
-                          <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-2 px-3">
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                        required
-                        min="0.0001"
-                        disabled={!isDraft}
-                        className="form-input text-xs"
-                      />
-                    </td>
-                    {isInTransit && (
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          value={item.quantity_received ?? item.quantity}
-                          onChange={(e) => handleItemChange(idx, 'quantity_received', parseFloat(e.target.value) || 0)}
-                          required
-                          min="0"
-                          className="form-input text-xs border-emerald-500/60 focus:ring-emerald-500/30"
-                        />
+                {items.map((item, idx) => {
+                  const productObj = products?.find((p: any) => p.id.toString() === item.product_id)
+                  return (
+                    <tr key={idx} className="border-b border-border/20 last:border-0 hover:bg-muted/10">
+                      <td className="py-3 px-3">
+                        {!isDraft ? (
+                          <span className="text-xs text-foreground font-semibold">
+                            {productObj ? `${productObj.name} (${productObj.sku})` : 'Unknown Product'}
+                          </span>
+                        ) : (
+                          <select
+                            value={item.product_id}
+                            onChange={(e) => handleItemChange(idx, 'product_id', e.target.value)}
+                            required
+                            className="form-input text-xs"
+                          >
+                            <option value="">Select Product</option>
+                            {(products ?? []).map((p: any) => (
+                              <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                            ))}
+                          </select>
+                        )}
                       </td>
-                    )}
-                    {isDraft && (
-                      <td className="py-2 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(idx)}
-                          className="p-1 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                      <td className="py-3 px-3 text-xs text-foreground">
+                        {!isDraft ? (
+                          <span className="font-semibold">{item.quantity}</span>
+                        ) : (
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10) || 0)}
+                            required
+                            min="1"
+                            step="1"
+                            className="form-input text-xs"
+                          />
+                        )}
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      {isInTransit && (
+                        <td className="py-2 px-3">
+                          <input
+                            type="number"
+                            value={item.quantity_received ?? item.quantity}
+                            onChange={(e) => handleItemChange(idx, 'quantity_received', parseInt(e.target.value, 10) || 0)}
+                            required
+                            min="0"
+                            step="1"
+                            className="form-input text-xs border-emerald-500/60 focus:ring-emerald-500/30"
+                          />
+                        </td>
+                      )}
+                      {isReceived && (
+                        <td className="py-3 px-3 text-xs text-foreground font-semibold">
+                          {item.quantity_received}
+                        </td>
+                      )}
+                      {isDraft && (
+                        <td className="py-2 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(idx)}
+                            className="p-1 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
                 {items.length === 0 && (
                   <tr>
                     <td colSpan={isInTransit ? 3 : 2} className="text-center py-6 text-xs text-muted-foreground">

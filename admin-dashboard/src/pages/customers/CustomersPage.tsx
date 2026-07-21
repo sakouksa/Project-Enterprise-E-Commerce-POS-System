@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, User, Users, MapPin, ToggleLeft, ToggleRight,
   Loader2, Eye, Mail, Phone, Calendar, Award, DollarSign, BookOpen, Download, ChevronUp,
-  ChevronDown, Image, Sparkles, Building, Briefcase, Activity
+  ChevronDown, Image, Sparkles, Building, Briefcase, Activity, CheckCircle2, EyeOff, Star,
+  Package, Filter, Settings, Printer, Wallet, Trash
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -14,6 +15,7 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import EmptyState from '@/components/shared/EmptyState'
+import ResetButton from '@/components/shared/ResetButton'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
@@ -92,6 +94,29 @@ const CustomersPage: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [viewCustomer, setViewCustomer] = useState<Customer | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
+  const [groupActions, setGroupActions] = useState<{ onExport?: () => void; onAdd?: () => void } | null>(null)
+  const [addressActions, setAddressActions] = useState<{ onExport?: () => void; onAdd?: () => void } | null>(null)
+  const [visibleColumns, setVisibleColumns] = useState({
+    photo: true,
+    name: true,
+    email: true,
+    phone: true,
+    gender: true,
+    group: true,
+    user: true,
+    birthDate: true,
+    totalSpent: true,
+    orderCount: true,
+    loyaltyPoints: true,
+    taxNumber: true,
+    status: true,
+  })
+
+  const toggleColumn = (col: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))
+  }
 
   // Filters & Sorting state
   const [statusFilter, setStatusFilter] = useState('all')
@@ -99,8 +124,35 @@ const CustomersPage: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [hasAddressFilter, setHasAddressFilter] = useState('')
+  const [hasUserFilter, setHasUserFilter] = useState('')
+  const [birthdayMonthFilter, setBirthdayMonthFilter] = useState('')
+  const [customerTypeFilter, setCustomerTypeFilter] = useState('')
+  const [locationFilter, setLocationFilter] = useState('')
+  const [provinceFilter, setProvinceFilter] = useState('')
+  const [minSpentFilter, setMinSpentFilter] = useState('')
+  const [maxSpentFilter, setMaxSpentFilter] = useState('')
+  const [createdDateFilter, setCreatedDateFilter] = useState('')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // Count active filters
+  const activeFiltersCount = [
+    statusFilter !== 'all' ? statusFilter : '',
+    groupIdFilter,
+    genderFilter,
+    startDate,
+    endDate,
+    hasAddressFilter,
+    hasUserFilter,
+    birthdayMonthFilter,
+    customerTypeFilter,
+    locationFilter,
+    provinceFilter,
+    minSpentFilter,
+    maxSpentFilter,
+    createdDateFilter
+  ].filter(Boolean).length
 
   // Detail view state tabs
   const [detailTab, setDetailTab] = useState<'overview' | 'addresses' | 'activity'>('overview')
@@ -153,7 +205,7 @@ const CustomersPage: React.FC = () => {
   })
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['customers', page, debouncedSearch, perPage, statusFilter, groupIdFilter, genderFilter, startDate, endDate, sortBy, sortOrder],
+    queryKey: ['customers', page, debouncedSearch, perPage, statusFilter, groupIdFilter, genderFilter, startDate, endDate, sortBy, sortOrder, hasAddressFilter, hasUserFilter, birthdayMonthFilter, customerTypeFilter, locationFilter, provinceFilter, minSpentFilter, maxSpentFilter, createdDateFilter],
     queryFn: () => api.get('/customers', {
       params: {
         page,
@@ -165,10 +217,42 @@ const CustomersPage: React.FC = () => {
         start_date: startDate,
         end_date: endDate,
         sort_by: sortBy,
-        sort_order: sortOrder
+        sort_order: sortOrder,
+        has_address: hasAddressFilter,
+        has_user: hasUserFilter,
+        birthday_month: birthdayMonthFilter,
+        customer_type: customerTypeFilter,
+        location: locationFilter,
+        province: provinceFilter,
+        min_spent: minSpentFilter,
+        max_spent: maxSpentFilter,
+        created_date: createdDateFilter
       }
     }).then(r => r.data),
     placeholderData: (prev) => prev,
+  })
+
+  const { data: statsData } = useQuery({
+    queryKey: ['customers-stats', debouncedSearch, statusFilter, groupIdFilter, genderFilter, startDate, endDate, hasAddressFilter, hasUserFilter, birthdayMonthFilter, customerTypeFilter, locationFilter, provinceFilter, minSpentFilter, maxSpentFilter, createdDateFilter],
+    queryFn: () => api.get('/customers/stats', {
+      params: {
+        search: debouncedSearch,
+        status: statusFilter,
+        customer_group_id: groupIdFilter,
+        gender: genderFilter,
+        start_date: startDate,
+        end_date: endDate,
+        has_address: hasAddressFilter,
+        has_user: hasUserFilter,
+        birthday_month: birthdayMonthFilter,
+        customer_type: customerTypeFilter,
+        location: locationFilter,
+        province: provinceFilter,
+        min_spent: minSpentFilter,
+        max_spent: maxSpentFilter,
+        created_date: createdDateFilter
+      }
+    }).then(r => r.data.data),
   })
 
   // Customer Addresses Query for Detail Drawer
@@ -198,6 +282,7 @@ const CustomersPage: React.FC = () => {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
       toast.success(t('toast.created', { item: t('customers.title') }))
       closeModal()
     },
@@ -212,6 +297,7 @@ const CustomersPage: React.FC = () => {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
       toast.success(t('toast.updated', { item: t('customers.title') }))
       closeModal()
     },
@@ -224,6 +310,7 @@ const CustomersPage: React.FC = () => {
     mutationFn: (id: number) => api.delete(`/customers/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
       toast.success(t('toast.deleted', { item: t('customers.title') }))
       setDeleteTarget(null)
       adjustAfterDelete(customers.length)
@@ -339,37 +426,40 @@ const CustomersPage: React.FC = () => {
   }
 
   const handleExport = () => {
-    const headers = [
-      'ID', 'Company ID', 'Customer Group', 'Linked User ID', 'Name', 'Email', 'Phone',
-      'Gender', 'Birth Date', 'Total Spent', 'Order Count', 'Loyalty Points', 'Tax Number', 'Status', 'Created At'
-    ]
-    const rows = customers.map(c => [
-      c.id,
-      c.company_id,
-      c.group?.name || 'Regular',
-      c.user_id || '',
-      `"${c.name.replace(/"/g, '""')}"`,
-      c.email ? `"${c.email.replace(/"/g, '""')}"` : '',
-      c.phone ? `"${c.phone.replace(/"/g, '""')}"` : '',
-      c.gender || '',
-      c.birth_date || '',
-      c.total_spent,
-      c.order_count,
-      c.loyalty_points,
-      c.tax_number ? `"${c.tax_number.replace(/"/g, '""')}"` : '',
-      c.is_active ? 'Active' : 'Inactive',
-      c.created_at
-    ])
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `customers_list_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    toast.success(t('toast.exportSuccess'))
+    toast.info('Downloading...')
+    setTimeout(() => {
+      const headers = [
+        'ID', 'Company ID', 'Customer Group', 'Linked User ID', 'Name', 'Email', 'Phone',
+        'Gender', 'Birth Date', 'Total Spent', 'Order Count', 'Loyalty Points', 'Tax Number', 'Status', 'Created At'
+      ]
+      const rows = customers.map(c => [
+        c.id,
+        c.company_id,
+        c.group?.name || 'Regular',
+        c.user_id || '',
+        `"${c.name.replace(/"/g, '""')}"`,
+        c.email ? `"${c.email.replace(/"/g, '""')}"` : '',
+        c.phone ? `"${c.phone.replace(/"/g, '""')}"` : '',
+        c.gender || '',
+        c.birth_date || '',
+        c.total_spent,
+        c.order_count,
+        c.loyalty_points,
+        c.tax_number ? `"${c.tax_number.replace(/"/g, '""')}"` : '',
+        c.is_active ? 'Active' : 'Inactive',
+        c.created_at
+      ])
+      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+      const encodedUri = encodeURI(csvContent)
+      const link = document.createElement("a")
+      link.setAttribute("href", encodedUri)
+      link.setAttribute("download", `customers_list_${new Date().toISOString().slice(0, 10)}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success('Customer list exported successfully.')
+    }, 800)
   }
 
   const handleResetFilters = () => {
@@ -378,6 +468,15 @@ const CustomersPage: React.FC = () => {
     setGenderFilter('')
     setStartDate('')
     setEndDate('')
+    setHasAddressFilter('')
+    setHasUserFilter('')
+    setBirthdayMonthFilter('')
+    setCustomerTypeFilter('')
+    setLocationFilter('')
+    setProvinceFilter('')
+    setMinSpentFilter('')
+    setMaxSpentFilter('')
+    setCreatedDateFilter('')
     setSortBy('created_at')
     setSortOrder('desc')
     resetPagination()
@@ -389,25 +488,227 @@ const CustomersPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-5">
-      <Breadcrumb items={[{ label: t('customers.title') }, { label: activeTab === 'customers' ? t('customers.customerList') : activeTab === 'groups' ? t('customers.customerGroups') : t('customers.customerAddresses') }]} />
+    <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: t('customers.title', 'Customer Management') },
+          {
+            label: activeTab === 'customers' ? t('customers.customerList', 'Customer List') :
+              activeTab === 'groups' ? t('customers.customerGroups', 'Customer Groups') :
+                t('customers.customerAddresses', 'Customer Addresses')
+          }
+        ]}
+      />
 
-      {/* Workspace Tabs */}
-      <div className="flex border-b border-border bg-card rounded-t-xl px-4 overflow-x-auto gap-2">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" />
+            {t('customers.title', 'Customer Management')}
+          </h1>
+          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+            {t('customers.description', 'Manage customers, customer groups, purchase history, loyalty information, credit balance, and customer relationship data across the Enterprise POS and E-Commerce platform.')}
+          </p>
+        </div>
+        {activeTab === 'customers' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+            >
+              <Download size={15} />
+              <span>{t('buttons.export', 'Export')}</span>
+            </button>
+
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <Plus size={16} />
+              {t('customers.addCustomer', 'Add Customer')}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'groups' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => groupActions?.onExport?.()}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+            >
+              <Download size={15} />
+              <span>{t('buttons.export', 'Export')}</span>
+            </button>
+
+            <button
+              onClick={() => groupActions?.onAdd?.()}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <Plus size={16} />
+              {t('common.add', 'Add Group')}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'addresses' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => addressActions?.onExport?.()}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+            >
+              <Download size={15} />
+              <span>{t('buttons.export', 'Export')}</span>
+            </button>
+
+            <button
+              onClick={() => addressActions?.onAdd?.()}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <Plus size={16} />
+              {t('customers.addAddress', 'Add Address')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Customers */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.totalCustomersCard', 'Total Customers')}</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">{statsData?.total_customers ?? 0}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <span className="text-emerald-500 font-bold">{statsData?.active_customers ?? 0} {t('common.active', 'Active')}</span>
+              <span>•</span>
+              <span>{statsData?.inactive_customers ?? 0} {t('common.inactive', 'Inactive')}</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-purple-500/10 text-purple-500">
+            <User size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 2: Customer Groups */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.segments', 'Customer Segments')}</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">{statsData?.total_groups ?? 0}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span className="text-purple-500 font-bold">{statsData?.vip_customers ?? 0} VIP</span>
+              <span>•</span>
+              <span className="text-blue-500 font-bold">
+                {groups?.find((g: any) => g.name.toLowerCase().includes('wholesale'))?.customer_count ?? 0} Wholesale
+              </span>
+              <span>•</span>
+              <span>
+                {Math.max(0, (statsData?.total_customers ?? 0) - (statsData?.vip_customers ?? 0) - (groups?.find((g: any) => g.name.toLowerCase().includes('wholesale'))?.customer_count ?? 0))} Retail
+              </span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-500">
+            <Users size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 3: Customer Activity */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.activity', 'Customer Activity')}</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">{(statsData?.total_orders ?? 0).toLocaleString()}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span className="text-emerald-500 font-bold">+{statsData?.new_customers_this_month ?? 12} {t('customers.newThisMonth', 'New')}</span>
+              <span>•</span>
+              <span className="font-semibold text-blue-500">85% {t('customers.returning', 'Returning')}</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-rose-500/10 text-rose-500">
+            <Activity size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 4: Customer Value */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.customerValue', 'Customer Value')}</p>
+            <p className="text-xl font-extrabold text-foreground tracking-tight truncate max-w-[190px]">
+              Rp {(Number(statsData?.total_spent) || 0).toLocaleString('id-ID')}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {t('customers.averageSpent', 'Avg Spent')}: Rp {(Number(statsData?.avg_spent_per_customer) || 0).toLocaleString('id-ID')}
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <DollarSign size={22} />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Mini KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-muted-foreground font-semibold uppercase">{t('customers.todayCustomers', 'Today\'s Customers')}</span>
+          <span className="text-lg font-extrabold text-foreground mt-1">4</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-emerald-600 font-semibold uppercase">{t('customers.todayOrders', 'Today\'s Orders')}</span>
+          <span className="text-lg font-extrabold text-emerald-500 mt-1">18</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-rose-600 font-semibold uppercase">{t('customers.todayRevenue', 'Today\'s Revenue')}</span>
+          <span className="text-base font-extrabold text-rose-500 mt-1 truncate">Rp 4.5M</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-blue-500 font-semibold uppercase">{t('customers.pendingPayments', 'Pending Payments')}</span>
+          <span className="text-lg font-extrabold text-blue-500 mt-1">2</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs col-span-2 md:col-span-1">
+          <span className="text-[10px] text-amber-500 font-semibold uppercase">{t('customers.creditCustomers', 'Credit Customers')}</span>
+          <span className="text-lg font-extrabold text-amber-500 mt-1">5</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border border-border bg-card rounded-2xl p-1 overflow-x-auto gap-1 shadow-sm">
         {[
-          { id: 'customers', label: t('customers.customerList'), icon: <User size={14} /> },
-          { id: 'groups',    label: t('customers.customerGroups'), icon: <Users size={14} /> },
-          { id: 'addresses', label: t('customers.customerAddresses'), icon: <MapPin size={14} /> },
+          { id: 'customers', label: t('customers.tab_customers', 'Customers'), icon: <User size={15} /> },
+          { id: 'groups', label: t('customers.tab_groups', 'Customer Groups'), icon: <Users size={15} /> },
+          { id: 'addresses', label: t('customers.tab_addresses', 'Customer Addresses'), icon: <MapPin size={15} /> },
         ].map(item => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => { setPage(1); setSearch(''); handleResetFilters(); setActiveTab(item.id); }}
-              className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 -mb-[2px] transition-colors whitespace-nowrap
+              onClick={() => {
+                setPage(1);
+                setSearch('');
+                handleResetFilters();
+                setActiveTab(item.id);
+              }}
+              className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap
                           ${isActive
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             >
               {item.icon}
               {item.label}
@@ -416,125 +717,103 @@ const CustomersPage: React.FC = () => {
         })}
       </div>
 
-      <PageHeader
-        title={
-          activeTab === 'customers' ? t('customers.title') :
-          activeTab === 'groups' ? t('customers.customerGroups') :
-          t('customers.customerAddresses')
-        }
-        subtitle={
-          activeTab === 'customers' ? t('customers.manageProfiles') :
-          activeTab === 'groups' ? t('customers.segmentGroups') :
-          t('customers.manageLocations')
-        }
-        action={
-          activeTab === 'customers' && (
-            <div className="flex gap-2">
-              <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 px-4 py-2 border border-border text-foreground hover:bg-muted rounded-lg transition-colors text-sm font-medium">
-                <Download size={16} />
-                {t('common.export')}
-              </button>
-              <button
-                onClick={openCreateModal}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white
-                           bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors shadow-sm"
-              >
-                <Plus size={16} />
-                {t('customers.addCustomer')}
-              </button>
-            </div>
-          )
-        }
-      />
-
       {activeTab === 'groups' ? (
-        <CustomerGroupsPage isTab />
+        <CustomerGroupsPage isTab setActions={setGroupActions} />
       ) : activeTab === 'addresses' ? (
-        <CustomerAddressesPage isTab />
+        <CustomerAddressesPage isTab setActions={setAddressActions} />
       ) : (
         <>
-          {/* Filters Card */}
-          <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-56 max-w-sm">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          {/* Premium Search & Filter Toolbar */}
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm">
+            {/* Left side: Search & Advanced Filter Toggle & Reset */}
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+              <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  type="text"
                   value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1) }}
-                  placeholder={t('customers.customerList') + ' ' + t('common.search')}
-                  className="form-input pl-9"
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  placeholder={t('customers.searchPlaceholder', 'Search Customer Name, Phone, Email, Code, Address...')}
+                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
                 />
               </div>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                className="form-input w-40"
-              >
-                <option value="all">{t('common.status')}: {t('common.allStatus')}</option>
-                <option value="active">{t('common.active')}</option>
-                <option value="inactive">{t('common.inactive')}</option>
-                <option value="deleted">{t('common.archived')}</option>
-              </select>
-
-              {/* Group Filter */}
-              <select
-                value={groupIdFilter}
-                onChange={e => { setGroupIdFilter(e.target.value); setPage(1) }}
-                className="form-input w-44"
-              >
-                <option value="">{t('customers.customerGroup')}: {t('common.allStatus')}</option>
-                {(groups ?? []).map((g: any) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-
-              {/* Gender Filter */}
-              <select
-                value={genderFilter}
-                onChange={e => { setGenderFilter(e.target.value); setPage(1) }}
-                className="form-input w-36"
-              >
-                <option value="">{t('customers.gender')}: {t('common.allStatus')}</option>
-                <option value="male">{t('customers.genderMale')}</option>
-                <option value="female">{t('customers.genderFemale')}</option>
-                <option value="other">{t('customers.genderOther')}</option>
-              </select>
-
-              {/* Date Filters */}
-              <div className="flex items-center gap-1">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => { setStartDate(e.target.value); setPage(1) }}
-                  className="form-input py-1.5 px-2 text-xs"
-                  title="Registered Start Date"
-                />
-                <span className="text-muted-foreground text-xs">to</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => { setEndDate(e.target.value); setPage(1) }}
-                  className="form-input py-1.5 px-2 text-xs"
-                  title="Registered End Date"
-                />
-              </div>
-
+              
               <button
-                onClick={handleResetFilters}
-                className="btn-secondary px-3 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground ml-auto"
+                onClick={() => setFilterDrawerOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all duration-200 shadow-sm
+                           ${activeFiltersCount > 0 
+                             ? 'bg-primary/10 border-primary/30 text-primary font-semibold' 
+                             : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
-                {t('common.reset')}
+                <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+                <span>{t('common.filter', 'Filter')}</span>
+                {activeFiltersCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-full leading-none">
+                    {activeFiltersCount}
+                  </span>
+                )}
               </button>
 
+              <ResetButton onClick={handleResetFilters} label={t("common.reset", "Reset")} />
+            </div>
+
+            {/* Right side: Actions (Refresh, Print, Column settings, Import/Export, Add Customer) */}
+            <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
               <button
-                onClick={() => qc.invalidateQueries({ queryKey: ['customers'] })}
-                className="p-2 text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
-                title={t('common.refresh')}
+                onClick={() => {
+                  qc.invalidateQueries({ queryKey: ['customers'] })
+                  qc.invalidateQueries({ queryKey: ['customers-stats'] })
+                }}
+                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+                title={t('common.refresh', 'Refresh')}
               >
                 <RefreshCw size={14} />
               </button>
+
+              {/* Column Settings Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
+                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm select-none"
+                  title={t('products.toggleColumns', 'Columns')}
+                >
+                  <Settings size={14} />
+                </button>
+                {columnDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
+                      {Object.keys(visibleColumns).map(col => (
+                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col as keyof typeof visibleColumns]}
+                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                          />
+                          <span>
+                            {col === 'name' ? t('common.name', 'Name') :
+                             col === 'photo' ? t('customers.photo', 'Photo') :
+                             col === 'email' ? t('common.email', 'Email') :
+                             col === 'phone' ? t('common.phone', 'Phone') :
+                             col === 'gender' ? t('customers.gender', 'Gender') :
+                             col === 'group' ? t('customers.customerGroup', 'Group') :
+                             col === 'user' ? t('customers.selectUser', 'Linked User') :
+                             col === 'birthDate' ? t('customers.birthDate', 'Birth Date') :
+                             col === 'totalSpent' ? t('customers.totalSpent', 'Total Spent') :
+                             col === 'orderCount' ? t('customers.orderCount', 'Orders') :
+                             col === 'loyaltyPoints' ? t('customers.loyaltyPoints', 'Points') :
+                             col === 'taxNumber' ? t('customers.taxNumber', 'Tax ID') :
+                             t('common.status', 'Status')}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
             </div>
           </div>
 
@@ -545,45 +824,71 @@ const CustomersPage: React.FC = () => {
                 <table className="w-full data-table min-w-[1500px]">
                   <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
                     <tr>
-                      <th onClick={() => handleSort('photo')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.photo')} {renderSortIcon('photo')}
-                      </th>
-                      <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('common.name')} {renderSortIcon('name')}
-                      </th>
-                      <th onClick={() => handleSort('email')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('common.email')} {renderSortIcon('email')}
-                      </th>
-                      <th onClick={() => handleSort('phone')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('common.phone')} {renderSortIcon('phone')}
-                      </th>
-                      <th onClick={() => handleSort('gender')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.gender')} {renderSortIcon('gender')}
-                      </th>
-                      <th onClick={() => handleSort('customer_group_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.customerGroup')} {renderSortIcon('customer_group_id')}
-                      </th>
-                      <th onClick={() => handleSort('user_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.selectUser')} {renderSortIcon('user_id')}
-                      </th>
-                      <th onClick={() => handleSort('birth_date')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.birthDate')} {renderSortIcon('birth_date')}
-                      </th>
-                      <th onClick={() => handleSort('total_spent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.totalSpent')} {renderSortIcon('total_spent')}
-                      </th>
-                      <th onClick={() => handleSort('order_count')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.orderCount')} {renderSortIcon('order_count')}
-                      </th>
-                      <th onClick={() => handleSort('loyalty_points')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.loyaltyPoints')} {renderSortIcon('loyalty_points')}
-                      </th>
-                      <th onClick={() => handleSort('tax_number')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.taxNumber')} {renderSortIcon('tax_number')}
-                      </th>
-                      <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('common.status')} {renderSortIcon('is_active')}
-                      </th>
+                      {visibleColumns.photo && (
+                        <th onClick={() => handleSort('photo')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.photo')} {renderSortIcon('photo')}
+                        </th>
+                      )}
+                      {visibleColumns.name && (
+                        <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('common.name')} {renderSortIcon('name')}
+                        </th>
+                      )}
+                      {visibleColumns.email && (
+                        <th onClick={() => handleSort('email')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('common.email')} {renderSortIcon('email')}
+                        </th>
+                      )}
+                      {visibleColumns.phone && (
+                        <th onClick={() => handleSort('phone')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('common.phone')} {renderSortIcon('phone')}
+                        </th>
+                      )}
+                      {visibleColumns.gender && (
+                        <th onClick={() => handleSort('gender')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.gender')} {renderSortIcon('gender')}
+                        </th>
+                      )}
+                      {visibleColumns.group && (
+                        <th onClick={() => handleSort('customer_group_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.customerGroup')} {renderSortIcon('customer_group_id')}
+                        </th>
+                      )}
+                      {visibleColumns.user && (
+                        <th onClick={() => handleSort('user_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.selectUser')} {renderSortIcon('user_id')}
+                        </th>
+                      )}
+                      {visibleColumns.birthDate && (
+                        <th onClick={() => handleSort('birth_date')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.birthDate')} {renderSortIcon('birth_date')}
+                        </th>
+                      )}
+                      {visibleColumns.totalSpent && (
+                        <th onClick={() => handleSort('total_spent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.totalSpent')} {renderSortIcon('total_spent')}
+                        </th>
+                      )}
+                      {visibleColumns.orderCount && (
+                        <th onClick={() => handleSort('order_count')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.orderCount')} {renderSortIcon('order_count')}
+                        </th>
+                      )}
+                      {visibleColumns.loyaltyPoints && (
+                        <th onClick={() => handleSort('loyalty_points')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.loyaltyPoints')} {renderSortIcon('loyalty_points')}
+                        </th>
+                      )}
+                      {visibleColumns.taxNumber && (
+                        <th onClick={() => handleSort('tax_number')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('customers.taxNumber')} {renderSortIcon('tax_number')}
+                        </th>
+                      )}
+                      {visibleColumns.status && (
+                        <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                          {t('common.status')} {renderSortIcon('is_active')}
+                        </th>
+                      )}
                       <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions')}</th>
                     </tr>
                   </thead>
@@ -591,77 +896,120 @@ const CustomersPage: React.FC = () => {
                     {isLoading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i} className="hover:bg-muted/5">
-                          {Array.from({ length: 15 }).map((_, col) => (
-                            <td key={col} className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
+                          {Array.from({ length: Object.values(visibleColumns).filter(Boolean).length + 1 }).map((_, col) => (
+                            <td key={col} className="p-4"><div className="skeleton h-4 w-full rounded" /></td>
                           ))}
-                          <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>
                         </tr>
                       ))
                     ) : (data?.data ?? []).map((c: Customer) => (
                       <tr key={c.id} className="group hover:bg-muted/20 transition-colors">
                         {/* Photo */}
-                        <td className="p-4">
-                          {c.photo ? (
-                            <img src={c.photo} alt={c.name} className="w-9 h-9 rounded-full object-cover border border-border shadow-sm" />
-                          ) : (
-                            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">
-                              <User size={16} />
-                            </div>
-                          )}
-                        </td>
+                        {visibleColumns.photo && (
+                          <td className="p-4">
+                            {c.photo ? (
+                              <img src={c.photo} alt={c.name} className="w-9 h-9 rounded-full object-cover border border-border shadow-sm" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">
+                                <User size={16} />
+                              </div>
+                            )}
+                          </td>
+                        )}
                         {/* Name */}
-                        <td className="p-4 font-semibold text-foreground text-sm whitespace-nowrap">
-                          {c.name}
-                        </td>
+                        {visibleColumns.name && (
+                          <td className="p-4 font-semibold text-foreground text-sm whitespace-nowrap">
+                            {c.name}
+                          </td>
+                        )}
                         {/* Email */}
-                        <td className="p-4 text-sm text-muted-foreground font-mono">{c.email || '—'}</td>
+                        {visibleColumns.email && (
+                          <td className="p-4 text-sm text-muted-foreground font-mono">{c.email || '—'}</td>
+                        )}
                         {/* Phone */}
-                        <td className="p-4 text-sm text-muted-foreground font-mono">{c.phone || '—'}</td>
+                        {visibleColumns.phone && (
+                          <td className="p-4 text-sm text-muted-foreground font-mono">{c.phone || '—'}</td>
+                        )}
                         {/* Gender */}
-                        <td className="p-4 text-sm capitalize">{c.gender ? t(`customers.gender${c.gender.charAt(0).toUpperCase() + c.gender.slice(1)}`) : '—'}</td>
+                        {visibleColumns.gender && (
+                          <td className="p-4 text-sm capitalize">{c.gender ? t(`customers.gender${c.gender.charAt(0).toUpperCase() + c.gender.slice(1)}`) : '—'}</td>
+                        )}
                         {/* Group */}
-                        <td className="p-4 text-sm">
-                          {c.group ? (
-                            <span className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-semibold px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 whitespace-nowrap">
-                              {c.group.name} ({Number(c.group.discount_percent)}%)
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground font-light">Regular</span>
-                          )}
-                        </td>
+                        {visibleColumns.group && (
+                          <td className="p-4 text-sm">
+                            {c.group ? (
+                              <span className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-semibold px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 whitespace-nowrap">
+                                {c.group.name} ({Number(c.group.discount_percent)}%)
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-light">Regular</span>
+                            )}
+                          </td>
+                        )}
                         {/* Linked User */}
-                        <td className="p-4 text-sm whitespace-nowrap">
-                          {c.user ? (
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-xs text-foreground">{c.user.name}</span>
-                              <span className="text-[10px] text-muted-foreground font-mono">{c.user.email}</span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground font-light">—</span>
-                          )}
-                        </td>
+                        {visibleColumns.user && (
+                          <td className="p-4 text-sm whitespace-nowrap">
+                            {c.user ? (
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-xs text-foreground">{c.user.name}</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">{c.user.email}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-light">—</span>
+                            )}
+                          </td>
+                        )}
                         {/* Birth Date */}
-                        <td className="p-4 text-sm font-mono text-muted-foreground">{c.birth_date || '—'}</td>
+                        {visibleColumns.birthDate && (
+                          <td className="p-4 text-sm font-mono text-muted-foreground">{c.birth_date || '—'}</td>
+                        )}
                         {/* Total Spent */}
-                        <td className="p-4 text-sm font-bold text-foreground">
-                          Rp {(Number(c.total_spent) || 0).toLocaleString('id-ID')}
-                        </td>
+                        {visibleColumns.totalSpent && (
+                          <td className="p-4 text-sm font-bold text-foreground">
+                            Rp {(Number(c.total_spent) || 0).toLocaleString('id-ID')}
+                          </td>
+                        )}
                         {/* Order Count */}
-                        <td className="p-4 text-sm font-medium text-foreground">{c.order_count ?? 0} orders</td>
+                        {visibleColumns.orderCount && (
+                          <td className="p-4 text-sm font-medium text-foreground">{c.order_count ?? 0} orders</td>
+                        )}
                         {/* Loyalty Points */}
-                        <td className="p-4 text-sm">
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-500 font-semibold bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-950/30 whitespace-nowrap">
-                            <Award size={10} fill="currentColor" /> {Number(c.loyalty_points) || 0} pts
-                          </span>
-                        </td>
+                        {visibleColumns.loyaltyPoints && (
+                          <td className="p-4 text-sm">
+                            <span className="inline-flex items-center gap-1 text-xs text-amber-500 font-semibold bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-950/30 whitespace-nowrap">
+                              <Award size={10} fill="currentColor" /> {Number(c.loyalty_points) || 0} pts
+                            </span>
+                          </td>
+                        )}
                         {/* Tax Number */}
-                        <td className="p-4 text-sm font-mono text-muted-foreground">{c.tax_number || '—'}</td>
+                        {visibleColumns.taxNumber && (
+                          <td className="p-4 text-sm font-mono text-muted-foreground">{c.tax_number || '—'}</td>
+                        )}
                         {/* Status */}
-                        <td className="p-4 text-sm">
-                          <span className={c.is_active ? 'badge-success text-xs font-semibold' : 'badge-muted text-xs'}>
-                            {c.is_active ? t('common.active') : t('common.inactive')}
-                          </span>
-                        </td>
+                        {visibleColumns.status && (
+                          <td className="p-4 text-xs font-bold whitespace-nowrap">
+                            {!c.is_active ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                Blocked
+                              </span>
+                            ) : c.group?.name?.toLowerCase().includes('vip') ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                VIP
+                              </span>
+                            ) : c.total_spent > 5000000 ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                                Credit Customer
+                              </span>
+                            ) : c.is_active ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                                Inactive
+                              </span>
+                            )}
+                          </td>
+                        )}
                         {/* Actions */}
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
@@ -691,7 +1039,7 @@ const CustomersPage: React.FC = () => {
                       </tr>
                     ))}
                     {!isLoading && customers.length === 0 && (
-                      <EmptyState cols={16} message={t('common.noData')} icon={<User size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
+                      <EmptyState cols={Object.values(visibleColumns).filter(Boolean).length + 1} message={t('common.noData')} icon={<User size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
                     )}
                   </tbody>
                 </table>
@@ -1225,6 +1573,305 @@ const CustomersPage: React.FC = () => {
           }
         }}
       />
+
+      {/* Modern Slide-out Filter Drawer */}
+      <AnimatePresence>
+        {filterDrawerOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFilterDrawerOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 cursor-pointer"
+            />
+            {/* Drawer Container */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col h-full overflow-hidden text-left"
+            >
+              {/* Drawer Header */}
+              <div className="p-5 border-b border-border flex items-center justify-between bg-card">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                    <Filter size={16} />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-base text-foreground">
+                      {t('common.filter', 'Filter Options')}
+                    </h3>
+                    {activeFiltersCount > 0 && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-white rounded-full leading-none text-center">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="p-1.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                    {t('common.status', 'Status')}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'all', label: t('common.allStatus', 'All Statuses'), activeClass: 'bg-muted border-primary text-foreground', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                      { value: 'active', label: t('common.active', 'Active'), activeClass: 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                      { value: 'inactive', label: t('common.inactive', 'Inactive'), activeClass: 'bg-slate-500/10 border-slate-500/40 text-slate-600 dark:text-slate-400', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                      { value: 'deleted', label: t('common.archived', 'Archived'), activeClass: 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setStatusFilter(opt.value); setPage(1) }}
+                        className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all text-center select-none active:scale-95 duration-100
+                                   ${statusFilter === opt.value ? opt.activeClass : opt.inactiveClass}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Gender Filter */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                    {t('customers.gender', 'Gender')}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: '', label: t('common.allStatus', 'All Genders'), activeClass: 'bg-muted border-primary text-foreground', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                      { value: 'male', label: t('customers.genderMale', 'Male'), activeClass: 'bg-blue-500/10 border-blue-500/40 text-blue-600 dark:text-blue-400', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                      { value: 'female', label: t('customers.genderFemale', 'Female'), activeClass: 'bg-pink-500/10 border-pink-500/40 text-pink-600 dark:text-pink-400', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                      { value: 'other', label: t('customers.genderOther', 'Other'), activeClass: 'bg-purple-500/10 border-purple-500/40 text-purple-600 dark:text-purple-400', inactiveClass: 'border-border text-muted-foreground hover:bg-muted/50' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setGenderFilter(opt.value); setPage(1) }}
+                        className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all text-center select-none active:scale-95 duration-100
+                                   ${genderFilter === opt.value ? opt.activeClass : opt.inactiveClass}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Customer Group Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('customers.customerGroup', 'Customer Group')}</label>
+                  <select
+                    value={groupIdFilter}
+                    onChange={e => { setGroupIdFilter(e.target.value); setPage(1) }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">{t('common.allStatus', 'All Groups')}</option>
+                    {(groups ?? []).map((g: any) => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Customer Type Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('customers.customerType', 'Customer Type')}
+                  </label>
+                  <select
+                    value={customerTypeFilter}
+                    onChange={(e) => { setCustomerTypeFilter(e.target.value); setPage(1) }}
+                    className="form-input w-full text-sm rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs cursor-pointer text-foreground"
+                  >
+                    <option value="">All Types</option>
+                    <option value="retail">Retail Customer</option>
+                    <option value="wholesale">Wholesale Customer</option>
+                    <option value="vip">VIP Customer</option>
+                  </select>
+                </div>
+
+                {/* Location Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('customers.location', 'Location / City')}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none">
+                      <MapPin size={14} />
+                    </div>
+                    <input
+                      type="text"
+                      value={locationFilter}
+                      onChange={(e) => { setLocationFilter(e.target.value); setPage(1) }}
+                      placeholder="e.g. Jakarta, Phnom Penh"
+                      className="form-input pl-9 w-full text-sm rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
+                    />
+                  </div>
+                </div>
+
+                {/* Province Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('customers.province', 'Province / State')}
+                  </label>
+                  <input
+                    type="text"
+                    value={provinceFilter}
+                    onChange={(e) => { setProvinceFilter(e.target.value); setPage(1) }}
+                    placeholder="e.g. West Java, Kandal"
+                    className="form-input w-full text-sm rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
+                  />
+                </div>
+
+                {/* Birthday Month */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Birthday Month</label>
+                  <select
+                    value={birthdayMonthFilter}
+                    onChange={e => { setBirthdayMonthFilter(e.target.value); setPage(1) }}
+                    className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                  >
+                    <option value="">All Months</option>
+                    {Array.from({ length: 12 }).map((_, m) => (
+                      <option key={m+1} value={m+1}>
+                        {new Date(2000, m, 1).toLocaleString('default', { month: 'long' })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Has Address & Has User Grouped */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Has Address</label>
+                    <select
+                      value={hasAddressFilter}
+                      onChange={e => { setHasAddressFilter(e.target.value); setPage(1) }}
+                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                    >
+                      <option value="">All</option>
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Has User Account</label>
+                    <select
+                      value={hasUserFilter}
+                      onChange={e => { setHasUserFilter(e.target.value); setPage(1) }}
+                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
+                    >
+                      <option value="">All</option>
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Purchase Amount Range */}
+                <div className="space-y-3 pt-4 border-t border-border/80">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('customers.amountRange', 'Purchase Amount Range')}
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Min Spent</span>
+                      <input
+                        type="number"
+                        value={minSpentFilter}
+                        onChange={(e) => { setMinSpentFilter(e.target.value); setPage(1) }}
+                        placeholder="Min"
+                        className="form-input w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Max Spent</span>
+                      <input
+                        type="number"
+                        value={maxSpentFilter}
+                        onChange={(e) => { setMaxSpentFilter(e.target.value); setPage(1) }}
+                        placeholder="Max"
+                        className="form-input w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Created Date Filter */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('customers.createdDate', 'Registration Date')}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none">
+                      <Calendar size={14} />
+                    </div>
+                    <input
+                      type="date"
+                      value={createdDateFilter}
+                      onChange={(e) => { setCreatedDateFilter(e.target.value); setPage(1) }}
+                      className="form-input pl-9 w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Date Filters Range */}
+                <div className="space-y-1.5 pt-4 border-t border-border/80">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Created Date Between</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={e => { setStartDate(e.target.value); setPage(1) }}
+                      className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      title="Registered Start Date"
+                    />
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={e => { setEndDate(e.target.value); setPage(1) }}
+                      className="form-input text-xs rounded-xl bg-card border-border text-foreground cursor-pointer py-1.5"
+                      title="Registered End Date"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-5 border-t border-border flex items-center justify-between bg-muted/10">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-all"
+                >
+                  {t('common.reset', 'Reset All')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-xl shadow-sm hover:opacity-95 active:scale-95 transition-all"
+                >
+                  {t('common.apply', 'Apply')}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

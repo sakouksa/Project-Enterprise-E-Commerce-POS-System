@@ -4,6 +4,8 @@ namespace App\Http\Requests\Employee;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+use Illuminate\Validation\Rule;
+
 class UpdateEmployeeRequest extends FormRequest
 {
     public function authorize(): bool
@@ -24,9 +26,19 @@ class UpdateEmployeeRequest extends FormRequest
             'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
             'position_id'     => ['nullable', 'integer', 'exists:positions,id'],
             'user_id'         => ['nullable', 'integer', 'exists:users,id'],
-            'employee_number' => ['required', 'string', 'max:100', 'unique:employees,employee_number,' . $employeeId],
+            'employee_number' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('employees')->ignore($employeeId)->whereNull('deleted_at')
+            ],
             'name'            => ['required', 'string', 'max:255'],
-            'email'           => ['nullable', 'email', 'max:255'],
+            'email'           => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('employees')->ignore($employeeId)->whereNull('deleted_at')
+            ],
             'phone'           => ['nullable', 'string', 'max:50'],
             'nik'             => ['nullable', 'string', 'max:50'],
             'gender'          => ['nullable', 'string', 'in:male,female'],

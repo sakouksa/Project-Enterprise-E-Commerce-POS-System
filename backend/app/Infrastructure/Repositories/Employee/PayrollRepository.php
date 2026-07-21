@@ -26,6 +26,18 @@ class PayrollRepository extends BaseRepository
                        ->orWhere('employee_number', 'like', "%{$search}%");
                 });
             })
+            ->when($filters['company_id'] ?? null, function ($q, $v) {
+                $q->whereHas('employee', fn($sq) => $sq->where('company_id', $v));
+            })
+            ->when($filters['branch_id'] ?? null, function ($q, $v) {
+                $q->whereHas('employee', fn($sq) => $sq->where('branch_id', $v));
+            })
+            ->when($filters['department_id'] ?? null, function ($q, $v) {
+                $q->whereHas('employee', fn($sq) => $sq->where('department_id', $v));
+            })
+            ->when($filters['position_id'] ?? null, function ($q, $v) {
+                $q->whereHas('employee', fn($sq) => $sq->where('position_id', $v));
+            })
             ->when($filters['employee_id'] ?? null, fn($q, $v) => $q->where('employee_id', $v))
             ->when($filters['period_month'] ?? null, fn($q, $v) => $q->where('period_month', $v))
             ->when($filters['status'] ?? null, fn($q, $v) => $q->where('status', $v));

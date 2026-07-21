@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -36,9 +36,10 @@ interface GroupFormData {
 
 interface CustomerGroupsPageProps {
   isTab?: boolean
+  setActions?: (actions: { onExport: () => void; onAdd: () => void }) => void
 }
 
-const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false }) => {
+const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, setActions }) => {
   const { t } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
@@ -203,26 +204,29 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false }
   }
 
   const handleExport = () => {
-    const headers = ['ID', 'Company Name', 'Group Name', 'Description', 'Discount Percent', 'Status', 'Created At']
-    const rows = groups.map(g => [
-      g.id,
-      g.company?.name || `Company #${g.company_id}`,
-      `"${g.name.replace(/"/g, '""')}"`,
-      g.description ? `"${g.description.replace(/"/g, '""')}"` : '',
-      g.discount_percent,
-      g.is_active ? 'Active' : 'Inactive',
-      g.created_at
-    ])
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `customer_groups_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    toast.success(t('toast.exportSuccess'))
+    toast.info('Downloading...')
+    setTimeout(() => {
+      const headers = ['ID', 'Company Name', 'Group Name', 'Description', 'Discount Percent', 'Status', 'Created At']
+      const rows = groups.map(g => [
+        g.id,
+        g.company?.name || `Company #${g.company_id}`,
+        `"${g.name.replace(/"/g, '""')}"`,
+        g.description ? `"${g.description.replace(/"/g, '""')}"` : '',
+        g.discount_percent,
+        g.is_active ? 'Active' : 'Inactive',
+        g.created_at
+      ])
+      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+      const encodedUri = encodeURI(csvContent)
+      const link = document.createElement("a")
+      link.setAttribute("href", encodedUri)
+      link.setAttribute("download", `customer_groups_${new Date().toISOString().slice(0, 10)}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success('Customer groups list exported successfully.')
+    }, 800)
   }
 
   const handleResetFilters = () => {
@@ -231,6 +235,15 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false }
     setSortOrder('desc')
     resetPagination()
   }
+
+  useEffect(() => {
+    if (setActions) {
+      setActions({
+        onExport: handleExport,
+        onAdd: openCreateModal
+      })
+    }
+  }, [setActions, groups])
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null
@@ -248,11 +261,17 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false }
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 px-4 py-2 border border-border text-foreground hover:bg-muted rounded-lg transition-colors text-sm font-medium">
-              <Download size={16} />
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in"
+            >
+              <Download size={15} />
               {t('common.export')}
             </button>
-            <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium">
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in"
+            >
               <Plus size={16} />
               {t('common.add')}
             </button>
@@ -296,24 +315,11 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false }
           <div className="flex gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-groups'] })}
-              className="p-2 text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
               title={t('common.refresh')}
             >
               <RefreshCw size={14} />
             </button>
-
-            {isTab && (
-              <>
-                <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 px-3 py-2 border border-border text-foreground hover:bg-muted rounded-lg transition-colors text-sm font-medium">
-                  <Download size={14} />
-                  {t('common.export')}
-                </button>
-                <button onClick={openCreateModal} className="btn-primary flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium">
-                  <Plus size={14} />
-                  {t('common.add')}
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>

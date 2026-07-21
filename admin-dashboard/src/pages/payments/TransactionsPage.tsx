@@ -47,14 +47,14 @@ interface TransactionForm {
 const BLANK_FORM: TransactionForm = {
   company_id: '',
   payment_id: '',
-  type: 'sale',
+  type: 'debit',
   amount: '',
   description: '',
   reference_type: '',
   reference_id: '',
 }
 
-const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
+const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
   const { t } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
@@ -70,6 +70,12 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     reset,
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'transactions' })
+
+  React.useEffect(() => {
+    if (triggerAdd && triggerAdd > 0) {
+      openCreateDrawer()
+    }
+  }, [triggerAdd])
     const [typeFilter, setTypeFilter] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
@@ -242,43 +248,45 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
-          <div className="space-y-1.5">
-            <span className="text-muted-foreground text-sm font-medium">Total Volume</span>
-            <h3 className="text-2xl font-bold text-foreground">
-              ${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
+      {!isTab && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <span className="text-muted-foreground text-sm font-medium">Total Volume</span>
+              <h3 className="text-2xl font-bold text-foreground">
+                ${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+            </div>
+            <div className="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl">
+              <DollarSign size={24} />
+            </div>
           </div>
-          <div className="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl">
-            <DollarSign size={24} />
-          </div>
-        </div>
 
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
-          <div className="space-y-1.5">
-            <span className="text-muted-foreground text-sm font-medium">Sales Inflow</span>
-            <h3 className="text-2xl font-bold text-green-600">
-              +${salesVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
+          <div className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <span className="text-muted-foreground text-sm font-medium">Sales Inflow</span>
+              <h3 className="text-2xl font-bold text-green-600">
+                +${salesVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+            </div>
+            <div className="p-3.5 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl">
+              <ArrowUpRight size={24} />
+            </div>
           </div>
-          <div className="p-3.5 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl">
-            <ArrowUpRight size={24} />
-          </div>
-        </div>
 
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
-          <div className="space-y-1.5">
-            <span className="text-muted-foreground text-sm font-medium">Purchases Outflow</span>
-            <h3 className="text-2xl font-bold text-red-500">
-              -${purchaseVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h3>
-          </div>
-          <div className="p-3.5 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl">
-            <ArrowDownRight size={24} />
+          <div className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <span className="text-muted-foreground text-sm font-medium">Purchases Outflow</span>
+              <h3 className="text-2xl font-bold text-red-500">
+                -${purchaseVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+            </div>
+            <div className="p-3.5 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl">
+              <ArrowDownRight size={24} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-4 rounded-xl border border-border">
@@ -310,14 +318,9 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
           </button>
           
           {isTab && (
-            <>
-              <button onClick={exportCSV} className="btn btn-secondary flex items-center gap-2">
-                <Download size={16} /> Export CSV
-              </button>
-              <button onClick={openCreateDrawer} className="btn btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 whitespace-nowrap">
-                <Plus size={16} /> Log Transaction
-              </button>
-            </>
+            <button onClick={exportCSV} className="btn btn-secondary flex items-center gap-2">
+              <Download size={16} /> Export CSV
+            </button>
           )}
         </div>
       </div>
@@ -328,14 +331,14 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
         <table className="w-full data-table">
             <thead>
               <tr>
-                <th className="text-left py-4 px-5">ID</th>
-                <th className="text-left py-4 px-5">Type</th>
-                <th className="text-left py-4 px-5">Amount</th>
-                <th className="text-left py-4 px-5">Company</th>
-                <th className="text-left py-4 px-5">Payment Method</th>
-                <th className="text-left py-4 px-5">Reference</th>
-                <th className="text-left py-4 px-5">Created At</th>
-                <th className="text-right py-4 px-5">{t('common.actions')}</th>
+                <th className="w-[8%] text-left py-4 px-5">ID</th>
+                <th className="w-[15%] text-left py-4 px-5">Type</th>
+                <th className="w-[15%] text-left py-4 px-5">Amount</th>
+                <th className="w-[20%] text-left py-4 px-5">Company</th>
+                <th className="w-[20%] text-left py-4 px-5">Payment Method</th>
+                <th className="w-[20%] text-left py-4 px-5">Reference</th>
+                <th className="w-[18%] text-left py-4 px-5">Created At</th>
+                <th className="w-[100px] text-right py-4 px-5">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -367,13 +370,13 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     <td className="py-4 px-5 font-mono text-xs">{t.id}</td>
                     <td className="py-4 px-5">
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        t.type === 'sale' ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400' :
-                        t.type === 'purchase' ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' :
+                        (t.type === 'sale' || t.type === 'debit') ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400' :
+                        (t.type === 'purchase' || t.type === 'credit') ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' :
                         'bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400'
                       }`}>
-                        {t.type === 'sale' && <ArrowUpRight size={12} />}
-                        {t.type === 'purchase' && <ArrowDownRight size={12} />}
-                        {t.type === 'refund' && <RefundIcon size={12} />}
+                        {(t.type === 'sale' || t.type === 'debit') && <ArrowUpRight size={12} />}
+                        {(t.type === 'purchase' || t.type === 'credit') && <ArrowDownRight size={12} />}
+                        {t.type !== 'sale' && t.type !== 'debit' && t.type !== 'purchase' && t.type !== 'credit' && <ArrowUpRight size={12} />}
                         {t.type.toUpperCase()}
                       </span>
                     </td>
@@ -385,7 +388,7 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     <td className="py-4 px-5 text-xs text-muted-foreground font-medium">
                       {t.reference_type ? `${t.reference_type} #${t.reference_id}` : '-'}
                     </td>
-                    <td className="py-4 px-5 text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString()}</td>
+                    <td className="py-4 px-5 text-xs text-muted-foreground whitespace-nowrap">{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>
                     <td className="py-4 px-5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => openEditDrawer(t)} className="p-1.5 hover:text-blue-500 rounded hover:bg-muted transition-colors">
@@ -435,11 +438,11 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Company select */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Select Company *</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Select Company *</label>
                   <select
                     value={form.company_id}
                     onChange={e => setForm({ ...form, company_id: e.target.value })}
-                    className="form-select w-full"
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
                     required
                   >
                     <option value="">-- Choose Company --</option>
@@ -451,11 +454,11 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
 
                 {/* Payment Method select */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Payment Method</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Payment Method</label>
                   <select
                     value={form.payment_id}
                     onChange={e => setForm({ ...form, payment_id: e.target.value })}
-                    className="form-select w-full"
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
                   >
                     <option value="">-- None (Cash / Invoiced) --</option>
                     {paymentMethods?.map((pm: any) => (
@@ -466,32 +469,31 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
 
                 {/* Transaction Type */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Type *</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Type *</label>
                   <select
                     value={form.type}
                     onChange={e => setForm({ ...form, type: e.target.value })}
-                    className="form-select w-full"
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
                     required
                   >
-                    <option value="sale">Sale Inflow</option>
-                    <option value="purchase">Purchase Outflow</option>
-                    <option value="refund">Refund</option>
+                    <option value="debit">Debit (Inflow)</option>
+                    <option value="credit">Credit (Outflow)</option>
                   </select>
                 </div>
 
                 {/* Amount */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Amount ($) *</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ($) *</label>
                   <div className="relative">
-                    <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <DollarSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="number"
                       step="0.01"
                       min="0.01"
                       value={form.amount}
                       onChange={e => setForm({ ...form, amount: e.target.value })}
-                      placeholder="0.00"
-                      className="form-input pl-9 w-full"
+                      placeholder="e.g. 250.00"
+                      className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
                       required
                     />
                   </div>
@@ -500,36 +502,36 @@ const TransactionsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                 {/* Reference details */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Ref Type</label>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref Type</label>
                     <input
                       type="text"
                       placeholder="e.g. order, invoice"
                       value={form.reference_type}
                       onChange={e => setForm({ ...form, reference_type: e.target.value })}
-                      className="form-input w-full"
+                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Ref ID</label>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref ID</label>
                     <input
                       type="number"
                       placeholder="e.g. 104"
                       value={form.reference_id}
                       onChange={e => setForm({ ...form, reference_id: e.target.value })}
-                      className="form-input w-full"
+                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
                     />
                   </div>
                 </div>
 
                 {/* Description */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Description</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Description</label>
                   <textarea
                     rows={3}
                     placeholder="Provide additional logging notes..."
                     value={form.description}
                     onChange={e => setForm({ ...form, description: e.target.value })}
-                    className="form-input w-full resize-none"
+                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all p-3 resize-none"
                   />
                 </div>
 

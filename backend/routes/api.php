@@ -200,11 +200,24 @@ Route::prefix('v1')->group(function () {
         Route::get('purchase-report', [\App\Http\Controllers\Api\V1\Report\PurchaseReportController::class, 'index']);
 
         // ─── Customers ─────────────────────────────────────────────────────
-        Route::apiResource('customers',        CustomerController::class);
-        Route::post('customers/{id}/restore',  [CustomerController::class, 'restore']);
-        Route::delete('customers/{id}/force',  [CustomerController::class, 'forceDelete']);
-        Route::get('customers/{id}/orders',    [CustomerController::class, 'orders']);
-        Route::apiResource('customer-groups',  CustomerGroupController::class);
+        Route::get('customers/stats',             [CustomerController::class, 'stats']);
+        Route::get('customers/export',            [CustomerController::class, 'export']);
+        Route::post('customers/import',           [CustomerController::class, 'import']);
+        Route::post('customers/bulk-delete',      [CustomerController::class, 'bulkDelete']);
+        Route::post('customers/bulk-restore',     [CustomerController::class, 'bulkRestore']);
+        Route::post('customers/bulk-activate',    [CustomerController::class, 'bulkActivate']);
+        Route::post('customers/bulk-deactivate',  [CustomerController::class, 'bulkDeactivate']);
+        Route::post('customers/bulk-assign-group', [CustomerController::class, 'bulkAssignGroup']);
+        Route::apiResource('customers',           CustomerController::class);
+        Route::post('customers/{id}/restore',     [CustomerController::class, 'restore']);
+        Route::delete('customers/{id}/force',     [CustomerController::class, 'forceDelete']);
+        Route::get('customers/{id}/orders',       [CustomerController::class, 'orders']);
+
+        Route::get('customer-groups/export',       [CustomerGroupController::class, 'export']);
+        Route::post('customer-groups/import',      [CustomerGroupController::class, 'import']);
+        Route::post('customer-groups/bulk-delete', [CustomerGroupController::class, 'bulkDelete']);
+        Route::post('customer-groups/bulk-restore', [CustomerGroupController::class, 'bulkRestore']);
+        Route::apiResource('customer-groups',     CustomerGroupController::class);
         Route::post('customer-groups/{id}/restore', [CustomerGroupController::class, 'restore']);
         Route::delete('customer-groups/{id}/force', [CustomerGroupController::class, 'forceDelete']);
 
@@ -315,6 +328,7 @@ Route::prefix('v1')->group(function () {
 
         // Employees
         Route::get('employees/stats', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'stats']);
+        Route::post('employees/upload-photo', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'uploadPhoto']);
         Route::post('employees/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'bulkDelete']);
         Route::post('employees/bulk-restore', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'bulkRestore']);
         Route::get('employees/export', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'export']);
@@ -323,11 +337,26 @@ Route::prefix('v1')->group(function () {
         Route::delete('employees/{id}/force', [\App\Http\Controllers\Api\V1\Employee\EmployeeController::class, 'forceDelete']);
         Route::apiResource('employees', \App\Http\Controllers\Api\V1\Employee\EmployeeController::class);
 
+        // Shifts
+        Route::apiResource('shifts', \App\Http\Controllers\Api\V1\Employee\ShiftController::class);
+
         // Attendances
+        Route::post('attendances/generate-qr', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'generateQr']);
+        Route::post('attendances/scan-qr', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'scanQr']);
+        Route::get('attendances/dashboard-stats', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'dashboardStats']);
         Route::post('attendances/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'bulkDelete']);
         Route::get('attendances/export', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'export']);
         Route::post('attendances/import', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'import']);
         Route::apiResource('attendances', \App\Http\Controllers\Api\V1\Employee\AttendanceController::class);
+
+        // Singular Attendance aliases for frontend compatibility
+        Route::post('attendance/generate-qr', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'generateQr']);
+        Route::post('attendance/scan-qr', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'scanQr']);
+        Route::get('attendance/dashboard-stats', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'dashboardStats']);
+        Route::post('attendance/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'bulkDelete']);
+        Route::get('attendance/export', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'export']);
+        Route::post('attendance/import', [\App\Http\Controllers\Api\V1\Employee\AttendanceController::class, 'import']);
+        Route::apiResource('attendance', \App\Http\Controllers\Api\V1\Employee\AttendanceController::class);
 
         // Payrolls
         Route::post('payrolls/bulk-delete', [\App\Http\Controllers\Api\V1\Employee\PayrollController::class, 'bulkDelete']);
@@ -363,6 +392,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('carts', \App\Http\Controllers\Api\V1\Order\CartController::class);
         Route::apiResource('cash-register-transactions', \App\Http\Controllers\Api\V1\POS\CashRegisterTransactionController::class);
         Route::apiResource('cash-registers', \App\Http\Controllers\Api\V1\POS\CashRegisterController::class);
+        Route::get('customer-addresses/export', [\App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class, 'export']);
+        Route::post('customer-addresses/import', [\App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class, 'import']);
+        Route::post('customer-addresses/bulk-delete', [\App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class, 'bulkDelete']);
         Route::apiResource('customer-addresses', \App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class);
         Route::apiResource('inventories', \App\Http\Controllers\Api\V1\Inventory\InventoryController::class);
         Route::apiResource('inventory-movements', \App\Http\Controllers\Api\V1\Inventory\InventoryMovementController::class);

@@ -2,12 +2,16 @@ import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Plus, Search, Edit2, Trash2, RefreshCw, X, Loader2, 
+import {
+  Plus, Search, Edit2, Trash2, RefreshCw, X, Loader2,
   Briefcase, Users, UserCheck, DollarSign, Calendar,
   Download, Upload, Filter, Eye, Printer, Settings,
-  AlertCircle, CheckCircle2, RotateCcw, ChevronUp, ChevronDown, Check, User
+  AlertCircle, CheckCircle2, RotateCcw, ChevronUp, ChevronDown, Check, User,
+  Building, Wallet, Activity, Award, QrCode, Smartphone, MapPin, Clock
 } from 'lucide-react'
+import ShiftsTab from './components/ShiftsTab'
+import DynamicQrKioskModal from './components/DynamicQrKioskModal'
+import AttendanceDetailModal from './components/AttendanceDetailModal'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
@@ -56,7 +60,7 @@ const EmployeesPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   // Additional Filter States
-  const [showFilters, setShowFilters] = useState(false)
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
   const [filterBranchId, setFilterBranchId] = useState('')
   const [filterDeptId, setFilterDeptId] = useState('')
   const [filterPosId, setFilterPosId] = useState('')
@@ -66,6 +70,7 @@ const EmployeesPage: React.FC = () => {
   const [filterDateEnd, setFilterDateEnd] = useState('')
   const [filterSalaryMin, setFilterSalaryMin] = useState('')
   const [filterSalaryMax, setFilterSalaryMax] = useState('')
+  const [filterRole, setFilterRole] = useState('')
 
   // Trashed Recycle Bin filter
   const [recycleBinMode, setRecycleBinMode] = useState(false)
@@ -93,9 +98,12 @@ const EmployeesPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<any>(null)
-  
+
   // CSV Import Modal
   const [importOpen, setImportOpen] = useState(false)
+  const [kioskModalOpen, setKioskModalOpen] = useState(false)
+  const [selectedAttendanceDetail, setSelectedAttendanceDetail] = useState<any | null>(null)
+  const [attendanceSubTab, setAttendanceSubTab] = useState<'logs' | 'shifts'>('logs')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -123,6 +131,7 @@ const EmployeesPage: React.FC = () => {
   const [formBirthDate, setFormBirthDate] = useState('')
   const [formAddress, setFormAddress] = useState('')
   const [formPhoto, setFormPhoto] = useState('')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [formJoinDate, setFormJoinDate] = useState('')
   const [formResignDate, setFormResignDate] = useState('')
   const [formStatus, setFormStatus] = useState('active')
@@ -145,6 +154,7 @@ const EmployeesPage: React.FC = () => {
   const [payDeductions, setPayDeductions] = useState('0')
   const [payOvertimePay, setPayOvertimePay] = useState('0')
   const [payStatus, setPayStatus] = useState('draft')
+  const [payPaidAt, setPayPaidAt] = useState('')
   const [payNotes, setPayNotes] = useState('')
 
   // Fetch Dashboard Stats
@@ -359,8 +369,27 @@ const EmployeesPage: React.FC = () => {
       })
   }
 
-  const handlePrint = () => {
-    window.print()
+  // Handle Photo File Upload
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('photo', file)
+
+    setUploadingPhoto(true)
+    try {
+      const res = await api.post('/employees/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      const path = res.data.data.path || res.data.data.url
+      setFormPhoto(path)
+      toast.success('Employee photo uploaded successfully.')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to upload photo.')
+    } finally {
+      setUploadingPhoto(false)
+    }
   }
 
   // Handle sorting trigger
@@ -436,6 +465,7 @@ const EmployeesPage: React.FC = () => {
     setPayDeductions('0')
     setPayOvertimePay('0')
     setPayStatus('draft')
+    setPayPaidAt('')
     setPayNotes('')
 
     setModalOpen(true)
@@ -446,11 +476,14 @@ const EmployeesPage: React.FC = () => {
     if (activeTab === 'departments') {
       setFormName(item.name)
       setFormEmployeeNumber(item.code ?? '')
+      setFormCompanyId(item.company_id?.toString() ?? '1')
+      setFormBranchId(item.branch_id?.toString() ?? '1')
       setFormAddress(item.description ?? '')
       setFormStatus(item.is_active ? 'active' : 'inactive')
     } else if (activeTab === 'positions') {
       setFormName(item.name)
       setFormEmployeeNumber(item.code ?? '')
+      setFormCompanyId(item.company_id?.toString() ?? '1')
       setFormDeptId(item.department_id?.toString() ?? '')
       setFormAddress(item.description ?? '')
       setFormStatus(item.is_active ? 'active' : 'inactive')
@@ -490,6 +523,7 @@ const EmployeesPage: React.FC = () => {
       setPayDeductions(item.deductions?.toString() ?? '0')
       setPayOvertimePay(item.overtime_pay?.toString() ?? '0')
       setPayStatus(item.status)
+      setPayPaidAt(item.paid_at ? item.paid_at.split('T')[0] : '')
       setPayNotes(item.notes ?? '')
     }
     setModalOpen(true)
@@ -522,6 +556,7 @@ const EmployeesPage: React.FC = () => {
     setFilterDateEnd('')
     setFilterSalaryMin('')
     setFilterSalaryMax('')
+    setFilterRole('')
     setRecycleBinMode(false)
     reset()
   }
@@ -536,8 +571,8 @@ const EmployeesPage: React.FC = () => {
         company_id: Number(formCompanyId),
         branch_id: Number(formBranchId),
         name: formName,
-        code: formEmployeeNumber,
-        description: formAddress,
+        code: formEmployeeNumber || null,
+        description: formAddress || null,
         is_active: formStatus === 'active'
       }
     } else if (activeTab === 'positions') {
@@ -545,8 +580,8 @@ const EmployeesPage: React.FC = () => {
         company_id: Number(formCompanyId),
         department_id: Number(formDeptId),
         name: formName,
-        code: formEmployeeNumber,
-        description: formAddress,
+        code: formEmployeeNumber || null,
+        description: formAddress || null,
         is_active: formStatus === 'active'
       }
     } else if (activeTab === 'employees') {
@@ -596,6 +631,7 @@ const EmployeesPage: React.FC = () => {
         overtime_pay: ot,
         net_salary: net,
         status: payStatus,
+        paid_at: payPaidAt || null,
         notes: payNotes || null
       }
     }
@@ -628,589 +664,947 @@ const EmployeesPage: React.FC = () => {
     return `${baseUrl}/storage/${photoPath}`
   }
 
+  const presentCount = statsData?.attendance_today?.present ?? 0
+  const lateCount = statsData?.attendance_today?.late ?? 0
+  const absentCount = statsData?.attendance_today?.absent ?? 0
+  const leaveCount = statsData?.attendance_today?.leave ?? 0
+  const holidayCount = statsData?.attendance_today?.holiday ?? 0
+  const totalToday = presentCount + lateCount + absentCount + leaveCount + holidayCount
+  const attendanceRate = totalToday > 0 ? Math.round(((presentCount + lateCount) / totalToday) * 100) : 100
+
+  const monthlyPayroll = statsData?.monthly_salary_expense ?? 0
+  const averageSalary = statsData?.average_salary ?? 0
+
+  const activeFiltersCount = [
+    filterBranchId,
+    filterDeptId,
+    filterPosId,
+    filterStatus,
+    filterGender,
+    filterDateStart,
+    filterDateEnd,
+    filterSalaryMin,
+    filterSalaryMax,
+    filterRole,
+  ].filter(Boolean).length
+
   return (
-    <div className="space-y-4 print:p-0">
-      <Breadcrumb items={[{ label: 'Dashboard', path: '/' }, { label: 'Employees' }]} className="print:hidden" />
-      
-      <PageHeader 
-        title="Employee Management" 
-        subtitle="Manage organization hierarchical departments, job positions, employee records, attendance schedules, and payroll."
-        action={
-          <div className="flex items-center gap-2 print:hidden">
-            <button onClick={() => setImportOpen(true)} className="btn btn-secondary flex items-center gap-2">
-              <Upload size={14} /> Import CSV
-            </button>
-            <button onClick={openCreateModal} className="btn btn-primary flex items-center gap-2">
-              <Plus size={16} /> Add New
-            </button>
-          </div>
-        }
-        className="print:hidden"
+    <div className="space-y-5 print:p-0">
+      <Breadcrumb
+        items={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Employee Management' },
+        ]}
       />
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:hidden">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="stat-card flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs font-semibold uppercase">Total Employees</p>
-            <h3 className="text-2xl font-bold mt-1 text-foreground">{statsData?.total_employees ?? 0}</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-500 font-semibold">{statsData?.active_employees ?? 0} Active</span> | {statsData?.resigned_employees ?? 0} Resigned
-            </p>
-          </div>
-          <div className="bg-primary/10 text-primary p-3 rounded-lg"><Users size={24} /></div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="stat-card flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs font-semibold uppercase">Departments & Positions</p>
-            <h3 className="text-2xl font-bold mt-1 text-foreground">{statsData?.total_departments ?? 0}</h3>
-            <p className="text-xs text-muted-foreground mt-1">across {statsData?.total_positions ?? 0} active positions</p>
-          </div>
-          <div className="bg-blue-500/10 text-blue-500 p-3 rounded-lg"><Briefcase size={24} /></div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="stat-card flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs font-semibold uppercase">Attendance Today</p>
-            <h3 className="text-2xl font-bold mt-1 text-foreground">
-              {statsData?.attendance_today?.present ?? 0}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-yellow-500 font-semibold">{statsData?.attendance_today?.late ?? 0} Late</span> | {statsData?.attendance_today?.absent ?? 0} Absent
-            </p>
-          </div>
-          <div className="bg-green-500/10 text-green-500 p-3 rounded-lg"><Calendar size={24} /></div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="stat-card flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs font-semibold uppercase">Payroll Drafts</p>
-            <h3 className="text-2xl font-bold mt-1 text-foreground">{statsData?.payroll_pending ?? 0}</h3>
-            <p className="text-xs text-muted-foreground mt-1">Period: {new Date().toISOString().substring(0,7)}</p>
-          </div>
-          <div className="bg-yellow-500/10 text-yellow-500 p-3 rounded-lg"><DollarSign size={24} /></div>
-        </motion.div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-border gap-2 overflow-x-auto print:hidden">
-        {[
-          { id: 'employees', label: 'Employees', icon: <Users size={16} /> },
-          { id: 'departments', label: 'Departments', icon: <Briefcase size={16} /> },
-          { id: 'positions', label: 'Positions', icon: <UserCheck size={16} /> },
-          { id: 'attendance', label: 'Attendance', icon: <Calendar size={16} /> },
-          { id: 'payrolls', label: 'Payrolls', icon: <DollarSign size={16} /> },
-        ].map(t => (
+      {/* Premium Header Card */}
+      <div className="bg-card border border-border p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm print:hidden">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" />
+            <span>Employee Management</span>
+          </h1>
+          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+            Manage employees, departments, positions, attendance, payroll, employment status, and workforce performance across the Enterprise ERP platform.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {activeTab === 'attendance' && (
+            <button
+              onClick={() => setKioskModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-colors shadow-sm"
+            >
+              <QrCode size={15} />
+              <span>Launch QR Kiosk</span>
+            </button>
+          )}
           <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id as Tab)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === t.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
           >
-            {t.icon}
-            {t.label}
+            <Upload size={15} />
+            <span>Import CSV</span>
           </button>
-        ))}
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm"
+          >
+            <Download size={15} />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+          >
+            <Plus size={16} />
+            <span>{activeTab === 'attendance' ? 'Add Attendance' : 'Add Employee'}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-3 rounded-lg border border-border print:hidden">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search here..." />
-          <button 
-            onClick={() => setShowFilters(!showFilters)} 
-            className={`btn ${showFilters ? 'btn-primary' : 'btn-secondary'} flex items-center gap-2`}
+      {/* Summary KPI Cards (Using Real Data from Backend) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
+        {/* Card 1: Total Employees */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Employees</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">
+              {statsData?.total_employees ?? empList?.length ?? 0}
+            </p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span className="text-green-500 font-bold">
+                {statsData?.active_employees ?? empList?.filter((e: any) => e.status === 'active').length ?? 0} Active
+              </span>
+              <span>•</span>
+              <span>
+                {statsData?.resigned_employees ?? empList?.filter((e: any) => e.status === 'resigned').length ?? 0} Resigned
+              </span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-purple-500/10 text-purple-500">
+            <Users size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 2: Departments & Positions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Departments & Positions</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">
+              {statsData?.total_departments ?? deptList?.length ?? 0}
+            </p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span className="text-blue-500 font-bold">
+                {statsData?.total_positions ?? posList?.length ?? 0} Positions
+              </span>
+              <span>•</span>
+              <span>{branchesList?.length ?? 0} Branches</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-500">
+            <Building size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 3: Employee Activity */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Attendance Rate</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">{attendanceRate}%</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span className="text-emerald-500 font-bold">{presentCount} Present</span>
+              <span>•</span>
+              <span className="text-rose-500 font-bold">{absentCount} Absent</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <Activity size={22} />
+          </div>
+        </motion.div>
+
+        {/* Card 4: Payroll Overview */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Monthly Payroll</p>
+            <p className="text-xl font-extrabold text-foreground tracking-tight truncate max-w-[190px]">
+              ${monthlyPayroll.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Avg: ${averageSalary.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} | <span className="text-amber-500 font-semibold">{statsData?.payroll_draft ?? 0} Pending</span>
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-amber-500/10 text-amber-500">
+            <Wallet size={22} />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Second Row Mini Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 print:hidden">
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-muted-foreground font-semibold uppercase">Employee Today</span>
+          <span className="text-lg font-extrabold text-foreground mt-1">
+            {statsData?.total_employees ?? empList?.length ?? 0}
+          </span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-blue-500 font-semibold uppercase">New Today</span>
+          <span className="text-lg font-extrabold text-blue-500 mt-1">
+            {statsData?.new_today_employees ?? 0}
+          </span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-emerald-600 font-semibold uppercase">Present Today</span>
+          <span className="text-lg font-extrabold text-emerald-500 mt-1">{presentCount}</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-rose-500 font-semibold uppercase">Absent Today</span>
+          <span className="text-lg font-extrabold text-rose-500 mt-1">{absentCount}</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-amber-500 font-semibold uppercase">Late Today</span>
+          <span className="text-lg font-extrabold text-amber-500 mt-1">{lateCount}</span>
+        </div>
+        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
+          <span className="text-[10px] text-indigo-500 font-semibold uppercase">On Leave</span>
+          <span className="text-lg font-extrabold text-indigo-500 mt-1">{leaveCount}</span>
+        </div>
+      </div>
+      {/* Enterprise Workspace Navigation Tabs */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="flex border border-border bg-card rounded-2xl p-1 overflow-x-auto gap-1 shadow-sm w-full md:w-auto">
+          {[
+            { id: 'employees', label: 'Employees', icon: <Users size={15} /> },
+            { id: 'departments', label: 'Departments', icon: <Briefcase size={15} /> },
+            { id: 'positions', label: 'Positions', icon: <UserCheck size={15} /> },
+            { id: 'attendance', label: 'Attendance', icon: <Calendar size={15} /> },
+            { id: 'payrolls', label: 'Payrolls', icon: <DollarSign size={15} /> },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setActiveTab(t.id as Tab)
+                setSelectedRows([])
+              }}
+              className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === t.id
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+            >
+              {t.icon}
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'attendance' && (
+          <div className="flex items-center bg-muted/40 p-1 rounded-2xl border border-border/60">
+            <button
+              onClick={() => setAttendanceSubTab('logs')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                attendanceSubTab === 'logs' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Attendance Logs
+            </button>
+            <button
+              onClick={() => setAttendanceSubTab('shifts')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                attendanceSubTab === 'shifts' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Shift Schedules
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Search + Action Toolbar */}
+      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+        {/* Left: Search & Filter Drawer Toggle & Reset */}
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search Employee Name, ID, Email, Phone, Department, Position..."
+              className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
+            />
+          </div>
+
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all duration-200 shadow-sm
+                       ${activeFiltersCount > 0
+                ? 'bg-primary/10 border-primary/30 text-primary font-semibold'
+                : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
           >
-            <Filter size={16} /> Filter
+            <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+            <span>Filter</span>
+            {activeFiltersCount > 0 && (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-full leading-none">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
+
           {['employees', 'departments', 'positions'].includes(activeTab) && (
-            <button 
+            <button
               onClick={() => {
                 setRecycleBinMode(!recycleBinMode)
                 setSelectedRows([])
-              }} 
-              className={`btn ${recycleBinMode ? 'btn-danger' : 'btn-secondary'} flex items-center gap-2`}
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors shadow-sm
+                         ${recycleBinMode
+                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 font-semibold'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               title="Recycle Bin Trashed Items"
             >
-              <Trash2 size={16} /> {recycleBinMode ? 'Exit Trash' : 'Trash Bin'}
+              <Trash2 size={14} />
+              <span>{recycleBinMode ? 'Exit Trash' : 'Trash Bin'}</span>
             </button>
           )}
+
+          <ResetButton onClick={handleResetFilters} />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        {/* Right: Toolbar actions */}
+        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
           {/* Bulk Actions */}
           {selectedRows.length > 0 && (
-            <div className="flex items-center gap-2 bg-muted/60 p-1 px-2 rounded-lg border border-border mr-2 animate-fade-in">
-              <span className="text-xs text-muted-foreground font-semibold">{selectedRows.length} Selected</span>
+            <div className="flex items-center gap-1.5 bg-muted/40 p-1 px-2 rounded-xl border border-border mr-1 animate-fade-in">
+              <span className="text-[10px] text-muted-foreground font-semibold px-1">{selectedRows.length} Selected</span>
               {recycleBinMode ? (
                 <>
-                  <button onClick={() => bulkRestoreMutation.mutate(selectedRows)} className="btn btn-icon btn-success bg-green-500/10 text-green-500 hover:bg-green-500/20" title="Bulk Restore">
-                    <RotateCcw size={14} />
+                  <button
+                    onClick={() => bulkRestoreMutation.mutate(selectedRows)}
+                    className="p-1.5 hover:bg-green-50 dark:hover:bg-green-950/20 text-green-500 rounded-lg transition-colors"
+                    title="Bulk Restore"
+                  >
+                    <RotateCcw size={13} />
                   </button>
-                  <button onClick={() => {
-                    if (confirm('Permanently delete all selected items?')) {
-                      selectedRows.forEach(id => deleteMutation.mutate({ id, force: true }))
-                    }
-                  }} className="btn btn-icon btn-danger" title="Bulk Permanent Delete">
-                    <Trash2 size={14} />
+                  <button
+                    onClick={() => {
+                      if (confirm('Permanently delete all selected items?')) {
+                        selectedRows.forEach(id => deleteMutation.mutate({ id, force: true }))
+                      }
+                    }}
+                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors"
+                    title="Bulk Permanent Delete"
+                  >
+                    <Trash2 size={13} />
                   </button>
                 </>
               ) : (
-                <button onClick={() => {
-                  if (confirm('Move all selected items to trash?')) {
-                    bulkDeleteMutation.mutate(selectedRows)
-                  }
-                }} className="btn btn-icon btn-danger" title="Bulk Delete">
-                  <Trash2 size={14} />
+                <button
+                  onClick={() => {
+                    if (confirm('Move all selected items to trash?')) {
+                      bulkDeleteMutation.mutate(selectedRows)
+                    }
+                  }}
+                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors"
+                  title="Bulk Delete"
+                >
+                  <Trash2 size={13} />
                 </button>
               )}
             </div>
           )}
 
+          <button
+            onClick={() => qc.invalidateQueries({ queryKey: [activeTab] })}
+            className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
+
           {/* Column Visibility settings */}
           {activeTab === 'employees' && (
             <div className="relative">
-              <button onClick={() => setShowColSettings(!showColSettings)} className="btn btn-secondary btn-icon" title="Column Settings">
-                <Settings size={16} />
+              <button
+                onClick={() => setShowColSettings(!showColSettings)}
+                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+                title="Column Settings"
+              >
+                <Settings size={14} />
               </button>
               <AnimatePresence>
                 {showColSettings && (
-                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute right-0 mt-2 bg-card border border-border p-3 rounded-lg shadow-lg z-30 w-56">
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase border-b pb-1 mb-2">Columns Visibility</h4>
-                    <div className="space-y-1.5 max-h-56 overflow-y-auto">
-                      {Object.keys(visibleColumns).map(col => (
-                        <label key={col} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={visibleColumns[col]} 
-                            onChange={e => setVisibleColumns(prev => ({ ...prev, [col]: e.target.checked }))} 
-                            className="checkbox"
-                          />
-                          <span className="capitalize">{col.replace('_', ' ')}</span>
-                        </label>
-                      ))}
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowColSettings(false)} />
+                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">Toggle Columns</p>
+                      <div className="max-h-56 overflow-y-auto space-y-0.5">
+                        {Object.keys(visibleColumns).map(col => (
+                          <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                            <input
+                              type="checkbox"
+                              checked={visibleColumns[col]}
+                              onChange={e => setVisibleColumns(prev => ({ ...prev, [col]: e.target.checked }))}
+                              className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                            />
+                            <span>{col.replace('_', ' ')}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>
           )}
-          <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2">
-            <Download size={16} /> Export CSV
-          </button>
-          <button onClick={() => qc.invalidateQueries({ queryKey: [activeTab] })} className="btn btn-secondary btn-icon" title="Refresh data">
-            <RefreshCw size={16} />
-          </button>
-          <ResetButton onClick={handleResetFilters} />
         </div>
       </div>
 
-      {/* Collapsible Filter Panel */}
+      {/* Advanced Employee Filters Drawer (Custom Framer Motion Drawer with full Dark/Light Mode support) */}
       <AnimatePresence>
-        {showFilters && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }} 
-            animate={{ height: 'auto', opacity: 1 }} 
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-card border border-border rounded-lg p-4 print:hidden"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Branch Filter */}
-              <div>
-                <label className="label">Branch</label>
-                <select value={filterBranchId} onChange={e => setFilterBranchId(e.target.value)} className="input w-full">
-                  <option value="">All Branches</option>
-                  {branchesList?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+        {filterDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40"
+              onClick={() => setFilterDrawerOpen(false)}
+            />
+            {/* Drawer Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-5 border-b border-border bg-card">
+                <div className="flex items-center gap-2">
+                  <Filter size={16} className="text-primary" />
+                  <h3 className="font-bold text-base text-foreground">
+                    Advanced Employee Filters
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              {/* Department Filter */}
-              {['employees', 'positions', 'payrolls'].includes(activeTab) && (
+              {/* Drawer Body Content */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-card">
+                {/* Branch Filter */}
                 <div>
-                  <label className="label">Department</label>
-                  <select value={filterDeptId} onChange={e => setFilterDeptId(e.target.value)} className="input w-full">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Branch</label>
+                  <select
+                    value={filterBranchId}
+                    onChange={e => setFilterBranchId(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
+                    <option value="">All Branches</option>
+                    {branchesList?.map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Department Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Department</label>
+                  <select
+                    value={filterDeptId}
+                    onChange={e => setFilterDeptId(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
                     <option value="">All Departments</option>
-                    {deptList?.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    {deptList?.map((d: any) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
                   </select>
                 </div>
-              )}
 
-              {/* Position Filter */}
-              {activeTab === 'employees' && (
+                {/* Position Filter */}
                 <div>
-                  <label className="label">Position</label>
-                  <select value={filterPosId} onChange={e => setFilterPosId(e.target.value)} className="input w-full">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Position</label>
+                  <select
+                    value={filterPosId}
+                    onChange={e => setFilterPosId(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
                     <option value="">All Positions</option>
-                    {posList?.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {posList?.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
                   </select>
                 </div>
-              )}
 
-              {/* Status Filter */}
-              <div>
-                <label className="label">Status</label>
-                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input w-full">
-                  <option value="">All Statuses</option>
-                  {activeTab === 'employees' && (
-                    <>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="resigned">Resigned</option>
-                    </>
-                  )}
-                  {['departments', 'positions'].includes(activeTab) && (
-                    <>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </>
-                  )}
-                  {activeTab === 'attendance' && (
-                    <>
-                      <option value="present">Present</option>
-                      <option value="absent">Absent</option>
-                      <option value="late">Late</option>
-                      <option value="leave">Leave</option>
-                      <option value="holiday">Holiday</option>
-                    </>
-                  )}
-                  {activeTab === 'payrolls' && (
-                    <>
-                      <option value="draft">Draft</option>
-                      <option value="approved">Approved</option>
-                      <option value="paid">Paid</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {/* Gender Filter */}
-              {activeTab === 'employees' && (
+                {/* Role Filter */}
                 <div>
-                  <label className="label">Gender</label>
-                  <select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="input w-full">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Role</label>
+                  <select
+                    value={filterRole}
+                    onChange={e => setFilterRole(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
+                    <option value="">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
+
+                {/* Employment Status Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Employment Status</label>
+                  <select
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="resigned">Resigned</option>
+                  </select>
+                </div>
+
+                {/* Attendance Status Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Attendance Status</label>
+                  <select
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="late">Late</option>
+                    <option value="leave">Leave</option>
+                    <option value="holiday">Holiday</option>
+                  </select>
+                </div>
+
+                {/* Gender Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Gender</label>
+                  <select
+                    value={filterGender}
+                    onChange={e => setFilterGender(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
+                  >
                     <option value="">All Genders</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                   </select>
                 </div>
-              )}
 
-              {/* Date Filter */}
-              <div>
-                <label className="label">
-                  {activeTab === 'attendance' ? 'Date Start' : activeTab === 'payrolls' ? 'Period Month' : 'Join Date Start'}
-                </label>
-                <input 
-                  type={activeTab === 'payrolls' ? 'month' : 'date'} 
-                  value={filterDateStart} 
-                  onChange={e => setFilterDateStart(e.target.value)} 
-                  className="input w-full" 
-                />
-              </div>
-
-              {activeTab !== 'payrolls' && (
+                {/* Date Joined / Date Range Filter */}
                 <div>
-                  <label className="label">
-                    {activeTab === 'attendance' ? 'Date End' : 'Join Date End'}
-                  </label>
-                  <input 
-                    type="date" 
-                    value={filterDateEnd} 
-                    onChange={e => setFilterDateEnd(e.target.value)} 
-                    className="input w-full" 
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Date Joined / Date Start</label>
+                  <input
+                    type="date"
+                    value={filterDateStart}
+                    onChange={e => setFilterDateStart(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
                   />
                 </div>
-              )}
 
-              {/* Basic Salary Ranges */}
-              {activeTab === 'employees' && (
-                <>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Date Joined / Date End</label>
+                  <input
+                    type="date"
+                    value={filterDateEnd}
+                    onChange={e => setFilterDateEnd(e.target.value)}
+                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
+                  />
+                </div>
+
+                {/* Basic Salary Range */}
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="label">Min Salary ($)</label>
-                    <input 
-                      type="number" 
-                      value={filterSalaryMin} 
-                      onChange={e => setFilterSalaryMin(e.target.value)} 
-                      placeholder="e.g. 500" 
-                      className="input w-full" 
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Min Salary ($)</label>
+                    <input
+                      type="number"
+                      value={filterSalaryMin}
+                      onChange={e => setFilterSalaryMin(e.target.value)}
+                      placeholder="Min"
+                      className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
                     />
                   </div>
                   <div>
-                    <label className="label">Max Salary ($)</label>
-                    <input 
-                      type="number" 
-                      value={filterSalaryMax} 
-                      onChange={e => setFilterSalaryMax(e.target.value)} 
-                      placeholder="e.g. 5000" 
-                      className="input w-full" 
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Max Salary ($)</label>
+                    <input
+                      type="number"
+                      value={filterSalaryMax}
+                      onChange={e => setFilterSalaryMax(e.target.value)}
+                      placeholder="Max"
+                      className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
                     />
                   </div>
-                </>
-              )}
-            </div>
-          </motion.div>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl border border-border transition-colors"
+                >
+                  <RotateCcw size={13} />
+                  <span>Reset</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFilterDrawerOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted border border-border rounded-xl transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterDrawerOpen(false)}
+                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      {/* Modern sticky Table wrapper */}
-      <TableWrapper isFetching={isFetching}>
-        <div className="overflow-x-auto relative shadow-sm border border-border rounded-lg max-h-[600px]">
-          <table className="w-full data-table relative border-collapse">
-            <thead className="sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
-              <tr>
-                <th className="w-8 !px-3">
-                  <input 
-                    type="checkbox" 
-                    className="checkbox"
-                    checked={records.length > 0 && selectedRows.length === records.length}
-                    onChange={e => handleSelectAll(e.target.checked)}
-                  />
-                </th>
-                {activeTab === 'employees' && (
-                  <>
-                    {visibleColumns.id && <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>ID {renderSortIcon('id')}</th>}
-                    {visibleColumns.photo && <th>Photo</th>}
-                    {visibleColumns.employee_number && <th className="cursor-pointer select-none" onClick={() => handleSort('employee_number')}>Employee Number {renderSortIcon('employee_number')}</th>}
-                    {visibleColumns.name && <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>}
-                    {visibleColumns.email && <th className="cursor-pointer select-none" onClick={() => handleSort('email')}>Email {renderSortIcon('email')}</th>}
-                    {visibleColumns.phone && <th>Phone</th>}
-                    {visibleColumns.branch && <th>Branch</th>}
-                    {visibleColumns.department && <th>Department</th>}
-                    {visibleColumns.position && <th>Position</th>}
-                    {visibleColumns.gender && <th>Gender</th>}
-                    {visibleColumns.basic_salary && <th className="cursor-pointer select-none" onClick={() => handleSort('basic_salary')}>Basic Salary {renderSortIcon('basic_salary')}</th>}
-                    {visibleColumns.join_date && <th className="cursor-pointer select-none" onClick={() => handleSort('join_date')}>Join Date {renderSortIcon('join_date')}</th>}
-                    {visibleColumns.created_at && <th className="cursor-pointer select-none" onClick={() => handleSort('created_at')}>Created At {renderSortIcon('created_at')}</th>}
-                    {visibleColumns.status && <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status {renderSortIcon('status')}</th>}
-                  </>
-                )}
-                {activeTab === 'departments' && (
-                  <>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>ID {renderSortIcon('id')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('code')}>Code {renderSortIcon('code')}</th>
-                    <th>Positions</th>
-                    <th>Employees</th>
-                    <th>Status</th>
-                  </>
-                )}
-                {activeTab === 'positions' && (
-                  <>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>ID {renderSortIcon('id')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('code')}>Code {renderSortIcon('code')}</th>
-                    <th>Department</th>
-                    <th>Employees</th>
-                    <th>Status</th>
-                  </>
-                )}
-                {activeTab === 'attendance' && (
-                  <>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('date')}>Date {renderSortIcon('date')}</th>
-                    <th>Employee Name</th>
-                    <th>Employee ID</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('check_in')}>Check In {renderSortIcon('check_in')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('check_out')}>Check Out {renderSortIcon('check_out')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status {renderSortIcon('status')}</th>
-                    <th>Notes</th>
-                  </>
-                )}
-                {activeTab === 'payrolls' && (
-                  <>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('period_month')}>Period {renderSortIcon('period_month')}</th>
-                    <th>Employee</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('basic_salary')}>Basic Salary {renderSortIcon('basic_salary')}</th>
-                    <th>Allowances</th>
-                    <th>Deductions</th>
-                    <th>Overtime</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('net_salary')}>Net Salary {renderSortIcon('net_salary')}</th>
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status {renderSortIcon('status')}</th>
-                    <th>Paid At</th>
-                  </>
-                )}
-                <th className="print:hidden">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <LoadingSkeleton cols={10} />
-              ) : records.length === 0 ? (
-                <EmptyState cols={10} message="No employee module records found" />
-              ) : (
-                records.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="!px-3">
-                      <input 
-                        type="checkbox" 
-                        className="checkbox"
-                        checked={selectedRows.includes(r.id)}
-                        onChange={e => handleSelectRow(r.id, e.target.checked)}
-                      />
-                    </td>
-                    {activeTab === 'employees' && (
-                      <>
-                        {visibleColumns.id && <td>{r.id}</td>}
-                        {visibleColumns.photo && (
-                          <td>
-                            <div className="w-9 h-9 rounded-full overflow-hidden border border-border bg-muted flex items-center justify-center">
-                              {r.photo ? (
-                                <img src={getPhotoUrl(r.photo) || ''} alt="" className="object-cover w-full h-full" />
+      {/* Table Container UI or Shifts Tab */}
+      {activeTab === 'attendance' && attendanceSubTab === 'shifts' ? (
+        <ShiftsTab />
+      ) : (
+        <>
+          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden print:hidden">
+            <TableWrapper isFetching={isFetching}>
+              <div className="overflow-x-auto">
+                <table className="w-full data-table border-collapse">
+                  <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
+                    <tr>
+                      <th className="w-8 !px-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          checked={records.length > 0 && selectedRows.length === records.length}
+                          onChange={e => handleSelectAll(e.target.checked)}
+                        />
+                      </th>
+                      {activeTab === 'employees' && (
+                        <>
+                          {visibleColumns.id && <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>ID {renderSortIcon('id')}</th>}
+                          {visibleColumns.photo && <th>Photo</th>}
+                          {visibleColumns.employee_number && <th className="cursor-pointer select-none" onClick={() => handleSort('employee_number')}>Employee Number {renderSortIcon('employee_number')}</th>}
+                          {visibleColumns.name && <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>}
+                          {visibleColumns.email && <th className="cursor-pointer select-none" onClick={() => handleSort('email')}>Email {renderSortIcon('email')}</th>}
+                          {visibleColumns.phone && <th>Phone</th>}
+                          {visibleColumns.branch && <th>Branch</th>}
+                          {visibleColumns.department && <th>Department</th>}
+                          {visibleColumns.position && <th>Position</th>}
+                          {visibleColumns.gender && <th>Gender</th>}
+                          {visibleColumns.basic_salary && <th className="cursor-pointer select-none" onClick={() => handleSort('basic_salary')}>Basic Salary {renderSortIcon('basic_salary')}</th>}
+                          {visibleColumns.join_date && <th className="cursor-pointer select-none" onClick={() => handleSort('join_date')}>Join Date {renderSortIcon('join_date')}</th>}
+                          {visibleColumns.created_at && <th className="cursor-pointer select-none" onClick={() => handleSort('created_at')}>Created At {renderSortIcon('created_at')}</th>}
+                          {visibleColumns.status && <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status {renderSortIcon('status')}</th>}
+                        </>
+                      )}
+                      {activeTab === 'departments' && (
+                        <>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>ID {renderSortIcon('id')}</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('code')}>Code {renderSortIcon('code')}</th>
+                          <th>Positions</th>
+                          <th>Employees</th>
+                          <th>Status</th>
+                        </>
+                      )}
+                      {activeTab === 'positions' && (
+                        <>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>ID {renderSortIcon('id')}</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>Name {renderSortIcon('name')}</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('code')}>Code {renderSortIcon('code')}</th>
+                          <th>Department</th>
+                          <th>Employees</th>
+                          <th>Status</th>
+                        </>
+                      )}
+                      {activeTab === 'attendance' && (
+                        <>
+                          <th className="w-[12%] cursor-pointer select-none" onClick={() => handleSort('attendance_date')}>Date {renderSortIcon('attendance_date')}</th>
+                          <th className="w-[18%]">Employee</th>
+                          <th className="w-[14%]">Department / Position</th>
+                          <th className="w-[10%]">Shift</th>
+                          <th className="w-[10%] cursor-pointer select-none" onClick={() => handleSort('check_in')}>Check In {renderSortIcon('check_in')}</th>
+                          <th className="w-[10%] cursor-pointer select-none" onClick={() => handleSort('check_out')}>Check Out {renderSortIcon('check_out')}</th>
+                          <th className="w-[10%]">Worked Hours</th>
+                          <th className="w-[8%]">Late</th>
+                          <th className="w-[8%]">Overtime</th>
+                          <th className="w-[10%] cursor-pointer select-none" onClick={() => handleSort('status')}>Status {renderSortIcon('status')}</th>
+                          <th className="w-[12%]">Device & Method</th>
+                        </>
+                      )}
+                      {activeTab === 'payrolls' && (
+                        <>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('period_month')}>Period {renderSortIcon('period_month')}</th>
+                          <th>Employee</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('basic_salary')}>Basic Salary {renderSortIcon('basic_salary')}</th>
+                          <th>Allowances</th>
+                          <th>Deductions</th>
+                          <th>Overtime</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('net_salary')}>Net Salary {renderSortIcon('net_salary')}</th>
+                          <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status {renderSortIcon('status')}</th>
+                          <th>Paid At</th>
+                        </>
+                      )}
+                      <th className="print:hidden">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <LoadingSkeleton cols={10} />
+                    ) : records.length === 0 ? (
+                      <EmptyState cols={10} message="No employee module records found" />
+                    ) : (
+                      records.map((r: any) => (
+                        <tr key={r.id} className="hover:bg-muted/40 transition-colors">
+                          <td className="!px-3">
+                            <input
+                              type="checkbox"
+                              className="checkbox"
+                              checked={selectedRows.includes(r.id)}
+                              onChange={e => handleSelectRow(r.id, e.target.checked)}
+                            />
+                          </td>
+                          {activeTab === 'employees' && (
+                            <>
+                              {visibleColumns.id && <td>{r.id}</td>}
+                              {visibleColumns.photo && (
+                                <td>
+                                  <div className="w-9 h-9 rounded-full overflow-hidden border border-border bg-muted flex items-center justify-center">
+                                    {r.photo ? (
+                                      <img src={getPhotoUrl(r.photo) || ''} alt="" className="object-cover w-full h-full" />
+                                    ) : (
+                                      <User size={16} className="text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </td>
+                              )}
+                              {visibleColumns.employee_number && <td className="font-mono text-xs">{r.employee_number}</td>}
+                              {visibleColumns.name && (
+                                <td className="font-semibold text-foreground hover:text-primary cursor-pointer" onClick={() => openViewDrawer(r)}>
+                                  {r.name}
+                                </td>
+                              )}
+                              {visibleColumns.email && <td className="text-xs text-muted-foreground">{r.email ?? 'N/A'}</td>}
+                              {visibleColumns.phone && <td>{r.phone ?? 'N/A'}</td>}
+                              {visibleColumns.branch && <td>{r.branch?.name ?? 'N/A'}</td>}
+                              {visibleColumns.department && <td>{r.department?.name ?? 'N/A'}</td>}
+                              {visibleColumns.position && <td>{r.position?.name ?? 'N/A'}</td>}
+                              {visibleColumns.gender && (
+                                <td className="capitalize text-xs">
+                                  <span className={`px-2 py-0.5 rounded-full font-medium ${r.gender === 'male' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400'}`}>
+                                    {r.gender}
+                                  </span>
+                                </td>
+                              )}
+                              {visibleColumns.basic_salary && <td className="font-semibold">${Number(r.basic_salary).toLocaleString()}</td>}
+                              {visibleColumns.join_date && <td>{r.join_date ? new Date(r.join_date).toLocaleDateString() : 'N/A'}</td>}
+                              {visibleColumns.created_at && <td className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>}
+                              {visibleColumns.status && (
+                                <td>
+                                  {r.status === 'active' ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 capitalize">
+                                      {r.status}
+                                    </span>
+                                  ) : r.status === 'on_leave' || r.status === 'leave' ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 capitalize">
+                                      On Leave
+                                    </span>
+                                  ) : r.status === 'suspended' || r.status === 'resigned' ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 capitalize">
+                                      {r.status}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 capitalize">
+                                      {r.status}
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+                            </>
+                          )}
+                          {activeTab === 'departments' && (
+                            <>
+                              <td>{r.id}</td>
+                              <td className="font-semibold text-foreground">{r.name}</td>
+                              <td className="font-mono text-xs">{r.code ?? 'N/A'}</td>
+                              <td>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                  <Briefcase size={12} className="opacity-70" />
+                                  {r.positions_count ?? 0} {r.positions_count === 1 ? 'Position' : 'Positions'}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                  <Users size={12} className="opacity-70" />
+                                  {r.employees_count ?? 0} {r.employees_count === 1 ? 'Employee' : 'Employees'}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`badge ${r.is_active ? 'badge-success' : 'badge-muted'}`}>
+                                  {r.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                            </>
+                          )}
+                          {activeTab === 'positions' && (
+                            <>
+                              <td>{r.id}</td>
+                              <td className="font-semibold text-foreground">{r.name}</td>
+                              <td className="font-mono text-xs">{r.code ?? 'N/A'}</td>
+                              <td>{r.department?.name ?? 'N/A'}</td>
+                              <td>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                  <Users size={12} className="opacity-70" />
+                                  {r.employees_count ?? 0} {r.employees_count === 1 ? 'Employee' : 'Employees'}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`badge ${r.is_active ? 'badge-success' : 'badge-muted'}`}>
+                                  {r.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                            </>
+                          )}
+                          {activeTab === 'attendance' && (
+                            <>
+                              <td className="font-semibold text-xs font-mono">{r.attendance_date ?? (r.date ? new Date(r.date).toLocaleDateString() : 'N/A')}</td>
+                              <td>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs overflow-hidden border border-primary/20">
+                                    {r.employee?.photo ? (
+                                      <img src={r.employee.photo} alt={r.employee.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      r.employee?.name ? r.employee.name.substring(0, 2).toUpperCase() : 'EM'
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-foreground text-xs">{r.employee?.name ?? 'N/A'}</p>
+                                    <p className="font-mono text-[10px] text-muted-foreground">{r.employee?.employee_number ?? 'N/A'}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="text-xs">
+                                <p className="font-semibold text-foreground">{r.department?.name ?? r.employee?.department?.name ?? 'General'}</p>
+                                <p className="text-[10px] text-muted-foreground">{r.position?.name ?? r.employee?.position?.name ?? '-'}</p>
+                              </td>
+                              <td className="text-xs font-semibold">{r.shift?.name ?? 'Morning Shift'}</td>
+                              <td className="font-mono text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{r.check_in ?? '--:--'}</td>
+                              <td className="font-mono text-xs text-rose-500 font-semibold">{r.check_out ?? '--:--'}</td>
+                              <td className="text-xs font-bold text-foreground">{r.working_hours ?? r.worked_hours_formatted ?? '-'}</td>
+                              <td className={`text-xs font-semibold ${r.late_minutes > 0 ? 'text-amber-500' : 'text-muted-foreground'}`}>{r.late_time ?? r.late_time_formatted ?? '0m'}</td>
+                              <td className="text-xs font-semibold text-emerald-500">{r.overtime_formatted ?? '0m'}</td>
+                              <td>
+                                <span className={`badge ${
+                                  r.status === 'present' ? 'badge-success' :
+                                  r.status === 'absent' ? 'badge-danger' :
+                                  r.status === 'late' ? 'badge-warning' : 'badge-info'
+                                }`}>
+                                  {r.status}
+                                </span>
+                              </td>
+                              <td className="text-[11px] text-muted-foreground">
+                                <p className="font-semibold text-foreground">{r.device_name ?? 'Mobile App'}</p>
+                                <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-mono uppercase">{r.check_in_method ?? 'QR Scan'}</span>
+                              </td>
+                            </>
+                          )}
+                          {activeTab === 'payrolls' && (
+                            <>
+                              <td className="font-semibold font-mono">{r.period_month}</td>
+                              <td className="font-semibold text-foreground">{r.employee?.name ?? 'N/A'}</td>
+                              <td>${Number(r.basic_salary).toLocaleString()}</td>
+                              <td>${Number(r.allowances).toLocaleString()}</td>
+                              <td>${Number(r.deductions).toLocaleString()}</td>
+                              <td>${Number(r.overtime_pay).toLocaleString()}</td>
+                              <td className="font-bold text-primary">${Number(r.net_salary).toLocaleString()}</td>
+                              <td>
+                                <span className={`badge ${r.status === 'paid' ? 'badge-success' : r.status === 'approved' ? 'badge-info' : 'badge-warning'
+                                  }`}>
+                                  {r.status}
+                                </span>
+                              </td>
+                              <td className="text-xs">{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '-'}</td>
+                            </>
+                          )}
+                          <td className="print:hidden">
+                            <div className="flex items-center gap-1.5">
+                              {activeTab === 'employees' && (
+                                <button onClick={() => openViewDrawer(r)} className="btn btn-icon btn-secondary" title="View Detail Profile">
+                                  <Eye size={13} />
+                                </button>
+                              )}
+                              {activeTab === 'attendance' && (
+                                <button onClick={() => setSelectedAttendanceDetail(r)} className="btn btn-icon btn-secondary text-primary hover:bg-primary/10" title="View Attendance Security Details">
+                                  <Eye size={13} />
+                                </button>
+                              )}
+                              {recycleBinMode ? (
+                                <>
+                                  <button onClick={() => restoreMutation.mutate(r.id)} className="btn btn-icon btn-success bg-green-500/10 text-green-500 hover:bg-green-500/20" title="Restore">
+                                    <RotateCcw size={13} />
+                                  </button>
+                                  <button onClick={() => confirmDelete(r.id, true)} className="btn btn-icon btn-danger" title="Force Delete Permanently">
+                                    <Trash2 size={13} />
+                                  </button>
+                                </>
                               ) : (
-                                <User size={16} className="text-muted-foreground" />
+                                <>
+                                  <button onClick={() => openEditModal(r)} className="btn btn-icon btn-secondary" title="Edit">
+                                    <Edit2 size={13} />
+                                  </button>
+                                  <button onClick={() => confirmDelete(r.id, false)} className="btn btn-icon btn-danger" title="Trash Delete">
+                                    <Trash2 size={13} />
+                                  </button>
+                                </>
                               )}
                             </div>
                           </td>
-                        )}
-                        {visibleColumns.employee_number && <td className="font-mono text-xs">{r.employee_number}</td>}
-                        {visibleColumns.name && (
-                          <td className="font-semibold text-foreground hover:text-primary cursor-pointer" onClick={() => openViewDrawer(r)}>
-                            {r.name}
-                          </td>
-                        )}
-                        {visibleColumns.email && <td className="text-xs text-muted-foreground">{r.email ?? 'N/A'}</td>}
-                        {visibleColumns.phone && <td>{r.phone ?? 'N/A'}</td>}
-                        {visibleColumns.branch && <td>{r.branch?.name ?? 'N/A'}</td>}
-                        {visibleColumns.department && <td>{r.department?.name ?? 'N/A'}</td>}
-                        {visibleColumns.position && <td>{r.position?.name ?? 'N/A'}</td>}
-                        {visibleColumns.gender && (
-                          <td className="capitalize text-xs">
-                            <span className={`px-2 py-0.5 rounded-full font-medium ${r.gender === 'male' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400'}`}>
-                              {r.gender}
-                            </span>
-                          </td>
-                        )}
-                        {visibleColumns.basic_salary && <td className="font-semibold">${Number(r.basic_salary).toLocaleString()}</td>}
-                        {visibleColumns.join_date && <td>{r.join_date ? new Date(r.join_date).toLocaleDateString() : 'N/A'}</td>}
-                        {visibleColumns.created_at && <td className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>}
-                        {visibleColumns.status && (
-                          <td>
-                            <span className={`badge ${r.status === 'active' ? 'badge-success' : r.status === 'resigned' ? 'badge-danger' : 'badge-muted'}`}>
-                              {r.status}
-                            </span>
-                          </td>
-                        )}
-                      </>
+                        </tr>
+                      ))
                     )}
-                    {activeTab === 'departments' && (
-                      <>
-                        <td>{r.id}</td>
-                        <td className="font-semibold text-foreground">{r.name}</td>
-                        <td className="font-mono text-xs">{r.code ?? 'N/A'}</td>
-                        <td>{r.positions_count ?? 0}</td>
-                        <td>{r.employees_count ?? 0}</td>
-                        <td>
-                          <span className={`badge ${r.is_active ? 'badge-success' : 'badge-muted'}`}>
-                            {r.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                      </>
-                    )}
-                    {activeTab === 'positions' && (
-                      <>
-                        <td>{r.id}</td>
-                        <td className="font-semibold text-foreground">{r.name}</td>
-                        <td className="font-mono text-xs">{r.code ?? 'N/A'}</td>
-                        <td>{r.department?.name ?? 'N/A'}</td>
-                        <td>{r.employees_count ?? 0}</td>
-                        <td>
-                          <span className={`badge ${r.is_active ? 'badge-success' : 'badge-muted'}`}>
-                            {r.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                      </>
-                    )}
-                    {activeTab === 'attendance' && (
-                      <>
-                        <td className="font-semibold">{new Date(r.date).toLocaleDateString()}</td>
-                        <td className="font-semibold text-foreground">{r.employee?.name ?? 'N/A'}</td>
-                        <td className="font-mono text-xs">{r.employee?.employee_number ?? 'N/A'}</td>
-                        <td>{r.check_in ?? '--:--'}</td>
-                        <td>{r.check_out ?? '--:--'}</td>
-                        <td>
-                          <span className={`badge ${
-                            r.status === 'present' ? 'badge-success' : r.status === 'absent' ? 'badge-danger' : r.status === 'late' ? 'badge-warning' : 'badge-info'
-                          }`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="max-w-xs truncate text-xs text-muted-foreground" title={r.notes}>{r.notes ?? '-'}</td>
-                      </>
-                    )}
-                    {activeTab === 'payrolls' && (
-                      <>
-                        <td className="font-semibold font-mono">{r.period_month}</td>
-                        <td className="font-semibold text-foreground">{r.employee?.name ?? 'N/A'}</td>
-                        <td>${Number(r.basic_salary).toLocaleString()}</td>
-                        <td>${Number(r.allowances).toLocaleString()}</td>
-                        <td>${Number(r.deductions).toLocaleString()}</td>
-                        <td>${Number(r.overtime_pay).toLocaleString()}</td>
-                        <td className="font-bold text-primary">${Number(r.net_salary).toLocaleString()}</td>
-                        <td>
-                          <span className={`badge ${
-                            r.status === 'paid' ? 'badge-success' : r.status === 'approved' ? 'badge-info' : 'badge-warning'
-                          }`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="text-xs">{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '-'}</td>
-                      </>
-                    )}
-                    <td className="print:hidden">
-                      <div className="flex items-center gap-1.5">
-                        {activeTab === 'employees' && (
-                          <button onClick={() => openViewDrawer(r)} className="btn btn-icon btn-secondary" title="View Detail Profile">
-                            <Eye size={13} />
-                          </button>
-                        )}
-                        {recycleBinMode ? (
-                          <>
-                            <button onClick={() => restoreMutation.mutate(r.id)} className="btn btn-icon btn-success bg-green-500/10 text-green-500 hover:bg-green-500/20" title="Restore">
-                              <RotateCcw size={13} />
-                            </button>
-                            <button onClick={() => confirmDelete(r.id, true)} className="btn btn-icon btn-danger" title="Force Delete Permanently">
-                              <Trash2 size={13} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => openEditModal(r)} className="btn btn-icon btn-secondary" title="Edit">
-                              <Edit2 size={13} />
-                            </button>
-                            <button onClick={() => confirmDelete(r.id, false)} className="btn btn-icon btn-danger" title="Trash Delete">
-                              <Trash2 size={13} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </TableWrapper>
+                  </tbody>
+                </table>
+              </div>
+            </TableWrapper>
+          </div>
 
-      <Pagination
-        currentPage={pagination.current_page}
-        lastPage={pagination.last_page}
-        total={pagination.total}
-        perPage={perPage}
-        onPageChange={setPage}
-        onPerPageChange={setPerPage}
-        className="print:hidden"
-      />
+          <Pagination
+            currentPage={pagination.current_page}
+            lastPage={pagination.last_page}
+            total={pagination.total}
+            perPage={perPage}
+            onPageChange={setPage}
+            onPerPageChange={setPerPage}
+            className="print:hidden"
+          />
+        </>
+      )}
 
       {/* CRUD Modal Form Dialog */}
       <AnimatePresence>
         {modalOpen && (
           <div className="modal-backdrop">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.95 }} 
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               className="modal-content max-w-2xl w-full max-h-[85vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
@@ -1228,30 +1622,53 @@ const EmployeesPage: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label">Department Name</label>
-                        <input type="text" required value={formName} onChange={e => setFormName(e.target.value)} className="input w-full" />
+                        <input type="text" required value={formName} onChange={e => setFormName(e.target.value)} className="input w-full" placeholder="e.g. Engineering" />
                       </div>
                       <div>
                         <label className="label">Department Code</label>
-                        <input type="text" value={formEmployeeNumber} onChange={e => setFormEmployeeNumber(e.target.value)} className="input w-full" placeholder="e.g. IT, HR" />
+                        <input type="text" value={formEmployeeNumber} onChange={e => setFormEmployeeNumber(e.target.value)} className="input w-full" placeholder="e.g. IT, HR, FIN" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="label">Company</label>
+                        <select required value={formCompanyId} onChange={e => setFormCompanyId(e.target.value)} className="input w-full">
+                          <option value="">Select Company</option>
+                          {companiesList?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Branch</label>
+                        <select required value={formBranchId} onChange={e => setFormBranchId(e.target.value)} className="input w-full">
+                          <option value="">Select Branch</option>
+                          {branchesList?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Status</label>
+                        <select value={formStatus} onChange={e => setFormStatus(e.target.value)} className="input w-full">
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
                       </div>
                     </div>
                     <div>
                       <label className="label">Description</label>
-                      <textarea value={formAddress} onChange={e => setFormAddress(e.target.value)} className="input w-full min-h-[80px]" />
-                    </div>
-                    <div>
-                      <label className="label">Status</label>
-                      <select value={formStatus} onChange={e => setFormStatus(e.target.value)} className="input w-full">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
+                      <textarea value={formAddress} onChange={e => setFormAddress(e.target.value)} className="input w-full min-h-[80px]" placeholder="Optional description..." />
                     </div>
                   </div>
                 )}
 
                 {activeTab === 'positions' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="label">Company</label>
+                        <select required value={formCompanyId} onChange={e => setFormCompanyId(e.target.value)} className="input w-full">
+                          <option value="">Select Company</option>
+                          {companiesList?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
                       <div>
                         <label className="label">Department</label>
                         <select required value={formDeptId} onChange={e => setFormDeptId(e.target.value)} className="input w-full">
@@ -1330,7 +1747,14 @@ const EmployeesPage: React.FC = () => {
                     </div>
 
                     <h4 className="text-sm font-semibold border-b pb-1 text-muted-foreground pt-2">Employment Details</h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="label">Company</label>
+                        <select required value={formCompanyId} onChange={e => setFormCompanyId(e.target.value)} className="input w-full">
+                          <option value="">Select Company</option>
+                          {companiesList?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
                       <div>
                         <label className="label">Branch</label>
                         <select required value={formBranchId} onChange={e => setFormBranchId(e.target.value)} className="input w-full">
@@ -1384,9 +1808,53 @@ const EmployeesPage: React.FC = () => {
                         <label className="label">Basic Salary ($)</label>
                         <input type="number" required value={formBasicSalary} onChange={e => setFormBasicSalary(e.target.value)} className="input w-full" />
                       </div>
-                      <div>
-                        <label className="label">Photo URL/Path</label>
-                        <input type="text" value={formPhoto} onChange={e => setFormPhoto(e.target.value)} className="input w-full" placeholder="e.g. photos/john.jpg" />
+                      <div className="col-span-2">
+                        <label className="label">Employee Photo</label>
+                        <div className="flex items-center gap-4 bg-muted/30 p-3.5 rounded-xl border border-border">
+                          <div className="relative w-16 h-16 rounded-full border-2 border-border bg-card overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+                            {uploadingPhoto ? (
+                              <Loader2 size={22} className="animate-spin text-primary" />
+                            ) : formPhoto ? (
+                              <img src={getPhotoUrl(formPhoto) || ''} alt="Preview" className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={28} className="text-muted-foreground" />
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs">
+                                {uploadingPhoto ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                                <span>{uploadingPhoto ? 'Uploading Image...' : 'Upload Image File'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                                  onChange={handlePhotoFileChange}
+                                  disabled={uploadingPhoto}
+                                  className="hidden"
+                                />
+                              </label>
+
+                              {formPhoto && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFormPhoto('')}
+                                  className="px-2.5 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-500/10 rounded-xl border border-rose-500/20 transition-colors"
+                                >
+                                  Remove Photo
+                                </button>
+                              )}
+                            </div>
+
+                            <input
+                              type="text"
+                              value={formPhoto}
+                              onChange={e => setFormPhoto(e.target.value)}
+                              className="input w-full text-xs font-mono py-1 text-muted-foreground"
+                              placeholder="Or enter photo URL / storage path..."
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1419,17 +1887,17 @@ const EmployeesPage: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="label">Check In</label>
-                        <input type="text" placeholder="HH:MM" value={attCheckIn} onChange={e => setAttCheckIn(e.target.value)} className="input w-full" />
+                        <label className="label">Check In Time</label>
+                        <input type="time" value={attCheckIn} onChange={e => setAttCheckIn(e.target.value)} className="input w-full" />
                       </div>
                       <div>
-                        <label className="label">Check Out</label>
-                        <input type="text" placeholder="HH:MM" value={attCheckOut} onChange={e => setAttCheckOut(e.target.value)} className="input w-full" />
+                        <label className="label">Check Out Time</label>
+                        <input type="time" value={attCheckOut} onChange={e => setAttCheckOut(e.target.value)} className="input w-full" />
                       </div>
                     </div>
                     <div>
                       <label className="label">Notes</label>
-                      <textarea value={attNotes} onChange={e => setAttNotes(e.target.value)} className="input w-full min-h-[80px]" />
+                      <textarea value={attNotes} onChange={e => setAttNotes(e.target.value)} className="input w-full min-h-[80px]" placeholder="Optional notes..." />
                     </div>
                   </div>
                 )}
@@ -1481,7 +1949,7 @@ const EmployeesPage: React.FC = () => {
                         <input type="number" value={payOvertimePay} onChange={e => setPayOvertimePay(e.target.value)} className="input w-full" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="label">Status</label>
                         <select value={payStatus} onChange={e => setPayStatus(e.target.value)} className="input w-full">
@@ -1491,12 +1959,22 @@ const EmployeesPage: React.FC = () => {
                         </select>
                       </div>
                       <div>
+                        <label className="label">Paid At Date</label>
+                        <input
+                          type="date"
+                          value={payPaidAt}
+                          onChange={e => setPayPaidAt(e.target.value)}
+                          className="input w-full"
+                          placeholder="Leave empty if not paid"
+                        />
+                      </div>
+                      <div>
                         <label className="label">Calculated Net Salary</label>
                         <div className="input w-full bg-muted font-bold flex items-center text-primary">
                           ${(
-                            Number(formBasicSalary || 0) + 
-                            Number(payAllowances || 0) + 
-                            Number(payOvertimePay || 0) - 
+                            Number(formBasicSalary || 0) +
+                            Number(payAllowances || 0) +
+                            Number(payOvertimePay || 0) -
                             Number(payDeductions || 0)
                           ).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </div>
@@ -1504,7 +1982,7 @@ const EmployeesPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="label">Notes</label>
-                      <textarea value={payNotes} onChange={e => setPayNotes(e.target.value)} className="input w-full min-h-[70px]" />
+                      <textarea value={payNotes} onChange={e => setPayNotes(e.target.value)} className="input w-full min-h-[70px]" placeholder="Optional payroll notes..." />
                     </div>
                   </div>
                 )}
@@ -1541,12 +2019,12 @@ const EmployeesPage: React.FC = () => {
                   <Upload size={32} className="mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm font-semibold text-foreground">Click to upload or drag & drop CSV file</p>
                   <p className="text-xs text-muted-foreground mt-1">Requires headers matching database table schema fields</p>
-                  <input 
-                    type="file" 
-                    accept=".csv,text/csv" 
-                    required 
-                    onChange={e => setImportFile(e.target.files?.[0] ?? null)} 
-                    className="mt-4 mx-auto block text-xs" 
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    required
+                    onChange={e => setImportFile(e.target.files?.[0] ?? null)}
+                    className="mt-4 mx-auto block text-xs"
                   />
                 </div>
 
@@ -1582,11 +2060,11 @@ const EmployeesPage: React.FC = () => {
         {detailDrawerOpen && selectedItem && (
           <div className="fixed inset-0 bg-black/40 z-50 flex justify-end print:static print:bg-transparent">
             <div className="absolute inset-0 print:hidden" onClick={() => setDetailDrawerOpen(false)} />
-            
-            <motion.div 
-              initial={{ x: '100%' }} 
-              animate={{ x: 0 }} 
-              exit={{ x: '100%' }} 
+
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
               className="bg-card w-full max-w-xl h-full shadow-2xl relative z-10 p-6 flex flex-col justify-between overflow-y-auto print:static print:w-full print:p-0 print:shadow-none"
             >
@@ -1669,9 +2147,21 @@ const EmployeesPage: React.FC = () => {
                     <div>
                       <p className="text-xs text-muted-foreground">Join Date / Resign Date</p>
                       <p className="font-semibold">
-                        {selectedItem.join_date ? new Date(selectedItem.join_date).toLocaleDateString() : '-'} 
+                        {selectedItem.join_date ? new Date(selectedItem.join_date).toLocaleDateString() : '-'}
                         {selectedItem.resign_date ? ` / ${new Date(selectedItem.resign_date).toLocaleDateString()}` : ''}
                       </p>
+                    </div>
+                  </div>
+
+                  <h4 className="text-sm font-semibold border-b pb-1 text-muted-foreground uppercase pt-4">Workplace Summary</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Attendance Summary</p>
+                      <p className="font-semibold text-emerald-600 dark:text-emerald-400">{selectedItem.attendance_count ?? 0} Check-ins</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Payroll Summary</p>
+                      <p className="font-semibold text-primary">{selectedItem.payroll_count ?? 0} Pay slips</p>
                     </div>
                   </div>
 
@@ -1697,10 +2187,13 @@ const EmployeesPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <ConfirmDialog 
-        open={confirmOpen} 
-        onCancel={() => setConfirmOpen(false)} 
-        onConfirm={handleDelete} 
+      <DynamicQrKioskModal open={kioskModalOpen} onClose={() => setKioskModalOpen(false)} />
+      <AttendanceDetailModal attendance={selectedAttendanceDetail} onClose={() => setSelectedAttendanceDetail(null)} />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleDelete}
         title="Are you sure you want to delete this record?"
       />
     </div>

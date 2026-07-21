@@ -20,7 +20,7 @@ class CreateTransactionRequest extends FormRequest
             'amount' => ['numeric'],
             'description' => ['string'],
             'reference_type' => ['string'],
-            'reference_id' => ['integer', 'exists:references,id']
+            'reference_id' => ['integer']
         ];
     }
 }

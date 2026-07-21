@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -49,9 +49,10 @@ interface AddressFormData {
 
 interface CustomerAddressesPageProps {
   isTab?: boolean
+  setActions?: (actions: { onExport: () => void; onAdd: () => void }) => void
 }
 
-const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = false }) => {
+const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = false, setActions }) => {
   const { t } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
@@ -278,6 +279,15 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     resetPagination()
   }
 
+  useEffect(() => {
+    if (setActions) {
+      setActions({
+        onExport: handleExport,
+        onAdd: openCreateModal
+      })
+    }
+  }, [setActions, addresses])
+
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null
     return sortOrder === 'asc' ? <ChevronUp size={14} className="inline ml-1" /> : <ChevronDown size={14} className="inline ml-1" />
@@ -294,11 +304,17 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 px-4 py-2 border border-border text-foreground hover:bg-muted rounded-lg transition-colors text-sm font-medium">
-              <Download size={16} />
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in"
+            >
+              <Download size={15} />
               {t('common.export')}
             </button>
-            <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium">
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in"
+            >
               <Plus size={16} />
               {t('customers.addAddress')}
             </button>
@@ -354,24 +370,11 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
           <div className="flex gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-addresses'] })}
-              className="p-2 text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
               title={t('common.refresh')}
             >
               <RefreshCw size={14} />
             </button>
-
-            {isTab && (
-              <>
-                <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 px-3 py-2 border border-border text-foreground hover:bg-muted rounded-lg transition-colors text-sm font-medium">
-                  <Download size={14} />
-                  {t('common.export')}
-                </button>
-                <button onClick={openCreateModal} className="btn-primary flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium">
-                  <Plus size={14} />
-                  {t('customers.addAddress')}
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>

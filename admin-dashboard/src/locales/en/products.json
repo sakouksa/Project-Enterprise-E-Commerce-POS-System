@@ -66,5 +66,8 @@
   "unlimited": "Unlimited",
   "updated": "Updated At",
   "variants": "Variants",
-  "warehouse": "Warehouse"
+  "warehouse": "Warehouse",
+  "filterProducts": "Filter Products",
+  "dateRange": "Date Range",
+  "stockLevel": "Stock Level"
 }

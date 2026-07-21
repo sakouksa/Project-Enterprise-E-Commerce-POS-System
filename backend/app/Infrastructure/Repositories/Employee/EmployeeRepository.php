@@ -20,13 +20,20 @@ class EmployeeRepository extends BaseRepository
     ): \Illuminate\Pagination\LengthAwarePaginator {
         $query = $this->model
             ->with(['company:id,name', 'branch:id,name', 'department:id,name', 'position:id,name', 'user:id,name,email'])
+            ->withCount(['attendances', 'payrolls'])
             ->when($filters['search'] ?? null, function ($q, $search) {
                 $q->where(function ($sq) use ($search) {
                     $sq->where('employee_number', 'like', "%{$search}%")
                        ->orWhere('name', 'like', "%{$search}%")
                        ->orWhere('email', 'like', "%{$search}%")
                        ->orWhere('phone', 'like', "%{$search}%")
-                       ->orWhere('nik', 'like', "%{$search}%");
+                       ->orWhere('nik', 'like', "%{$search}%")
+                       ->orWhereHas('department', function ($dq) use ($search) {
+                           $dq->where('name', 'like', "%{$search}%");
+                       })
+                       ->orWhereHas('position', function ($pq) use ($search) {
+                           $pq->where('name', 'like', "%{$search}%");
+                       });
                 });
             })
             ->when($filters['company_id'] ?? null, fn($q, $v) => $q->where('company_id', $v))

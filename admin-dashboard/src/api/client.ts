@@ -17,6 +17,8 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    const lang = localStorage.getItem('enterprise-pos-lang') || 'en'
+    config.headers['Accept-Language'] = lang
     return config
   },
   (error) => Promise.reject(error)

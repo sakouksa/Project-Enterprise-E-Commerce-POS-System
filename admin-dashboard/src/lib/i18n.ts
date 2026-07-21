@@ -64,6 +64,69 @@ export function translateString(text: string): string {
     return lead + activeLowerDict[lowerTrimmed] + trail
   }
 
+  // ─── Pattern translation for standard database actions ───
+  const actionPatterns = [
+    {
+      regex: /^(Selected\s+)?(.+?)\s+created\s+successfully\.?$/i,
+      key: 'created'
+    },
+    {
+      regex: /^(Selected\s+)?(.+?)\s+updated\s+successfully\.?$/i,
+      key: 'updated'
+    },
+    {
+      regex: /^(Selected\s+)?(.+?)\s+deleted\s+successfully\.?$/i,
+      key: 'deleted'
+    },
+    {
+      regex: /^(Selected\s+)?(.+?)\s+restored\s+successfully\.?$/i,
+      key: 'restored'
+    },
+    {
+      regex: /^(Selected\s+)?(.+?)\s+permanently\s+deleted(?:\s+successfully)?\.?$/i,
+      key: 'permanentlyDeleted'
+    }
+  ]
+
+  const currentLang = localStorage.getItem('enterprise-pos-lang') || 'en'
+
+  for (const p of actionPatterns) {
+    const match = trimmed.match(p.regex)
+    if (match) {
+      const isSelected = !!match[1]
+      const entityName = match[2].trim()
+
+      // Normalize entityName: if it is "CustomerAddress", split to "Customer Address"
+      const normalizedEntity = entityName.replace(/([a-z])([A-Z])/g, '$1 $2')
+
+      // Translate the normalized entity name using i18n
+      let translatedEntity = translateString(normalizedEntity)
+
+      // If it's a multiple selection, apply language-specific modifier rules
+      if (isSelected) {
+        if (currentLang === 'km') {
+          translatedEntity = `${translatedEntity}ដែលបានជ្រើសរើស`
+        } else if (currentLang === 'th') {
+          translatedEntity = `${translatedEntity}ที่เลือก`
+        } else if (currentLang === 'vi') {
+          translatedEntity = `Các ${translatedEntity.toLowerCase()} đã chọn`
+        } else if (currentLang === 'zh') {
+          translatedEntity = `已选${translatedEntity}`
+        } else {
+          translatedEntity = `Selected ${translatedEntity}`
+        }
+      }
+
+      // Check if we have the template in messages namespace
+      const template = i18n.t(`messages.${p.key}`, { item: translatedEntity })
+      if (template && template !== `messages.${p.key}`) {
+        const lead = text.match(/^\s*/)?.[0] || ''
+        const trail = text.match(/\s*$/)?.[0] || ''
+        return lead + template + trail
+      }
+    }
+  }
+
   const matchPunct = trimmed.match(/^([\w\s\-&/\(\)\+]+)([:\?\.\!]+)$/)
   if (matchPunct) {
     const base = matchPunct[1].trim()

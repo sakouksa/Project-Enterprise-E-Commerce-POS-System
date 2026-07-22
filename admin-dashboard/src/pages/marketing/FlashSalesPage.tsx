@@ -145,7 +145,7 @@ const FlashSalesPage: React.FC = () => {
             {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
           </p>
         </div>
-        <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500">
+        <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:opacity-90 shadow-sm cursor-pointer font-semibold">
           <Plus size={16} />
           {t('common.add')}
         </button>
@@ -309,7 +309,7 @@ const FlashSalesPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-2"
                   >
                     {(createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
                     {t('common.save')}

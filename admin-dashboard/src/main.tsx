@@ -1,5 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import * as jsxDevRuntime from 'react/jsx-dev-runtime'
+import * as jsxRuntime from 'react/jsx-runtime'
 import App from './App.tsx'
 import './index.css'
 import { ensureLanguageLoaded, buildActiveDict, translateString } from './lib/i18n'
@@ -16,46 +18,68 @@ const translateValue = (val: any): any => {
   return val
 }
 
+const translateProps = (props: any): any => {
+  const currentLang = localStorage.getItem('enterprise-pos-lang') || 'en'
+  if (currentLang === 'en' || !props || typeof props !== 'object') return props
+
+  const newProps = { ...props }
+  const propsToTranslate = [
+    'placeholder', 'title', 'label', 'description', 'alt',
+    'confirmText', 'cancelText', 'subtitle', 'message', 'text'
+  ]
+  for (const key of propsToTranslate) {
+    if (typeof newProps[key] === 'string') {
+      newProps[key] = translateString(newProps[key])
+    }
+  }
+  if (Array.isArray(newProps.items)) {
+    newProps.items = newProps.items.map((item: any) => {
+      if (item && typeof item === 'object') {
+        const newItem = { ...item }
+        if (typeof item.label === 'string') newItem.label = translateString(item.label)
+        if (typeof item.title === 'string') newItem.title = translateString(item.title)
+        return newItem
+      }
+      return item
+    })
+  }
+  if (newProps.children !== undefined) {
+    newProps.children = translateValue(newProps.children)
+  }
+  return newProps
+}
+
 async function bootstrap() {
-  // Wait until the saved language namespaces are fully fetched and loaded
   await ensureLanguageLoaded(savedLanguage)
   buildActiveDict()
 
-  // Intercept React element creation to translate strings dynamically for all active non-English locales
-  const origCreateElement = React.createElement;
-  (React as any).createElement = function (type: any, props: any, ...children: any[]) {
+  // Intercept React JSX Runtime (Vite + React 19)
+  const origJsxDev = (jsxDevRuntime as any).jsxDEV
+  if (origJsxDev) {
+    ;(jsxDevRuntime as any).jsxDEV = function (type: any, props: any, key: any, isStatic: any, source: any, self: any) {
+      return origJsxDev.call(this, type, translateProps(props), key, isStatic, source, self)
+    }
+  }
+
+  const origJsx = (jsxRuntime as any).jsx
+  if (origJsx) {
+    ;(jsxRuntime as any).jsx = function (type: any, props: any, key: any) {
+      return origJsx.call(this, type, translateProps(props), key)
+    }
+  }
+
+  const origJsxs = (jsxRuntime as any).jsxs
+  if (origJsxs) {
+    ;(jsxRuntime as any).jsxs = function (type: any, props: any, key: any) {
+      return origJsxs.call(this, type, translateProps(props), key)
+    }
+  }
+
+  const origCreateElement = React.createElement
+  ;(React as any).createElement = function (type: any, props: any, ...children: any[]) {
     const currentLang = localStorage.getItem('enterprise-pos-lang') || 'en'
     if (currentLang !== 'en') {
-      if (props && typeof props === 'object') {
-        const propsToTranslate = [
-          'placeholder', 'title', 'label', 'description', 'alt',
-          'confirmText', 'cancelText', 'subtitle', 'message', 'text'
-        ]
-        props = { ...props }
-        for (const key of propsToTranslate) {
-          if (typeof props[key] === 'string') {
-            props[key] = translateString(props[key])
-          }
-        }
-        if (Array.isArray(props.items)) {
-          props.items = props.items.map((item: any) => {
-            if (item && typeof item === 'object') {
-              const newItem = { ...item }
-              if (typeof item.label === 'string') {
-                newItem.label = translateString(item.label)
-              }
-              if (typeof item.title === 'string') {
-                newItem.title = translateString(item.title)
-              }
-              return newItem
-            }
-            return item
-          })
-        }
-        if (props.children !== undefined) {
-          props.children = translateValue(props.children)
-        }
-      }
+      props = translateProps(props)
       if (children.length > 0) {
         children = children.map(translateValue)
       }
@@ -71,4 +95,3 @@ async function bootstrap() {
 }
 
 bootstrap().catch(console.error)
-

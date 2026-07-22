@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -34,7 +34,20 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
   const qc = useQueryClient()
   const toast = useToast()
 
-  const activeTab = tab || 'levels'
+  // Dynamic internal tab state to prevent full page re-mount / reload on tab switch
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const urlTab = searchParams.get('tab')
+    if (urlTab) return urlTab
+    return tab || 'levels'
+  })
+
+  useEffect(() => {
+    if (tab) {
+      setCurrentTab(tab)
+    }
+  }, [tab])
+
+  const activeTab = currentTab
 
   const {
     page,
@@ -232,6 +245,68 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
     enabled: activeTab === 'movements',
   })
 
+  // Dynamic Real Financial & Inventory Metrics Calculation
+  const realMetrics = useMemo(() => {
+    const summary = statsData?.summary
+
+    let val = summary?.inventory_value ?? 0
+    let cost = summary?.inventory_cost ?? 0
+    let totalQty = summary?.total_qty ?? 0
+    let availQty = summary?.available_qty ?? 0
+    let resvQty = summary?.reserved_qty ?? 0
+    let lowStock = summary?.low_stock ?? 0
+    let outOfStock = summary?.out_of_stock ?? 0
+
+    // If stockLevels list is loaded and we have filtered list items, dynamically calculate real totals from items:
+    if (stockLevels?.data && Array.isArray(stockLevels.data) && stockLevels.data.length > 0) {
+      let calcVal = 0
+      let calcCost = 0
+      let calcQty = 0
+      let calcAvail = 0
+      let calcResv = 0
+      let calcLow = 0
+      let calcOut = 0
+
+      stockLevels.data.forEach((item: any) => {
+        const qty = Number(item.quantity ?? item.stock ?? 0)
+        const avail = Number(item.available_quantity ?? qty)
+        const resv = Number(item.reserved_quantity ?? 0)
+        const price = Number(item.product?.selling_price ?? item.selling_price ?? item.price ?? 0)
+        const itemCost = Number(item.product?.cost_price ?? item.cost_price ?? item.cost ?? 0)
+        const reorderPoint = Number(item.reorder_point ?? item.product?.reorder_point ?? 5)
+
+        calcQty += qty
+        calcAvail += avail
+        calcResv += resv
+        calcVal += qty * price
+        calcCost += qty * itemCost
+
+        if (qty <= 0) calcOut++
+        else if (qty <= reorderPoint) calcLow++
+      })
+
+      if (!val || val === 0 || selectedWarehouse || selectedCategory || selectedBrand || selectedStatus) {
+        val = calcVal
+        cost = calcCost
+        totalQty = calcQty
+        availQty = calcAvail
+        resvQty = calcResv
+        lowStock = calcLow
+        outOfStock = calcOut
+      }
+    }
+
+    return {
+      inventoryValue: val,
+      inventoryCost: cost,
+      totalQty,
+      availableQty: availQty,
+      reservedQty: resvQty,
+      lowStock,
+      outOfStock
+    }
+  }, [statsData, stockLevels, selectedWarehouse, selectedCategory, selectedBrand, selectedStatus])
+
   // Bulk / Operations Mutations
   const deleteAdjustmentMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/stock-adjustments/${id}`),
@@ -370,13 +445,13 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
     <div className="space-y-6">
       <Breadcrumb
         items={[
-          { label: t('Inventory', 'Inventory') },
+          { label: t('inventory.title', 'Inventory') },
           {
-            label: activeTab === 'levels' ? t('Stock Levels', 'Stock Levels') :
-              activeTab === 'adjustments' ? t('Stock Adjustments', 'Stock Adjustments') :
-                activeTab === 'transfers' ? t('Stock Transfers', 'Stock Transfers') :
-                  activeTab === 'opnames' ? t('Stock Opnames', 'Stock Opnames') :
-                    t('Stock Ledger (Movements)', 'Stock Ledger (Movements)')
+            label: activeTab === 'levels' ? t('inventory.stockLevels', 'Stock Levels') :
+              activeTab === 'adjustments' ? t('inventory.adjustments', 'Stock Adjustments') :
+                activeTab === 'transfers' ? t('inventory.transfers', 'Stock Transfers') :
+                  activeTab === 'opnames' ? t('inventory.stockOpname', 'Stock Opnames') :
+                    t('inventory.stockLedger', 'Stock Ledger')
           }
         ]}
       />
@@ -442,11 +517,11 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         >
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('inventory.warehouseStock', 'Warehouse Stock')}</p>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight">{(statsData?.summary?.total_qty ?? 0).toLocaleString()}</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">{realMetrics.totalQty.toLocaleString()}</p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              <span className="text-emerald-500 font-bold">{(statsData?.summary?.available_qty ?? 0).toLocaleString()} {t('inventory.available', 'Avail')}</span>
+              <span className="text-emerald-500 font-bold">{realMetrics.availableQty.toLocaleString()} {t('inventory.available', 'Avail')}</span>
               <span>•</span>
-              <span className="text-amber-500 font-bold">{(statsData?.summary?.reserved_qty ?? 0).toLocaleString()} {t('inventory.reserved', 'Resv')}</span>
+              <span className="text-amber-500 font-bold">{realMetrics.reservedQty.toLocaleString()} {t('inventory.reserved', 'Resv')}</span>
             </p>
           </div>
           <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-500">
@@ -463,11 +538,11 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         >
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('inventory.lowStockAlert', 'Low Stock Alert')}</p>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight">{statsData?.summary?.low_stock ?? 0}</p>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight">{realMetrics.lowStock}</p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              <span className="text-rose-500 font-bold">{statsData?.summary?.out_of_stock ?? 0} {t('inventory.outOfStock', 'Out')}</span>
+              <span className="text-rose-500 font-bold">{realMetrics.outOfStock} {t('inventory.outOfStock', 'Out')}</span>
               <span>•</span>
-              <span className="font-semibold text-amber-500">{(statsData?.summary?.low_stock ?? 0) + (statsData?.summary?.out_of_stock ?? 0)} {t('inventory.reorderRequired', 'Reorder')}</span>
+              <span className="font-semibold text-amber-500">{realMetrics.lowStock + realMetrics.outOfStock} {t('inventory.reorderRequired', 'Reorder')}</span>
             </p>
           </div>
           <div className="p-3.5 rounded-xl bg-rose-500/10 text-rose-500">
@@ -485,10 +560,10 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('inventory.inventoryValue', 'Inventory Value')}</p>
             <p className="text-3xl font-extrabold text-foreground tracking-tight">
-              ${(statsData?.summary?.inventory_value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${realMetrics.inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {t('inventory.costPrice', 'Cost')}: ${(statsData?.summary?.inventory_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {t('inventory.costPrice', 'Cost')}: ${realMetrics.inventoryCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
@@ -537,7 +612,7 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
           { id: 'transfers', label: t('inventory.tab_transfers', 'Transfers'), icon: <ArrowLeftRight size={15} />, path: '/inventory/transfers' },
           { id: 'adjustments', label: t('inventory.tab_adjustments', 'Adjustments'), icon: <Plus size={15} />, path: '/inventory/adjustments' },
           { id: 'opnames', label: t('inventory.tab_opname', 'Stock Opname'), icon: <CheckCircle size={15} />, path: '/inventory/opnames' },
-          { id: 'low_stock', label: t('inventory.tab_low_stock', 'Low Stock'), icon: <AlertTriangle size={15} />, path: '/inventory?status=low_stock' },
+          // { id: 'low_stock', label: t('inventory.tab_low_stock', 'Low Stock'), icon: <AlertTriangle size={15} />, path: '/inventory?status=low_stock' },
           { id: 'reports', label: t('inventory.tab_reports', 'Inventory Reports'), icon: <Printer size={15} />, path: '/inventory/movements' },
         ].map(item => {
           const isActive = (item.id === 'low_stock' && selectedStatus === 'low_stock') ||
@@ -550,15 +625,19 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                 reset();
                 if (item.id === 'low_stock') {
                   setSelectedStatus('low_stock');
-                  navigate('/inventory');
+                  setCurrentTab('levels');
+                  window.history.pushState({}, '', '/inventory?status=low_stock');
                 } else if (item.id === 'reports') {
-                  navigate('/inventory/movements?report=true');
+                  setSelectedStatus('');
+                  setCurrentTab('movements');
+                  window.history.pushState({}, '', '/inventory/movements?report=true');
                 } else {
                   setSelectedStatus('');
-                  navigate(item.path);
+                  setCurrentTab(item.id);
+                  window.history.pushState({}, '', item.path);
                 }
               }}
-              className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap
+              className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer
                           ${isActive
                             ? 'bg-primary text-white shadow-sm'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
@@ -1271,6 +1350,23 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                 </button>
               </div>
             </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Slide-out Inventory Item Detail Drawer */}
+      <AnimatePresence>
+        {selectedItemId !== null && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedItemId(null)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 cursor-pointer"
+            />
+            <InventoryDetailPage itemId={selectedItemId} onClose={() => setSelectedItemId(null)} />
           </>
         )}
       </AnimatePresence>

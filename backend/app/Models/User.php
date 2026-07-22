@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
@@ -16,12 +15,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles, LogsActivity, SoftDeletes;
+    use HasFactory, Notifiable, HasRoles, LogsActivity, SoftDeletes;
 
     protected $guard_name = 'api';
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'phone',
@@ -40,6 +40,8 @@ class User extends Authenticatable
         'push_notify',
         'sms_notify',
         'is_active',
+        'failed_login_attempts',
+        'locked_until',
         'last_login_at',
     ];
 
@@ -51,18 +53,25 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'last_login_at'     => 'datetime',
-            'password'          => 'hashed',
-            'is_active'         => 'boolean',
-            'date_of_birth'     => 'date',
+            'email_verified_at'     => 'datetime',
+            'last_login_at'         => 'datetime',
+            'locked_until'          => 'datetime',
+            'password'              => 'hashed',
+            'is_active'             => 'boolean',
+            'failed_login_attempts' => 'integer',
+            'date_of_birth'         => 'date',
         ];
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->locked_until !== null && $this->locked_until->isFuture();
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'is_active'])
+            ->logOnly(['name', 'username', 'email', 'is_active'])
             ->logOnlyDirty()
             ->useLogName('user');
     }
@@ -92,6 +101,11 @@ class User extends Authenticatable
     public function loginHistories(): HasMany
     {
         return $this->hasMany(Log\LoginHistory::class);
+    }
+
+    public function jwtRefreshTokens(): HasMany
+    {
+        return $this->hasMany(Auth\JwtRefreshToken::class);
     }
 
     public function scopeActive($query)

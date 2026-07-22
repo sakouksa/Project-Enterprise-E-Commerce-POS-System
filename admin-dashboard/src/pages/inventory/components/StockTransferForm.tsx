@@ -173,7 +173,7 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
             <button
               onClick={() => shipMutation.mutate()}
               disabled={shipMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-xl flex items-center gap-1.5 shadow-sm hover:opacity-90"
+              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
             >
               {shipMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />}
               {t('buttons.ship', 'Ship Transfer')}
@@ -183,7 +183,7 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
             <button
               onClick={handleReceiveSubmit}
               disabled={receiveMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500"
+              className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500 active:scale-95 transition-all cursor-pointer"
             >
               {receiveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
               {t('buttons.receive', 'Receive Transfer')}
@@ -193,7 +193,7 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
             <button
               onClick={handleSubmit}
               disabled={saveMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-xl hover:bg-muted transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer"
             >
               {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
               {t('buttons.save', 'Save Draft')}

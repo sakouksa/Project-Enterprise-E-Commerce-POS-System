@@ -1,12 +1,13 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import AdminLayout from '@/components/layout/AdminLayout'   // ← canonical grouped layout
+import AdminLayout from '@/components/layout/AdminLayout'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import ToastContainer from '@/components/ui/ToastContainer'
 import ThemeSynchronizer from '@/components/shared/ThemeSynchronizer'
-
+import NetworkStatusListener from '@/components/shared/NetworkStatusListener'
+import AccessDeniedPage from '@/components/shared/AccessDeniedPage'
 
 // ─── Lazy Pages ─────────────────────────────────────────────────────────────
 
@@ -64,9 +65,6 @@ const TransactionsPage    = React.lazy(() => import('@/pages/payments/Transactio
 
 // Company
 const CompanyPage         = React.lazy(() => import('@/pages/company/CompanyPage'))
-const BranchesPage        = React.lazy(() => import('@/pages/company/BranchesPage'))
-const StoresPage          = React.lazy(() => import('@/pages/company/StoresPage'))
-const WarehousesPage      = React.lazy(() => import('@/pages/company/WarehousesPage'))
 
 // Reports
 const ReportsPage         = React.lazy(() => import('@/pages/reports/ReportsPage'))
@@ -98,14 +96,32 @@ const queryClient = new QueryClient({
 
 // ─── Route Guards ────────────────────────────────────────────────────────────
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoggedIn = useAuthStore(s => s.isLoggedIn)
+interface ProtectedRouteProps {
+  children: React.ReactNode
+  permission?: string
+  role?: string
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, permission, role }) => {
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
+  const hasRole = useAuthStore((s) => s.hasRole)
+  const hasPermission = useAuthStore((s) => s.hasPermission)
+
   if (!isLoggedIn) return <Navigate to="/login" replace />
+
+  if (role && !hasRole(role)) {
+    return <AccessDeniedPage />
+  }
+
+  if (permission && !hasPermission(permission)) {
+    return <AccessDeniedPage />
+  }
+
   return <>{children}</>
 }
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoggedIn = useAuthStore(s => s.isLoggedIn)
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   if (isLoggedIn) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
@@ -113,9 +129,12 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const PageFallback = () => (
   <div className="flex items-center justify-center h-64">
     <div className="flex gap-2">
-      {[0, 1, 2].map(i => (
-        <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce"
-             style={{ animationDelay: `${i * 0.15}s` }} />
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-bounce"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
       ))}
     </div>
   </div>
@@ -128,13 +147,15 @@ const AppContent: React.FC = () => {
 
   return (
     <div key={language} className="h-full">
+      <NetworkStatusListener />
       <ToastContainer />
       <React.Suspense fallback={<PageFallback />}>
         <Routes>
 
           {/* ── Public ──────────────────────────────────────────────────── */}
-          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-          <Route path="/"      element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login text-sm" element={<Navigate to="/login" replace />} />
+          <Route path="/login"         element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/"              element={<Navigate to="/dashboard" replace />} />
 
           {/* ── Protected ───────────────────────────────────────────────── */}
           <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
@@ -143,80 +164,80 @@ const AppContent: React.FC = () => {
             <Route path="/dashboard"               element={<DashboardPage />} />
 
             {/* ── Products ──────────────────────────────────────────────── */}
-            <Route path="/products"                element={<ProductsPage />} />
-            <Route path="/products/create"         element={<ProductFormPage />} />
-            <Route path="/products/:id/edit"       element={<ProductFormPage />} />
-            <Route path="/categories"              element={<CategoriesPage />} />
-            <Route path="/brands"                  element={<BrandsPage />} />
-            <Route path="/units"                   element={<UnitsPage />} />
-            <Route path="/taxes"                   element={<TaxesPage />} />
-            <Route path="/attributes"              element={<AttributesPage />} />
+            <Route path="/products"                element={<ProtectedRoute permission="products.view"><ProductsPage /></ProtectedRoute>} />
+            <Route path="/products/create"         element={<ProtectedRoute permission="products.create"><ProductFormPage /></ProtectedRoute>} />
+            <Route path="/products/:id/edit"       element={<ProtectedRoute permission="products.edit"><ProductFormPage /></ProtectedRoute>} />
+            <Route path="/categories"              element={<ProtectedRoute permission="categories.view"><CategoriesPage /></ProtectedRoute>} />
+            <Route path="/brands"                  element={<ProtectedRoute permission="brands.view"><BrandsPage /></ProtectedRoute>} />
+            <Route path="/units"                   element={<ProtectedRoute permission="units.view"><UnitsPage /></ProtectedRoute>} />
+            <Route path="/taxes"                   element={<ProtectedRoute permission="taxes.view"><TaxesPage /></ProtectedRoute>} />
+            <Route path="/attributes"              element={<ProtectedRoute permission="attributes.view"><AttributesPage /></ProtectedRoute>} />
 
             {/* ── Inventory ─────────────────────────────────────────────── */}
-            <Route path="/inventory"               element={<InventoryPage />} />
-            <Route path="/inventory/adjustments"   element={<InventoryPage tab="adjustments" />} />
-            <Route path="/inventory/transfers"     element={<InventoryPage tab="transfers" />} />
-            <Route path="/inventory/opnames"       element={<InventoryPage tab="opnames" />} />
-            <Route path="/inventory/movements"     element={<InventoryPage tab="movements" />} />
-            <Route path="/warehouses"              element={<CompanyPage activeTab="warehouses" />} />
+            <Route path="/inventory"               element={<ProtectedRoute permission="inventory.view"><InventoryPage /></ProtectedRoute>} />
+            <Route path="/inventory/adjustments"   element={<ProtectedRoute permission="inventory.view"><InventoryPage tab="adjustments" /></ProtectedRoute>} />
+            <Route path="/inventory/transfers"     element={<ProtectedRoute permission="inventory.view"><InventoryPage tab="transfers" /></ProtectedRoute>} />
+            <Route path="/inventory/opnames"       element={<ProtectedRoute permission="inventory.view"><InventoryPage tab="opnames" /></ProtectedRoute>} />
+            <Route path="/inventory/movements"     element={<ProtectedRoute permission="inventory.view"><InventoryPage tab="movements" /></ProtectedRoute>} />
+            <Route path="/warehouses"              element={<ProtectedRoute permission="inventory.view"><CompanyPage activeTab="warehouses" /></ProtectedRoute>} />
 
             {/* ── Sales ─────────────────────────────────────────────────── */}
-            <Route path="/pos"                     element={<POSPage />} />
-            <Route path="/sales"                   element={<SalesPage />} />
-            <Route path="/orders"                  element={<OrdersPage />} />
+            <Route path="/pos"                     element={<ProtectedRoute permission="pos.access"><POSPage /></ProtectedRoute>} />
+            <Route path="/sales"                   element={<ProtectedRoute permission="sales.view"><SalesPage /></ProtectedRoute>} />
+            <Route path="/orders"                  element={<ProtectedRoute permission="orders.view"><OrdersPage /></ProtectedRoute>} />
 
             {/* ── Purchases ─────────────────────────────────────────────── */}
-            <Route path="/purchases"               element={<PurchasesPage />} />
-            <Route path="/purchases/returns"       element={<PurchaseReturnsPage />} />
-            <Route path="/suppliers"               element={<SuppliersPage />} />
+            <Route path="/purchases"               element={<ProtectedRoute permission="purchases.view"><PurchasesPage /></ProtectedRoute>} />
+            <Route path="/purchases/returns"       element={<ProtectedRoute permission="purchases.view"><PurchaseReturnsPage /></ProtectedRoute>} />
+            <Route path="/suppliers"               element={<ProtectedRoute permission="suppliers.view"><SuppliersPage /></ProtectedRoute>} />
 
             {/* ── Customers ─────────────────────────────────────────────── */}
-            <Route path="/customers"               element={<CustomersPage />} />
-            <Route path="/customers/groups"        element={<CustomerGroupsPage />} />
+            <Route path="/customers"               element={<ProtectedRoute permission="customers.view"><CustomersPage /></ProtectedRoute>} />
+            <Route path="/customers/groups"        element={<ProtectedRoute permission="customers.view"><CustomerGroupsPage /></ProtectedRoute>} />
 
             {/* ── Employees ─────────────────────────────────────────────── */}
-            <Route path="/employees"               element={<EmployeesPage />} />
+            <Route path="/employees"               element={<ProtectedRoute permission="employees.view"><EmployeesPage /></ProtectedRoute>} />
 
             {/* ── Marketing ─────────────────────────────────────────────── */}
-            <Route path="/marketing"               element={<PromotionsPage />} />
-            <Route path="/marketing/promotions"    element={<PromotionsPage />} />
-            <Route path="/marketing/coupons"       element={<CouponsPage />} />
-            <Route path="/marketing/flash-sales"   element={<FlashSalesPage />} />
-            <Route path="/marketing/banners"       element={<BannersPage />} />
+            <Route path="/marketing"               element={<ProtectedRoute permission="promotions.view"><PromotionsPage /></ProtectedRoute>} />
+            <Route path="/marketing/promotions"    element={<ProtectedRoute permission="promotions.view"><PromotionsPage /></ProtectedRoute>} />
+            <Route path="/marketing/coupons"       element={<ProtectedRoute permission="coupons.view"><CouponsPage /></ProtectedRoute>} />
+            <Route path="/marketing/flash-sales"   element={<ProtectedRoute permission="flash_sales.view"><FlashSalesPage /></ProtectedRoute>} />
+            <Route path="/marketing/banners"       element={<ProtectedRoute permission="banners.view"><BannersPage /></ProtectedRoute>} />
 
             {/* ── CMS ───────────────────────────────────────────────────── */}
-            <Route path="/cms"                     element={<CMSPage />} />
+            <Route path="/cms"                     element={<ProtectedRoute permission="cms.view"><CMSPage /></ProtectedRoute>} />
 
             {/* ── Shipping ──────────────────────────────────────────────── */}
-            <Route path="/shipping"                element={<ShippingPage />} />
+            <Route path="/shipping"                element={<ProtectedRoute permission="shipping.view"><ShippingPage /></ProtectedRoute>} />
 
             {/* ── Finance ───────────────────────────────────────────────── */}
-            <Route path="/expenses"                element={<FinancePage />} />
-            <Route path="/payments/methods"        element={<PaymentMethodsPage />} />
-            <Route path="/payments/transactions"   element={<TransactionsPage />} />
-            <Route path="/finance"                 element={<FinancePage />} />
+            <Route path="/expenses"                element={<ProtectedRoute permission="expenses.view"><FinancePage /></ProtectedRoute>} />
+            <Route path="/payments/methods"        element={<ProtectedRoute permission="payments.view"><PaymentMethodsPage /></ProtectedRoute>} />
+            <Route path="/payments/transactions"   element={<ProtectedRoute permission="payments.view"><TransactionsPage /></ProtectedRoute>} />
+            <Route path="/finance"                 element={<ProtectedRoute permission="finance.view"><FinancePage /></ProtectedRoute>} />
 
             {/* ── Company ───────────────────────────────────────────────── */}
-            <Route path="/branches"                element={<CompanyPage activeTab="branches" />} />
-            <Route path="/stores"                  element={<CompanyPage activeTab="stores" />} />
-            <Route path="/company"                 element={<CompanyPage activeTab="profile" />} />
+            <Route path="/branches"                element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="branches" /></ProtectedRoute>} />
+            <Route path="/stores"                  element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="stores" /></ProtectedRoute>} />
+            <Route path="/company"                 element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="profile" /></ProtectedRoute>} />
 
             {/* ── Reports ───────────────────────────────────────────────── */}
-            <Route path="/reports"                 element={<ReportsPage type="sales" />} />
-            <Route path="/reports/sales"           element={<ReportsPage type="sales" />} />
-            <Route path="/reports/inventory"       element={<ReportsPage type="inventory" />} />
-            <Route path="/reports/profit-loss"     element={<ReportsPage type="profit-loss" />} />
+            <Route path="/reports"                 element={<ProtectedRoute permission="reports.view"><ReportsPage type="sales" /></ProtectedRoute>} />
+            <Route path="/reports/sales"           element={<ProtectedRoute permission="reports.view"><ReportsPage type="sales" /></ProtectedRoute>} />
+            <Route path="/reports/inventory"       element={<ProtectedRoute permission="reports.view"><ReportsPage type="inventory" /></ProtectedRoute>} />
+            <Route path="/reports/profit-loss"     element={<ProtectedRoute permission="reports.view"><ReportsPage type="profit-loss" /></ProtectedRoute>} />
 
             {/* ── Administration ────────────────────────────────────────── */}
-            <Route path="/users"                   element={<UsersPage />} />
-            <Route path="/roles"                   element={<RolesPage />} />
-            <Route path="/permissions"             element={<PermissionsPage />} />
-            <Route path="/activity-logs"           element={<ActivityLogsPage />} />
-            <Route path="/recycle-bin"             element={<RecycleBinPage />} />
+            <Route path="/users"                   element={<ProtectedRoute permission="users.view"><UsersPage /></ProtectedRoute>} />
+            <Route path="/roles"                   element={<ProtectedRoute permission="roles.view"><RolesPage /></ProtectedRoute>} />
+            <Route path="/permissions"             element={<ProtectedRoute permission="permissions.view"><PermissionsPage /></ProtectedRoute>} />
+            <Route path="/activity-logs"           element={<ProtectedRoute permission="activity_logs.view"><ActivityLogsPage /></ProtectedRoute>} />
+            <Route path="/recycle-bin"             element={<ProtectedRoute permission="recycle_bin.view"><RecycleBinPage /></ProtectedRoute>} />
 
             {/* ── Settings / Reviews ────────────────────────────────────── */}
-            <Route path="/settings"                element={<SettingsPage />} />
-            <Route path="/reviews"                 element={<ReviewsPage />} />
+            <Route path="/settings"                element={<ProtectedRoute permission="settings.view"><SettingsPage /></ProtectedRoute>} />
+            <Route path="/reviews"                 element={<ProtectedRoute permission="reviews.view"><ReviewsPage /></ProtectedRoute>} />
             <Route path="/profile"                 element={<ProfilePage />} />
 
             {/* ── Fallback ──────────────────────────────────────────────── */}

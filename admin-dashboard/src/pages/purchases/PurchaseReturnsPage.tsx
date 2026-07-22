@@ -1183,7 +1183,7 @@ const PurchaseReturnsPage: React.FC = () => {
                     type="submit"
                     onClick={() => setStatus('approved')}
                     disabled={createMutation.isPending || (!!purchaseId && returnItems.length === 0)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-bold flex items-center gap-1.5 shadow"
+                    className="px-4 py-2 bg-primary hover:opacity-90 text-white rounded-xl transition-all text-sm font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     {createMutation.isPending && status === 'approved' && <Loader2 size={14} className="animate-spin" />}
                     Approve

@@ -41,18 +41,20 @@ Route::prefix('v1')->group(function () {
 
     // ─── Authentication ──────────────────────────────────────────────────────
     Route::prefix('auth')->group(function () {
-        Route::post('login',    [AuthController::class, 'login']);
-        Route::post('register', [AuthController::class, 'register']);
+        Route::post('login',             [AuthController::class, 'login']);
+        Route::post('register',          [AuthController::class, 'register']);
+        Route::post('refresh',           [AuthController::class, 'refresh']);
 
-        Route::middleware('auth:sanctum')->group(function () {
-            Route::post('logout',          [AuthController::class, 'logout']);
-            Route::get('profile',          [AuthController::class, 'profile']);
-            Route::put('profile',          [AuthController::class, 'updateProfile']);
-            Route::post('change-password', [AuthController::class, 'changePassword']);
+        Route::middleware('auth.jwt')->group(function () {
+            Route::post('logout',             [AuthController::class, 'logout']);
+            Route::post('logout-all-devices', [AuthController::class, 'logoutAllDevices']);
+            Route::get('profile',             [AuthController::class, 'profile']);
+            Route::put('profile',             [AuthController::class, 'updateProfile']);
+            Route::post('change-password',    [AuthController::class, 'changePassword']);
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth.jwt')->group(function () {
 
         // ─── Profile ───────────────────────────────────────────────────────
         Route::prefix('profile')->group(function () {
@@ -289,8 +291,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('banners', BannerController::class);
 
         // ─── Marketing: Coupons ────────────────────────────────────────────
-        Route::apiResource('coupons', CouponController::class);
         Route::get('coupons/generate-code', [CouponController::class, 'generateCode']);
+        Route::apiResource('coupons', CouponController::class);
 
         // ─── Marketing: Flash Sales ───────────────────────────────────────
         Route::apiResource('flash-sales', FlashSaleController::class);
@@ -430,7 +432,7 @@ Route::prefix('v1')->group(function () {
         Route::get('banners',               [\App\Http\Controllers\Api\V1\Setting\BannerController::class, 'index']);
         Route::get('flash-sales',           [\App\Http\Controllers\Api\V1\Marketing\FlashSaleController::class, 'active']);
 
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware('auth.jwt')->group(function () {
             Route::get('cart',              [\App\Http\Controllers\Api\V1\Order\CartController::class, 'show']);
             Route::post('cart/add',         [\App\Http\Controllers\Api\V1\Order\CartController::class, 'add']);
             Route::put('cart/update',       [\App\Http\Controllers\Api\V1\Order\CartController::class, 'update']);

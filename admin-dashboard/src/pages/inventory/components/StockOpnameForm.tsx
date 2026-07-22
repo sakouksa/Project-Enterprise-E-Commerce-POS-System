@@ -177,7 +177,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="px-4 py-2 bg-gradient-primary text-white text-sm font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 duration-100"
+            className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 duration-100 hover:opacity-90 cursor-pointer"
           >
             {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Warehouse size={14} />}
             {t('buttons.start_opname', 'Start Count Snapshot')}
@@ -209,7 +209,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
             <button
               onClick={handleStartOpname}
               disabled={createMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-xl flex items-center gap-1.5 shadow-sm hover:opacity-90"
+              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-sm hover:opacity-90 cursor-pointer"
             >
               {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Warehouse size={14} />}
               {t('buttons.start_opname', 'Start Count Snapshot')}

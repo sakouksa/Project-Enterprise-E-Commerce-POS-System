@@ -170,7 +170,7 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
             <button
               onClick={handleSubmit}
               disabled={saveMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/30 rounded-xl flex items-center gap-2 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 active:scale-95 transition-all duration-200 shadow-xs"
+              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all duration-200 shadow-sm cursor-pointer"
             >
               {saveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
               {t('buttons.save', 'Save Draft')}
@@ -180,7 +180,7 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
             <button
               onClick={() => approveMutation.mutate()}
               disabled={approveMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-gradient-primary rounded-xl flex items-center gap-2 shadow-md hover:opacity-95 active:scale-95 transition-all duration-200"
+              className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-xl flex items-center gap-2 shadow-sm hover:bg-emerald-500 active:scale-95 transition-all duration-200 cursor-pointer"
             >
               {approveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
               {t('buttons.approve', 'Approve')}

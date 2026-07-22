@@ -16,6 +16,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import FormDrawer from '@/components/common/FormDrawer'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
@@ -239,7 +240,7 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
               <button onClick={exportCSV} className="btn btn-secondary flex items-center gap-2">
                 <Download size={16} /> Export CSV
               </button>
-              <button onClick={openCreateDrawer} className="btn btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500">
+              <button onClick={openCreateDrawer} className="btn btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:opacity-90 shadow-sm cursor-pointer font-semibold">
                 <Plus size={16} /> Log Transaction
               </button>
             </div>
@@ -409,151 +410,114 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
       </div>
 
       {/* Add / Edit Drawer */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              exit={{ opacity: 0 }}
-              onClick={closeDrawer}
-              className="fixed inset-0 bg-black z-40"
-            />
-            <motion.div 
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-card border-l border-border shadow-xl z-50 p-6 overflow-y-auto"
-            >
-              <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {editingTransaction ? 'Edit Transaction Details' : 'Log New Transaction'}
-                </h3>
-                <button onClick={closeDrawer} className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors">
-                  <X size={18} />
-                </button>
+      <FormDrawer
+        open={drawerOpen}
+        title={editingTransaction ? `Edit Transaction Details #${editingTransaction.id}` : 'Log New Transaction'}
+        subtitle="Log debit or credit transactions into ledger accounts."
+        onClose={closeDrawer}
+        onSubmit={handleSubmit}
+        loading={createMutation.isPending || updateMutation.isPending}
+        submitLabel={editingTransaction ? 'Save Changes' : 'Confirm Transaction'}
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border/60 space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Select Company *</label>
+              <select
+                value={form.company_id}
+                onChange={e => setForm({ ...form, company_id: e.target.value })}
+                className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
+                required
+              >
+                <option value="">-- Choose Company --</option>
+                {companies?.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Payment Method</label>
+                <select
+                  value={form.payment_id}
+                  onChange={e => setForm({ ...form, payment_id: e.target.value })}
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
+                >
+                  <option value="">-- Cash / Direct --</option>
+                  {paymentMethods?.map((pm: any) => (
+                    <option key={pm.id} value={pm.id}>{pm.name} ({pm.code})</option>
+                  ))}
+                </select>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Company select */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Select Company *</label>
-                  <select
-                    value={form.company_id}
-                    onChange={e => setForm({ ...form, company_id: e.target.value })}
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
-                    required
-                  >
-                    <option value="">-- Choose Company --</option>
-                    {companies?.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Type *</label>
+                <select
+                  value={form.type}
+                  onChange={e => setForm({ ...form, type: e.target.value })}
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer capitalize"
+                  required
+                >
+                  <option value="debit">Debit (Inflow)</option>
+                  <option value="credit">Credit (Outflow)</option>
+                </select>
+              </div>
+            </div>
 
-                {/* Payment Method select */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Payment Method</label>
-                  <select
-                    value={form.payment_id}
-                    onChange={e => setForm({ ...form, payment_id: e.target.value })}
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
-                  >
-                    <option value="">-- None (Cash / Invoiced) --</option>
-                    {paymentMethods?.map((pm: any) => (
-                      <option key={pm.id} value={pm.id}>{pm.name} ({pm.code})</option>
-                    ))}
-                  </select>
-                </div>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ($) *</label>
+              <div className="relative">
+                <DollarSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={form.amount}
+                  onChange={e => setForm({ ...form, amount: e.target.value })}
+                  placeholder="e.g. 250.00"
+                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                  required
+                />
+              </div>
+            </div>
 
-                {/* Transaction Type */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Type *</label>
-                  <select
-                    value={form.type}
-                    onChange={e => setForm({ ...form, type: e.target.value })}
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
-                    required
-                  >
-                    <option value="debit">Debit (Inflow)</option>
-                    <option value="credit">Credit (Outflow)</option>
-                  </select>
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref Type</label>
+                <input
+                  type="text"
+                  placeholder="e.g. order, invoice"
+                  value={form.reference_type}
+                  onChange={e => setForm({ ...form, reference_type: e.target.value })}
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref ID</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 104"
+                  value={form.reference_id}
+                  onChange={e => setForm({ ...form, reference_id: e.target.value })}
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                />
+              </div>
+            </div>
+          </div>
 
-                {/* Amount */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ($) *</label>
-                  <div className="relative">
-                    <DollarSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={form.amount}
-                      onChange={e => setForm({ ...form, amount: e.target.value })}
-                      placeholder="e.g. 250.00"
-                      className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Reference details */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref Type</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. order, invoice"
-                      value={form.reference_type}
-                      onChange={e => setForm({ ...form, reference_type: e.target.value })}
-                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref ID</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 104"
-                      value={form.reference_id}
-                      onChange={e => setForm({ ...form, reference_id: e.target.value })}
-                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                    />
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Description</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Provide additional logging notes..."
-                    value={form.description}
-                    onChange={e => setForm({ ...form, description: e.target.value })}
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all p-3 resize-none"
-                  />
-                </div>
-
-                {/* Submit button */}
-                <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
-                  <button type="button" onClick={closeDrawer} className="btn btn-secondary">
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    className="btn btn-primary bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2 px-4 py-2 rounded-lg"
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="animate-spin" size={16} />}
-                    {editingTransaction ? 'Save Changes' : 'Confirm transaction'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Description / Remarks</label>
+            <textarea
+              rows={3}
+              placeholder="Provide additional transaction notes or audit remarks..."
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all p-3 resize-none"
+            />
+          </div>
+        </div>
+      </FormDrawer>
 
       {/* Delete Confirm */}
       <ConfirmDialog

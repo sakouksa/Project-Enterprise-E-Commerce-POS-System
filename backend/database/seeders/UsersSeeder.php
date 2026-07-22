@@ -15,164 +15,108 @@ class UsersSeeder extends Seeder
         $company = Company::first();
         $branch  = Branch::first();
 
-        // 1. Super Admin
-        $superAdmin = User::firstOrCreate(
-            ['email' => 'superadmin@enterprise-pos.com'],
+        $users = [
             [
-                'name'        => 'Super Admin',
-                'password'    => Hash::make('password'),
-                'phone'       => '+62-812-0000-0001',
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $superAdmin->assignRole('super_admin');
-
-        // 2. Admin User
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@enterprise-pos.com'],
+                'email'    => 'superadmin@enterprise-pos.com',
+                'username' => 'superadmin',
+                'name'     => 'Super Admin',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0001',
+                'role'     => 'super_admin',
+            ],
             [
-                'name'        => 'Admin User',
-                'password'    => Hash::make('password'),
-                'phone'       => '+62-812-0000-0002',
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $admin->assignRole('admin');
-
-        // 3. Store Manager
-        $manager = User::firstOrCreate(
-            ['email' => 'manager@enterprise-pos.com'],
+                'email'    => 'admin@enterprise-pos.com',
+                'username' => 'admin',
+                'name'     => 'Admin User',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0002',
+                'role'     => 'admin',
+            ],
             [
-                'name'        => 'Store Manager',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $manager->assignRole('manager');
-
-        // 4. Cashier 1
-        $cashier1 = User::firstOrCreate(
-            ['email' => 'cashier@enterprise-pos.com'],
+                'email'    => 'manager@enterprise-pos.com',
+                'username' => 'manager',
+                'name'     => 'Store Manager',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0003',
+                'role'     => 'manager',
+            ],
             [
-                'name'        => 'Cashier 1',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $cashier1->assignRole('cashier');
-
-        // 5. Cashier 2
-        $cashier2 = User::firstOrCreate(
-            ['email' => 'cashier2@enterprise-pos.com'],
+                'email'    => 'cashier@enterprise-pos.com',
+                'username' => 'cashier',
+                'name'     => 'Cashier 1',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0004',
+                'role'     => 'cashier',
+            ],
             [
-                'name'        => 'Cashier 2',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $cashier2->assignRole('cashier');
-
-        // 6. Warehouse Staff 1
-        $wh1 = User::firstOrCreate(
-            ['email' => 'warehouse1@enterprise-pos.com'],
+                'email'    => 'cashier2@enterprise-pos.com',
+                'username' => 'cashier2',
+                'name'     => 'Cashier 2',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0005',
+                'role'     => 'cashier',
+            ],
             [
-                'name'        => 'Warehouse Staff 1',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $wh1->assignRole('warehouse_staff');
-
-        // 7. Warehouse Staff 2
-        $wh2 = User::firstOrCreate(
-            ['email' => 'warehouse2@enterprise-pos.com'],
+                'email'    => 'warehouse1@enterprise-pos.com',
+                'username' => 'warehouse1',
+                'name'     => 'Warehouse Staff 1',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0006',
+                'role'     => 'warehouse_staff',
+            ],
             [
-                'name'        => 'Warehouse Staff 2',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $wh2->assignRole('warehouse_staff');
-
-        // 8. Accountant
-        $accountant = User::firstOrCreate(
-            ['email' => 'accountant@enterprise-pos.com'],
+                'email'    => 'warehouse2@enterprise-pos.com',
+                'username' => 'warehouse2',
+                'name'     => 'Warehouse Staff 2',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0007',
+                'role'     => 'warehouse_staff',
+            ],
             [
-                'name'        => 'Corporate Accountant',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $accountant->assignRole('manager'); // Grant manager permissions for finance audit
-
-        // 9. Customer User 1
-        $customer1 = User::firstOrCreate(
-            ['email' => 'customer1@enterprise-pos.com'],
+                'email'    => 'accountant@enterprise-pos.com',
+                'username' => 'accountant',
+                'name'     => 'Corporate Accountant',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0008',
+                'role'     => 'manager',
+            ],
             [
-                'name'        => 'Customer User 1',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $customer1->assignRole('customer');
-
-        // 10. Customer User 2
-        $customer2 = User::firstOrCreate(
-            ['email' => 'customer2@enterprise-pos.com'],
+                'email'    => 'customer1@enterprise-pos.com',
+                'username' => 'customer1',
+                'name'     => 'Customer User 1',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0009',
+                'role'     => 'customer',
+            ],
             [
-                'name'        => 'Customer User 2',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $customer2->assignRole('customer');
+                'email'    => 'inactive@enterprise-pos.com',
+                'username' => 'inactive',
+                'name'     => 'Inactive Staff',
+                'password' => Hash::make('password'),
+                'phone'    => '+62-812-0000-0010',
+                'is_active'=> false,
+                'role'     => 'cashier',
+            ],
+        ];
 
-        // 11. Customer User 3
-        $customer3 = User::firstOrCreate(
-            ['email' => 'customer3@enterprise-pos.com'],
-            [
-                'name'        => 'Customer User 3',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => true,
-            ]
-        );
-        $customer3->assignRole('customer');
+        foreach ($users as $userData) {
+            $role = $userData['role'];
+            unset($userData['role']);
 
-        // 12. Inactive User
-        $inactive = User::firstOrCreate(
-            ['email' => 'inactive@enterprise-pos.com'],
-            [
-                'name'        => 'Inactive Staff',
-                'password'    => Hash::make('password'),
-                'company_id'  => $company->id,
-                'branch_id'   => $branch->id,
-                'is_active'   => false,
-            ]
-        );
-        $inactive->assignRole('cashier');
+            $user = User::updateOrCreate(
+                ['email' => $userData['email']],
+                array_merge([
+                    'company_id' => $company?->id,
+                    'branch_id'  => $branch?->id,
+                    'is_active'  => true,
+                ], $userData)
+            );
 
-        $this->command->info('Demo users seeded. Passwords: password');
+            if ($role) {
+                $user->syncRoles([$role]);
+            }
+        }
+
+        $this->command->info('Enterprise JWT demo users seeded with usernames and roles.');
     }
 }

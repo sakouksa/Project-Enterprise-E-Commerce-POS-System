@@ -1746,7 +1746,8 @@ const PurchasesPage: React.FC = () => {
             <button
               type="submit"
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-md shadow-sm transition-all"            >
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:opacity-90 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
+            >
               {createMutation.isPending || updateMutation.isPending ? (
                 <Loader2 size={13} className="animate-spin" />
               ) : (
@@ -1823,7 +1824,7 @@ const PurchasesPage: React.FC = () => {
                       {selectedPurchase.payment_status !== 'paid' && (
                         <button
                           onClick={() => { setPaymentModalOpen(true); setPaymentAmount(''); setPaymentNotes('') }}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 flex items-center gap-1.5 transition-all shadow-sm"
+                          className="px-3.5 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:opacity-90 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                         >
                           <DollarSign size={13} />
                           Record Payment
@@ -2193,7 +2194,7 @@ const PurchasesPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={paymentMutation.isPending}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-sm transition-all disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:opacity-90 text-white text-sm font-semibold rounded-xl shadow-sm transition-all disabled:opacity-60 cursor-pointer"
                   >
                     {paymentMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <DollarSign size={13} />}
                     Record Payment

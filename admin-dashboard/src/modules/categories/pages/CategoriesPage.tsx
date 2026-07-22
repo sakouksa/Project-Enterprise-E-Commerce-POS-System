@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, X, Folder, ToggleLeft, ToggleRight, Loader2, Edit2, Trash2, 
   ChevronUp, ChevronDown, ChevronRight, Download, Upload, Trash, RefreshCw, 
-  AlertCircle, CheckCircle2, Image as ImageIcon
+  AlertCircle, CheckCircle2, Image as ImageIcon, Settings
 } from 'lucide-react'
 import api from '@/api/client'
 import PageHeader from '@/components/common/PageHeader'
@@ -17,6 +17,7 @@ import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import EmptyState from '@/components/shared/EmptyState'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface Category {
   id: number
@@ -36,10 +37,17 @@ interface TreeCategory extends Category {
   children?: TreeCategory[]
 }
 
-const CategoriesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
-  const { t } = useTranslation()
+const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
+  const { t, i18n } = useTranslation()
   const qc = useQueryClient()
   const toast = useToast()
+
+  const txt = (key: string) => t(`products.${key}`)
+
+  // Open add modal when parent triggers it (parent auto-resets to 0 after 200ms)
+  React.useEffect(() => {
+    if (triggerAdd && triggerAdd > 0) openCreateModal()
+  }, [triggerAdd])
   const {
     page,
     setPage,
@@ -543,16 +551,15 @@ const CategoriesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
         <div className="flex items-center gap-3">
           <SearchInput value={search} onChange={setSearch} placeholder={t('common.search')} />
           <ResetButton onClick={() => { setSearch(''); setSortBy('sort_order'); setSortOrderField('asc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
-          {isTab && (
+          <div className="ml-auto flex items-center gap-2">
             <button
-              onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white
-                         bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm ml-auto"
+              onClick={() => qc.invalidateQueries({ queryKey: ['categories'] })}
+              title="Refresh"
+              className="p-2 text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm cursor-pointer"
             >
-              <Plus size={16} />
-              {t('pageContent.Add Category', 'Add Category')}
+              <RefreshCw size={15} />
             </button>
-          )}
+          </div>
         </div>
       </div>
 

@@ -24,8 +24,16 @@ function buildDictForNS(en: any, active: any) {
         const activeVal = active[key]
         if (typeof enVal === 'string' && typeof activeVal === 'string') {
           const enTrimmed = enVal.trim()
+          const keyTrimmed = key.trim()
+
           activeDict[enTrimmed] = activeVal
           activeLowerDict[enTrimmed.toLowerCase()] = activeVal
+
+          activeDict[keyTrimmed] = activeVal
+          activeLowerDict[keyTrimmed.toLowerCase()] = activeVal
+
+          const spacedKey = keyTrimmed.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')
+          activeLowerDict[spacedKey.toLowerCase()] = activeVal
         } else if (typeof enVal === 'object' && typeof activeVal === 'object') {
           buildDictForNS(enVal, activeVal)
         }
@@ -184,6 +192,13 @@ i18n
     nsSeparator: '.',
     interpolation: {
       escapeValue: false, // react already safes from xss
+    },
+    parseMissingKeyHandler: (key: string) => {
+      if (!key) return key
+      const parts = key.split('.')
+      const rawTerm = parts[parts.length - 1].replace(/_/g, ' ')
+      const formattedTerm = rawTerm.charAt(0).toUpperCase() + rawTerm.slice(1)
+      return translateString(formattedTerm)
     },
   })
 

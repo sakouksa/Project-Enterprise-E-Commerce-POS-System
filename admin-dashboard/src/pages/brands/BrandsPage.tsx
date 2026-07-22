@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, Edit2, Trash2, X, Tag, ToggleLeft, ToggleRight, Loader2, 
   ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, 
-  AlertCircle, Image as ImageIcon 
+  AlertCircle, Image as ImageIcon, Settings
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -17,6 +17,7 @@ import EmptyState from '@/components/shared/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface Brand {
   id: number
@@ -29,10 +30,17 @@ interface Brand {
   deleted_at?: string | null
 }
 
-const BrandsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
-  const { t } = useTranslation()
+const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
+  const { t, i18n } = useTranslation()
   const qc = useQueryClient()
   const toast = useToast()
+
+  const txt = (key: string) => t(`products.${key}`)
+
+  // Open add modal when parent triggers it (parent auto-resets to 0 after 200ms)
+  React.useEffect(() => {
+    if (triggerAdd && triggerAdd > 0) openCreateModal()
+  }, [triggerAdd])
   const {
     page,
     setPage,
@@ -391,16 +399,15 @@ const BrandsPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
         <div className="flex items-center gap-3">
           <SearchInput value={search} onChange={setSearch} placeholder={t('common.search')} />
           <ResetButton onClick={() => { setSearch(''); setSortBy('created_at'); setSortOrder('desc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
-          {isTab && (
+          <div className="ml-auto flex items-center gap-2">
             <button
-              onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white
-                         bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm ml-auto"
+              onClick={() => qc.invalidateQueries({ queryKey: ['brands'] })}
+              title="Refresh"
+              className="p-2 text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm cursor-pointer"
             >
-              <Plus size={16} />
-              {t('pageContent.Add Brand', 'Add Brand')}
+              <RefreshCw size={15} />
             </button>
-          )}
+          </div>
         </div>
       </div>
 

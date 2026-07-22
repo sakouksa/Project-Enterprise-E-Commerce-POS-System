@@ -19,39 +19,89 @@ class AuthController extends BaseApiController
     /**
      * POST /api/v1/auth/login
      */
-     public function login(LoginRequest $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
+        $clientInfo = [
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'device'     => $request->header('X-Device-Name', 'Browser'),
+            'browser'    => $request->header('X-Browser-Name', 'Web Browser'),
+            'os'         => $request->header('X-OS-Name', 'Unknown OS'),
+            'country'    => $request->header('X-Country-Code', 'Internal'),
+        ];
+
         $result = $this->authService->login(
-            $request->email,
+            $request->username,
             $request->password,
-            $request->remember ?? false
+            $request->remember ?? false,
+            $clientInfo
         );
 
         if (!$result['success']) {
-            return $this->errorResponse($result['message'], null, 401);
+            return $this->errorResponse($result['message'], null, $result['code'] ?? 401);
         }
 
-        $user = $result['user']->load(['roles', 'permissions', 'company', 'branch']);
+        $user = $result['user']->load(['roles', 'permissions', 'company', 'branch', 'employee']);
+
+        $roles = $user->getRoleNames()->toArray();
+        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
 
         return $this->successResponse([
-            'user'  => new UserResource($user),
-            'token' => $result['token'],
+            'user'          => new UserResource($user),
+            'roles'         => $roles,
+            'permissions'   => $permissions,
+            'company'       => $user->company,
+            'branch'        => $user->branch,
+            'profile'       => new UserResource($user),
+            'menus'         => $this->getAvailableMenus($roles, $permissions),
+            'access_token'  => $result['access_token'],
+            'token'         => $result['access_token'],
+            'refresh_token' => $result['refresh_token'],
+            'token_expire'  => $result['expires_in'],
+            'expires_in'    => $result['expires_in'],
         ], 'Login successful');
     }
 
     /**
-     * POST /api/v1/auth/register
+     * POST /api/v1/auth/refresh
      */
-    public function register(RegisterRequest $request): JsonResponse
+    public function refresh(Request $request): JsonResponse
     {
-        $result = $this->authService->register($request->validated());
+        $refreshToken = $request->input('refresh_token') ?? $request->header('X-Refresh-Token');
 
-        $user = $result['user']->load(['roles', 'permissions', 'company', 'branch']);
+        if (!$refreshToken) {
+            return $this->errorResponse('Token Missing', null, 401);
+        }
+
+        $clientInfo = [
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'device'     => $request->header('X-Device-Name', 'Browser'),
+            'browser'    => $request->header('X-Browser-Name', 'Web Browser'),
+            'os'         => $request->header('X-OS-Name', 'Unknown OS'),
+            'country'    => $request->header('X-Country-Code', 'Internal'),
+        ];
+
+        $result = $this->authService->refreshToken($refreshToken, $clientInfo);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, $result['code'] ?? 401);
+        }
+
+        $user = $result['user']->load(['roles', 'permissions', 'company', 'branch', 'employee']);
 
         return $this->successResponse([
-            'user'  => new UserResource($user),
-            'token' => $result['token'],
-        ], 'Registration successful', 201);
+            'user'          => new UserResource($user),
+            'roles'         => $user->getRoleNames()->toArray(),
+            'permissions'   => $user->getAllPermissions()->pluck('name')->toArray(),
+            'company'       => $user->company,
+            'branch'        => $user->branch,
+            'access_token'  => $result['access_token'],
+            'token'         => $result['access_token'],
+            'refresh_token' => $result['refresh_token'],
+            'token_expire'  => $result['expires_in'],
+            'expires_in'    => $result['expires_in'],
+        ], 'Token refreshed successfully');
     }
 
     /**
@@ -59,9 +109,24 @@ class AuthController extends BaseApiController
      */
     public function logout(Request $request): JsonResponse
     {
-        $this->authService->logout($request->user());
+        $refreshToken = $request->input('refresh_token') ?? $request->header('X-Refresh-Token');
+        if ($refreshToken) {
+            $this->authService->logout($refreshToken);
+        }
 
         return $this->successResponse(null, 'Logged out successfully');
+    }
+
+    /**
+     * POST /api/v1/auth/logout-all-devices
+     */
+    public function logoutAllDevices(Request $request): JsonResponse
+    {
+        if ($request->user()) {
+            $this->authService->logoutAllDevices($request->user()->id);
+        }
+
+        return $this->successResponse(null, 'Logged out from all devices successfully');
     }
 
     /**
@@ -69,7 +134,7 @@ class AuthController extends BaseApiController
      */
     public function profile(Request $request): JsonResponse
     {
-        $user = $request->user()->load(['roles', 'permissions', 'company', 'branch']);
+        $user = $request->user()->load(['roles', 'permissions', 'company', 'branch', 'employee']);
 
         return $this->successResponse(new UserResource($user));
     }
@@ -79,8 +144,9 @@ class AuthController extends BaseApiController
      */
     public function updateProfile(Request $request): JsonResponse
     {
-        $user = $this->authService->updateProfile($request->user(), $request->validated());
-        $user->load(['roles', 'permissions', 'company', 'branch']);
+        $user = $request->user();
+        $user->update($request->only(['name', 'phone', 'address', 'city', 'province', 'country']));
+        $user->load(['roles', 'permissions', 'company', 'branch', 'employee']);
 
         return $this->successResponse(new UserResource($user), 'Profile updated successfully');
     }
@@ -106,5 +172,34 @@ class AuthController extends BaseApiController
         }
 
         return $this->successResponse(null, 'Password changed successfully');
+    }
+
+    private function getAvailableMenus(array $roles, array $permissions): array
+    {
+        $allMenus = [
+            ['key' => 'dashboard', 'title' => 'Dashboard', 'path' => '/dashboard', 'permission' => null],
+            ['key' => 'products', 'title' => 'Products', 'path' => '/products', 'permission' => 'products.view'],
+            ['key' => 'categories', 'title' => 'Categories', 'path' => '/categories', 'permission' => 'categories.view'],
+            ['key' => 'inventory', 'title' => 'Inventory', 'path' => '/inventory', 'permission' => 'inventory.view'],
+            ['key' => 'pos', 'title' => 'POS', 'path' => '/pos', 'permission' => 'pos.access'],
+            ['key' => 'sales', 'title' => 'Sales', 'path' => '/sales', 'permission' => 'sales.view'],
+            ['key' => 'orders', 'title' => 'Orders', 'path' => '/orders', 'permission' => 'orders.view'],
+            ['key' => 'purchases', 'title' => 'Purchases', 'path' => '/purchases', 'permission' => 'purchases.view'],
+            ['key' => 'suppliers', 'title' => 'Suppliers', 'path' => '/suppliers', 'permission' => 'suppliers.view'],
+            ['key' => 'customers', 'title' => 'Customers', 'path' => '/customers', 'permission' => 'customers.view'],
+            ['key' => 'employees', 'title' => 'Employees', 'path' => '/employees', 'permission' => 'employees.view'],
+            ['key' => 'reports', 'title' => 'Reports', 'path' => '/reports', 'permission' => 'reports.view'],
+            ['key' => 'users', 'title' => 'Users', 'path' => '/users', 'permission' => 'users.view'],
+            ['key' => 'roles', 'title' => 'Roles', 'path' => '/roles', 'permission' => 'roles.view'],
+            ['key' => 'settings', 'title' => 'Settings', 'path' => '/settings', 'permission' => 'settings.view'],
+        ];
+
+        if (in_array('super_admin', $roles) || in_array('admin', $roles)) {
+            return $allMenus;
+        }
+
+        return array_values(array_filter($allMenus, function ($item) use ($permissions) {
+            return $item['permission'] === null || in_array($item['permission'], $permissions);
+        }));
     }
 }

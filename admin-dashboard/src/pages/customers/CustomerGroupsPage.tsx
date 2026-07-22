@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, Users, Loader2,
-  ChevronUp, ChevronDown, Download, ToggleLeft, ToggleRight
+  ChevronUp, ChevronDown, Download, ToggleLeft, ToggleRight, Settings
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -59,6 +59,19 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<CustomerGroup | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CustomerGroup | null>(null)
+  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState({
+    id: true,
+    name: true,
+    description: true,
+    discount: true,
+    status: true,
+    actions: true,
+  })
+
+  const toggleColumn = (col: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))
+  }
 
   // Filters & Sorting state
   const [statusFilter, setStatusFilter] = useState('all')
@@ -320,6 +333,34 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
             >
               <RefreshCw size={14} />
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
+                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm cursor-pointer select-none"
+                title={t('products.toggleColumns', 'Columns')}
+              >
+                <Settings size={14} />
+              </button>
+              {columnDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
+                    <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
+                    {Object.keys(visibleColumns).map(col => (
+                      <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns[col as keyof typeof visibleColumns]}
+                          onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                          className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                        />
+                        <span>{col}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -330,62 +371,82 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
             <table className="w-full data-table min-w-[800px]">
               <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
                 <tr>
-                  <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                    ID {renderSortIcon('id')}
-                  </th>
-                  <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                    {t('common.name')} {renderSortIcon('name')}
-                  </th>
-                  <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                    {t('common.description')} {renderSortIcon('description')}
-                  </th>
-                  <th onClick={() => handleSort('discount_percent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                    {t('customers.discount')} {renderSortIcon('discount_percent')}
-                  </th>
-                  <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                    {t('common.status')} {renderSortIcon('is_active')}
-                  </th>
-                  <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions')}</th>
+                  {visibleColumns.id && (
+                    <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      ID {renderSortIcon('id')}
+                    </th>
+                  )}
+                  {visibleColumns.name && (
+                    <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('common.name')} {renderSortIcon('name')}
+                    </th>
+                  )}
+                  {visibleColumns.description && (
+                    <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('common.description')} {renderSortIcon('description')}
+                    </th>
+                  )}
+                  {visibleColumns.discount && (
+                    <th onClick={() => handleSort('discount_percent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('customers.discount')} {renderSortIcon('discount_percent')}
+                    </th>
+                  )}
+                  {visibleColumns.status && (
+                    <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('common.status')} {renderSortIcon('is_active')}
+                    </th>
+                  )}
+                  {visibleColumns.actions && (
+                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions')}</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="hover:bg-muted/5">
-                      <td className="p-4"><div className="skeleton h-4 w-8 rounded" /></td>
-                      <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>
-                      <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>
-                      <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>
-                      <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>
-                      <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>
+                      {visibleColumns.id && <td className="p-4"><div className="skeleton h-4 w-8 rounded" /></td>}
+                      {visibleColumns.name && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                      {visibleColumns.description && <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>}
+                      {visibleColumns.discount && <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>}
+                      {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                      {visibleColumns.actions && <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>}
                     </tr>
                   ))
                 ) : (
                   groups.map((group) => (
                     <tr key={group.id} className="hover:bg-muted/10 transition-colors">
-                      <td className="p-4 text-sm font-mono text-muted-foreground">{group.id}</td>
-                      <td className="p-4 font-semibold text-foreground text-sm">{group.name}</td>
-                      <td className="p-4 text-muted-foreground text-sm max-w-[250px] truncate" title={group.description}>
-                        {group.description || '-'}
-                      </td>
-                      <td className="p-4 text-sm font-medium text-blue-600 dark:text-blue-400">
-                        {Number(group.discount_percent)}%
-                      </td>
-                      <td className="p-4 text-sm">
-                        <span className={group.is_active ? 'badge-success text-xs font-semibold' : 'badge-muted text-xs'}>
-                          {group.is_active ? t('common.active') : t('common.inactive')}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => openEditModal(group)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors">
-                            <Edit2 size={14} />
-                          </button>
-                          <button onClick={() => setDeleteTarget(group)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
+                      {visibleColumns.id && <td className="p-4 text-sm font-mono text-muted-foreground">{group.id}</td>}
+                      {visibleColumns.name && <td className="p-4 font-semibold text-foreground text-sm">{group.name}</td>}
+                      {visibleColumns.description && (
+                        <td className="p-4 text-muted-foreground text-sm max-w-[250px] truncate" title={group.description}>
+                          {group.description || '-'}
+                        </td>
+                      )}
+                      {visibleColumns.discount && (
+                        <td className="p-4 text-sm font-medium text-blue-600 dark:text-blue-400">
+                          {Number(group.discount_percent)}%
+                        </td>
+                      )}
+                      {visibleColumns.status && (
+                        <td className="p-4 text-sm">
+                          <span className={group.is_active ? 'badge-success text-xs font-semibold' : 'badge-muted text-xs'}>
+                            {group.is_active ? t('common.active') : t('common.inactive')}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.actions && (
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button onClick={() => openEditModal(group)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors">
+                              <Edit2 size={14} />
+                            </button>
+                            <button onClick={() => setDeleteTarget(group)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -503,7 +564,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                   <button
                     type="submit"
                     disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-2"
                   >
                     {(isSubmitting || createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
                     {t('common.save')}

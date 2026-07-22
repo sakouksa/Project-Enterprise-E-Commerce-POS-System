@@ -63,6 +63,12 @@ class CashRegisterController extends BaseApiController
         if (!isset($validated['status'])) {
             $validated['status'] = 'open';
         }
+        if (isset($validated['title']) && empty($validated['name'])) {
+            $validated['name'] = $validated['title'];
+        }
+        if (empty($validated['code'])) {
+            $validated['code'] = 'REG-' . strtoupper(substr(md5(uniqid()), 0, 6));
+        }
         $validated['opened_at'] = now();
 
         $record = $this->service->create($validated);

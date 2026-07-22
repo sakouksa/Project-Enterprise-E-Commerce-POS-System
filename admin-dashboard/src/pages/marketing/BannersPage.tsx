@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Edit2, Trash2, RefreshCw, X, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, RefreshCw, X, Image as ImageIcon, Loader2, Upload, Link as LinkIcon, Settings } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
@@ -26,7 +26,17 @@ interface Banner {
   ends_at?: string
 }
 
-const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
+const getImageUrl = (url?: string): string => {
+  if (!url || url === '[]' || url === '""' || url.includes('/storage/[]')) {
+    return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'
+  }
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url
+  }
+  return `http://127.0.0.1:8001/storage/${url.replace(/^\//, '')}`
+}
+
+const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
   const { t } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
@@ -41,19 +51,73 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     reset,
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'banners' })
-    const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null)
+
+  // Column visibility state
+  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState({
+    preview: true,
+    title: true,
+    position: true,
+    sortOrder: true,
+    status: true,
+    activePeriod: true,
+    actions: true,
+  })
+
+  const toggleColumn = (col: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))
+  }
 
   // Form states
   const [title, setTitle] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [base64Image, setBase64Image] = useState<string>('')
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload')
+  const [buttonColor, setButtonColor] = useState('#3B82F6')
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      const previewUrl = URL.createObjectURL(file)
+      setImageUrl(previewUrl)
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setBase64Image(reader.result)
+        }
+      }
+      reader.readAsDataURL(file)
+
+      toast.success(`Image file "${file.name}" selected.`)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null)
+    setBase64Image('')
+    setImageUrl('')
+  }
   const [linkUrl, setLinkUrl] = useState('')
-  const [position, setPosition] = useState<'home_hero' | 'home_secondary' | 'category' | 'popup'>('home_hero')
+  const [position, setPosition] = useState<'hero' | 'sidebar' | 'popup' | 'footer'>('hero')
   const [sortOrder, setSortOrder] = useState(0)
   const [isActive, setIsActive] = useState(true)
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
+
+  const prevTriggerRef = React.useRef(triggerAdd)
+
+  React.useEffect(() => {
+    if (triggerAdd && triggerAdd > 0 && triggerAdd !== prevTriggerRef.current) {
+      openCreateModal()
+    }
+    prevTriggerRef.current = triggerAdd
+  }, [triggerAdd])
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['banners', page, debouncedSearch, perPage],
@@ -62,7 +126,9 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   })
 
   const createMutation = useMutation({
-    mutationFn: (newBanner: any) => api.post('/banners', newBanner),
+    mutationFn: (newBanner: any) => api.post('/banners', newBanner, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banners'] })
       toast.success(t('toast.created', { item: t('nav.banners') }))
@@ -74,7 +140,9 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/banners/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.post(`/banners/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banners'] })
       toast.success(t('toast.updated', { item: t('nav.banners') }))
@@ -106,8 +174,10 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     setEditingBanner(null)
     setTitle('')
     setImageUrl('')
+    setSelectedFile(null)
+    setBase64Image('')
     setLinkUrl('')
-    setPosition('home_hero')
+    setPosition('hero')
     setSortOrder(0)
     setIsActive(true)
     setStartsAt('')
@@ -115,14 +185,18 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     setModalOpen(true)
   }
 
-  const openEditModal = (banner: Banner) => {
+  const openEditModal = (banner: any) => {
     setEditingBanner(banner)
     setTitle(banner.title)
-    setImageUrl(banner.image_url)
-    setLinkUrl(banner.link_url ?? '')
-    setPosition(banner.position)
-    setSortOrder(banner.sort_order)
-    setIsActive(banner.is_active)
+    setSelectedFile(null)
+    setBase64Image('')
+    const img = banner.image_url || banner.image || ''
+    setImageUrl(img)
+    const lnk = banner.link_url || banner.link || ''
+    setLinkUrl(lnk)
+    setPosition((banner.position as any) || 'hero')
+    setSortOrder(banner.sort_order || 0)
+    setIsActive(banner.is_active ?? true)
     setStartsAt(banner.starts_at ? banner.starts_at.split('T')[0] : '')
     setEndsAt(banner.ends_at ? banner.ends_at.split('T')[0] : '')
     setModalOpen(true)
@@ -131,27 +205,45 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   const closeModal = () => {
     setModalOpen(false)
     setEditingBanner(null)
+    setSelectedFile(null)
+    setBase64Image('')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim() || !imageUrl.trim()) return
+    if (!title.trim()) {
+      toast.error('Please enter a banner title.')
+      return
+    }
+    if (!selectedFile && !imageUrl.trim()) {
+      toast.error('Please select an image file or provide an image URL.')
+      return
+    }
 
-    const payload = {
-      title,
-      image_url: imageUrl,
-      link_url: linkUrl || null,
-      position,
-      sort_order: Number(sortOrder),
-      is_active: isActive,
-      starts_at: startsAt || null,
-      ends_at: endsAt || null,
+    const formData = new FormData()
+    formData.append('company_id', '1')
+    formData.append('title', title)
+    formData.append('position', position)
+    formData.append('sort_order', String(sortOrder))
+    formData.append('is_active', isActive ? '1' : '0')
+    if (startsAt) formData.append('starts_at', startsAt)
+    if (endsAt) formData.append('ends_at', endsAt)
+    if (linkUrl) formData.append('link', linkUrl)
+
+    if (selectedFile && selectedFile instanceof File) {
+      formData.append('image_file', selectedFile)
+      if (base64Image) {
+        formData.append('image', base64Image)
+      }
+    } else if (imageUrl && !imageUrl.startsWith('blob:') && !imageUrl.includes('/storage/[]') && imageUrl !== '[]') {
+      formData.append('image', imageUrl)
     }
 
     if (editingBanner) {
-      updateMutation.mutate({ id: editingBanner.id, data: payload })
+      formData.append('_method', 'PUT')
+      updateMutation.mutate({ id: editingBanner.id, data: formData })
     } else {
-      createMutation.mutate(payload)
+      createMutation.mutate(formData)
     }
   }
 
@@ -165,7 +257,7 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500">
+          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90">
             <Plus size={16} />
             {t('common.add')}
           </button>
@@ -185,20 +277,48 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
           </div>
           <button
             onClick={() => qc.invalidateQueries({ queryKey: ['banners'] })}
-            className="p-2 text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+            className="p-2 text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors cursor-pointer select-none"
+            title={t('common.refresh', 'Refresh')}
           >
             <RefreshCw size={14} />
           </button>
-          {isTab && (
+
+          {/* Toggle Columns Settings Dropdown */}
+          <div className="relative">
             <button
-              onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white
-                         bg-gradient-primary rounded-lg hover:opacity-90 transition-opacity shadow-sm ml-auto"
+              onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
+              className="p-2 text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors cursor-pointer select-none"
+              title={t('products.toggleColumns', 'Columns')}
             >
-              <Plus size={16} />
-              {t('common.add')}
+              <Settings size={14} />
             </button>
-          )}
+            {columnDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
+                  <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">{t('products.toggleColumns', 'Toggle Columns')}</p>
+                  {Object.keys(visibleColumns).map(col => (
+                    <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns[col as keyof typeof visibleColumns]}
+                        onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                        className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                      />
+                      <span>
+                        {col === 'preview' ? 'Preview' :
+                         col === 'title' ? 'Title' :
+                         col === 'position' ? 'Position' :
+                         col === 'sortOrder' ? 'Sort Order' :
+                         col === 'status' ? 'Status' :
+                         col === 'activePeriod' ? 'Active Period' : 'Actions'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -207,75 +327,84 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
         <table className="w-full data-table">
             <thead>
               <tr>
-                <th className="text-left">Preview</th>
-                <th className="text-left">Title</th>
-                <th className="text-left">Position</th>
-                <th className="text-left">Sort Order</th>
-                <th className="text-left">{t('common.status')}</th>
-                <th className="text-left">Active Period</th>
-                <th className="text-right">{t('common.actions')}</th>
+                {visibleColumns.preview && <th className="text-left">Preview</th>}
+                {visibleColumns.title && <th className="text-left">Title</th>}
+                {visibleColumns.position && <th className="text-left">Position</th>}
+                {visibleColumns.sortOrder && <th className="text-left">Sort Order</th>}
+                {visibleColumns.status && <th className="text-left">{t('common.status')}</th>}
+                {visibleColumns.activePeriod && <th className="text-left">Active Period</th>}
+                {visibleColumns.actions && <th className="text-right">{t('common.actions')}</th>}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td><div className="skeleton h-10 w-16 rounded" /></td>
-                    <td><div className="skeleton h-4 w-28 rounded" /></td>
-                    <td><div className="skeleton h-4 w-16 rounded" /></td>
-                    <td><div className="skeleton h-4 w-8 rounded" /></td>
-                    <td><div className="skeleton h-4 w-12 rounded" /></td>
-                    <td><div className="skeleton h-4 w-32 rounded" /></td>
-                    <td><div className="skeleton h-4 w-12 rounded ml-auto" /></td>
+                    {visibleColumns.preview && <td><div className="skeleton h-10 w-16 rounded" /></td>}
+                    {visibleColumns.title && <td><div className="skeleton h-4 w-28 rounded" /></td>}
+                    {visibleColumns.position && <td><div className="skeleton h-4 w-16 rounded" /></td>}
+                    {visibleColumns.sortOrder && <td><div className="skeleton h-4 w-8 rounded" /></td>}
+                    {visibleColumns.status && <td><div className="skeleton h-4 w-12 rounded" /></td>}
+                    {visibleColumns.activePeriod && <td><div className="skeleton h-4 w-32 rounded" /></td>}
+                    {visibleColumns.actions && <td><div className="skeleton h-4 w-12 rounded ml-auto" /></td>}
                   </tr>
                 ))
               ) : (
                 banners.map((banner) => (
                   <tr key={banner.id}>
-                    <td>
-                      {banner.image_url ? (
-                        <img src={banner.image_url} alt={banner.title} className="w-16 h-10 object-cover rounded border border-border" />
-                      ) : (
-                        <div className="w-16 h-10 bg-muted flex items-center justify-center rounded">
-                          <ImageIcon size={16} className="text-muted-foreground" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="font-medium text-foreground">{banner.title}</td>
-                    <td className="text-sm font-mono">{banner.position}</td>
-                    <td>{banner.sort_order}</td>
-                    <td>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        banner.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                      }`}>
-                        {banner.is_active ? t('common.active') : t('common.inactive')}
-                      </span>
-                    </td>
-                    <td className="text-sm text-muted-foreground">
-                      {banner.starts_at || banner.ends_at ? (
-                        <span>
-                          {banner.starts_at ? new Date(banner.starts_at).toLocaleDateString() : 'Start'}
-                          {' - '}
-                          {banner.ends_at ? new Date(banner.ends_at).toLocaleDateString() : 'End'}
+                    {visibleColumns.preview && (
+                      <td>
+                        <img
+                          src={getImageUrl(banner.image_url || banner.image)}
+                          alt={banner.title}
+                          className="w-16 h-10 object-cover rounded-lg border border-border shadow-2xs"
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80'
+                          }}
+                        />
+                      </td>
+                    )}
+                    {visibleColumns.title && <td className="font-medium text-foreground">{banner.title}</td>}
+                    {visibleColumns.position && <td className="text-sm font-mono">{banner.position}</td>}
+                    {visibleColumns.sortOrder && <td>{banner.sort_order}</td>}
+                    {visibleColumns.status && (
+                      <td>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          banner.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                          {banner.is_active ? t('common.active') : t('common.inactive')}
                         </span>
-                      ) : (
-                        'Always Active'
-                      )}
-                    </td>
-                    <td className="text-right flex items-center justify-end gap-2">
-                      <button onClick={() => openEditModal(banner)} className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground">
-                        <Edit2 size={14} />
-                      </button>
-                      <button onClick={() => setDeleteTarget(banner)} className="p-1 hover:bg-red-50 rounded text-muted-foreground hover:text-red-500">
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
+                      </td>
+                    )}
+                    {visibleColumns.activePeriod && (
+                      <td className="text-sm text-muted-foreground">
+                        {banner.starts_at || banner.ends_at ? (
+                          <span>
+                            {banner.starts_at ? new Date(banner.starts_at).toLocaleDateString() : 'Start'}
+                            {' - '}
+                            {banner.ends_at ? new Date(banner.ends_at).toLocaleDateString() : 'End'}
+                          </span>
+                        ) : (
+                          'Always Active'
+                        )}
+                      </td>
+                    )}
+                    {visibleColumns.actions && (
+                      <td className="text-right flex items-center justify-end gap-2">
+                        <button onClick={() => openEditModal(banner)} className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(banner)} className="p-1 hover:bg-red-50 rounded text-muted-foreground hover:text-red-500">
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
               {!isLoading && banners.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length || 1} className="py-16 text-center">
                     <ImageIcon size={40} className="mx-auto mb-3 text-muted-foreground/30" />
                     <p className="text-muted-foreground">{t('common.noData')}</p>
                   </td>
@@ -316,25 +445,106 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     className="form-input"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Image URL</label>
-                  <input
-                    value={imageUrl}
-                    onChange={e => setImageUrl(e.target.value)}
-                    required
-                    placeholder="https://example.com/banner.jpg"
-                    className="form-input"
-                  />
+                {/* Banner Image Input Section with Mode Switcher */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase">
+                      Banner Image <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border">
+                      <button
+                        type="button"
+                        onClick={() => setImageMode('upload')}
+                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all ${
+                          imageMode === 'upload' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        📁 File Upload
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageMode('url')}
+                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all ${
+                          imageMode === 'url' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        🔗 Image URL
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {imageMode === 'upload' ? (
+                    imageUrl ? (
+                      <div className="relative group border border-border rounded-xl p-3 bg-muted/30 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <img
+                            src={getImageUrl(imageUrl)}
+                            alt="Banner preview"
+                            className="w-14 h-14 object-cover rounded-lg border border-border shadow-xs flex-shrink-0"
+                            onError={(e) => {
+                              ;(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80'
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {selectedFile ? selectedFile.name : title || 'Banner Image'}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
+                              {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : imageUrl}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors flex-shrink-0"
+                          title="Remove Image"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed border-border/80 hover:border-primary/50 bg-muted/20 hover:bg-primary/5 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                        <div className="p-2.5 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform mb-2">
+                          <Upload size={18} />
+                        </div>
+                        <span className="text-xs font-semibold text-foreground">Click or drag image file here</span>
+                        <span className="text-[10px] text-muted-foreground mt-0.5">Supports PNG, JPG, WEBP, SVG (max 5MB)</span>
+                      </label>
+                    )
+                  ) : (
+                    <div>
+                      <input
+                        type="text"
+                        value={imageUrl}
+                        onChange={e => setImageUrl(e.target.value)}
+                        placeholder="https://example.com/banner-image.jpg"
+                        className="form-input text-xs font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
+
+                {/* Target Link URL (Optional) */}
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Link URL (Optional)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                    Link URL (Optional)
+                  </label>
                   <input
+                    type="text"
                     value={linkUrl}
                     onChange={e => setLinkUrl(e.target.value)}
                     placeholder="https://example.com/promo-target"
-                    className="form-input"
+                    className="form-input text-xs font-mono"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Position</label>
                   <select
@@ -342,10 +552,10 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     onChange={e => setPosition(e.target.value as any)}
                     className="form-input"
                   >
-                    <option value="home_hero">Home Hero Carousel</option>
-                    <option value="home_secondary">Home Secondary Banner</option>
-                    <option value="category">Category Banner</option>
-                    <option value="popup">Popup Promo</option>
+                    <option value="hero">Hero Main Banner</option>
+                    <option value="sidebar">Sidebar / Secondary Banner</option>
+                    <option value="popup">Popup Promo Banner</option>
+                    <option value="footer">Footer Banner</option>
                   </select>
                 </div>
                 <div>
@@ -390,13 +600,13 @@ const BannersPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                  <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted">
+                  <button type="button" onClick={closeModal} className="px-4 py-2.5 text-xs font-semibold border border-border rounded-xl hover:bg-muted transition-colors">
                     {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center gap-2"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md transition-all flex items-center gap-2"
                   >
                     {(createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
                     {t('common.save')}

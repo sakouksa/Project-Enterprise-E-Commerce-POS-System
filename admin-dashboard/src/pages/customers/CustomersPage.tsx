@@ -523,7 +523,7 @@ const CustomersPage: React.FC = () => {
 
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
             >
               <Plus size={16} />
               {t('customers.addCustomer', 'Add Customer')}
@@ -543,7 +543,7 @@ const CustomersPage: React.FC = () => {
 
             <button
               onClick={() => groupActions?.onAdd?.()}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
             >
               <Plus size={16} />
               {t('common.add', 'Add Group')}
@@ -563,7 +563,7 @@ const CustomersPage: React.FC = () => {
 
             <button
               onClick={() => addressActions?.onAdd?.()}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
             >
               <Plus size={16} />
               {t('customers.addAddress', 'Add Address')}
@@ -652,10 +652,10 @@ const CustomersPage: React.FC = () => {
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.customerValue', 'Customer Value')}</p>
             <p className="text-xl font-extrabold text-foreground tracking-tight truncate max-w-[190px]">
-              Rp {(Number(statsData?.total_spent) || 0).toLocaleString('id-ID')}
+              ${(Number(statsData?.total_spent) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {t('customers.averageSpent', 'Avg Spent')}: Rp {(Number(statsData?.avg_spent_per_customer) || 0).toLocaleString('id-ID')}
+              {t('customers.averageSpent', 'Avg Spent')}: ${(Number(statsData?.avg_spent_per_customer) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
@@ -668,23 +668,25 @@ const CustomersPage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
           <span className="text-[10px] text-muted-foreground font-semibold uppercase">{t('customers.todayCustomers', 'Today\'s Customers')}</span>
-          <span className="text-lg font-extrabold text-foreground mt-1">4</span>
+          <span className="text-lg font-extrabold text-foreground mt-1">{statsData?.today_customers ?? 0}</span>
         </div>
         <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
           <span className="text-[10px] text-emerald-600 font-semibold uppercase">{t('customers.todayOrders', 'Today\'s Orders')}</span>
-          <span className="text-lg font-extrabold text-emerald-500 mt-1">18</span>
+          <span className="text-lg font-extrabold text-emerald-500 mt-1">{statsData?.today_orders ?? 0}</span>
         </div>
         <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
           <span className="text-[10px] text-rose-600 font-semibold uppercase">{t('customers.todayRevenue', 'Today\'s Revenue')}</span>
-          <span className="text-base font-extrabold text-rose-500 mt-1 truncate">Rp 4.5M</span>
+          <span className="text-base font-extrabold text-rose-500 mt-1 truncate">
+            ${(Number(statsData?.today_revenue) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
         </div>
         <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
           <span className="text-[10px] text-blue-500 font-semibold uppercase">{t('customers.pendingPayments', 'Pending Payments')}</span>
-          <span className="text-lg font-extrabold text-blue-500 mt-1">2</span>
+          <span className="text-lg font-extrabold text-blue-500 mt-1">{statsData?.pending_payments ?? 0}</span>
         </div>
         <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs col-span-2 md:col-span-1">
           <span className="text-[10px] text-amber-500 font-semibold uppercase">{t('customers.creditCustomers', 'Credit Customers')}</span>
-          <span className="text-lg font-extrabold text-amber-500 mt-1">5</span>
+          <span className="text-lg font-extrabold text-amber-500 mt-1">{statsData?.credit_customers ?? 0}</span>
         </div>
       </div>
 
@@ -965,7 +967,7 @@ const CustomersPage: React.FC = () => {
                         {/* Total Spent */}
                         {visibleColumns.totalSpent && (
                           <td className="p-4 text-sm font-bold text-foreground">
-                            Rp {(Number(c.total_spent) || 0).toLocaleString('id-ID')}
+                            ${(Number(c.total_spent) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                         )}
                         {/* Order Count */}
@@ -995,7 +997,7 @@ const CustomersPage: React.FC = () => {
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                                 VIP
                               </span>
-                            ) : c.total_spent > 5000000 ? (
+                            ) : c.total_spent > 1200 ? (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
                                 Credit Customer
                               </span>
@@ -1229,7 +1231,7 @@ const CustomersPage: React.FC = () => {
                   <div className="bg-muted/40 p-4 rounded-lg border border-border grid grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <span className="block text-[10px] font-semibold text-muted-foreground uppercase">{t('customers.totalSpent')}</span>
-                      <span className="block font-bold text-sm text-foreground">Rp {(Number(editingCustomer.total_spent) || 0).toLocaleString('id-ID')}</span>
+                      <span className="block font-bold text-sm text-foreground">${(Number(editingCustomer.total_spent) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="space-y-1">
                       <span className="block text-[10px] font-semibold text-muted-foreground uppercase">{t('customers.orderCount')}</span>
@@ -1276,7 +1278,7 @@ const CustomersPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 flex items-center gap-1.5"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-1.5"
                   >
                     {isSubmitting && <Loader2 size={14} className="animate-spin" />}
                     {editingCustomer ? t('common.save') : t('common.create')}
@@ -1405,7 +1407,7 @@ const CustomersPage: React.FC = () => {
                         <div className="bg-card p-3 rounded-lg border border-border text-center">
                           <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mx-auto mb-1" />
                           <span className="text-[10px] text-muted-foreground uppercase block">{t('customers.totalSpent')}</span>
-                          <span className="font-bold text-sm block">Rp {(Number(viewCustomer.total_spent) || 0).toLocaleString('id-ID')}</span>
+                          <span className="font-bold text-sm block">${(Number(viewCustomer.total_spent) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="bg-card p-3 rounded-lg border border-border text-center">
                           <Award size={16} className="text-amber-500 mx-auto mb-1" />
@@ -1421,7 +1423,7 @@ const CustomersPage: React.FC = () => {
                           <Sparkles size={16} className="text-green-500 mx-auto mb-1" />
                           <span className="text-[10px] text-muted-foreground uppercase block">Avg Order Value</span>
                           <span className="font-bold text-sm block">
-                            Rp {viewCustomer.order_count > 0 ? (Math.round(Number(viewCustomer.total_spent) / viewCustomer.order_count)).toLocaleString('id-ID') : '0'}
+                            ${viewCustomer.order_count > 0 ? (Number(viewCustomer.total_spent) / viewCustomer.order_count).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                           </span>
                         </div>
                       </div>
@@ -1523,7 +1525,7 @@ const CustomersPage: React.FC = () => {
                                 <div className="text-[10px] text-muted-foreground font-mono">{new Date(order.created_at).toLocaleDateString()}</div>
                               </div>
                               <div className="text-right">
-                                <div className="font-bold text-foreground">Rp {Number(order.total_amount || order.grand_total || 0).toLocaleString('id-ID')}</div>
+                                <div className="font-bold text-foreground">${Number(order.total_amount || order.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border font-semibold capitalize">{order.status || 'Completed'}</span>
                               </div>
                             </div>
@@ -1785,26 +1787,26 @@ const CustomersPage: React.FC = () => {
                 {/* Purchase Amount Range */}
                 <div className="space-y-3 pt-4 border-t border-border/80">
                   <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {t('customers.amountRange', 'Purchase Amount Range')}
+                    {t('customers.amountRange', 'Purchase Amount Range ($)')}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground font-semibold block">Min Spent</span>
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Min Spent ($)</span>
                       <input
                         type="number"
                         value={minSpentFilter}
                         onChange={(e) => { setMinSpentFilter(e.target.value); setPage(1) }}
-                        placeholder="Min"
+                        placeholder="Min ($)"
                         className="form-input w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground font-semibold block">Max Spent</span>
+                      <span className="text-[10px] text-muted-foreground font-semibold block">Max Spent ($)</span>
                       <input
                         type="number"
                         value={maxSpentFilter}
                         onChange={(e) => { setMaxSpentFilter(e.target.value); setPage(1) }}
-                        placeholder="Max"
+                        placeholder="Max ($)"
                         className="form-input w-full text-xs rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 shadow-xs text-foreground"
                       />
                     </div>

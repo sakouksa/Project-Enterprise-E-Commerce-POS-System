@@ -19,16 +19,17 @@ class UserResource extends JsonResource
         }
 
         return [
-            'id'           => $this->id,
-            'name'         => $this->name,
-            'email'        => $this->email,
-            'phone'        => $this->phone,
-            'avatar'       => $avatarUrl,
-            'is_active'    => $this->is_active,
-            'last_login_at' => $this->last_login_at?->toIso8601String(),
-            'roles'        => $this->whenLoaded('roles', fn() => $this->getRoleNames()),
-            'permissions'  => $this->whenLoaded('permissions', fn() => $this->getAllPermissions()->pluck('name')),
-            'company'      => $this->whenLoaded('company', fn() => [
+            'id'            => $this->id,
+            'name'          => $this->name,
+            'username'      => $this->username,
+            'email'         => $this->email,
+            'phone'         => $this->phone,
+            'avatar'        => $avatarUrl,
+            'is_active'     => $this->is_active,
+            'last_login_at'  => $this->last_login_at?->toIso8601String(),
+            'roles'         => $this->whenLoaded('roles', fn() => $this->getRoleNames()),
+            'permissions'   => $this->whenLoaded('permissions', fn() => $this->getAllPermissions()->pluck('name')),
+            'company'       => $this->whenLoaded('company', fn() => [
                 'id'   => $this->company?->id,
                 'name' => $this->company?->name,
                 'logo' => $this->company?->logo,
@@ -36,6 +37,11 @@ class UserResource extends JsonResource
             'branch' => $this->whenLoaded('branch', fn() => [
                 'id'   => $this->branch?->id,
                 'name' => $this->branch?->name,
+            ]),
+            'employee' => $this->whenLoaded('employee', fn() => [
+                'id'              => $this->employee?->id,
+                'employee_number' => $this->employee?->employee_number,
+                'status'          => $this->employee?->status,
             ]),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

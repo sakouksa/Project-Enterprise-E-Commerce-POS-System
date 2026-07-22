@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Customer;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Customer\Customer;
 use App\Models\Customer\CustomerGroup;
+use App\Models\Order\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -129,7 +130,7 @@ class CustomerController extends BaseApiController
         $totalCustomers = (clone $query)->count();
         $activeCustomers = (clone $query)->where('is_active', true)->count();
         $inactiveCustomers = (clone $query)->where('is_active', false)->count();
-        
+
         $vipCustomers = (clone $query)->where(function($q) {
             $q->where('total_spent', '>=', 1000)
               ->orWhereHas('group', function($sub) {
@@ -145,26 +146,59 @@ class CustomerController extends BaseApiController
         $totalSpent = (clone $query)->sum('total_spent');
         $totalPoints = (clone $query)->sum('loyalty_points');
         $totalOrders = (clone $query)->sum('order_count');
-        
+
         $avgSpent = $totalCustomers > 0 ? ($totalSpent / $totalCustomers) : 0;
 
         $totalGroups = CustomerGroup::count();
         $totalAddresses = DB::table('customer_addresses')->count();
 
+        // ── Mini KPI Stats ────────────────────────────────────────────────
+        // Customers registered today
+        $todayCustomers = (clone $query)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        // Orders placed today that belong to any customer
+        $todayOrders = Order::whereDate('created_at', now()->toDateString())
+            ->whereNotNull('customer_id')
+            ->count();
+
+        // Revenue from today's customer orders
+        $todayRevenue = (float) Order::whereDate('created_at', now()->toDateString())
+            ->whereNotNull('customer_id')
+            ->sum('grand_total');
+
+        // Orders with pending payment status
+        $pendingPayments = Order::where('payment_status', 'pending')
+            ->whereNotNull('customer_id')
+            ->count();
+
+        // Customers who have an outstanding balance (paid less than total)
+        $creditCustomers = Order::whereNotNull('customer_id')
+            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->distinct('customer_id')
+            ->count('customer_id');
+
         return response()->json([
             'success' => true,
             'data' => [
-                'total_customers' => $totalCustomers,
-                'active_customers' => $activeCustomers,
-                'inactive_customers' => $inactiveCustomers,
-                'vip_customers' => $vipCustomers,
+                'total_customers'        => $totalCustomers,
+                'active_customers'       => $activeCustomers,
+                'inactive_customers'     => $inactiveCustomers,
+                'vip_customers'          => $vipCustomers,
                 'new_customers_this_month' => $newCustomersThisMonth,
-                'total_spent' => $totalSpent,
-                'total_loyalty_points' => $totalPoints,
-                'total_orders' => $totalOrders,
+                'total_spent'            => $totalSpent,
+                'total_loyalty_points'   => $totalPoints,
+                'total_orders'           => $totalOrders,
                 'avg_spent_per_customer' => round($avgSpent, 2),
-                'total_groups' => $totalGroups,
-                'total_addresses' => $totalAddresses,
+                'total_groups'           => $totalGroups,
+                'total_addresses'        => $totalAddresses,
+                // Mini KPI
+                'today_customers'        => $todayCustomers,
+                'today_orders'           => $todayOrders,
+                'today_revenue'          => $todayRevenue,
+                'pending_payments'       => $pendingPayments,
+                'credit_customers'       => $creditCustomers,
             ]
         ]);
     }

@@ -397,8 +397,8 @@ const OrdersPage: React.FC = () => {
                           <button
                             onClick={() => confirmMutation.mutate(orderDetails.id)}
                             disabled={isActionPending}
-                            className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold
-                                       hover:bg-blue-500 flex items-center gap-1.5 disabled:opacity-60 transition-colors shadow-sm"
+                            className="px-3.5 py-2 bg-primary text-white rounded-xl text-xs font-semibold
+                                       hover:opacity-90 flex items-center gap-1.5 disabled:opacity-60 transition-all shadow-sm cursor-pointer"
                           >
                             {confirmMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={14} />}
                             Confirm Order

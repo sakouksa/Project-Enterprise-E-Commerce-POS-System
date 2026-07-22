@@ -8,6 +8,7 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import FormDrawer from '@/components/common/FormDrawer'
 import { useTranslation } from 'react-i18next'
 
 interface PaymentMethod {
@@ -178,7 +179,7 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = (
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500">
+          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:opacity-90 shadow-sm cursor-pointer font-semibold">
             <Plus size={16} />
             {t('common.add')}
           </button>
@@ -285,137 +286,119 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = (
         <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
       </div>
 
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card w-full max-w-md border border-border rounded-xl shadow-2xl overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingMethod ? 'Edit Payment Method' : 'Add Payment Method'}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
-                  <X size={18} />
-                </button>
+      <FormDrawer
+        open={modalOpen}
+        title={editingMethod ? `Edit Payment Method #${editingMethod.id}` : 'Add Payment Method'}
+        subtitle="Configure system payment method parameters and transaction fees."
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        loading={createMutation.isPending || updateMutation.isPending}
+        submitLabel={editingMethod ? 'Update Method' : 'Create Method'}
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border/60 space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('common.name')} *</label>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                placeholder="e.g. Bank Transfer, ABA Mobile, Cash on Delivery"
+                className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Method Code *</label>
+                <input
+                  value={code}
+                  onChange={e => setCode(e.target.value)}
+                  required
+                  placeholder="e.g. bank_transfer, aba_mobile"
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 font-mono text-primary"
+                />
               </div>
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Gateway Type *</label>
+                <select
+                  value={type}
+                  onChange={e => setType(e.target.value)}
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer capitalize"
+                  required
+                >
+                  <option value="cash">Cash</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="credit_card">Credit Card</option>
+                  <option value="debit_card">Debit Card</option>
+                  <option value="ewallet">E-Wallet</option>
+                  <option value="qris">QR / QRIS</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{t('common.name')} *</label>
-                  <input
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    required
-                    placeholder="e.g. Bank Transfer, ABA Mobile"
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Code *</label>
-                  <input
-                    value={code}
-                    onChange={e => setCode(e.target.value)}
-                    required
-                    placeholder="e.g. bank_transfer, aba_mobile"
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Gateway Type *</label>
-                  <select
-                    value={type}
-                    onChange={e => setType(e.target.value)}
-                    className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
-                    required
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="debit_card">Debit Card</option>
-                    <option value="ewallet">E-Wallet</option>
-                    <option value="qris">QR / QRIS</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fee Percent (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={feePercent}
-                      onChange={e => setFeePercent(e.target.value)}
-                      placeholder="e.g. 1.50"
-                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fee Fixed ($)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={feeFixed}
-                      onChange={e => setFeeFixed(e.target.value)}
-                      placeholder="e.g. 0.25"
-                      className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fee Percent (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={feePercent}
+                  onChange={e => setFeePercent(e.target.value)}
+                  placeholder="e.g. 1.50"
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Fee Fixed ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={feeFixed}
+                  onChange={e => setFeeFixed(e.target.value)}
+                  placeholder="e.g. 0.25"
+                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2.5 pt-2 border-t border-border/60">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={isActive}
+                  onChange={e => setIsActive(e.target.checked)}
+                  className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30 cursor-pointer"
+                />
+                <label htmlFor="isActive" className="text-xs font-semibold text-foreground cursor-pointer hover:text-primary transition-colors">{t('common.active')}</label>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    id="isActive"
-                    checked={isActive}
-                    onChange={e => setIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30"
+                    id="availablePos"
+                    checked={availablePos}
+                    onChange={e => setAvailablePos(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30 cursor-pointer"
                   />
-                  <label htmlFor="isActive" className="text-sm font-semibold text-foreground cursor-pointer text-muted-foreground hover:text-foreground transition-colors">{t('common.active')}</label>
+                  <label htmlFor="availablePos" className="text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground">POS Channel</label>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="availablePos"
-                      checked={availablePos}
-                      onChange={e => setAvailablePos(e.target.checked)}
-                      className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30"
-                    />
-                    <label htmlFor="availablePos" className="text-xs font-semibold text-muted-foreground cursor-pointer uppercase tracking-wider">POS Channel</label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="availableOnline"
-                      checked={availableOnline}
-                      onChange={e => setAvailableOnline(e.target.checked)}
-                      className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30"
-                    />
-                    <label htmlFor="availableOnline" className="text-xs font-semibold text-muted-foreground cursor-pointer uppercase tracking-wider">Online Store</label>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="availableOnline"
+                    checked={availableOnline}
+                    onChange={e => setAvailableOnline(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/30 cursor-pointer"
+                  />
+                  <label htmlFor="availableOnline" className="text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground">Online Store</label>
                 </div>
-
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                  <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium border border-border rounded-xl hover:bg-muted transition-colors">
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {t('common.save')}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              </div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      </FormDrawer>
 
       <ConfirmDialog
         open={!!deleteTarget}

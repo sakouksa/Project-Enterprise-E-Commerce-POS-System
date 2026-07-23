@@ -79,7 +79,7 @@ const ProfilePage: React.FC = () => {
     mutationFn: profileService.updateProfile,
     onSuccess: (updatedUser) => {
       qc.invalidateQueries({ queryKey: ['profile'] })
-      useAuthStore.getState().updateUser(updatedUser)
+      useAuthStore.getState().updateUser(updatedUser as any)
       toast.success(t('profile.personal_tab.success_update', 'Personal details updated successfully.'))
     },
     onError: (err: any) => {

@@ -47,6 +47,7 @@ class RolesPermissionsSeeder extends Seeder
 
             // Reports
             'report.view', 'report.export',
+            'reports.sales.view', 'reports.sales.export', 'reports.sales.detail',
 
             // Settings
             'setting.view', 'setting.update',

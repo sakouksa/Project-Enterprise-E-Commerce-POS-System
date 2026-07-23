@@ -65,13 +65,73 @@ class DashboardController extends BaseApiController
      */
     public function topProducts(Request $request): JsonResponse
     {
-        // Return placeholder categories data for pie chart
-        return $this->successResponse([
-            ['name' => 'Electronics', 'value' => 45],
-            ['name' => 'Apparel',     'value' => 30],
-            ['name' => 'Grocery',     'value' => 15],
-            ['name' => 'Home',        'value' => 10],
-        ]);
+        // Real top-selling products from POS sale_items
+        $topFromSales = DB::table('sale_items')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.status', 'completed')
+            ->whereNull('sales.deleted_at')
+            ->whereNull('products.deleted_at')
+            ->select(
+                'products.id',
+                'products.name',
+                DB::raw('SUM(sale_items.quantity) as total_qty'),
+                DB::raw('SUM(sale_items.total) as total_revenue')
+            )
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('total_qty')
+            ->limit(5)
+            ->get();
+
+        // Also include e-commerce order_items
+        $topFromOrders = DB::table('order_items')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereIn('orders.status', ['completed', 'delivered'])
+            ->whereNull('orders.deleted_at')
+            ->whereNull('products.deleted_at')
+            ->select(
+                'products.id',
+                'products.name',
+                DB::raw('SUM(order_items.quantity) as total_qty'),
+                DB::raw('SUM(order_items.total) as total_revenue')
+            )
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('total_qty')
+            ->limit(5)
+            ->get();
+
+        // Merge and aggregate by product id, take top 5
+        $merged = $topFromSales->concat($topFromOrders)
+            ->groupBy('id')
+            ->map(function ($items) {
+                $first = $items->first();
+                return [
+                    'id'            => $first->id,
+                    'name'          => $first->name,
+                    'value'         => (float) $items->sum('total_qty'),
+                    'total_revenue' => (float) $items->sum('total_revenue'),
+                ];
+            })
+            ->sortByDesc('value')
+            ->values()
+            ->take(5);
+
+        // If no real data, return category-based fallback
+        if ($merged->isEmpty()) {
+            $merged = DB::table('products')
+                ->join('categories', 'products.category_id', '=', 'categories.id')
+                ->whereNull('products.deleted_at')
+                ->where('products.status', 'active')
+                ->select('categories.name', DB::raw('COUNT(products.id) as value'))
+                ->groupBy('categories.id', 'categories.name')
+                ->orderByDesc('value')
+                ->limit(5)
+                ->get()
+                ->map(fn($r) => ['name' => $r->name, 'value' => (int) $r->value]);
+        }
+
+        return $this->successResponse($merged);
     }
 
     /**

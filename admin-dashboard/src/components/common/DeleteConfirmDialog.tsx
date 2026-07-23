@@ -79,18 +79,6 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
                   {t('deleteConfirm.cancel')}
                 </button>
 
-                {onArchive && (
-                  <button
-                    type="button"
-                    onClick={onArchive}
-                    disabled={isPending}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors"
-                  >
-                    <Archive size={14} />
-                    {t('deleteConfirm.archive')}
-                  </button>
-                )}
-
                 <button
                   type="button"
                   onClick={onSoftDelete}

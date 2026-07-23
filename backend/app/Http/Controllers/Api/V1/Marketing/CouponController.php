@@ -90,4 +90,60 @@ class CouponController extends BaseApiController
 
         return $this->successResponse(['code' => $code]);
     }
+
+    /** Validate and calculate coupon discount for POS / Cart */
+    public function validateCoupon(Request $request): JsonResponse
+    {
+        $request->validate([
+            'code'   => 'required|string',
+            'amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $code = strtoupper(trim($request->code));
+        $coupon = Coupon::where('code', $code)->first();
+
+        if (!$coupon) {
+            return $this->errorResponse('Invalid coupon code.', 404);
+        }
+
+        if (!$coupon->is_active) {
+            return $this->errorResponse('This coupon code is inactive.', 422);
+        }
+
+        if ($coupon->starts_at && now()->lt($coupon->starts_at)) {
+            return $this->errorResponse('This coupon has not started yet.', 422);
+        }
+
+        if ($coupon->expires_at && now()->gt($coupon->expires_at)) {
+            return $this->errorResponse('This coupon code has expired.', 422);
+        }
+
+        if ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
+            return $this->errorResponse('This coupon usage limit has been reached.', 422);
+        }
+
+        $amount = (float) ($request->amount ?? 0);
+        if ($coupon->minimum_amount && $amount < $coupon->minimum_amount) {
+            return $this->errorResponse("Minimum order amount of \${$coupon->minimum_amount} required.", 422);
+        }
+
+        $discount = 0;
+        if ($coupon->type === 'fixed') {
+            $discount = (float) $coupon->value;
+        } elseif ($coupon->type === 'percentage') {
+            $discount = $amount * ((float) $coupon->value / 100);
+            if ($coupon->maximum_discount && $discount > $coupon->maximum_discount) {
+                $discount = (float) $coupon->maximum_discount;
+            }
+        }
+
+        return $this->successResponse([
+            'coupon_id' => $coupon->id,
+            'code'      => $coupon->code,
+            'name'      => $coupon->name,
+            'type'      => $coupon->type,
+            'value'     => (float) $coupon->value,
+            'discount'  => round($discount, 2),
+        ], 'Coupon applied successfully.');
+    }
 }

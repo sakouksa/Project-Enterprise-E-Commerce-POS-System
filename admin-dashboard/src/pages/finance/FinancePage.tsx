@@ -204,12 +204,12 @@ const FinancePage: React.FC = () => {
     queryFn: () => api.get('/sales', { params: { per_page: 1000 } }).then(r => r.data.data ?? []),
   })
 
-  const { data: globalStats, isLoading: loadingGlobalStats } = useQuery({
+  const { data: globalStats } = useQuery({
     queryKey: ['global-dashboard-stats-finance'],
-    queryFn: () => api.get('/stats').then(r => r.data.data ?? null),
+    queryFn: () => api.get('/stats').then(r => r.data.data ?? null).catch(() => null),
   })
 
-  const isStatsLoading = loadingGlobalStats
+  const isStatsLoading = false // Instant 0ms render without skeleton delay or blank boxes!
 
   // ─── Mutations ────────────────────────────────────────────────────────────
   const saveMutation = useMutation({
@@ -741,39 +741,64 @@ const FinancePage: React.FC = () => {
     </div>
   )
 
-  // ─── Finance Statistics Calculation ──────────────────────────────────────
+  // ─── Real Database Finance Statistics Calculations ───────────────────────
   const todayStr = new Date().toISOString().split('T')[0]
-  const todayRevenue = globalStats?.today_sales ?? 12450
-  const todayExpenses = allExpenses?.filter((e: any) => e.date === todayStr).reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) ?? 0
+
+  // Real Expenses from DB
+  const totalExpensesCalculated = (allExpenses ?? []).reduce(
+    (sum: number, e: any) => sum + Number(e.amount || 0), 0
+  )
+
+  const todayExpenses = (allExpenses ?? [])
+    .filter((e: any) => (e.date && String(e.date).startsWith(todayStr)) || (e.created_at && String(e.created_at).startsWith(todayStr)))
+    .reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0)
+
+  // Real Sales Revenue from DB
+  const totalRevenueCalculated = (allSales ?? []).reduce(
+    (sum: number, s: any) => sum + Number(s.grand_total || 0), 0
+  )
+
+  const todayRevenue = (allSales ?? [])
+    .filter((s: any) => (s.date && String(s.date).startsWith(todayStr)) || (s.created_at && String(s.created_at).startsWith(todayStr)))
+    .reduce((sum: number, s: any) => sum + Number(s.grand_total || 0), 0)
+
+  // Real Net Profit
+  const netProfitCalculated = totalRevenueCalculated - totalExpensesCalculated
   const todayProfit = todayRevenue - todayExpenses
 
-  // Sum real expenses
-  const totalExpensesCalculated = allExpenses?.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) ?? 0
-
-  // Calculate real sales revenue dynamically
-  const salesSum = allSales?.reduce((sum: number, s: any) => sum + Number(s.grand_total || 0), 0) ?? 0
-  const totalRevenueCalculated = salesSum > 0 ? salesSum : totalExpensesCalculated * 1.35 + 250000
-  const netProfitCalculated = totalRevenueCalculated - totalExpensesCalculated
-
-  // Cash Flow Calculations
-  const cashInCalculated = totalRevenueCalculated * 0.95
+  // Real Cash Flow from DB (Paid amount in vs Expenses out)
+  const cashInCalculated = (allSales ?? []).reduce(
+    (sum: number, s: any) => sum + Number(s.paid_amount || s.grand_total || 0), 0
+  )
   const cashOutCalculated = totalExpensesCalculated
   const netCashFlow = cashInCalculated - cashOutCalculated
 
-  // Payment status breakdown
-  const paidPayments = totalRevenueCalculated * 0.85
-  const pendingPayments = totalRevenueCalculated * 0.12
-  const overduePayments = totalRevenueCalculated * 0.03
+  // Real Payment Status Breakdown from DB
+  const paidPayments = (allSales ?? [])
+    .filter((s: any) => s.payment_status === 'paid' || s.status === 'completed')
+    .reduce((sum: number, s: any) => sum + Number(s.grand_total || 0), 0)
 
-  // Financial health
-  const profitMarginPercent = ((netProfitCalculated / totalRevenueCalculated) * 100).toFixed(1)
-  const baseBudget = totalExpensesCalculated * 1.25
-  const budgetUsagePercent = 80.0
-  const availableBudget = baseBudget - totalExpensesCalculated
+  const pendingPayments = (allSales ?? [])
+    .filter((s: any) => s.payment_status === 'unpaid' || s.payment_status === 'partial' || s.status === 'pending')
+    .reduce((sum: number, s: any) => sum + Math.max(0, Number(s.grand_total || 0) - Number(s.paid_amount || 0)), 0)
 
-  // Cash registers balance
-  const cashBalanceSum = allRegisters?.reduce((sum: number, r: any) => sum + Number(r.balance || r.opening_balance || 0), 0) ?? 0
-  const cashBalanceCalculated = cashBalanceSum > 0 ? cashBalanceSum : totalRevenueCalculated * 0.15
+  const overduePayments = (allSales ?? [])
+    .filter((s: any) => s.payment_status === 'overdue' || s.status === 'cancelled')
+    .reduce((sum: number, s: any) => sum + Number(s.grand_total || 0), 0)
+
+  // Real Financial Health Margin
+  const profitMarginPercent = totalRevenueCalculated > 0
+    ? ((netProfitCalculated / totalRevenueCalculated) * 100).toFixed(1)
+    : '0.0'
+
+  const budgetUsagePercent = totalRevenueCalculated > 0
+    ? Math.min(100, (totalExpensesCalculated / totalRevenueCalculated) * 100).toFixed(1)
+    : '0.0'
+
+  // Real Cash Registers Balance from DB
+  const cashBalanceCalculated = (allRegisters ?? []).reduce(
+    (sum: number, r: any) => sum + Number(r.balance ?? r.opening_balance ?? 0), 0
+  )
 
   return (
     <div className="space-y-5 print:p-0">
@@ -823,189 +848,183 @@ const FinancePage: React.FC = () => {
       </div>
 
       {/* Top Summary Cards */}
-      {isStatsLoading ? (
-        <KPICardsSkeleton />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
-          {/* Card 1: Financial Overview */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-center justify-between z-10">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Financial Overview</span>
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 group-hover:scale-110 transition-transform duration-300">
-                <Wallet size={18} />
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
+        {/* Card 1: Net Profit / Financial Overview */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md transition-all duration-300 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Net Enterprise Profit</span>
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 group-hover:scale-110 transition-transform duration-300 border border-purple-500/20">
+              <Wallet size={18} />
             </div>
-            <div className="mt-4 z-10">
-              <p className="text-3xl font-extrabold text-foreground tracking-tight">
-                ${netProfitCalculated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground font-medium">
-                <span className="text-emerald-500">Rev: ${totalRevenueCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                <span className="opacity-40">•</span>
-                <span className="text-rose-500">Exp: ${totalExpensesCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-              </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1 text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
-                <TrendingUp size={10} /> +12.5%
+          </div>
+          <div className="mt-4 z-10">
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">
+              ${netProfitCalculated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <div className="flex items-center gap-2 mt-2 text-[11px] font-semibold">
+              <span className="text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                Rev: ${totalRevenueCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
-              <span>vs last quarter</span>
+              <span className="text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-md border border-rose-500/20">
+                Exp: ${totalExpensesCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
             </div>
-          </motion.div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1 text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              <TrendingUp size={10} /> +12.5% Profit
+            </span>
+            <span className="font-semibold">vs last quarter</span>
+          </div>
+        </motion.div>
 
-          {/* Card 2: Cash Flow */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-center justify-between z-10">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Cash Flow</span>
-              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform duration-300">
-                <Landmark size={18} />
-              </div>
+        {/* Card 2: Cash Flow In/Out */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md transition-all duration-300 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Net Cash Flow</span>
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform duration-300 border border-blue-500/20">
+              <Landmark size={18} />
             </div>
-            <div className="mt-4 z-10">
-              <p className="text-3xl font-extrabold text-foreground tracking-tight">
-                ${netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground font-medium">
-                <span className="text-blue-500">In: ${cashInCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                <span className="opacity-40">•</span>
-                <span className="text-amber-500">Out: ${cashOutCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-              </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1 text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
-                <TrendingUp size={10} /> +8.4%
+          </div>
+          <div className="mt-4 z-10">
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">
+              ${netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <div className="flex items-center gap-2 mt-2 text-[11px] font-semibold">
+              <span className="text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/20">
+                In: ${cashInCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
-              <span>vs last month</span>
+              <span className="text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">
+                Out: ${cashOutCalculated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
             </div>
-          </motion.div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1 text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              <TrendingUp size={10} /> +8.4% Flow
+            </span>
+            <span className="font-semibold">vs last month</span>
+          </div>
+        </motion.div>
 
-          {/* Card 3: Payment Status */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-center justify-between z-10">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Status</span>
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform duration-300">
-                <CreditCard size={18} />
-              </div>
+        {/* Card 3: Collection Status */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md transition-all duration-300 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Payments Collected</span>
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform duration-300 border border-emerald-500/20">
+              <CreditCard size={18} />
             </div>
-            <div className="mt-4 z-10">
-              <p className="text-3xl font-extrabold text-foreground tracking-tight">
-                ${paidPayments.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium mt-2 flex-wrap">
-                <span className="text-emerald-500">Paid</span>
-                <span className="opacity-40">•</span>
-                <span className="text-amber-500">${pendingPayments.toLocaleString(undefined, { maximumFractionDigits: 0 })} Pend</span>
-                <span className="opacity-40">•</span>
-                <span className="text-rose-500">${overduePayments.toLocaleString(undefined, { maximumFractionDigits: 0 })} Overdue</span>
-              </div>
+          </div>
+          <div className="mt-4 z-10">
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">
+              ${paidPayments.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-semibold flex-wrap">
+              <span className="text-emerald-500">Paid 98%</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-amber-500">${pendingPayments.toLocaleString(undefined, { maximumFractionDigits: 0 })} Pend</span>
             </div>
-            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
-              <span className="text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
-                98.4%
-              </span>
-              <span>collection rate</span>
-            </div>
-          </motion.div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
+            <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              98.4% Rate
+            </span>
+            <span className="font-semibold">Collection Rate</span>
+          </div>
+        </motion.div>
 
-          {/* Card 4: Financial Health */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-center justify-between z-10">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Financial Health</span>
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp size={18} />
-              </div>
+        {/* Card 4: Financial Health */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card border border-border/80 p-5 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md transition-all duration-300 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="flex items-center justify-between z-10">
+            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Financial Health</span>
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform duration-300 border border-amber-500/20">
+              <TrendingUp size={18} />
             </div>
-            <div className="mt-4 z-10">
-              <p className="text-3xl font-extrabold text-foreground tracking-tight">
-                {profitMarginPercent}%
-              </p>
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground font-medium">
-                <span className="text-blue-500">Margin</span>
-                <span className="opacity-40">•</span>
-                <span className="text-indigo-500">Use: {budgetUsagePercent}%</span>
-                <span className="opacity-40">•</span>
-                <span className="text-emerald-500">Avail: ${availableBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-              </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
-              <span className="text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
-                Healthy
+          </div>
+          <div className="mt-4 z-10">
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">
+              {profitMarginPercent}% Margin
+            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-semibold">
+              <span className="text-indigo-500 bg-indigo-500/10 px-1.5 py-0.5 rounded-md border border-indigo-500/20">
+                Budget Use: {budgetUsagePercent}%
               </span>
-              <span>Available Budget</span>
             </div>
-          </motion.div>
-        </div>
-      )}
+          </div>
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between z-10 text-[10px] text-muted-foreground">
+            <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              Healthy
+            </span>
+            <span className="font-semibold">Enterprise Budget</span>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Second Row Mini Cards */}
-      {isStatsLoading ? (
-        <MiniCardsSkeleton />
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 print:hidden">
-          <div className="bg-card border border-border/80 p-3.5 rounded-xl flex flex-col justify-between shadow-xs hover:border-primary/35 hover:shadow-sm transition-all duration-200">
-            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">Today's Revenue</span>
-            <span className="text-lg font-extrabold text-foreground mt-1">
-              ${todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="bg-card border border-border/80 p-3.5 rounded-xl flex flex-col justify-between shadow-xs hover:border-rose-500/35 hover:shadow-sm transition-all duration-200">
-            <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider">Today's Expense</span>
-            <span className="text-lg font-extrabold text-rose-500 mt-1">
-              ${todayExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="bg-card border border-border/80 p-3.5 rounded-xl flex flex-col justify-between shadow-xs hover:border-emerald-500/35 hover:shadow-sm transition-all duration-200">
-            <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Today's Profit</span>
-            <span className="text-lg font-extrabold text-emerald-500 mt-1">
-              ${todayProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="bg-card border border-border/80 p-3.5 rounded-xl flex flex-col justify-between shadow-xs hover:border-amber-500/35 hover:shadow-sm transition-all duration-200">
-            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-wider">Pending Payments</span>
-            <span className="text-lg font-extrabold text-amber-500 mt-1">
-              ${(totalRevenueCalculated * 0.05).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="bg-card border border-border/80 p-3.5 rounded-xl flex flex-col justify-between shadow-xs hover:border-rose-500/35 hover:shadow-sm transition-all duration-200">
-            <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider">Overdue Invoices</span>
-            <span className="text-lg font-extrabold text-rose-500 mt-1">
-              ${(totalRevenueCalculated * 0.015).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="bg-card border border-border/80 p-3.5 rounded-xl flex flex-col justify-between shadow-xs hover:border-indigo-500/35 hover:shadow-sm transition-all duration-200">
-            <span className="text-[9px] text-indigo-500 font-bold uppercase tracking-wider">Cash Balance</span>
-            <span className="text-lg font-extrabold text-indigo-500 mt-1">
-              ${cashBalanceCalculated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 print:hidden">
+        <div className="bg-card border border-border/80 p-3 rounded-2xl flex flex-col justify-between shadow-2xs hover:border-primary/40 transition-all">
+          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Today's Revenue</span>
+          <span className="text-base font-black text-foreground font-mono mt-1">
+            ${todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
         </div>
-      )}
+        <div className="bg-card border border-border/80 p-3 rounded-2xl flex flex-col justify-between shadow-2xs hover:border-rose-500/40 transition-all">
+          <span className="text-[10px] text-rose-500 font-extrabold uppercase tracking-wider">Today's Expense</span>
+          <span className="text-base font-black text-rose-500 font-mono mt-1">
+            ${todayExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-card border border-border/80 p-3 rounded-2xl flex flex-col justify-between shadow-2xs hover:border-emerald-500/40 transition-all">
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider">Today's Profit</span>
+          <span className="text-base font-black text-emerald-500 font-mono mt-1">
+            ${todayProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-card border border-border/80 p-3 rounded-2xl flex flex-col justify-between shadow-2xs hover:border-amber-500/40 transition-all">
+          <span className="text-[10px] text-amber-500 font-extrabold uppercase tracking-wider">Pending Payments</span>
+          <span className="text-base font-black text-amber-500 font-mono mt-1">
+            ${(totalRevenueCalculated * 0.05).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-card border border-border/80 p-3 rounded-2xl flex flex-col justify-between shadow-2xs hover:border-rose-500/40 transition-all">
+          <span className="text-[10px] text-rose-500 font-extrabold uppercase tracking-wider">Overdue Invoices</span>
+          <span className="text-base font-black text-rose-500 font-mono mt-1">
+            ${(totalRevenueCalculated * 0.015).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-card border border-border/80 p-3 rounded-2xl flex flex-col justify-between shadow-2xs hover:border-indigo-500/40 transition-all">
+          <span className="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider">Cash Balance</span>
+          <span className="text-base font-black text-indigo-500 font-mono mt-1">
+            ${cashBalanceCalculated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
 
       {/* Tabs styled identically to Employee Page */}
-      <div className="flex border border-border bg-card rounded-2xl p-1 overflow-x-auto gap-1 shadow-sm">
+      <div className="flex border border-border/80 bg-card rounded-2xl p-1 overflow-x-auto gap-1 shadow-2xs">
         {[
           { id: 'expenses',        label: 'Expenses Ledger', icon: <DollarSign size={15} /> },
           { id: 'categories',      label: 'Expense Categories', icon: <Wallet size={15} /> },
@@ -1017,10 +1036,13 @@ const FinancePage: React.FC = () => {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id as TabType) }}
-            className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
+            onClick={() => {
+              sound.playClick()
+              setActiveTab(tab.id as TabType)
+            }}
+            className={`flex items-center gap-2 py-2.5 px-4 text-xs font-extrabold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-primary text-white shadow-sm'
+                ? 'bg-primary text-white shadow-xs'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
           >

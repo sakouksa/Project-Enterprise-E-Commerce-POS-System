@@ -225,7 +225,7 @@ const NAV_GROUPS: NavGroup[] = [
         permission: 'report.view',
         children: [
           { labelKey: 'nav.salesReport',     path: '/reports/sales', permission: 'report.view' },
-          { labelKey: 'nav.purchaseReports',  path: '/reports/sales?tab=purchase', permission: 'report.view' },
+          { labelKey: 'nav.purchaseReports',  path: '/reports?tab=purchase', permission: 'report.view' },
           { labelKey: 'nav.inventoryReport', path: '/reports/inventory', permission: 'report.view' },
           { labelKey: 'nav.profitLoss',     path: '/reports/profit-loss', permission: 'report.view' },
         ],

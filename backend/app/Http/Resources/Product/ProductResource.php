@@ -64,14 +64,12 @@ class ProductResource extends JsonResource
             ]),
             'images'           => $this->whenLoaded('images', fn() => $this->images->map(fn($img) => [
                 'id'         => $img->id,
-                'url'        => asset('storage/' . $img->image),
-                'thumb_url'  => asset('storage/' . str_replace('/products/', '/products/thumbs/', $img->image)),
-                'is_primary' => $img->is_primary,
+                'url'        => $this->formatImageUrl($img->image),
+                'thumb_url'  => $this->formatImageUrl(str_replace('/products/', '/products/thumbs/', $img->image)),
+                'is_primary' => (bool) $img->is_primary,
                 'sort_order' => $img->sort_order,
             ])),
-            'primary_image' => $this->whenLoaded('primaryImage', fn() =>
-                $this->primaryImage ? asset('storage/' . $this->primaryImage->image) : null
-            ),
+            'primary_image' => $this->getPrimaryImageUrl(),
             'variants' => $this->whenLoaded('variants', fn() => ProductVariantResource::collection($this->variants)),
             'attributes' => $this->whenLoaded('variants', function() {
                 $attrs = [];
@@ -109,5 +107,30 @@ class ProductResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    protected function getPrimaryImageUrl(): ?string
+    {
+        if ($this->relationLoaded('primaryImage') && $this->primaryImage) {
+            return $this->formatImageUrl($this->primaryImage->image);
+        }
+        if ($this->relationLoaded('images') && $this->images && $this->images->count() > 0) {
+            $first = $this->images->firstWhere('is_primary', true) ?? $this->images->first();
+            return $this->formatImageUrl($first?->image);
+        }
+        return null;
+    }
+
+    protected function formatImageUrl(?string $path): ?string
+    {
+        if (empty($path)) return null;
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        $clean = ltrim($path, '/');
+        if (str_starts_with($clean, 'storage/')) {
+            return asset($clean);
+        }
+        return asset('storage/' . $clean);
     }
 }

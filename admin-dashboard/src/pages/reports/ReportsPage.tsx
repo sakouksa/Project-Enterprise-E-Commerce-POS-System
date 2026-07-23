@@ -12,6 +12,9 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
+import SalesReportPage from './SalesReportPage'
+import PurchaseReportPage from './PurchaseReportPage'
+import InventoryReportPage from './InventoryReportPage'
 
 interface ReportFilters {
   date_from: string
@@ -26,6 +29,18 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
   const [searchParams] = useSearchParams()
   const tab = searchParams.get('tab')
   const currentType = tab || type // 'purchase', 'sales', 'inventory', 'profit-loss'
+
+  if (currentType === 'sales') {
+    return <SalesReportPage />
+  }
+
+  if (currentType === 'purchase' || currentType === 'purchases') {
+    return <PurchaseReportPage />
+  }
+
+  if (currentType === 'inventory') {
+    return <InventoryReportPage />
+  }
 
   const [filters, setFilters] = useState<ReportFilters>({
     date_from: thirtyDaysAgo,

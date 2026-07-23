@@ -68,6 +68,8 @@ const CompanyPage         = React.lazy(() => import('@/pages/company/CompanyPage
 
 // Reports
 const ReportsPage         = React.lazy(() => import('@/pages/reports/ReportsPage'))
+const SalesReportPage     = React.lazy(() => import('@/pages/reports/SalesReportPage'))
+const PurchaseReportPage  = React.lazy(() => import('@/pages/reports/PurchaseReportPage'))
 
 // Administration
 const UsersPage           = React.lazy(() => import('@/pages/users/UsersPage'))
@@ -153,8 +155,7 @@ const AppContent: React.FC = () => {
         <Routes>
 
           {/* ── Public ──────────────────────────────────────────────────── */}
-          <Route path="/login text-sm" element={<Navigate to="/login" replace />} />
-          <Route path="/login"         element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/"              element={<Navigate to="/dashboard" replace />} />
 
           {/* ── Protected ───────────────────────────────────────────────── */}
@@ -224,7 +225,9 @@ const AppContent: React.FC = () => {
 
             {/* ── Reports ───────────────────────────────────────────────── */}
             <Route path="/reports"                 element={<ProtectedRoute permission="reports.view"><ReportsPage type="sales" /></ProtectedRoute>} />
-            <Route path="/reports/sales"           element={<ProtectedRoute permission="reports.view"><ReportsPage type="sales" /></ProtectedRoute>} />
+            <Route path="/reports/sales"           element={<ProtectedRoute permission="reports.view"><SalesReportPage /></ProtectedRoute>} />
+            <Route path="/reports/purchase"        element={<ProtectedRoute permission="reports.view"><PurchaseReportPage /></ProtectedRoute>} />
+            <Route path="/reports/purchases"       element={<ProtectedRoute permission="reports.view"><PurchaseReportPage /></ProtectedRoute>} />
             <Route path="/reports/inventory"       element={<ProtectedRoute permission="reports.view"><ReportsPage type="inventory" /></ProtectedRoute>} />
             <Route path="/reports/profit-loss"     element={<ProtectedRoute permission="reports.view"><ReportsPage type="profit-loss" /></ProtectedRoute>} />
 

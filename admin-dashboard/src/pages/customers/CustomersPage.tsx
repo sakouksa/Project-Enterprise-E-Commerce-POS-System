@@ -7,10 +7,11 @@ import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, User, Users, MapPin, ToggleLeft, ToggleRight,
   Loader2, Eye, Mail, Phone, Calendar, Award, DollarSign, BookOpen, Download, ChevronUp,
   ChevronDown, Image, Sparkles, Building, Briefcase, Activity, CheckCircle2, EyeOff, Star,
-  Package, Filter, Settings, Printer, Wallet, Trash
+  Package, Filter, Settings, Printer, Wallet, Trash, LayoutGrid, List
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
+import { sound } from '@/utils/sound'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
@@ -578,19 +579,19 @@ const CustomersPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+          className="bg-card border border-border/80 p-4 rounded-2xl flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200"
         >
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.totalCustomersCard', 'Total Customers')}</p>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight">{statsData?.total_customers ?? 0}</p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <span className="text-emerald-500 font-bold">{statsData?.active_customers ?? 0} {t('common.active', 'Active')}</span>
+            <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">{t('customers.totalCustomersCard', 'Total Customers')}</p>
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">{statsData?.total_customers ?? 0}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-semibold">
+              <span className="text-emerald-500">{statsData?.active_customers ?? 0} {t('common.active', 'Active')}</span>
               <span>•</span>
-              <span>{statsData?.inactive_customers ?? 0} {t('common.inactive', 'Inactive')}</span>
+              <span className="text-muted-foreground">{statsData?.inactive_customers ?? 0} {t('common.inactive', 'Inactive')}</span>
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-purple-500/10 text-purple-500">
-            <User size={22} />
+          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-500 border border-purple-500/20">
+            <User size={20} />
           </div>
         </motion.div>
 
@@ -599,25 +600,19 @@ const CustomersPage: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+          className="bg-card border border-border/80 p-4 rounded-2xl flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200"
         >
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.segments', 'Customer Segments')}</p>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight">{statsData?.total_groups ?? 0}</p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              <span className="text-purple-500 font-bold">{statsData?.vip_customers ?? 0} VIP</span>
+            <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">{t('customers.segments', 'Customer Segments')}</p>
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">{statsData?.total_groups ?? 0}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-semibold">
+              <span className="text-purple-500">{statsData?.vip_customers ?? 0} VIP</span>
               <span>•</span>
-              <span className="text-blue-500 font-bold">
-                {groups?.find((g: any) => g.name.toLowerCase().includes('wholesale'))?.customer_count ?? 0} Wholesale
-              </span>
-              <span>•</span>
-              <span>
-                {Math.max(0, (statsData?.total_customers ?? 0) - (statsData?.vip_customers ?? 0) - (groups?.find((g: any) => g.name.toLowerCase().includes('wholesale'))?.customer_count ?? 0))} Retail
-              </span>
+              <span className="text-blue-500">Retail & Wholesale</span>
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-500">
-            <Users size={22} />
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+            <Users size={20} />
           </div>
         </motion.div>
 
@@ -626,19 +621,19 @@ const CustomersPage: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+          className="bg-card border border-border/80 p-4 rounded-2xl flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200"
         >
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.activity', 'Customer Activity')}</p>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight">{(statsData?.total_orders ?? 0).toLocaleString()}</p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              <span className="text-emerald-500 font-bold">+{statsData?.new_customers_this_month ?? 12} {t('customers.newThisMonth', 'New')}</span>
+            <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">{t('customers.activity', 'Customer Activity')}</p>
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono">{(statsData?.total_orders ?? 0).toLocaleString()}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-semibold">
+              <span className="text-emerald-500">+{statsData?.new_customers_this_month ?? 12} New</span>
               <span>•</span>
-              <span className="font-semibold text-blue-500">85% {t('customers.returning', 'Returning')}</span>
+              <span className="text-blue-500">Active Buying</span>
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-rose-500/10 text-rose-500">
-            <Activity size={22} />
+          <div className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+            <Activity size={20} />
           </div>
         </motion.div>
 
@@ -647,47 +642,21 @@ const CustomersPage: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200"
+          className="bg-card border border-border/80 p-4 rounded-2xl flex items-center justify-between shadow-2xs hover:shadow-md transition-all duration-200"
         >
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('customers.customerValue', 'Customer Value')}</p>
-            <p className="text-xl font-extrabold text-foreground tracking-tight truncate max-w-[190px]">
-              ${(Number(statsData?.total_spent) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">{t('customers.customerValue', 'Customer Value')}</p>
+            <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-mono truncate max-w-[170px]">
+              ${(Number(statsData?.total_spent) || 0).toFixed(2)}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              {t('customers.averageSpent', 'Avg Spent')}: ${(Number(statsData?.avg_spent_per_customer) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className="text-[11px] text-muted-foreground font-semibold">
+              Avg Spent: ${(Number(statsData?.avg_spent_per_customer) || 0).toFixed(2)}
             </p>
           </div>
-          <div className="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-500">
-            <DollarSign size={22} />
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <DollarSign size={20} />
           </div>
         </motion.div>
-      </div>
-
-      {/* Mini KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
-          <span className="text-[10px] text-muted-foreground font-semibold uppercase">{t('customers.todayCustomers', 'Today\'s Customers')}</span>
-          <span className="text-lg font-extrabold text-foreground mt-1">{statsData?.today_customers ?? 0}</span>
-        </div>
-        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
-          <span className="text-[10px] text-emerald-600 font-semibold uppercase">{t('customers.todayOrders', 'Today\'s Orders')}</span>
-          <span className="text-lg font-extrabold text-emerald-500 mt-1">{statsData?.today_orders ?? 0}</span>
-        </div>
-        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
-          <span className="text-[10px] text-rose-600 font-semibold uppercase">{t('customers.todayRevenue', 'Today\'s Revenue')}</span>
-          <span className="text-base font-extrabold text-rose-500 mt-1 truncate">
-            ${(Number(statsData?.today_revenue) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs">
-          <span className="text-[10px] text-blue-500 font-semibold uppercase">{t('customers.pendingPayments', 'Pending Payments')}</span>
-          <span className="text-lg font-extrabold text-blue-500 mt-1">{statsData?.pending_payments ?? 0}</span>
-        </div>
-        <div className="bg-card border border-border p-3.5 rounded-xl flex flex-col justify-between shadow-xs col-span-2 md:col-span-1">
-          <span className="text-[10px] text-amber-500 font-semibold uppercase">{t('customers.creditCustomers', 'Credit Customers')}</span>
-          <span className="text-lg font-extrabold text-amber-500 mt-1">{statsData?.credit_customers ?? 0}</span>
-        </div>
       </div>
 
       {/* Tabs */}
@@ -726,331 +695,204 @@ const CustomersPage: React.FC = () => {
       ) : (
         <>
           {/* Premium Search & Filter Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm">
-            {/* Left side: Search & Advanced Filter Toggle & Reset */}
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border/80 shadow-2xs">
+            {/* Search Box & Advanced Filters */}
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto flex-1">
+              <div className="relative flex-1 min-w-[240px] sm:max-w-md">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder={t('customers.searchPlaceholder', 'Search Customer Name, Phone, Email, Code, Address...')}
-                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
+                  placeholder={t('customers.searchPlaceholder', 'Search Customer Name, Phone, Email, Code...')}
+                  className="form-input pl-9 w-full text-xs rounded-xl border border-border/70 bg-card text-foreground"
                 />
               </div>
-              
+
               <button
-                onClick={() => setFilterDrawerOpen(true)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all duration-200 shadow-sm
-                           ${activeFiltersCount > 0 
-                             ? 'bg-primary/10 border-primary/30 text-primary font-semibold' 
-                             : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                onClick={() => { sound.playClick(); setFilterDrawerOpen(true); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                  activeFiltersCount > 0
+                    ? 'bg-primary/10 border-primary/30 text-primary font-bold'
+                    : 'bg-card border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
               >
-                <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+                <Filter size={14} />
                 <span>{t('common.filter', 'Filter')}</span>
                 {activeFiltersCount > 0 && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-full leading-none">
+                  <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-primary text-white rounded-full leading-none">
                     {activeFiltersCount}
                   </span>
                 )}
               </button>
 
-              <ResetButton onClick={handleResetFilters} label={t("common.reset", "Reset")} />
+              <ResetButton onClick={() => { sound.playClick(); handleResetFilters(); }} label={t("common.reset", "Reset")} />
             </div>
 
-            {/* Right side: Actions (Refresh, Print, Column settings, Import/Export, Add Customer) */}
-            <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
+            {/* Refresh & Add Customer */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <button
                 onClick={() => {
+                  sound.playClick()
                   qc.invalidateQueries({ queryKey: ['customers'] })
                   qc.invalidateQueries({ queryKey: ['customers-stats'] })
                 }}
-                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border/70 bg-card transition-colors shadow-2xs cursor-pointer"
                 title={t('common.refresh', 'Refresh')}
               >
                 <RefreshCw size={14} />
               </button>
 
-              {/* Column Settings Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
-                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm select-none"
-                  title={t('products.toggleColumns', 'Columns')}
-                >
-                  <Settings size={14} />
-                </button>
-                {columnDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
-                      <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
-                      {Object.keys(visibleColumns).map(col => (
-                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                          <input
-                            type="checkbox"
-                            checked={visibleColumns[col as keyof typeof visibleColumns]}
-                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
-                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                          />
-                          <span>
-                            {col === 'name' ? t('common.name', 'Name') :
-                             col === 'photo' ? t('customers.photo', 'Photo') :
-                             col === 'email' ? t('common.email', 'Email') :
-                             col === 'phone' ? t('common.phone', 'Phone') :
-                             col === 'gender' ? t('customers.gender', 'Gender') :
-                             col === 'group' ? t('customers.customerGroup', 'Group') :
-                             col === 'user' ? t('customers.selectUser', 'Linked User') :
-                             col === 'birthDate' ? t('customers.birthDate', 'Birth Date') :
-                             col === 'totalSpent' ? t('customers.totalSpent', 'Total Spent') :
-                             col === 'orderCount' ? t('customers.orderCount', 'Orders') :
-                             col === 'loyaltyPoints' ? t('customers.loyaltyPoints', 'Points') :
-                             col === 'taxNumber' ? t('customers.taxNumber', 'Tax ID') :
-                             t('common.status', 'Status')}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
+              <button
+                onClick={() => { sound.playClick(); openCreateModal(); }}
+                className="btn-primary py-2 px-3.5 text-xs font-extrabold rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Plus size={15} />
+                <span>{t('customers.addCustomer', 'Add Customer')}</span>
+              </button>
             </div>
           </div>
 
-          {/* Table Card */}
-          <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
-            <TableWrapper isFetching={isFetching}>
-              <div className="overflow-x-auto">
-                <table className="w-full data-table min-w-[1500px]">
-                  <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
-                    <tr>
-                      {visibleColumns.photo && (
-                        <th onClick={() => handleSort('photo')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.photo')} {renderSortIcon('photo')}
-                        </th>
-                      )}
-                      {visibleColumns.name && (
-                        <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('common.name')} {renderSortIcon('name')}
-                        </th>
-                      )}
-                      {visibleColumns.email && (
-                        <th onClick={() => handleSort('email')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('common.email')} {renderSortIcon('email')}
-                        </th>
-                      )}
-                      {visibleColumns.phone && (
-                        <th onClick={() => handleSort('phone')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('common.phone')} {renderSortIcon('phone')}
-                        </th>
-                      )}
-                      {visibleColumns.gender && (
-                        <th onClick={() => handleSort('gender')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.gender')} {renderSortIcon('gender')}
-                        </th>
-                      )}
-                      {visibleColumns.group && (
-                        <th onClick={() => handleSort('customer_group_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.customerGroup')} {renderSortIcon('customer_group_id')}
-                        </th>
-                      )}
-                      {visibleColumns.user && (
-                        <th onClick={() => handleSort('user_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.selectUser')} {renderSortIcon('user_id')}
-                        </th>
-                      )}
-                      {visibleColumns.birthDate && (
-                        <th onClick={() => handleSort('birth_date')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.birthDate')} {renderSortIcon('birth_date')}
-                        </th>
-                      )}
-                      {visibleColumns.totalSpent && (
-                        <th onClick={() => handleSort('total_spent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.totalSpent')} {renderSortIcon('total_spent')}
-                        </th>
-                      )}
-                      {visibleColumns.orderCount && (
-                        <th onClick={() => handleSort('order_count')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.orderCount')} {renderSortIcon('order_count')}
-                        </th>
-                      )}
-                      {visibleColumns.loyaltyPoints && (
-                        <th onClick={() => handleSort('loyalty_points')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.loyaltyPoints')} {renderSortIcon('loyalty_points')}
-                        </th>
-                      )}
-                      {visibleColumns.taxNumber && (
-                        <th onClick={() => handleSort('tax_number')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('customers.taxNumber')} {renderSortIcon('tax_number')}
-                        </th>
-                      )}
-                      {visibleColumns.status && (
-                        <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                          {t('common.status')} {renderSortIcon('is_active')}
-                        </th>
-                      )}
-                      <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {isLoading ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <tr key={i} className="hover:bg-muted/5">
-                          {Array.from({ length: Object.values(visibleColumns).filter(Boolean).length + 1 }).map((_, col) => (
-                            <td key={col} className="p-4"><div className="skeleton h-4 w-full rounded" /></td>
-                          ))}
-                        </tr>
-                      ))
-                    ) : (data?.data ?? []).map((c: Customer) => (
-                      <tr key={c.id} className="group hover:bg-muted/20 transition-colors">
-                        {/* Photo */}
-                        {visibleColumns.photo && (
-                          <td className="p-4">
-                            {c.photo ? (
-                              <img src={c.photo} alt={c.name} className="w-9 h-9 rounded-full object-cover border border-border shadow-sm" />
-                            ) : (
-                              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">
-                                <User size={16} />
-                              </div>
-                            )}
-                          </td>
-                        )}
-                        {/* Name */}
-                        {visibleColumns.name && (
-                          <td className="p-4 font-semibold text-foreground text-sm whitespace-nowrap">
-                            {c.name}
-                          </td>
-                        )}
-                        {/* Email */}
-                        {visibleColumns.email && (
-                          <td className="p-4 text-sm text-muted-foreground font-mono">{c.email || '—'}</td>
-                        )}
-                        {/* Phone */}
-                        {visibleColumns.phone && (
-                          <td className="p-4 text-sm text-muted-foreground font-mono">{c.phone || '—'}</td>
-                        )}
-                        {/* Gender */}
-                        {visibleColumns.gender && (
-                          <td className="p-4 text-sm capitalize">{c.gender ? t(`customers.gender${c.gender.charAt(0).toUpperCase() + c.gender.slice(1)}`) : '—'}</td>
-                        )}
-                        {/* Group */}
-                        {visibleColumns.group && (
-                          <td className="p-4 text-sm">
-                            {c.group ? (
-                              <span className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-semibold px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 whitespace-nowrap">
-                                {c.group.name} ({Number(c.group.discount_percent)}%)
-                              </span>
-                            ) : (
-                              <span className="text-xs text-muted-foreground font-light">Regular</span>
-                            )}
-                          </td>
-                        )}
-                        {/* Linked User */}
-                        {visibleColumns.user && (
-                          <td className="p-4 text-sm whitespace-nowrap">
-                            {c.user ? (
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-xs text-foreground">{c.user.name}</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">{c.user.email}</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground font-light">—</span>
-                            )}
-                          </td>
-                        )}
-                        {/* Birth Date */}
-                        {visibleColumns.birthDate && (
-                          <td className="p-4 text-sm font-mono text-muted-foreground">{c.birth_date || '—'}</td>
-                        )}
-                        {/* Total Spent */}
-                        {visibleColumns.totalSpent && (
-                          <td className="p-4 text-sm font-bold text-foreground">
-                            ${(Number(c.total_spent) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                        )}
-                        {/* Order Count */}
-                        {visibleColumns.orderCount && (
-                          <td className="p-4 text-sm font-medium text-foreground">{c.order_count ?? 0} orders</td>
-                        )}
-                        {/* Loyalty Points */}
-                        {visibleColumns.loyaltyPoints && (
-                          <td className="p-4 text-sm">
-                            <span className="inline-flex items-center gap-1 text-xs text-amber-500 font-semibold bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-950/30 whitespace-nowrap">
-                              <Award size={10} fill="currentColor" /> {Number(c.loyalty_points) || 0} pts
-                            </span>
-                          </td>
-                        )}
-                        {/* Tax Number */}
-                        {visibleColumns.taxNumber && (
-                          <td className="p-4 text-sm font-mono text-muted-foreground">{c.tax_number || '—'}</td>
-                        )}
-                        {/* Status */}
-                        {visibleColumns.status && (
-                          <td className="p-4 text-xs font-bold whitespace-nowrap">
-                            {!c.is_active ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                Blocked
-                              </span>
-                            ) : c.group?.name?.toLowerCase().includes('vip') ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                                VIP
-                              </span>
-                            ) : c.total_spent > 1200 ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-                                Credit Customer
-                              </span>
-                            ) : c.is_active ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                Active
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
-                                Inactive
-                              </span>
-                            )}
-                          </td>
-                        )}
-                        {/* Actions */}
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => { setDetailTab('overview'); setViewCustomer(c); }}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                              title={t('common.view')}
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button
-                              onClick={() => openEditModal(c)}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-blue-600 transition-colors"
-                              title={t('common.edit')}
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(c)}
-                              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-                              title={t('common.delete')}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {!isLoading && customers.length === 0 && (
-                      <EmptyState cols={Object.values(visibleColumns).filter(Boolean).length + 1} message={t('common.noData')} icon={<User size={40} className="mx-auto mb-3 text-muted-foreground/30" />} />
-                    )}
-                  </tbody>
-                </table>
+          {/* ── MODERN CUSTOMER CARDS GRID ───────────────────────────────────── */}
+          <div className="space-y-4 w-full">
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 w-full">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-card border border-border/80 rounded-2xl p-4 space-y-3">
+                    <div className="skeleton h-6 w-full rounded-lg" />
+                    <div className="skeleton h-12 w-full rounded-xl" />
+                    <div className="skeleton h-10 w-full rounded-xl" />
+                  </div>
+                ))}
               </div>
-            </TableWrapper>
+            ) : (data?.data ?? []).length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border/80 p-16 text-center text-muted-foreground">
+                <Users size={48} className="mx-auto mb-3 text-muted-foreground/30" />
+                <p className="font-bold text-foreground text-sm">No Customers Found</p>
+                <p className="text-xs text-muted-foreground mt-1">Try adjusting search or clearing filters</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 w-full">
+                {(data?.data ?? []).map((c: Customer) => (
+                  <div
+                    key={c.id}
+                    className="bg-card hover:bg-accent/20 border border-border/80 hover:border-primary/40 rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all duration-200 shadow-2xs hover:shadow-md group relative overflow-hidden"
+                  >
+                    {/* Top Status & Group Badges Row */}
+                    <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${
+                        c.is_active
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                      }`}>
+                        {c.is_active ? 'Active' : 'Inactive'}
+                      </span>
 
-            {/* Pagination */}
-            <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+                      <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase border bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 truncate max-w-[170px]">
+                        {c.group?.name || 'Regular'}
+                      </span>
+                    </div>
+
+                    {/* Avatar + Name + Customer ID */}
+                    <div className="flex items-center gap-3 pt-0.5">
+                      {c.photo ? (
+                        <img src={c.photo} alt={c.name} className="w-12 h-12 rounded-2xl object-cover border border-border shadow-xs shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 via-purple-500/20 to-accent/30 flex items-center justify-center text-primary font-black text-lg border border-primary/20 shrink-0 shadow-2xs">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                          {c.name}
+                        </h3>
+                        <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border border-border/60 inline-block mt-0.5">
+                          #CUST-{String(c.id).padStart(4, '0')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Contact Details */}
+                    <div className="space-y-1.5 text-xs border-t border-b border-border/50 py-2.5">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail size={13} className="text-primary shrink-0" />
+                        <span className="font-mono text-[11px] truncate text-foreground font-medium">
+                          {c.email || 'No email registered'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone size={13} className="text-emerald-500 shrink-0" />
+                        <span className="font-mono text-[11px] font-bold text-foreground">
+                          {c.phone || 'No phone number'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Financial & Loyalty CRM Pill Container */}
+                    <div className="bg-muted/30 border border-border/60 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs">
+                      <div>
+                        <div className="text-[10px] text-muted-foreground font-semibold">Total Spent</div>
+                        <div className="text-base font-black text-primary font-mono">
+                          ${(Number(c.total_spent) || 0).toFixed(2)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <div className="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-lg border border-blue-500/20 font-bold">
+                          {c.order_count ?? 0} Orders
+                        </div>
+                        <div className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1 rounded-lg border border-amber-500/20 font-bold flex items-center gap-1">
+                          <Star size={11} className="fill-amber-400 text-amber-500" />
+                          {c.loyalty_points ?? 0} Pts
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Footer */}
+                    <div className="pt-1 flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => {
+                          sound.playClick()
+                          setDetailTab('overview')
+                          setViewCustomer(c)
+                        }}
+                        className="btn-secondary flex-1 py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 hover:bg-primary hover:text-primary-foreground transition-all cursor-pointer"
+                      >
+                        <Eye size={14} /> Profile
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          sound.playClick()
+                          openEditModal(c)
+                        }}
+                        className="p-1.5 rounded-xl border border-border/80 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/30 transition-all cursor-pointer text-muted-foreground"
+                        title="Edit Customer"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          sound.playClick()
+                          setDeleteTarget(c)
+                        }}
+                        className="p-1.5 rounded-xl border border-border/80 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/30 transition-all cursor-pointer text-muted-foreground"
+                        title="Delete Customer"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Pagination */}
+          <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
         </>
       )}
 
@@ -1554,24 +1396,6 @@ const CustomersPage: React.FC = () => {
         onSoftDelete={() => {
           if (deleteTarget) {
             deleteMutation.mutate(deleteTarget.id)
-          }
-        }}
-        onArchive={() => {
-          if (deleteTarget) {
-            const formData = new FormData()
-            formData.append('company_id', deleteTarget.company_id.toString())
-            formData.append('name', deleteTarget.name)
-            formData.append('is_active', '0')
-            formData.append('_method', 'PUT')
-            updateMutation.mutate({
-              id: deleteTarget.id,
-              data: formData
-            }, {
-              onSuccess: () => {
-                setDeleteTarget(null)
-                toast.success('Customer archived successfully.')
-              }
-            })
           }
         }}
       />

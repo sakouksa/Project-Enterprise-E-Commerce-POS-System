@@ -17,7 +17,8 @@ import { useTranslation } from 'react-i18next'
 interface Banner {
   id: number
   title: string
-  image_url: string
+  image?: string
+  image_url?: string
   link_url?: string
   position: 'home_hero' | 'home_secondary' | 'category' | 'popup'
   sort_order: number

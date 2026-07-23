@@ -33,6 +33,9 @@ use App\Http\Controllers\Api\V1\Marketing\FlashSaleController;
 use App\Http\Controllers\Api\V1\Order\ReviewController;
 use App\Http\Controllers\Api\V1\Log\ActivityLogController;
 use App\Http\Controllers\Api\V1\Report\ReportController;
+use App\Http\Controllers\Api\V1\Report\SalesReportController;
+use App\Http\Controllers\Api\V1\Report\PurchaseReportController;
+use App\Http\Controllers\Api\V1\Report\InventoryReportController;
 use App\Http\Controllers\Api\V1\Report\DashboardController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
 
@@ -90,8 +93,9 @@ Route::prefix('v1')->group(function () {
         Route::post('warehouses/{id}/restore', [WarehouseController::class, 'restore']);
         Route::delete('warehouses/{id}/force', [WarehouseController::class, 'forceDelete']);
 
-        // ─── Products ──────────────────────────────────────
-        Route::get('products/stats',       [ProductController::class, 'stats']);
+        // ─── Products & Catalog ────────────────────────────────────────────
+        Route::get('products/stats',                [ProductController::class, 'stats']);
+        Route::get('products/dashboard-statistics', [ProductController::class, 'stats']);
         Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete']);
         Route::post('products/bulk-restore', [ProductController::class, 'bulkRestore']);
         Route::get('products/export',      [ProductController::class, 'export']);
@@ -145,6 +149,7 @@ Route::prefix('v1')->group(function () {
 
         // ─── Inventory ─────────────────────────────────────────────────────
         Route::get('inventory/stats',          [InventoryController::class, 'stats']);
+        Route::get('inventory/dashboard',      [InventoryController::class, 'stats']);
         Route::get('inventory/export',         [InventoryController::class, 'export']);
         Route::post('inventory/import',        [InventoryController::class, 'import']);
         Route::get('inventory',                [InventoryController::class, 'index']);
@@ -258,16 +263,71 @@ Route::prefix('v1')->group(function () {
 
         // ─── Reports ───────────────────────────────────────────────────────
         Route::prefix('reports')->group(function () {
-            Route::get('sales',        [ReportController::class, 'sales']);
+            // Enterprise Sales Report Module
+            Route::prefix('sales')->group(function () {
+                Route::get('overview',        [SalesReportController::class, 'overview']);
+                Route::get('dashboard',       [SalesReportController::class, 'dashboard']);
+                Route::get('trend',           [SalesReportController::class, 'trend']);
+                Route::get('categories',      [SalesReportController::class, 'categories']);
+                Route::get('brands',          [SalesReportController::class, 'brands']);
+                Route::get('payment-methods', [SalesReportController::class, 'paymentMethods']);
+                Route::get('top-products',    [SalesReportController::class, 'topProducts']);
+                Route::get('top-customers',   [SalesReportController::class, 'topCustomers']);
+                Route::get('list',            [SalesReportController::class, 'list']);
+                Route::get('export',          [SalesReportController::class, 'export']);
+            });
+
+            // Enterprise Purchase Report Module
+            Route::prefix('purchase')->group(function () {
+                Route::get('overview',        [PurchaseReportController::class, 'overview']);
+                Route::get('dashboard',       [PurchaseReportController::class, 'dashboard']);
+                Route::get('trend',           [PurchaseReportController::class, 'trend']);
+                Route::get('suppliers',       [PurchaseReportController::class, 'suppliers']);
+                Route::get('categories',      [PurchaseReportController::class, 'categories']);
+                Route::get('brands',          [PurchaseReportController::class, 'brands']);
+                Route::get('warehouses',      [PurchaseReportController::class, 'warehouses']);
+                Route::get('products',        [PurchaseReportController::class, 'products']);
+                Route::get('status',          [PurchaseReportController::class, 'status']);
+                Route::get('payment-status',  [PurchaseReportController::class, 'paymentStatus']);
+                Route::get('returns',         [PurchaseReportController::class, 'returns']);
+                Route::get('table',           [PurchaseReportController::class, 'table']);
+                Route::get('returns-table',   [PurchaseReportController::class, 'returnsTable']);
+                Route::get('export',          [PurchaseReportController::class, 'export']);
+            });
+
+            // Enterprise Inventory Report Module
+            Route::prefix('inventory')->group(function () {
+                Route::get('overview',          [InventoryReportController::class, 'overview']);
+                Route::get('dashboard',         [InventoryReportController::class, 'overview']);
+                Route::get('value-trend',       [InventoryReportController::class, 'overview']);
+                Route::get('movement-trend',    [InventoryReportController::class, 'overview']);
+                Route::get('categories',        [InventoryReportController::class, 'overview']);
+                Route::get('brands',            [InventoryReportController::class, 'overview']);
+                Route::get('warehouses',        [InventoryReportController::class, 'overview']);
+                Route::get('status',            [InventoryReportController::class, 'overview']);
+                Route::get('valuation',         [InventoryReportController::class, 'valuation']);
+                Route::get('movements',         [InventoryReportController::class, 'movements']);
+                Route::get('low-stock',         [InventoryReportController::class, 'valuation']);
+                Route::get('turnover',          [InventoryReportController::class, 'valuation']);
+                Route::get('warehouse-summary', [InventoryReportController::class, 'overview']);
+                Route::get('aging',             [InventoryReportController::class, 'overview']);
+                Route::get('export',            [InventoryReportController::class, 'export']);
+            });
+
+            Route::get('sales',        [SalesReportController::class, 'dashboard']); // Default sales summary
             Route::get('purchases',    [ReportController::class, 'purchases']);
-            Route::get('inventory',    [ReportController::class, 'inventory']);
+            Route::get('inventory',    [InventoryReportController::class, 'overview']);
             Route::get('products',     [ReportController::class, 'products']);
             Route::get('customers',    [ReportController::class, 'customers']);
             Route::get('expenses',     [ReportController::class, 'expenses']);
             Route::get('profit-loss',  [ReportController::class, 'profitLoss']);
-            Route::get('export-sales', [ReportController::class, 'exportSales']);   // Excel
-            Route::get('export-inventory', [ReportController::class, 'exportInventory']); // Excel
+            Route::get('export-sales', [SalesReportController::class, 'export']);   // Export
+            Route::get('export-inventory', [InventoryReportController::class, 'export']); // Excel
         });
+
+        // ─── Recycle Bin Analytics ─────────────────────────────────────────
+        Route::get('recycle-bin/stats',     [\App\Http\Controllers\Api\V1\System\RecycleBinController::class, 'stats']);
+        Route::get('recycle-bin/dashboard', [\App\Http\Controllers\Api\V1\System\RecycleBinController::class, 'stats']);
 
         // ─── Settings ──────────────────────────────────────────────────────
         Route::get('settings',     [SettingController::class, 'index']);
@@ -278,13 +338,19 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('languages',  LanguageController::class);
 
         // ─── Roles & Permissions ───────────────────────────────────────────
-        Route::get('roles',                     [\Spatie\Permission\Models\Role::class, 'all']);
+        Route::get('roles/stats',               [\App\Http\Controllers\Api\V1\Auth\RoleController::class, 'stats']);
+        Route::get('roles/dashboard',           [\App\Http\Controllers\Api\V1\Auth\RoleController::class, 'stats']);
         Route::apiResource('roles',             \App\Http\Controllers\Api\V1\Auth\RoleController::class);
+        Route::get('permissions/stats',         [\App\Http\Controllers\Api\V1\Auth\PermissionController::class, 'stats']);
+        Route::get('permissions/dashboard',     [\App\Http\Controllers\Api\V1\Auth\PermissionController::class, 'stats']);
         Route::apiResource('permissions',       \App\Http\Controllers\Api\V1\Auth\PermissionController::class);
         Route::post('users/{id}/assign-role',   [\App\Http\Controllers\Api\V1\Auth\UserRoleController::class, 'assign']);
         Route::post('users/{id}/remove-role',   [\App\Http\Controllers\Api\V1\Auth\UserRoleController::class, 'remove']);
 
         // ─── Users ─────────────────────────────────────────────────────────
+        Route::get('users/stats',               [\App\Http\Controllers\Api\V1\Auth\UserController::class, 'stats']);
+        Route::get('users/dashboard',           [\App\Http\Controllers\Api\V1\Auth\UserController::class, 'stats']);
+        Route::post('users/upload-avatar',      [\App\Http\Controllers\Api\V1\Auth\UserController::class, 'uploadAvatar']);
         Route::apiResource('users', \App\Http\Controllers\Api\V1\Auth\UserController::class);
 
         // ─── Marketing: Banners ────────────────────────────────────────────
@@ -292,6 +358,7 @@ Route::prefix('v1')->group(function () {
 
         // ─── Marketing: Coupons ────────────────────────────────────────────
         Route::get('coupons/generate-code', [CouponController::class, 'generateCode']);
+        Route::post('coupons/validate', [CouponController::class, 'validateCoupon']);
         Route::apiResource('coupons', CouponController::class);
 
         // ─── Marketing: Flash Sales ───────────────────────────────────────
@@ -304,6 +371,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('reviews/{id}',      [ReviewController::class, 'destroy']);
 
         // ─── Activity Logs ────────────────────────────────────────────────
+        Route::get('activity-logs/dashboard', [ActivityLogController::class, 'dashboard']);
         Route::get('activity-logs',        [ActivityLogController::class, 'index']);
         Route::get('activity-logs/{id}',   [ActivityLogController::class, 'show']);
         Route::delete('activity-logs/{id}',[ActivityLogController::class, 'destroy']);
@@ -425,25 +493,82 @@ Route::prefix('v1')->group(function () {
 
     // ─── Public E-Commerce Storefront Routes ──────────────────────────────────
     Route::prefix('store')->group(function () {
-        Route::get('products',              [ProductController::class, 'index']);
-        Route::get('products/{slug}',       [ProductController::class, 'showBySlug']);
-        Route::get('categories',            [CategoryController::class, 'index']);
-        Route::get('categories/{slug}',     [CategoryController::class, 'showBySlug']);
-        Route::get('banners',               [\App\Http\Controllers\Api\V1\Setting\BannerController::class, 'index']);
-        Route::get('flash-sales',           [\App\Http\Controllers\Api\V1\Marketing\FlashSaleController::class, 'active']);
 
+        // ── Homepage & Discovery ────────────────────────────────────────────
+        Route::get('homepage',             [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'homepage']);
+        Route::get('featured',             [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'featured']);
+        Route::get('banners',              [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'banners']);
+        Route::get('settings',            [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'settings']);
+
+        // ── Products ────────────────────────────────────────────────────────
+        Route::get('products',             [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'products']);
+        Route::get('products/{slug}',      [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'productDetail']);
+
+        // ── Categories & Brands ─────────────────────────────────────────────
+        Route::get('categories',           [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'categories']);
+        Route::get('brands',               [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'brands']);
+
+        // ── Flash Sales ─────────────────────────────────────────────────────
+        Route::get('flash-sales',          [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'flashSale']);
+        Route::get('flash-sale',           [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'flashSale']);
+
+        // ── Search ──────────────────────────────────────────────────────────
+        Route::get('search',               [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'search']);
+        Route::get('search/autocomplete',  [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'autocomplete']);
+        Route::get('trending-searches',    [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'trendingSearches']);
+
+        // ── Coupons ─────────────────────────────────────────────────────────
+        Route::post('coupons/validate',    [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'validateCoupon']);
+
+        // ── Blog ────────────────────────────────────────────────────────────
+        Route::get('blog',                 [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'blog']);
+
+        // ── Customer Auth ───────────────────────────────────────────────────
+        Route::prefix('auth')->group(function () {
+            Route::post('register',         [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'register']);
+            Route::post('login',            [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'login']);
+            Route::post('forgot-password',  [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'forgotPassword']);
+            Route::post('reset-password',   [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'resetPassword']);
+
+            Route::middleware('auth.jwt')->group(function () {
+                Route::get('me',            [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'me']);
+                Route::put('profile',       [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'updateProfile']);
+                Route::post('change-password', [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'changePassword']);
+                Route::post('logout',       [\App\Http\Controllers\Api\V1\Store\CustomerAuthController::class, 'logout']);
+            });
+        });
+
+        // ── Cart (session or auth) ───────────────────────────────────────────
+        Route::get('cart',                 [\App\Http\Controllers\Api\V1\Order\CartController::class, 'show']);
+        Route::post('cart/add',            [\App\Http\Controllers\Api\V1\Order\CartController::class, 'add']);
+        Route::put('cart/update',          [\App\Http\Controllers\Api\V1\Order\CartController::class, 'update']);
+        Route::delete('cart/remove',       [\App\Http\Controllers\Api\V1\Order\CartController::class, 'remove']);
+        Route::delete('cart/clear',        [\App\Http\Controllers\Api\V1\Order\CartController::class, 'clear']);
+        Route::post('cart/apply-coupon',   [\App\Http\Controllers\Api\V1\Order\CartController::class, 'applyCoupon']);
+
+        // ── Checkout (requires auth) ─────────────────────────────────────────
         Route::middleware('auth.jwt')->group(function () {
-            Route::get('cart',              [\App\Http\Controllers\Api\V1\Order\CartController::class, 'show']);
-            Route::post('cart/add',         [\App\Http\Controllers\Api\V1\Order\CartController::class, 'add']);
-            Route::put('cart/update',       [\App\Http\Controllers\Api\V1\Order\CartController::class, 'update']);
-            Route::delete('cart/remove',    [\App\Http\Controllers\Api\V1\Order\CartController::class, 'remove']);
-            Route::post('cart/checkout',    [\App\Http\Controllers\Api\V1\Order\CartController::class, 'checkout']);
-            Route::get('wishlist',          [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'index']);
-            Route::post('wishlist/add',     [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'add']);
-            Route::delete('wishlist/{id}',  [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'remove']);
-            Route::post('reviews',          [\App\Http\Controllers\Api\V1\Order\ReviewController::class, 'store']);
+            Route::post('cart/checkout',   [\App\Http\Controllers\Api\V1\Order\CartController::class, 'checkout']);
+
+            // Wishlist
+            Route::get('wishlist',                      [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'index']);
+            Route::post('wishlist/add',                 [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'add']);
+            Route::post('wishlist/move-all-to-cart',    [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'moveAllToCart']);
+            Route::delete('wishlist/{id}',              [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'remove']);
+            Route::delete('wishlist/product/{productId}', [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'removeByProduct']);
+            Route::post('wishlist/{id}/move-to-cart',   [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'moveToCart']);
+            Route::get('wishlist/check/{productId}',    [\App\Http\Controllers\Api\V1\Order\WishlistController::class, 'check']);
+
+            // Customer Orders
             Route::get('orders',            [OrderController::class, 'myOrders']);
             Route::get('orders/{number}',   [OrderController::class, 'trackByNumber']);
+
+            // Reviews
+            Route::post('reviews',          [\App\Http\Controllers\Api\V1\Order\ReviewController::class, 'store']);
         });
+
+        // ── Public Order Tracking (by number + email) ───────────────────────
+        Route::get('track/{number}',       [OrderController::class, 'trackByNumber']);
     });
 });
+

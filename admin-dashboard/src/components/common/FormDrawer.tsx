@@ -10,9 +10,10 @@ interface FormDrawerProps {
   subtitle?: string
   width?: string          // Tailwind max-w class, e.g. 'max-w-lg'
   onClose: () => void
-  onSubmit?: () => void
+  onSubmit?: (e?: any) => void
   submitLabel?: string
   loading?: boolean
+  isSubmitting?: boolean
   children: React.ReactNode
   footer?: React.ReactNode   // override default footer
 }

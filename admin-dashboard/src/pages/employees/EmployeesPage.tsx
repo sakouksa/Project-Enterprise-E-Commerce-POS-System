@@ -1592,7 +1592,6 @@ const EmployeesPage: React.FC = () => {
             perPage={perPage}
             onPageChange={setPage}
             onPerPageChange={setPerPage}
-            className="print:hidden"
           />
         </>
       )}

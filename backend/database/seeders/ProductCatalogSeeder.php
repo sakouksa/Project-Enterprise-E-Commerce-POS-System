@@ -113,9 +113,9 @@ class ProductCatalogSeeder extends Seeder
             $barcode = '888' . str_pad($i, 10, '0', STR_PAD_LEFT);
             $hasVariants = ($i <= 10); // Let the first 10 products have variants
 
-            $costPrice = rand(500, 1500) * 10000;
-            $sellingPrice = $costPrice * rand(12, 16) / 10;
-            $comparePrice = $sellingPrice * 1.2;
+            $costPrice = rand(30, 150);
+            $sellingPrice = round($costPrice * rand(12, 16) / 10, 2);
+            $comparePrice = round($sellingPrice * 1.2, 2);
 
             $products[] = [
                 'id' => $i,

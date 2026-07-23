@@ -23,17 +23,27 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
         string $order = 'desc'
     ): LengthAwarePaginator {
         $query = $this->model
-            ->with(['category:id,name', 'brand:id,name', 'primaryImage', 'unit:id,name,symbol', 'tax:id,name,rate', 'inventories', 'variants'])
+            ->with(['category:id,name', 'brand:id,name', 'primaryImage', 'images', 'unit:id,name,symbol', 'tax:id,name,rate', 'inventories', 'variants'])
             ->withSum('inventories as stock', 'quantity')
             ->when($filters['search'] ?? null, fn($q, $v) => $q->search($v))
-            ->when($filters['category_id'] ?? null, fn($q, $v) => $q->where('category_id', $v))
+            ->when($filters['category_id'] ?? null, function ($q, $v) {
+                if ($v !== 'all' && $v !== 'null' && (int)$v > 0) {
+                    $q->where('category_id', $v);
+                }
+            })
             ->when($filters['brand_id'] ?? null, fn($q, $v) => $q->where('brand_id', $v))
             ->when($filters['unit_id'] ?? null, fn($q, $v) => $q->where('unit_id', $v))
             ->when($filters['tax_id'] ?? null, fn($q, $v) => $q->where('tax_id', $v))
             ->when(isset($filters['is_featured']), fn($q) => $q->where('is_featured', (bool)$filters['is_featured']))
             ->when(isset($filters['is_digital']), fn($q) => $q->where('is_digital', (bool)$filters['is_digital']))
             ->when(isset($filters['has_variants']), fn($q) => $q->where('has_variants', (bool)$filters['has_variants']))
-            ->when($filters['status'] ?? null, fn($q, $v) => $v === 'deleted' ? $q->onlyTrashed() : $q->where('status', $v))
+            ->when($filters['status'] ?? null, function ($q, $v) {
+                if ($v === 'deleted') {
+                    $q->onlyTrashed();
+                } elseif ($v && $v !== 'all') {
+                    $q->where('status', $v);
+                }
+            })
             ->when($filters['company_id'] ?? null, fn($q, $v) => $q->where('company_id', $v))
             ->when($filters['inventory'] ?? null, function ($q, $v) {
                 if ($v === 'low_stock') {

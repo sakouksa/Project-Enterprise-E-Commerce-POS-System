@@ -1,7 +1,5 @@
-import React from 'react'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface PaginationProps {
   currentPage: number
@@ -45,23 +43,31 @@ const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-border bg-card">
-      <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-start">
+      <div className="flex flex-col sm:flex-row items-center gap-4 text-xs text-muted-foreground w-full sm:w-auto justify-between sm:justify-start">
         {onPerPageChange && (
           <div className="flex items-center gap-2">
-            <span>{t('pagination.rowsPerPage', 'Rows per page:')}</span>
-            <ModernSelect
-              value={perPage}
-              onChange={(val) => onPerPageChange(Number(val))}
-              options={perPageOptions.map((opt) => ({ value: opt, label: String(opt) }))}
-              placeholder={String(perPage)}
-            />
+            <span className="whitespace-nowrap">{t('pagination.rowsPerPage', 'Rows per page:')}</span>
+            <div className="relative inline-flex items-center">
+              <select
+                value={perPage}
+                onChange={(e) => onPerPageChange(Number(e.target.value))}
+                className="h-8 pl-3 pr-7 text-xs font-bold rounded-xl border border-border bg-card text-foreground hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs transition-all appearance-none"
+              >
+                {perPageOptions.map((opt) => (
+                  <option key={opt} value={opt} className="bg-card text-foreground font-semibold">
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
         )}
         <div>
           {t('pagination.showing_prefix', 'Showing')}{' '}
-          <span className="font-medium text-foreground">{from}–{to}</span>{' '}
+          <span className="font-semibold text-foreground">{from}–{to}</span>{' '}
           {t('pagination.showing_of', 'of')}{' '}
-          <span className="font-medium text-foreground">{total}</span>{' '}
+          <span className="font-semibold text-foreground">{total}</span>{' '}
           {t('pagination.showing_records', 'records')}
         </div>
       </div>

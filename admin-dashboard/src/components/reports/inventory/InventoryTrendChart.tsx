@@ -56,7 +56,7 @@ export const InventoryTrendChart: React.FC<Props> = ({ data = [], isLoading }) =
               <YAxis tickLine={false} axisLine={false} tickFormatter={formatCurrency} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(val: number) => [`$${val.toLocaleString()}`, 'Valuation ($)']}
+                formatter={(val: any) => [`$${Number(val || 0).toLocaleString()}`, 'Valuation ($)']}
               />
               <Legend wrapperStyle={{ fontSize: '12px' }} />
               <Line type="monotone" dataKey="value" name="Valuation ($)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />

@@ -6,7 +6,7 @@ import {
   Printer, Download, DollarSign, Calendar, Landmark, Warehouse as WarehouseIcon,
   Tag, Percent, PlusCircle, ArrowLeft, Trash, Save, Edit, RefreshCw as ResetIcon,
   ChevronUp, ChevronDown, Wallet, FileCheck, Truck, ShoppingCart,
-  Settings, Filter
+  Settings, Filter, AlertCircle
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -328,7 +328,7 @@ const PurchasesPage: React.FC = () => {
     queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
   })
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: [
       'purchases',
       page,
@@ -1108,6 +1108,27 @@ const PurchasesPage: React.FC = () => {
 
             </div>
           </div>
+
+          {/* Inline Error Alert Banner */}
+          {isError && (
+            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 p-4 rounded-2xl flex items-center justify-between shadow-xs print:hidden mb-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <div>
+                  <h4 className="font-bold text-sm">{t('common.errorLoadingData', 'Failed to load purchase orders')}</h4>
+                  <p className="text-xs opacity-90">
+                    {(error as any)?.response?.data?.message || (error as any)?.message || t('common.unexpectedError', 'An unexpected error occurred while requesting data.')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => refetch()}
+                className="px-3.5 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition-colors shadow-xs"
+              >
+                {t('common.retry', 'Retry')}
+              </button>
+            </div>
+          )}
 
           {/* ─── DATA TABLE ────────────────────────────────────────────────────── */}
           <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden print:hidden">

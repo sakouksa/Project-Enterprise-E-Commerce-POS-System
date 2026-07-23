@@ -61,7 +61,7 @@ export const CategoryInventoryChart: React.FC<Props> = ({ data = [], isLoading }
               </Pie>
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(val: number) => [`$${val.toLocaleString()}`, 'Valuation ($)']}
+                formatter={(val: any) => [`$${Number(val || 0).toLocaleString()}`, 'Valuation ($)']}
               />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
             </PieChart>

@@ -72,6 +72,8 @@ export interface Customer {
   group?: string
   loyalty_points?: number
   address?: string
+  credit_limit?: number
+  outstanding_balance?: number
 }
 
 export interface HeldCart {

@@ -92,9 +92,14 @@ class PurchaseService
                 $discountAmount += $discAmt;
                 $taxAmount += $taxAmt;
 
+                $pName = $item['product_name'] ?? Product::where('id', $item['product_id'])->value('name') ?? 'Unknown Product';
+                $pSku = Product::where('id', $item['product_id'])->value('sku') ?? '';
+
                 $itemsToCreate[] = [
                     'product_id'         => $item['product_id'],
                     'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'product_name'       => $pName,
+                    'product_sku'        => $pSku,
                     'quantity'           => $qty,
                     'quantity_received'  => 0,
                     'unit_cost'          => $cost,
@@ -191,9 +196,14 @@ class PurchaseService
                     $discountAmount += $discAmt;
                     $taxAmount += $taxAmt;
 
+                    $pName = $item['product_name'] ?? Product::where('id', $item['product_id'])->value('name') ?? 'Unknown Product';
+                    $pSku = Product::where('id', $item['product_id'])->value('sku') ?? '';
+
                     $purchase->items()->create([
                         'product_id'         => $item['product_id'],
                         'product_variant_id' => $item['product_variant_id'] ?? null,
+                        'product_name'       => $pName,
+                        'product_sku'        => $pSku,
                         'quantity'           => $qty,
                         'quantity_received'  => 0,
                         'unit_cost'          => $cost,

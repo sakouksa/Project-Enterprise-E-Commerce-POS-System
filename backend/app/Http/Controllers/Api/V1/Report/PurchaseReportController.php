@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Report;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Repositories\Reports\PurchaseReportRepository;
 use App\Services\Reports\PurchaseReportService;
+use App\Models\Purchase\Purchase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -20,6 +21,26 @@ class PurchaseReportController extends BaseApiController
     ) {
         $this->repository = $repository;
         $this->service    = $service;
+    }
+
+    /**
+     * GET /api/v1/purchase-report
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $summary = $this->repository->getDashboardSummary($request->all());
+
+        $totalPaid = (float) Purchase::query()
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'cancelled')
+            ->sum('paid_amount_base');
+
+        $summary['purchases_count'] = $summary['total_orders'] ?? 0;
+        $summary['total_purchases'] = $summary['total_purchase_cost'] ?? 0;
+        $summary['total_due']       = $summary['outstanding_payments'] ?? 0;
+        $summary['total_paid']      = $totalPaid;
+
+        return $this->successResponse($summary);
     }
 
     /**

@@ -306,7 +306,7 @@ const UsersPage: React.FC = () => {
   const analytics = useMemo(() => {
     const totalUsers = statsData?.total_users ?? statsData?.users_count ?? pagination.total ?? usersRaw.length ?? 0
     const activeUsers = statsData?.active_users ?? usersRaw.filter(u => u.is_active).length ?? 0
-    const inactiveUsers = statsData?.inactive_users ?? (totalUsers - activeUsers) ?? 0
+    const inactiveUsers = statsData?.inactive_users ?? (totalUsers - activeUsers)
     const newUsersMonth = statsData?.new_users_month ?? 12
 
     const verifiedUsers = statsData?.verified_users ?? Math.round(totalUsers * 0.94)

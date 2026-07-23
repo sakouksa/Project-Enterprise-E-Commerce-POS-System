@@ -26,7 +26,9 @@ class ProductController extends BaseApiController
             filters: $request->only([
                 'search', 'category_id', 'brand_id', 'unit_id', 'tax_id',
                 'status', 'is_featured', 'is_digital', 'inventory', 'has_variants',
-                'created_start', 'created_end', 'updated_start', 'updated_end'
+                'created_start', 'created_end', 'updated_start', 'updated_end',
+                'start_date', 'end_date', 'created_from', 'created_to', 'date_from', 'date_to',
+                'stock_level', 'price_min', 'price_max'
             ]),
             perPage: $request->integer('per_page', 10),
             sort: $request->get('sort_by', $request->get('sort', 'created_at')),

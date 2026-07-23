@@ -25,6 +25,13 @@ class StockTransferController extends BaseApiController
                   ->orWhere('notes', 'like', "%{$search}%");
             })
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->when($request->from_warehouse_id ?? $request->warehouse_id, function ($q, $w) {
+                $q->where(function ($sq) use ($w) {
+                    $sq->where('from_warehouse_id', $w)->orWhere('to_warehouse_id', $w);
+                });
+            })
+            ->when($request->start_date ?? $request->created_start, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->end_date ?? $request->created_end, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->when($request->trash == 'true', fn($q) => $q->onlyTrashed());
 
         $transfers = $query->paginate($request->integer('per_page', 15));

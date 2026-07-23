@@ -62,8 +62,8 @@ export const WarehouseInventoryChart: React.FC<Props> = ({ data = [], isLoading 
               </Pie>
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(val: number, name: string, entry: any) => [
-                  `$${val.toLocaleString()} (${entry.payload.percentage}%)`,
+                formatter={(val: any, _name: any, entry: any) => [
+                  `$${Number(val || 0).toLocaleString()} (${entry?.payload?.percentage || 0}%)`,
                   'Valuation'
                 ]}
               />

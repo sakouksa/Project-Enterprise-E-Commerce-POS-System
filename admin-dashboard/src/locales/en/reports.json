@@ -7,9 +7,9 @@
   "salesReport": "Sales Report",
   "title": "Reports",
   "sales": {
-    "title": "Sales Reports",
-    "subtitle": "Analyze sales performance, revenue, customers, products and payment trends.",
-    "salesSubtitle": "Analyze sales performance, revenue, customers, products and payment trends.",
+    "title": "Sales Analytics & Revenue Performance",
+    "subtitle": "Analyze sales performance, revenue trends, total orders, top-selling products, customer buying patterns, and payment method breakdowns in real time across all branches.",
+    "salesSubtitle": "Analyze sales performance, revenue trends, total orders, top-selling products, customer buying patterns, and payment method breakdowns in real time across all branches.",
     "totalRevenue": "Total Revenue",
     "totalOrders": "Total Orders",
     "avgOrderValue": "Average Order Value",

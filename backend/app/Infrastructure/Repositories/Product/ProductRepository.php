@@ -55,8 +55,8 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
                     $q->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) > 0');
                 }
             })
-            ->when($filters['created_start'] ?? null, fn($q, $v) => $q->whereDate('created_at', '>=', $v))
-            ->when($filters['created_end'] ?? null, fn($q, $v) => $q->whereDate('created_at', '<=', $v))
+            ->when($filters['created_start'] ?? $filters['start_date'] ?? $filters['created_from'] ?? $filters['date_from'] ?? null, fn($q, $v) => $q->whereDate('created_at', '>=', $v))
+            ->when($filters['created_end'] ?? $filters['end_date'] ?? $filters['created_to'] ?? $filters['date_to'] ?? null, fn($q, $v) => $q->whereDate('created_at', '<=', $v))
             ->when($filters['updated_start'] ?? null, fn($q, $v) => $q->whereDate('updated_at', '>=', $v))
             ->when($filters['updated_end'] ?? null, fn($q, $v) => $q->whereDate('updated_at', '<=', $v));
 

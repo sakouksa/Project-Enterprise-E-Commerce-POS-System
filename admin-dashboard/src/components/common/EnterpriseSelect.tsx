@@ -302,9 +302,9 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
 
   // Size styling
   const sizeClasses = {
-    sm: 'px-2.5 py-1 text-xs rounded-xl min-h-[32px]',
-    md: 'px-3 py-1.5 text-xs rounded-xl min-h-[38px]',
-    lg: 'px-4 py-2 text-sm rounded-2xl min-h-[44px]',
+    sm: 'px-2.5 py-1 text-xs rounded-xl h-[34px]',
+    md: 'px-3 py-1.5 text-xs rounded-xl h-[38px]',
+    lg: 'px-4 py-2 text-sm rounded-2xl h-[44px]',
   }[size]
 
   const displayPlaceholder = placeholder || t('select.placeholder', 'Select option...')

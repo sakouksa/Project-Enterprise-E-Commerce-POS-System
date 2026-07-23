@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { EnterpriseDatePicker } from '@/components/common/EnterpriseDatePicker'
 
 export interface SalesFilterState {
   date_from: string
@@ -211,24 +212,22 @@ export const SalesFilters: React.FC<SalesFiltersProps> = ({
           </button>
         </div>
 
-        {/* Custom Color Action Buttons */}
+        {/* Standard Clean Action Buttons */}
         <div className="flex items-center gap-2">
-          {/* Custom Colored Reset Button */}
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all shadow-xs active:scale-98"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground bg-card border border-border/80 rounded-xl hover:bg-accent/70 transition-all shadow-2xs cursor-pointer active:scale-98"
           >
             <RotateCcw size={13} />
             <span>Reset</span>
           </button>
 
-          {/* Custom Colored Refresh Button */}
           <button
             type="button"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/40 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all shadow-xs active:scale-98 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground bg-card border border-border/80 rounded-xl hover:bg-accent/70 transition-all shadow-2xs cursor-pointer active:scale-98 disabled:opacity-50"
           >
             <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
             <span>Refresh</span>
@@ -237,20 +236,20 @@ export const SalesFilters: React.FC<SalesFiltersProps> = ({
       </div>
 
       {/* Bottom row: Custom Modern Select Controls & Custom Date Pickers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {/* Custom Styled Date Pickers */}
         <div>
           <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
             Date From
           </label>
-          <input
-            type="date"
+          <EnterpriseDatePicker
             value={filters.date_from}
-            onChange={(e) => {
+            onChange={(val) => {
               setActivePreset(null)
-              onChange({ ...filters, date_from: e.target.value })
+              onChange({ ...filters, date_from: val })
             }}
-            className="w-full px-3 py-1.5 text-xs font-bold border border-border/80 rounded-xl bg-card text-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-2xs"
+            placeholder="Select Start Date"
+            className="w-full"
           />
         </div>
 
@@ -258,14 +257,14 @@ export const SalesFilters: React.FC<SalesFiltersProps> = ({
           <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
             To Date
           </label>
-          <input
-            type="date"
+          <EnterpriseDatePicker
             value={filters.date_to}
-            onChange={(e) => {
+            onChange={(val) => {
               setActivePreset(null)
-              onChange({ ...filters, date_to: e.target.value })
+              onChange({ ...filters, date_to: val })
             }}
-            className="w-full px-3 py-1.5 text-xs font-bold border border-border/80 rounded-xl bg-card text-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-2xs"
+            placeholder="Select End Date"
+            className="w-full"
           />
         </div>
 

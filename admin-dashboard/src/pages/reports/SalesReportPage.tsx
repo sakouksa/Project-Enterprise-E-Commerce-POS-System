@@ -255,10 +255,10 @@ export const SalesReportPage: React.FC = () => {
         <div className="space-y-1.5 flex-1 z-10">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <BarChart2 className="h-6 w-6 text-primary animate-pulse" />
-            <span>{t('sales.title', 'Sales Reports')}</span>
+            <span>{t('sales.title', 'Sales Analytics & Revenue Performance')}</span>
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground font-medium mt-0.5 max-w-3xl leading-relaxed">
-            {t('sales.subtitle', 'Analyze sales performance, revenue, customers, products and payment trends.')}
+            {t('sales.subtitle', 'Analyze sales performance, revenue trends, total orders, top-selling products, customer buying patterns, and payment method breakdowns in real time across all branches.')}
           </p>
         </div>
 

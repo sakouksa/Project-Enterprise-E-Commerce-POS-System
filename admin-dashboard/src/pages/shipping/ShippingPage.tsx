@@ -657,219 +657,222 @@ const ShippingPage: React.FC = () => {
 
       {/* ── 3. TOP 4 LOGISTICS KPI CARDS ───────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* CARD 1: Shipment Overview (Ocean Blue Gradient, Truck Icon) */}
+        {/* CARD 1: Shipment Overview (Ocean Blue Tint, Circular Progress, Truck Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-blue-600/10 via-cyan-600/5 to-transparent border border-blue-500/20 dark:border-blue-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              Shipment Overview
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <TrendingUp size={11} />
-                <span>+12.5%</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                SHIPMENT OVERVIEW
               </span>
-              <span className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-                <Truck size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.totalShipments} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <TrendingUp size={11} />
+                  <span>+12.5%</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Truck size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total Shipments</div>
             </div>
-            <CircularProgressRing
-              percentage={(analytics.deliveredCount / (analytics.totalShipments || 1)) * 100}
-              colorClass="text-blue-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.totalShipments} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Total Shipments</div>
+              </div>
+              <CircularProgressRing
+                percentage={(analytics.deliveredCount / (analytics.totalShipments || 1)) * 100}
+                colorClass="text-blue-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div
-              className="bg-blue-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(((analytics.deliveredCount / (analytics.totalShipments || 1)) * 100), 100)}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Delivered</div>
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{analytics.deliveredCount}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Pending</div>
-              <div className="font-semibold text-amber-500">{analytics.pendingCount}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Returned</div>
-              <div className="font-semibold text-rose-500">{analytics.returnedCount}</div>
+          <div>
+            <div className="w-full bg-blue-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Delivered</div>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{analytics.deliveredCount}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Pending</div>
+                <div className="font-bold text-amber-500 mt-0.5">{analytics.pendingCount}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Returned</div>
+                <div className="font-bold text-rose-500 mt-0.5">{analytics.returnedCount}</div>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 2: Delivery Performance (Purple Gradient, Navigation/Route Icon) */}
+        {/* CARD 2: Delivery Performance (Purple Tint, Circular Progress, Send Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-purple-600/10 via-fuchsia-600/5 to-transparent border border-purple-500/20 dark:border-purple-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-              Delivery Performance
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                <TrendingUp size={11} />
-                <span>+98.2%</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                DELIVERY PERFORMANCE
               </span>
-              <span className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                <Navigation size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.onTimeRate} suffix="%" decimals={1} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  <TrendingUp size={11} />
+                  <span>+98.2%</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Navigation size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">On-Time Delivery Rate</div>
             </div>
-            <CircularProgressRing
-              percentage={analytics.onTimeRate}
-              colorClass="text-purple-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.onTimeRate} suffix="%" decimals={1} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">On-Time Delivery Rate</div>
+              </div>
+              <CircularProgressRing
+                percentage={analytics.onTimeRate}
+                colorClass="text-purple-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div
-              className="bg-purple-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(analytics.onTimeRate, 100)}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">On-Time</div>
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{analytics.onTimeRate}%</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Avg Time</div>
-              <div className="font-semibold text-purple-600 dark:text-purple-400">{analytics.avgDeliveryTimeDays} Days</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Failed</div>
-              <div className="font-semibold text-rose-500">{analytics.failedCount}</div>
+          <div>
+            <div className="w-full bg-purple-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">On-Time</div>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{analytics.onTimeRate}%</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Avg Time</div>
+                <div className="font-bold text-purple-600 dark:text-purple-400 mt-0.5">{analytics.avgDeliveryTimeDays} Days</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Failed</div>
+                <div className="font-bold text-rose-500 mt-0.5">{analytics.failedCount}</div>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 3: Shipping Revenue Analytics (Emerald Gradient, Package/Wallet Icon) */}
+        {/* CARD 3: Shipping Revenue Analytics (Emerald Tint, Circular Progress, Package Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-emerald-600/10 via-teal-600/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Shipping Revenue
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight size={11} />
-                <span>+15.4%</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                SHIPPING REVENUE
               </span>
-              <span className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-                <Package size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.totalShippingRevenue} prefix="$" decimals={2} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <ArrowUpRight size={11} />
+                  <span>+15.4%</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Package size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Shipping Revenue</div>
             </div>
-            <CircularProgressRing
-              percentage={84}
-              colorClass="text-emerald-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.totalShippingRevenue} prefix="$" decimals={2} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Shipping Revenue</div>
+              </div>
+              <CircularProgressRing
+                percentage={84}
+                colorClass="text-emerald-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-emerald-500 h-full rounded-full w-[84%]" />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Avg Fee</div>
-              <div className="font-semibold text-foreground">${analytics.avgShippingFee.toFixed(2)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Free Ship</div>
-              <div className="font-semibold text-emerald-600">{analytics.freeShippingOrders} Orders</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Total Fee</div>
-              <div className="font-semibold text-teal-600">${analytics.totalShippingRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+          <div>
+            <div className="w-full bg-emerald-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Avg Fee</div>
+                <div className="font-bold text-foreground mt-0.5">${analytics.avgShippingFee.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Free Ship</div>
+                <div className="font-bold text-emerald-600 mt-0.5">{analytics.freeShippingOrders} Orders</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Total Fee</div>
+                <div className="font-bold text-teal-600 mt-0.5">${analytics.totalShippingRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 4: Shipping Cost & Profit (Orange Gold Gradient, BarChart3 Icon) */}
+        {/* CARD 4: Shipping Profitability (Amber Tint, Circular Progress, Chart Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-amber-600/10 via-orange-600/5 to-transparent border border-amber-500/20 dark:border-amber-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Shipping Profitability
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <TrendingUp size={11} />
-                <span>{analytics.profitMargin}% Margin</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                SHIPPING PROFITABILITY
               </span>
-              <span className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
-                <BarChart3 size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.shippingProfit} prefix="$" decimals={2} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <TrendingUp size={11} />
+                  <span>{analytics.profitMargin}% Margin</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <BarChart3 size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Logistics Net Profit</div>
             </div>
-            <CircularProgressRing
-              percentage={Math.min(analytics.profitMargin, 100)}
-              colorClass="text-amber-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.shippingProfit} prefix="$" decimals={2} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Logistics Net Profit</div>
+              </div>
+              <CircularProgressRing
+                percentage={Math.min(analytics.profitMargin, 100)}
+                colorClass="text-amber-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div
-              className="bg-amber-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(analytics.profitMargin, 100)}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Cost</div>
-              <div className="font-semibold text-foreground">${analytics.totalShippingCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Profit</div>
-              <div className="font-semibold text-emerald-600">${analytics.shippingProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Margin</div>
-              <div className="font-semibold text-amber-600 dark:text-amber-400">{analytics.profitMargin}%</div>
+          <div>
+            <div className="w-full bg-amber-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Cost</div>
+                <div className="font-bold text-foreground mt-0.5">${analytics.totalShippingCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Profit</div>
+                <div className="font-bold text-emerald-600 mt-0.5">${analytics.shippingProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Margin</div>
+                <div className="font-bold text-amber-600 dark:text-amber-400 mt-0.5">{analytics.profitMargin}%</div>
+              </div>
             </div>
           </div>
         </motion.div>

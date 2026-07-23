@@ -47,6 +47,12 @@ class InventoryController extends BaseApiController
                 } elseif ($status === 'healthy') {
                     $q->whereRaw('quantity > reorder_point');
                 }
+            })
+            ->when($request->start_date ?? $request->created_start ?? $request->date_from, function ($q, $start) {
+                $q->whereDate('created_at', '>=', $start);
+            })
+            ->when($request->end_date ?? $request->created_end ?? $request->date_to, function ($q, $end) {
+                $q->whereDate('created_at', '<=', $end);
             });
 
         // Search

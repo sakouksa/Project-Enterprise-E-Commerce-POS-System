@@ -854,7 +854,7 @@ const RecycleBinPage: React.FC = () => {
           const isActive = activeTab === tab
           const cfg = moduleConfigs[tab]
           const TabIcon = cfg.icon
-          const label = currentLang === 'kh' ? cfg.kh : cfg.en
+          const label = currentLang === 'km' ? cfg.kh : cfg.en
           return (
             <button
               key={tab}
@@ -888,7 +888,7 @@ const RecycleBinPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-foreground capitalize">
-                  {currentLang === 'kh' ? currentModuleConfig.kh : currentModuleConfig.en} Deleted Records
+                  {currentLang === 'km' ? currentModuleConfig.kh : currentModuleConfig.en} Deleted Records
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-mono">
                   {pagination.total ?? trashItems.length} Records

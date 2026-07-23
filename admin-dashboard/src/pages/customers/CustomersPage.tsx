@@ -42,6 +42,8 @@ interface Customer {
   total_spent:       number
   order_count:       number
   loyalty_points:    number
+  credit_limit?:     number
+  outstanding_balance?: number
   tax_number?:       string
   notes?:            string
   is_active:         boolean
@@ -58,6 +60,7 @@ interface CustomerFormData {
   phone: string
   gender: string
   birth_date: string
+  credit_limit: string
   tax_number: string
   notes: string
   is_active: boolean
@@ -339,6 +342,7 @@ const CustomersPage: React.FC = () => {
       phone: '',
       gender: '',
       birth_date: '',
+      credit_limit: '1000',
       tax_number: '',
       notes: '',
       is_active: true
@@ -360,6 +364,7 @@ const CustomersPage: React.FC = () => {
       phone: cust.phone ?? '',
       gender: cust.gender ?? '',
       birth_date: cust.birth_date ?? '',
+      credit_limit: cust.credit_limit?.toString() ?? '1000',
       tax_number: cust.tax_number ?? '',
       notes: cust.notes ?? '',
       is_active: cust.is_active
@@ -397,6 +402,7 @@ const CustomersPage: React.FC = () => {
     if (formData.phone) dataPayload.append('phone', formData.phone)
     if (formData.gender) dataPayload.append('gender', formData.gender)
     if (formData.birth_date) dataPayload.append('birth_date', formData.birth_date)
+    if (formData.credit_limit) dataPayload.append('credit_limit', formData.credit_limit)
     if (formData.tax_number) dataPayload.append('tax_number', formData.tax_number)
     if (formData.notes) dataPayload.append('notes', formData.notes)
     dataPayload.append('is_active', formData.is_active ? '1' : '0')

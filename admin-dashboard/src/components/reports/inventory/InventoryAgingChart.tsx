@@ -48,7 +48,7 @@ export const InventoryAgingChart: React.FC<Props> = ({ data = [], isLoading }) =
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(val: number) => [`${val} Products`, 'Inventory Count']}
+                formatter={(val: any) => [`${val || 0} Products`, 'Inventory Count']}
               />
               <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                 {data.map((entry, idx) => (

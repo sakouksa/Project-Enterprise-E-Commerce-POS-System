@@ -59,7 +59,7 @@ export const StockStatusChart: React.FC<Props> = ({ data = [], isLoading }) => {
               </Pie>
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(val: number) => [`${val} SKUs`, 'Products']}
+                formatter={(val: any) => [`${val || 0} SKUs`, 'Products']}
               />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
             </PieChart>

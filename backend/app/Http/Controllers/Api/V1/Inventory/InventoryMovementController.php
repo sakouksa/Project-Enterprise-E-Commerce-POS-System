@@ -30,8 +30,8 @@ class InventoryMovementController extends BaseApiController
         ->when($request->warehouse_id, fn($q, $warehouseId) => $q->where('warehouse_id', $warehouseId))
         ->when($request->type, fn($q, $type) => $q->where('type', $type))
         ->when($request->user_id, fn($q, $userId) => $q->where('user_id', $userId))
-        ->when($request->start_date, fn($q, $start) => $q->whereDate('created_at', '>=', $start))
-        ->when($request->end_date, fn($q, $end) => $q->whereDate('created_at', '<=', $end))
+        ->when($request->start_date ?? $request->created_start, fn($q, $start) => $q->whereDate('created_at', '>=', $start))
+        ->when($request->end_date ?? $request->created_end, fn($q, $end) => $q->whereDate('created_at', '<=', $end))
         ->when($request->search, function ($q, $search) {
             $q->where(function ($sq) use ($search) {
                 $sq->whereHas('product', fn($pq) => $pq->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"))

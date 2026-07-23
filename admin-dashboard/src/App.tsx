@@ -221,7 +221,7 @@ const AppContent: React.FC = () => {
             {/* ── Company ───────────────────────────────────────────────── */}
             <Route path="/branches"                element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="branches" /></ProtectedRoute>} />
             <Route path="/stores"                  element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="stores" /></ProtectedRoute>} />
-            <Route path="/company"                 element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="profile" /></ProtectedRoute>} />
+            <Route path="/company"                 element={<ProtectedRoute permission="company.view"><CompanyPage activeTab="companies" /></ProtectedRoute>} />
 
             {/* ── Reports ───────────────────────────────────────────────── */}
             <Route path="/reports"                 element={<ProtectedRoute permission="reports.view"><ReportsPage type="sales" /></ProtectedRoute>} />

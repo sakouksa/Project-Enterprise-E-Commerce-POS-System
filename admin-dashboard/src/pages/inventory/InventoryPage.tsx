@@ -350,6 +350,8 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         supplier_id: selectedSupplier,
         start_date: filterStartDate,
         end_date: filterEndDate,
+        created_start: filterStartDate,
+        created_end: filterEndDate,
         created_by: selectedCreatedBy,
         sort_by: sortBy,
         sort_order: sortOrder
@@ -359,59 +361,141 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
   })
 
   const { data: adjustmentsData, isLoading: loadingAdjustments, isFetching: fetchingAdjustments } = useQuery({
-    queryKey: ['inventory-adjustments', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus],
+    queryKey: ['inventory-adjustments', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus, filterStartDate, filterEndDate],
     queryFn: () => api.get('/stock-adjustments', {
       params: {
         page,
         search: debouncedSearch,
         per_page: perPage,
         warehouse_id: selectedWarehouse,
-        status: selectedStatus
+        status: selectedStatus,
+        start_date: filterStartDate,
+        end_date: filterEndDate,
+        created_start: filterStartDate,
+        created_end: filterEndDate
       }
     }).then(r => r.data),
     enabled: activeTab === 'adjustments',
   })
 
   const { data: transfersData, isLoading: loadingTransfers, isFetching: fetchingTransfers } = useQuery({
-    queryKey: ['inventory-transfers', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus],
+    queryKey: ['inventory-transfers', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus, filterStartDate, filterEndDate],
     queryFn: () => api.get('/stock-transfers', {
       params: {
         page,
         search: debouncedSearch,
         per_page: perPage,
         from_warehouse_id: selectedWarehouse,
-        status: selectedStatus
+        status: selectedStatus,
+        start_date: filterStartDate,
+        end_date: filterEndDate,
+        created_start: filterStartDate,
+        created_end: filterEndDate
       }
     }).then(r => r.data),
     enabled: activeTab === 'transfers',
   })
 
   const { data: opnamesData, isLoading: loadingOpnames, isFetching: fetchingOpnames } = useQuery({
-    queryKey: ['inventory-opnames', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus],
+    queryKey: ['inventory-opnames', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus, filterStartDate, filterEndDate],
     queryFn: () => api.get('/stock-opnames', {
       params: {
         page,
         search: debouncedSearch,
         per_page: perPage,
         warehouse_id: selectedWarehouse,
-        status: selectedStatus
+        status: selectedStatus,
+        start_date: filterStartDate,
+        end_date: filterEndDate,
+        created_start: filterStartDate,
+        created_end: filterEndDate
       }
     }).then(r => r.data),
     enabled: activeTab === 'opnames',
   })
 
   const { data: movementsData, isLoading: loadingMovements, isFetching: fetchingMovements } = useQuery({
-    queryKey: ['inventory-movements-list', page, debouncedSearch, perPage, selectedWarehouse],
+    queryKey: ['inventory-movements-list', page, debouncedSearch, perPage, selectedWarehouse, filterStartDate, filterEndDate],
     queryFn: () => api.get('/inventory-movements', {
       params: {
         page,
         search: debouncedSearch,
         per_page: perPage,
-        warehouse_id: selectedWarehouse
+        warehouse_id: selectedWarehouse,
+        start_date: filterStartDate,
+        end_date: filterEndDate,
+        created_start: filterStartDate,
+        created_end: filterEndDate
       }
     }).then(r => r.data),
     enabled: activeTab === 'movements',
   })
+
+  // Client-side Date Range Filters for Instant Responsiveness across all 5 tabs
+  const rawStockLevels = stockLevels?.data ?? []
+  const filteredStockLevels = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) return rawStockLevels
+    return rawStockLevels.filter((row: any) => {
+      const itemDateStr = row.created_at || row.updated_at
+      if (!itemDateStr) return true
+      const itemDate = new Date(itemDateStr).toISOString().split('T')[0]
+      if (filterStartDate && itemDate < filterStartDate) return false
+      if (filterEndDate && itemDate > filterEndDate) return false
+      return true
+    })
+  }, [rawStockLevels, filterStartDate, filterEndDate])
+
+  const rawAdjustments = adjustmentsData?.data ?? []
+  const filteredAdjustments = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) return rawAdjustments
+    return rawAdjustments.filter((row: any) => {
+      const itemDateStr = row.created_at || row.adjustment_date
+      if (!itemDateStr) return true
+      const itemDate = new Date(itemDateStr).toISOString().split('T')[0]
+      if (filterStartDate && itemDate < filterStartDate) return false
+      if (filterEndDate && itemDate > filterEndDate) return false
+      return true
+    })
+  }, [rawAdjustments, filterStartDate, filterEndDate])
+
+  const rawTransfers = transfersData?.data ?? []
+  const filteredTransfers = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) return rawTransfers
+    return rawTransfers.filter((row: any) => {
+      const itemDateStr = row.created_at || row.transfer_date
+      if (!itemDateStr) return true
+      const itemDate = new Date(itemDateStr).toISOString().split('T')[0]
+      if (filterStartDate && itemDate < filterStartDate) return false
+      if (filterEndDate && itemDate > filterEndDate) return false
+      return true
+    })
+  }, [rawTransfers, filterStartDate, filterEndDate])
+
+  const rawOpnames = opnamesData?.data ?? []
+  const filteredOpnames = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) return rawOpnames
+    return rawOpnames.filter((row: any) => {
+      const itemDateStr = row.created_at || row.opname_date
+      if (!itemDateStr) return true
+      const itemDate = new Date(itemDateStr).toISOString().split('T')[0]
+      if (filterStartDate && itemDate < filterStartDate) return false
+      if (filterEndDate && itemDate > filterEndDate) return false
+      return true
+    })
+  }, [rawOpnames, filterStartDate, filterEndDate])
+
+  const rawMovements = movementsData?.data ?? []
+  const filteredMovements = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) return rawMovements
+    return rawMovements.filter((row: any) => {
+      const itemDateStr = row.created_at || row.movement_date
+      if (!itemDateStr) return true
+      const itemDate = new Date(itemDateStr).toISOString().split('T')[0]
+      if (filterStartDate && itemDate < filterStartDate) return false
+      if (filterEndDate && itemDate > filterEndDate) return false
+      return true
+    })
+  }, [rawMovements, filterStartDate, filterEndDate])
 
   // Mutations
   const deleteAdjustmentMutation = useMutation({
@@ -527,48 +611,45 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         {/* Page Breadcrumb */}
         <Breadcrumb
           items={[
-            { label: 'Dashboard', path: '/dashboard' },
             { label: 'Inventory Management', path: '/inventory' },
             { label: activeTab === 'transfers' ? 'Transfers' : activeTab === 'adjustments' ? 'Adjustments' : 'Stock Opnames', path: formPath },
             { label: activeFormId ? `Edit ${formTitle}` : `New ${formTitle}` }
           ]}
         />
 
-        {/* Full Form Page Container */}
-        <div className="bg-card border border-border/80 p-6 sm:p-8 rounded-[24px] shadow-sm">
-          {activeFormType === 'transfer' && (
-            <StockTransferForm
-              transferId={activeFormId}
-              onClose={() => {
-                setActiveFormType(null)
-                setActiveFormId(null)
-                qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
-              }}
-            />
-          )}
+        {/* Full Form Page View */}
+        {activeFormType === 'transfer' && (
+          <StockTransferForm
+            transferId={activeFormId}
+            onClose={() => {
+              setActiveFormType(null)
+              setActiveFormId(null)
+              qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
+            }}
+          />
+        )}
 
-          {activeFormType === 'adjustment' && (
-            <StockAdjustmentForm
-              adjustmentId={activeFormId}
-              onClose={() => {
-                setActiveFormType(null)
-                setActiveFormId(null)
-                qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-              }}
-            />
-          )}
+        {activeFormType === 'adjustment' && (
+          <StockAdjustmentForm
+            adjustmentId={activeFormId}
+            onClose={() => {
+              setActiveFormType(null)
+              setActiveFormId(null)
+              qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
+            }}
+          />
+        )}
 
-          {activeFormType === 'opname' && (
-            <StockOpnameForm
-              opnameId={activeFormId}
-              onClose={() => {
-                setActiveFormType(null)
-                setActiveFormId(null)
-                qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
-              }}
-            />
-          )}
-        </div>
+        {activeFormType === 'opname' && (
+          <StockOpnameForm
+            opnameId={activeFormId}
+            onClose={() => {
+              setActiveFormType(null)
+              setActiveFormId(null)
+              qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -968,7 +1049,17 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search product, SKU, barcode, warehouse, reference, user..."
+              placeholder={
+                activeTab === 'levels'
+                  ? 'Search inventory by product, SKU, barcode, warehouse...'
+                  : activeTab === 'movements'
+                  ? 'Search stock movements by product, SKU, reference...'
+                  : activeTab === 'transfers'
+                  ? 'Search transfers by reference, warehouse, notes...'
+                  : activeTab === 'adjustments'
+                  ? 'Search adjustments by reference, reason, warehouse...'
+                  : 'Search stock opnames by reference, warehouse...'
+              }
             />
           </div>
 
@@ -1075,9 +1166,9 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                   <th className="p-3.5 pl-6 w-10">
                     <input
                       type="checkbox"
-                      checked={(stockLevels?.data ?? []).length > 0 && selectedRows.length === (stockLevels?.data ?? []).length}
+                      checked={filteredStockLevels.length > 0 && selectedRows.length === filteredStockLevels.length}
                       onChange={(e) => {
-                        if (e.target.checked) setSelectedRows((stockLevels?.data ?? []).map((row: any) => row.id))
+                        if (e.target.checked) setSelectedRows(filteredStockLevels.map((row: any) => row.id))
                         else setSelectedRows([])
                       }}
                       className="rounded text-primary focus:ring-primary w-4 h-4 border-border cursor-pointer"
@@ -1114,7 +1205,7 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right"><div className="skeleton h-4 w-16 rounded-md ml-auto" /></td>
                     </tr>
                   ))
-                ) : (stockLevels?.data ?? []).length === 0 ? (
+                ) : filteredStockLevels.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="py-16 text-center">
                       <div className="max-w-xs mx-auto space-y-3">
@@ -1123,13 +1214,13 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                         </div>
                         <h3 className="text-base font-bold text-foreground">No inventory records found.</h3>
                         <p className="text-xs text-muted-foreground">
-                          Try adjusting search filters or initialize warehouse stock level.
+                          Try adjusting search filters or date range filters.
                         </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  (stockLevels?.data ?? []).map((row: any) => {
+                  filteredStockLevels.map((row: any) => {
                     const isSelected = selectedRows.includes(row.id)
                     const isOut = (row.quantity ?? 0) <= 0
                     const isLow = (row.quantity ?? 0) <= (row.reorder_point || 5) && !isOut
@@ -1245,14 +1336,14 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right"><div className="skeleton h-4 w-16 rounded-md ml-auto" /></td>
                     </tr>
                   ))
-                ) : (movementsData?.data ?? []).length === 0 ? (
+                ) : filteredMovements.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="py-16 text-center text-muted-foreground">
                       No stock movement history recorded yet.
                     </td>
                   </tr>
                 ) : (
-                  (movementsData?.data ?? []).map((m: any) => {
+                  filteredMovements.map((m: any) => {
                     const isPlus = m.type === 'in' || parseFloat(m.quantity) > 0
                     return (
                       <tr key={m.id} className="hover:bg-muted/40 transition-colors">
@@ -1332,14 +1423,14 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right"><div className="skeleton h-4 w-16 rounded-md ml-auto" /></td>
                     </tr>
                   ))
-                ) : (transfersData?.data ?? []).length === 0 ? (
+                ) : filteredTransfers.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="py-16 text-center text-muted-foreground">
                       No stock transfer records found.
                     </td>
                   </tr>
                 ) : (
-                  (transfersData?.data ?? []).map((t: any) => (
+                  filteredTransfers.map((t: any) => (
                     <tr key={t.id} className="hover:bg-muted/40 transition-colors">
                       <td className="p-3.5 pl-6">
                         <input type="checkbox" className="rounded text-primary focus:ring-primary w-4 h-4 border-border cursor-pointer" />
@@ -1426,14 +1517,14 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right"><div className="skeleton h-4 w-16 rounded-md ml-auto" /></td>
                     </tr>
                   ))
-                ) : (adjustmentsData?.data ?? []).length === 0 ? (
+                ) : filteredAdjustments.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="py-16 text-center text-muted-foreground">
                       No stock adjustment records found.
                     </td>
                   </tr>
                 ) : (
-                  (adjustmentsData?.data ?? []).map((a: any) => (
+                  filteredAdjustments.map((a: any) => (
                     <tr key={a.id} className="hover:bg-muted/40 transition-colors">
                       <td className="p-3.5 pl-6">
                         <input type="checkbox" className="rounded text-primary focus:ring-primary w-4 h-4 border-border cursor-pointer" />
@@ -1516,14 +1607,14 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right"><div className="skeleton h-4 w-16 rounded-md ml-auto" /></td>
                     </tr>
                   ))
-                ) : (opnamesData?.data ?? []).length === 0 ? (
+                ) : filteredOpnames.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="py-16 text-center text-muted-foreground">
                       No stock opname audit snapshots recorded yet.
                     </td>
                   </tr>
                 ) : (
-                  (opnamesData?.data ?? []).map((o: any) => (
+                  filteredOpnames.map((o: any) => (
                     <tr key={o.id} className="hover:bg-muted/40 transition-colors">
                       <td className="p-3.5 pl-6">
                         <input type="checkbox" className="rounded text-primary focus:ring-primary w-4 h-4 border-border cursor-pointer" />

@@ -25,6 +25,9 @@ class StockOpnameController extends BaseApiController
                   ->orWhere('notes', 'like', "%{$search}%");
             })
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->when($request->warehouse_id, fn($q, $w) => $q->where('warehouse_id', $w))
+            ->when($request->start_date ?? $request->created_start, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->end_date ?? $request->created_end, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->when($request->trash == 'true', fn($q) => $q->onlyTrashed())
             ->paginate($request->integer('per_page', 15));
 

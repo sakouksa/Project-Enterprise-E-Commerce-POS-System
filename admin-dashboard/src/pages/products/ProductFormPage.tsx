@@ -263,6 +263,46 @@ const ProductFormPage: React.FC = () => {
     onError: () => toast.error('Failed to delete variant.')
   })
 
+  const [isSkuManuallyEdited, setIsSkuManuallyEdited] = useState(false)
+
+  const generateSKU = (name: string): string => {
+    if (!name.trim()) return ''
+    const cleanName = name
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 20)
+    return cleanName ? `SKU-${cleanName}` : ''
+  }
+
+  const handleProductNameChange = (val: string) => {
+    setForm(prev => {
+      const autoSku = (!isSkuManuallyEdited || !prev.sku.trim()) ? generateSKU(val) : prev.sku
+      return {
+        ...prev,
+        name: val,
+        sku: autoSku,
+      }
+    })
+  }
+
+  const handleSkuInputChange = (val: string) => {
+    setIsSkuManuallyEdited(true)
+    setForm(prev => ({ ...prev, sku: val }))
+  }
+
+  const handleAutoGenerateSkuClick = () => {
+    const generated = generateSKU(form.name)
+    if (generated) {
+      setIsSkuManuallyEdited(false)
+      setForm(prev => ({ ...prev, sku: generated }))
+      toast.info(`Generated SKU: ${generated}`)
+    } else {
+      toast.warning('Please enter Product Name first.')
+    }
+  }
+
   // ─── Handlers ─────────────────────────────────────────────────────────────
   const setField = (key: keyof ProductForm, value: string | boolean) =>
     setForm(prev => ({ ...prev, [key]: value }))
@@ -397,8 +437,8 @@ const ProductFormPage: React.FC = () => {
       />
 
       <PageHeader
-        title={isEdit ? `${t('products.editProduct')}: ${productDetail?.name}` : t('products.createProductWorkspace')}
-        subtitle={t('products.formSubtitle')}
+        title={isEdit ? `${t('products.editProduct', 'Edit Product')}: ${productDetail?.name}` : t('products.createProduct', 'Create Product')}
+        subtitle={t('products.formSubtitle', 'Fill in product details, pricing, SKU, and stock settings.')}
         action={
           <button
             onClick={() => navigate('/products')}
@@ -406,7 +446,7 @@ const ProductFormPage: React.FC = () => {
                        rounded-lg hover:bg-muted transition-colors font-medium bg-card"
           >
             <ArrowLeft size={15} />
-            {t('products.backToProducts')}
+            {t('products.backToProducts', 'Back to Products')}
           </button>
         }
       />
@@ -415,14 +455,14 @@ const ProductFormPage: React.FC = () => {
       {isEdit && (
         <div className="flex border-b border-border bg-card rounded-t-2xl px-4 overflow-x-auto gap-2 shadow-sm">
           {[
-            { id: 'general',      label: t('products.general'),      icon: <Layers size={14} /> },
-            { id: 'pricing',      label: t('products.pricing'),      icon: <DollarSign size={14} /> },
-            { id: 'inventory',    label: t('products.inventory'),    icon: <History size={14} /> },
-            { id: 'dimensions',   label: t('products.dimensions'),   icon: <Scale size={14} /> },
-            { id: 'seo',          label: t('products.seo'),          icon: <Shield size={14} /> },
-            { id: 'images',       label: t('products.images'),       icon: <ImageIcon size={14} /> },
-            { id: 'variants',     label: t('products.variants'),     icon: <Sparkles size={14} /> },
-            { id: 'tier_pricing', label: t('products.tierPricing'), icon: <Percent size={14} /> },
+            { id: 'general',      label: t('products.general', 'General'),           icon: <Layers size={14} /> },
+            { id: 'pricing',      label: t('products.pricing', 'Pricing'),           icon: <DollarSign size={14} /> },
+            { id: 'inventory',    label: t('products.inventory', 'Inventory'),       icon: <History size={14} /> },
+            { id: 'dimensions',   label: t('products.dimensions', 'Dimensions'),      icon: <Scale size={14} /> },
+            { id: 'seo',          label: t('products.seo', 'SEO'),                 icon: <Shield size={14} /> },
+            { id: 'images',       label: t('products.images', 'Images'),            icon: <ImageIcon size={14} /> },
+            { id: 'variants',     label: t('products.variants', 'Variants'),          icon: <Sparkles size={14} /> },
+            { id: 'tier_pricing', label: t('products.tierPricing', 'Tier Pricing'), icon: <Percent size={14} /> },
           ].map(tab => (
             <button
               key={tab.id}
@@ -450,21 +490,31 @@ const ProductFormPage: React.FC = () => {
                 </label>
                 <input
                   value={form.name}
-                  onChange={e => setField('name', e.target.value)}
+                  onChange={e => handleProductNameChange(e.target.value)}
                   required
                   placeholder="e.g. iPhone 15 Pro"
                   className="form-input w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                  SKU <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    SKU <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateSkuClick}
+                    className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw size={12} />
+                    Auto Generate
+                  </button>
+                </div>
                 <input
                   value={form.sku}
-                  onChange={e => setField('sku', e.target.value)}
+                  onChange={e => handleSkuInputChange(e.target.value)}
                   required
-                  placeholder="e.g. SKU-IP15P"
+                  placeholder="e.g. SKU-IPHONE-15"
                   className="form-input font-mono w-full"
                 />
               </div>
@@ -723,21 +773,31 @@ const ProductFormPage: React.FC = () => {
                 </label>
                 <input
                   value={form.name}
-                  onChange={e => setField('name', e.target.value)}
+                  onChange={e => handleProductNameChange(e.target.value)}
                   required
                   placeholder="e.g. iPhone 15 Pro"
                   className="form-input w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                  SKU <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    SKU <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateSkuClick}
+                    className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw size={12} />
+                    Auto Generate
+                  </button>
+                </div>
                 <input
                   value={form.sku}
-                  onChange={e => setField('sku', e.target.value)}
+                  onChange={e => handleSkuInputChange(e.target.value)}
                   required
-                  placeholder="e.g. SKU-IP15P"
+                  placeholder="e.g. SKU-IPHONE-15"
                   className="form-input font-mono w-full"
                 />
               </div>

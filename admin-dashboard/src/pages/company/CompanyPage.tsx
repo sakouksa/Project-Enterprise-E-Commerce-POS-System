@@ -21,7 +21,7 @@ import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 
-type TabType = 'companies' | 'branches' | 'stores' | 'warehouses'
+type TabType = 'companies' | 'branches' | 'stores' | 'warehouses' | 'structures'
 
 // ── Helper: Format DateTime for HTML5 <input type="datetime-local" /> ─────────
 const formatDateTimeLocal = (dateStr?: string | null): string => {
@@ -140,8 +140,12 @@ const CircularProgressRing: React.FC<{ percentage: number; colorClass: string; s
   )
 }
 
+interface CompanyPageProps {
+  activeTab?: TabType
+}
+
 // ── Main Company Page Component ──────────────────────────────────────────────
-const CompanyPage: React.FC = () => {
+const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
   const { t, i18n } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
@@ -159,7 +163,7 @@ const CompanyPage: React.FC = () => {
   }, [t])
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const currentTab = (searchParams.get('tab') as TabType) || 'companies'
+  const currentTab = (initialTab || searchParams.get('tab') as TabType) || 'companies'
   const setActiveTab = (tab: TabType) => setSearchParams({ tab })
 
   const {
@@ -739,213 +743,222 @@ const CompanyPage: React.FC = () => {
 
       {/* ── 3. TOP 4 ENTERPRISE COMPANY KPI CARDS ──────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* CARD 1: Company Overview (Blue Gradient, Building2 Icon) */}
+        {/* CARD 1: Company Overview (Ocean Blue Tint, Circular Progress, Building2 Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-blue-600/10 via-cyan-600/5 to-transparent border border-blue-500/20 dark:border-blue-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              Company Overview
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <TrendingUp size={11} />
-                <span>+100%</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                COMPANY OVERVIEW
               </span>
-              <span className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-                <Building2 size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.totalCompanies} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <TrendingUp size={11} />
+                  <span>+100%</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Building2 size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total Registered Companies</div>
             </div>
-            <CircularProgressRing
-              percentage={(analytics.activeCompanies / (analytics.totalCompanies || 1)) * 100}
-              colorClass="text-blue-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.totalCompanies} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Total Registered Companies</div>
+              </div>
+              <CircularProgressRing
+                percentage={(analytics.activeCompanies / (analytics.totalCompanies || 1)) * 100}
+                colorClass="text-blue-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div
-              className="bg-blue-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(((analytics.activeCompanies / (analytics.totalCompanies || 1)) * 100), 100)}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Active</div>
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{analytics.activeCompanies}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Inactive</div>
-              <div className="font-semibold text-slate-500">{analytics.inactiveCompanies}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">HQ Status</div>
-              <div className="font-semibold text-blue-600 dark:text-blue-400">Primary</div>
+          <div>
+            <div className="w-full bg-blue-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Active</div>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{analytics.activeCompanies}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Inactive</div>
+                <div className="font-bold text-muted-foreground mt-0.5">{analytics.inactiveCompanies}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">HQ Status</div>
+                <div className="font-bold text-blue-600 dark:text-blue-400 mt-0.5">Primary</div>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 2: Business Performance (Emerald Gradient, TrendingUp Icon) */}
+        {/* CARD 2: Business Performance (Emerald Tint, Circular Progress, TrendingUp Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-emerald-600/10 via-teal-600/5 to-transparent border border-emerald-500/20 dark:border-emerald-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Business Performance
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight size={11} />
-                <span>+18.4%</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                BUSINESS PERFORMANCE
               </span>
-              <span className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-                <TrendingUp size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.totalRevenue} prefix="$" decimals={2} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <ArrowUpRight size={11} />
+                  <span>+18.4%</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <TrendingUp size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Gross Company Revenue</div>
             </div>
-            <CircularProgressRing
-              percentage={92}
-              colorClass="text-emerald-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.totalRevenue} prefix="$" decimals={2} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Gross Company Revenue</div>
+              </div>
+              <CircularProgressRing
+                percentage={92}
+                colorClass="text-emerald-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-emerald-500 h-full rounded-full w-[92%]" />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Orders</div>
-              <div className="font-semibold text-foreground">{analytics.totalOrders}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Avg Order</div>
-              <div className="font-semibold text-emerald-600">${analytics.aov.toFixed(2)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Growth</div>
-              <div className="font-semibold text-teal-600">+18.4%</div>
+          <div>
+            <div className="w-full bg-emerald-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Orders</div>
+                <div className="font-bold text-foreground mt-0.5">{analytics.totalOrders}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Avg Order</div>
+                <div className="font-bold text-emerald-600 mt-0.5">${analytics.aov.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Growth</div>
+                <div className="font-bold text-teal-600 mt-0.5">+18.4%</div>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 3: Financial Health (Purple Gradient, Wallet Icon) */}
+        {/* CARD 3: Financial Health (Purple Tint, Circular Progress, Wallet Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-purple-600/10 via-fuchsia-600/5 to-transparent border border-purple-500/20 dark:border-purple-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-              Financial Health
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                <TrendingUp size={11} />
-                <span>+22.1%</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                FINANCIAL HEALTH
               </span>
-              <span className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                <Wallet size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.netProfit} prefix="$" decimals={2} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  <TrendingUp size={11} />
+                  <span>+22.1%</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wallet size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Net Financial Profit</div>
             </div>
-            <CircularProgressRing
-              percentage={86}
-              colorClass="text-purple-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.netProfit} prefix="$" decimals={2} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Net Financial Profit</div>
+              </div>
+              <CircularProgressRing
+                percentage={86}
+                colorClass="text-purple-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-purple-500 h-full rounded-full w-[86%]" />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Income</div>
-              <div className="font-semibold text-emerald-600">${(analytics.totalIncome / 1000).toFixed(1)}k</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Expense</div>
-              <div className="font-semibold text-rose-500">${(analytics.totalExpense / 1000).toFixed(1)}k</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Profit</div>
-              <div className="font-semibold text-purple-600 dark:text-purple-400">${(analytics.netProfit / 1000).toFixed(1)}k</div>
+          <div>
+            <div className="w-full bg-purple-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Income</div>
+                <div className="font-bold text-emerald-600 mt-0.5">${(analytics.totalIncome / 1000).toFixed(1)}k</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Expense</div>
+                <div className="font-bold text-rose-500 mt-0.5">${(analytics.totalExpense / 1000).toFixed(1)}k</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Profit</div>
+                <div className="font-bold text-purple-600 dark:text-purple-400 mt-0.5">${(analytics.netProfit / 1000).toFixed(1)}k</div>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 4: Operational Status (Orange Gradient, Activity Network Icon) */}
+        {/* CARD 4: Operational Capacity (Amber Tint, Circular Progress, Activity Icon) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-amber-600/10 via-orange-600/5 to-transparent border border-amber-500/20 dark:border-amber-500/30 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+          className="p-5 rounded-[26px] bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 bg-card shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Operational Capacity
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Network size={11} />
-                <span>Multi-Site</span>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                OPERATIONAL CAPACITY
               </span>
-              <span className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
-                <Activity size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-2xl font-bold text-foreground tracking-tight">
-                <AnimatedCounter value={analytics.totalBranches} />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <Network size={11} />
+                  <span>Multi-Site</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Activity size={18} />
+                </span>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Active Branches</div>
             </div>
-            <CircularProgressRing
-              percentage={78}
-              colorClass="text-amber-500"
-            />
+            <div className="flex items-center justify-between my-2">
+              <div>
+                <div className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                  <AnimatedCounter value={analytics.totalBranches} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Active Branches</div>
+              </div>
+              <CircularProgressRing
+                percentage={78}
+                colorClass="text-amber-500"
+                size={48}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-amber-500 h-full rounded-full w-[78%]" />
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Employees</div>
-              <div className="font-semibold text-foreground">{analytics.totalEmployees}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Warehouses</div>
-              <div className="font-semibold text-emerald-600">{analytics.activeWarehouses}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Branches</div>
-              <div className="font-semibold text-amber-600 dark:text-amber-400">{analytics.totalBranches}</div>
+          <div>
+            <div className="w-full bg-amber-500 h-1 rounded-full my-3.5" />
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Employees</div>
+                <div className="font-bold text-foreground mt-0.5">{analytics.totalEmployees}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Warehouses</div>
+                <div className="font-bold text-emerald-600 mt-0.5">{analytics.activeWarehouses}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-[11px] font-medium">Branches</div>
+                <div className="font-bold text-amber-600 dark:text-amber-400 mt-0.5">{analytics.totalBranches}</div>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -1029,6 +1042,7 @@ const CompanyPage: React.FC = () => {
             { id: 'branches', label: 'Branches', icon: <Network size={16} /> },
             { id: 'stores', label: 'Stores', icon: <Store size={16} /> },
             { id: 'warehouses', label: 'Warehouses', icon: <Warehouse size={16} /> },
+            { id: 'structures', label: 'Rate Structures', icon: <DollarSign size={16} /> },
           ].map((t) => (
             <button
               key={t.id}

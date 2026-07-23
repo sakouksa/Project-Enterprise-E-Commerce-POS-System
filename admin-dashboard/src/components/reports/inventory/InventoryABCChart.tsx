@@ -49,8 +49,8 @@ export const InventoryABCChart: React.FC<Props> = ({ data = [], isLoading }) => 
               <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(val: number, name: string, item: any) => [
-                  `$${val.toLocaleString()} (${item.payload.products} products)`,
+                formatter={(val: any, _name: any, item: any) => [
+                  `$${Number(val || 0).toLocaleString()} (${item?.payload?.products || 0} products)`,
                   'Inventory Valuation'
                 ]}
               />

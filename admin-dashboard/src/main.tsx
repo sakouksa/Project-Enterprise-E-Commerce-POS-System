@@ -1,7 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import * as jsxDevRuntime from 'react/jsx-dev-runtime'
-import * as jsxRuntime from 'react/jsx-runtime'
 import App from './App.tsx'
 import './index.css'
 import { ensureLanguageLoaded, buildActiveDict, translateString } from './lib/i18n'
@@ -52,28 +50,6 @@ const translateProps = (props: any): any => {
 async function bootstrap() {
   await ensureLanguageLoaded(savedLanguage)
   buildActiveDict()
-
-  // Intercept React JSX Runtime (Vite + React 19)
-  const origJsxDev = (jsxDevRuntime as any).jsxDEV
-  if (origJsxDev) {
-    ;(jsxDevRuntime as any).jsxDEV = function (type: any, props: any, key: any, isStatic: any, source: any, self: any) {
-      return origJsxDev.call(this, type, translateProps(props), key, isStatic, source, self)
-    }
-  }
-
-  const origJsx = (jsxRuntime as any).jsx
-  if (origJsx) {
-    ;(jsxRuntime as any).jsx = function (type: any, props: any, key: any) {
-      return origJsx.call(this, type, translateProps(props), key)
-    }
-  }
-
-  const origJsxs = (jsxRuntime as any).jsxs
-  if (origJsxs) {
-    ;(jsxRuntime as any).jsxs = function (type: any, props: any, key: any) {
-      return origJsxs.call(this, type, translateProps(props), key)
-    }
-  }
 
   const origCreateElement = React.createElement
   ;(React as any).createElement = function (type: any, props: any, ...children: any[]) {

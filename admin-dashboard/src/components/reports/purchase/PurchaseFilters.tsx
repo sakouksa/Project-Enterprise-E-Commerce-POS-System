@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { EnterpriseDatePicker } from '@/components/common/EnterpriseDatePicker'
 
 export interface PurchaseFilterState {
   date_from?: string
@@ -116,9 +117,11 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
   }
 
   const handleReset = () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const todayStr = new Date().toISOString().split('T')[0]
     onChange({
-      date_from: '',
-      date_to: '',
+      date_from: thirtyDaysAgo,
+      date_to: todayStr,
       supplier_id: '',
       branch_id: '',
       warehouse_id: '',
@@ -155,14 +158,14 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
   ]
 
   return (
-    <div className="bg-card border border-border/80 rounded-[24px] p-5 shadow-sm space-y-4">
-      {/* Quick Range Pills & Export Dropdown */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-muted/40 rounded-xl text-xs font-bold text-muted-foreground mr-1">
-            <Filter size={14} className="text-primary" />
-            <span>{t('purchase.quickFilters', 'Quick Filters')}</span>
-          </div>
+    <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-sm space-y-4">
+      {/* Top row: Quick Date Presets & Action Buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/60">
+        <div className="flex items-center flex-wrap gap-2 text-xs font-semibold">
+          <span className="flex items-center gap-1.5 text-muted-foreground mr-1">
+            <Calendar size={14} className="text-primary" />
+            Date Filter:
+          </span>
 
           {[
             { key: 'today', label: t('purchase.today', 'Today') },
@@ -178,10 +181,10 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
                 key={item.key}
                 type="button"
                 onClick={() => handleQuickRange(item.key)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl transition-all font-bold text-xs cursor-pointer ${
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-xs scale-105'
-                    : 'bg-muted/30 hover:bg-muted/70 text-muted-foreground hover:text-foreground'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-102'
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/60'
                 }`}
               >
                 {item.label}
@@ -195,58 +198,55 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all shadow-2xs active:scale-98 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground bg-card border border-border/80 rounded-xl hover:bg-accent/70 transition-all shadow-2xs cursor-pointer active:scale-98"
           >
             <RotateCcw size={13} />
-            <span>{t('purchase.resetFilters', 'Reset')}</span>
+            <span>Reset</span>
           </button>
 
           <button
             type="button"
             onClick={onRefresh}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/40 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all shadow-2xs active:scale-98 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground bg-card border border-border/80 rounded-xl hover:bg-accent/70 transition-all shadow-2xs cursor-pointer active:scale-98"
           >
             <RefreshCw size={13} />
-            <span>{t('purchase.refresh', 'Refresh')}</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
       {/* Main Filter Dropdowns using ModernSelect */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {/* Date From */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
-            <Calendar size={12} />
-            <span>{t('purchase.dateFrom', 'From Date')}</span>
+        <div>
+          <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
+            Date From
           </label>
-          <input
-            type="date"
+          <EnterpriseDatePicker
             value={filters.date_from || ''}
-            onChange={(e) => onChange({ ...filters, date_from: e.target.value, quick_range: '' })}
-            className="w-full h-[34px] px-3 bg-card border border-border/80 rounded-xl text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
+            onChange={(val) => onChange({ ...filters, date_from: val, quick_range: '' })}
+            placeholder="Select Start Date"
+            className="w-full"
           />
         </div>
 
         {/* Date To */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
-            <Calendar size={12} />
-            <span>{t('purchase.dateTo', 'To Date')}</span>
+        <div>
+          <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
+            To Date
           </label>
-          <input
-            type="date"
+          <EnterpriseDatePicker
             value={filters.date_to || ''}
-            onChange={(e) => onChange({ ...filters, date_to: e.target.value, quick_range: '' })}
-            className="w-full h-[34px] px-3 bg-card border border-border/80 rounded-xl text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
+            onChange={(val) => onChange({ ...filters, date_to: val, quick_range: '' })}
+            placeholder="Select End Date"
+            className="w-full"
           />
         </div>
 
         {/* Supplier */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
-            <Truck size={12} />
-            <span>{t('purchase.supplier', 'Supplier')}</span>
+        <div>
+          <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
+            Supplier
           </label>
           <ModernSelect
             value={filters.supplier_id || ''}
@@ -259,10 +259,9 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
 
         {/* Branch */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
-            <Building2 size={12} />
-            <span>{t('purchase.branch', 'Branch')}</span>
+        <div>
+          <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
+            Branch
           </label>
           <ModernSelect
             value={filters.branch_id || ''}
@@ -275,10 +274,9 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
 
         {/* Warehouse */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
-            <Warehouse size={12} />
-            <span>{t('purchase.warehouse', 'Warehouse')}</span>
+        <div>
+          <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
+            Warehouse
           </label>
           <ModernSelect
             value={filters.warehouse_id || ''}
@@ -291,10 +289,9 @@ export const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
 
         {/* Status */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
-            <Tag size={12} />
-            <span>{t('purchase.status', 'Purchase Status')}</span>
+        <div>
+          <label className="block text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
+            Purchase Status
           </label>
           <ModernSelect
             value={filters.status || ''}

@@ -57,6 +57,8 @@ interface Product {
   unit?:               { id: number; name: string } | null
   tax?:                { id: number; name: string } | null
   stock?:              number
+  created_at?:         string
+  updated_at?:         string
   deleted_at?:         string | null
 }
 
@@ -326,6 +328,8 @@ const ProductsPage: React.FC = () => {
         stock_level: stockLevelFilter,
         start_date: startDate,
         end_date: endDate,
+        created_start: startDate,
+        created_end: endDate,
         warehouse_id: warehouseFilter,
         price_min: priceMinFilter,
         price_max: priceMaxFilter
@@ -334,8 +338,24 @@ const ProductsPage: React.FC = () => {
     placeholderData: (prev) => prev,
   })
 
-  const products: Product[] = data?.data ?? []
-  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
+  const rawProducts: Product[] = data?.data ?? []
+
+  const products = useMemo(() => {
+    return rawProducts.filter(p => {
+      // Created Date Range Filter
+      if (startDate) {
+        const itemDate = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : ''
+        if (itemDate && itemDate < startDate) return false
+      }
+      if (endDate) {
+        const itemDate = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : ''
+        if (itemDate && itemDate > endDate) return false
+      }
+      return true
+    })
+  }, [rawProducts, startDate, endDate])
+
+  const pagination = data?.pagination ?? { total: products.length, current_page: 1, last_page: 1 }
 
   // Select queries for filters
   const { data: categories } = useQuery({
@@ -528,7 +548,7 @@ const ProductsPage: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap z-10">
           {activeWorkspaceTab === 'products' && (
             <>
-              <button
+              {/* <button
                 onClick={() => setRecycleBinMode(!recycleBinMode)}
                 className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border transition-all shadow-2xs cursor-pointer ${
                   recycleBinMode
@@ -538,7 +558,7 @@ const ProductsPage: React.FC = () => {
               >
                 <Trash2 size={15} />
                 <span>{recycleBinMode ? 'Exit Trash' : 'Trash Bin'}</span>
-              </button>
+              </button> */}
               <button
                 onClick={() => setImportOpen(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
@@ -912,7 +932,7 @@ const ProductsPage: React.FC = () => {
                 <SearchInput
                   value={search}
                   onChange={setSearch}
-                  placeholder="Search by product name, SKU, barcode, category, brand..."
+                  placeholder="Search products by name, SKU, barcode, brand..."
                 />
               </div>
 

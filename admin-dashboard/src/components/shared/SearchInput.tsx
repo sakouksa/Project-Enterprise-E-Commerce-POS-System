@@ -14,7 +14,8 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   placeholder,
 }) => {
   const { t } = useTranslation()
-  const resolvedPlaceholder = placeholder ? t(placeholder, { defaultValue: placeholder }) : t('common.search')
+  const translated = placeholder ? t(placeholder, { defaultValue: placeholder }) : t('common.search', 'Search...')
+  const resolvedPlaceholder = (translated && translated.trim() !== '') ? translated : (placeholder || 'Search...')
 
   return (
     <div className="relative flex-1 max-w-md">

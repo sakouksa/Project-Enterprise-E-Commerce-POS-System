@@ -112,134 +112,43 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
   // Calculate total positive and negative difference variances
   const totalDiff = items.reduce((acc, it) => acc + (it.physical_quantity - it.system_quantity), 0)
 
-  if (!isEdit) {
-    return (
-      <form onSubmit={handleStartOpname} className="space-y-6 text-left">
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-border">
-          <div>
-            <h3 className="text-xl font-bold text-foreground">
-              {t('inventory.create_opname', 'New Stock Opname count')}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t('inventory.opname_desc', 'Snap system stock level snapshot and verify physically.')}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors cursor-pointer border border-border bg-card"
-          >
-            <X size={18} />
-          </button>
-        </div>
 
-        {/* Form Body */}
-        <div className="space-y-5 py-2">
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-              {t('products.warehouse', 'Warehouse')} <span className="text-rose-500">*</span>
-            </label>
-            <ModernSelect
-              value={warehouseId}
-              onChange={(val) => setWarehouseId(String(val))}
-              options={[
-                { value: '', label: 'Select Warehouse Location' },
-                ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
-              ]}
-              placeholder="Select Warehouse Location"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-              {t('inventory.notes', 'Notes')}
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={4}
-              placeholder="Details or reference..."
-              className="form-input rounded-xl"
-            />
-          </div>
-        </div>
-
-        {/* Drawer Footer */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all cursor-pointer"
-          >
-            {t('buttons.cancel', 'បោះបង់')}
-          </button>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl transition-all shadow-md flex items-center gap-2 hover:opacity-90 active:scale-95 cursor-pointer"
-          >
-            {createMutation.isPending && <Loader2 size={15} className="animate-spin" />}
-            {t('inventory.start_counting', 'Start Audit Count')}
-          </button>
-        </div>
-      </form>
-    )
-  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors border border-border bg-card">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <span>{isEdit ? t('inventory.opname_details', 'Stock Opname Details') : t('inventory.create_opname', 'New Stock Opname count')}</span>
-              {isEdit && (
-                <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-muted border border-border/80 text-muted-foreground font-semibold">
-                  {detail?.reference_number || `OPN-${opnameId}`}
-                </span>
-              )}
-            </h2>
-            <p className="text-xs text-muted-foreground">{t('inventory.opname_desc', 'Snap system stock level snapshot and verify physically.')}</p>
-          </div>
+      {/* Top Header Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/80 p-5 rounded-2xl shadow-sm">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <span>{isEdit ? t('inventory.opname_details', 'Stock Opname Details') : t('inventory.create_opname', 'New Stock Opname Audit')}</span>
+            {isEdit && (
+              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-muted border border-border/80 text-muted-foreground font-semibold">
+                {detail?.reference_number || `OPN-${opnameId}`}
+              </span>
+            )}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('inventory.opname_desc', 'Snap system stock snapshot and verify physical inventory counts.')}</p>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {!isEdit && (
-            <button
-              onClick={handleStartOpname}
-              disabled={createMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-sm hover:opacity-90 cursor-pointer"
-            >
-              {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Warehouse size={14} />}
-              {t('buttons.start_opname', 'Start Count Snapshot')}
-            </button>
-          )}
-          {isEdit && isDraft && (
-            <button
-              onClick={handleCompleteOpname}
-              disabled={completeMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500 cursor-pointer"
-            >
-              {completeMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-              {t('buttons.complete_opname', 'Verify & Reconcile')}
-            </button>
-          )}
-        </div>
+        {/* Back Button on Right Side with Text */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all font-semibold text-xs shadow-2xs cursor-pointer self-start sm:self-auto"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Stock Opnames</span>
+        </button>
       </div>
 
-      {/* Top Banner Card - Exact Employee Profile Card Style */}
+      {/* Top Banner Card - Status Banner */}
       {isEdit && (
         <div className="bg-muted/30 border border-border/70 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
-          <div className="w-14 h-14 rounded-full bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
-            <CheckCircle2 size={24} />
+          <div className="w-12 h-12 rounded-xl bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
+            <CheckCircle2 size={22} />
           </div>
           <div className="space-y-1 min-w-0 flex-1">
-            <h3 className="text-base font-bold text-foreground truncate">{detail?.reference_number || `OPN-${opnameId}`}</h3>
+            <h3 className="text-sm font-bold text-foreground truncate">{detail?.reference_number || `OPN-${opnameId}`}</h3>
             <p className="text-xs text-muted-foreground truncate">
               Warehouse Hub: {detail?.warehouse?.name || 'Main Warehouse'}
             </p>
@@ -255,144 +164,206 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
       )}
 
       {/* Form Content */}
-      <div className={isEdit ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "w-full"}>
-        {/* Left Side: General Info */}
-        <div className={`${isEdit ? "lg:col-span-1" : "w-full"} bg-card border border-border/50 rounded-2xl p-6 space-y-5 shadow-sm h-fit`}>
-          <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider border-b border-border/50 pb-2">
-            GENERAL INFORMATION
-          </h3>
+      <form onSubmit={handleStartOpname} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Side: General Information Card */}
+          <div className="lg:col-span-1 bg-card border border-border/80 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
+            <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+              <Info size={16} className="text-primary" />
+              <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                GENERAL INFORMATION
+              </h3>
+            </div>
 
-          {isEdit ? (
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 gap-y-3">
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('products.warehouse', 'Warehouse')}</span>
-                  <span className="font-bold text-foreground block">
-                    {warehouses?.find((w: any) => w.id.toString() === warehouseId)?.name || 'Unknown Warehouse'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Audited Items Count</span>
-                  <span className="font-bold text-foreground block">{items.length} items</span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Net Discrepancy Variance</span>
-                  <span className={`font-bold block ${totalDiff > 0 ? 'text-emerald-600' : totalDiff < 0 ? 'text-rose-600' : 'text-foreground'}`}>
-                    {totalDiff > 0 ? `+${totalDiff}` : totalDiff}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.auditor', 'Counted By')}</span>
-                  <span className="font-bold text-foreground block">{detail?.user?.name || 'Super Admin'}</span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
-                  <span className="font-medium text-muted-foreground block italic">"{notes || '—'}"</span>
+            {isEdit ? (
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 gap-y-3.5">
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('products.warehouse', 'Warehouse Hub')}</span>
+                    <span className="font-bold text-foreground block">
+                      {warehouses?.find((w: any) => w.id.toString() === warehouseId)?.name || 'Unknown Warehouse'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Audited Items Count</span>
+                    <span className="font-bold text-foreground block">{items.length} items</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Net Discrepancy Variance</span>
+                    <span className={`font-bold block ${totalDiff > 0 ? 'text-emerald-600' : totalDiff < 0 ? 'text-rose-600' : 'text-foreground'}`}>
+                      {totalDiff > 0 ? `+${totalDiff}` : totalDiff}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.auditor', 'Counted By')}</span>
+                    <span className="font-bold text-foreground block">{detail?.user?.name || 'Super Admin'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
+                    <span className="font-medium text-muted-foreground block italic">"{notes || '—'}"</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
+                    {t('products.warehouse', 'Warehouse Hub')} <span className="text-rose-500">*</span>
+                  </label>
+                  <ModernSelect
+                    value={warehouseId}
+                    onChange={(val) => setWarehouseId(String(val))}
+                    options={[
+                      { value: '', label: 'Select Warehouse Location' },
+                      ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                    ]}
+                    placeholder="Select Warehouse Location"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('inventory.notes', 'Notes')}</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder="Audit description or reference..."
+                    className="w-full p-3 rounded-xl border border-border bg-card text-foreground text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Side: Count Verification Card */}
+          <div className="lg:col-span-2 bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-sm flex flex-col justify-between">
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('products.warehouse', 'Warehouse')}</label>
-                <ModernSelect
-                  value={warehouseId}
-                  onChange={(val) => setWarehouseId(String(val))}
-                  options={[
-                    { value: '', label: 'Select Warehouse Location' },
-                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
-                  ]}
-                  placeholder="Select Warehouse Location"
-                />
+              <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                <Package size={16} className="text-primary" />
+                <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">COUNT VERIFICATION</h3>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.notes', 'Notes')}</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Details or reference..."
-                  className="form-input"
-                />
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Right Side: snapped items physical counts */}
-        {isEdit && (
-          <div className="lg:col-span-2 bg-card border border-border/50 rounded-2xl p-5 space-y-4 shadow-sm">
-            <h3 className="text-sm font-bold text-foreground font-semibold uppercase tracking-wider">{t('inventory.items', 'Count Verification')}</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/20">
-                    <th className="py-2.5 px-3">{t('products.title', 'Product')}</th>
-                    <th className="py-2.5 px-3 w-28">{t('inventory.system_qty', 'System Qty')}</th>
-                    <th className="py-2.5 px-3 w-28">{t('inventory.physical_qty', 'Physical Qty')}</th>
-                    <th className="py-2.5 px-3 w-24">{t('inventory.variance', 'Diff')}</th>
-                    <th className="py-2.5 px-3">{t('inventory.notes', 'Item Notes')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, idx) => {
-                    const variance = item.physical_quantity - item.system_quantity
-                    return (
-                      <tr key={idx} className="border-b border-border/20 last:border-0 hover:bg-muted/10">
-                        <td className="py-2 px-3 text-xs text-foreground font-medium">
-                          {item.product?.name} ({item.product?.sku})
-                        </td>
-                        <td className="py-2 px-3 text-xs text-foreground">
-                          {item.system_quantity}
-                        </td>
-                        <td className="py-2 px-3 text-xs text-foreground">
-                          {isDone ? (
-                            <span className="font-semibold">{item.physical_quantity}</span>
-                          ) : (
-                            <input
-                              type="number"
-                              value={item.physical_quantity}
-                              onChange={(e) => handleItemChange(idx, 'physical_quantity', parseInt(e.target.value, 10) || 0)}
-                              required
-                              min="0"
-                              step="1"
-                              className="form-input text-xs"
-                            />
-                          )}
-                        </td>
-                        <td className={`py-2 px-3 text-xs font-bold
-                                       ${variance > 0 ? 'text-emerald-500' : variance < 0 ? 'text-rose-500' : 'text-muted-foreground'}`}>
-                          {variance > 0 ? `+${variance}` : variance}
-                        </td>
-                        <td className="py-2 px-3 text-xs text-foreground">
-                          {isDone ? (
-                            <span className="text-muted-foreground font-normal italic">{item.notes || '—'}</span>
-                          ) : (
-                            <input
-                              type="text"
-                              value={item.notes}
-                              onChange={(e) => handleItemChange(idx, 'notes', e.target.value)}
-                              placeholder="Item note"
-                              className="form-input text-xs"
-                            />
-                          )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/60 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                      <th className="py-3 px-4">{t('products.title', 'PRODUCT MANAGEMENT')}</th>
+                      <th className="py-3 px-4 w-28">{t('inventory.system_qty', 'SYSTEM QTY')}</th>
+                      <th className="py-3 px-4 w-32">{t('inventory.physical_qty', 'PHYSICAL QTY')}</th>
+                      <th className="py-3 px-4 w-24">{t('inventory.variance', 'VARIANCE')}</th>
+                      <th className="py-3 px-4">{t('inventory.notes', 'ITEM NOTES')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40 text-xs text-foreground font-medium">
+                    {items.map((item, idx) => {
+                      const variance = item.physical_quantity - item.system_quantity
+                      return (
+                        <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-xs text-foreground block">{item.product?.name}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground block">{item.product?.sku}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-xs font-bold text-foreground">
+                            {item.system_quantity}
+                          </td>
+                          <td className="py-3 px-4 text-xs text-foreground">
+                            {isDone ? (
+                              <span className="font-bold text-sm">{item.physical_quantity}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                value={item.physical_quantity}
+                                onChange={(e) => handleItemChange(idx, 'physical_quantity', parseInt(e.target.value, 10) || 0)}
+                                required
+                                min="0"
+                                step="1"
+                                className="w-full p-2 rounded-xl border border-border bg-card text-foreground font-bold text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                              />
+                            )}
+                          </td>
+                          <td className={`py-3 px-4 text-xs font-bold ${variance > 0 ? 'text-emerald-600' : variance < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
+                            {variance > 0 ? `+${variance}` : variance}
+                          </td>
+                          <td className="py-3 px-4 text-xs text-foreground">
+                            {isDone ? (
+                              <span className="text-muted-foreground font-normal italic">{item.notes || '—'}</span>
+                            ) : (
+                              <input
+                                type="text"
+                                value={item.notes}
+                                onChange={(e) => handleItemChange(idx, 'notes', e.target.value)}
+                                placeholder="Reason for diff..."
+                                className="w-full p-2 rounded-xl border border-border bg-card text-foreground text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                              />
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="text-center py-12 text-xs text-muted-foreground">
+                          <div className="space-y-2">
+                            <Package size={32} className="mx-auto text-muted-foreground/40" />
+                            <p className="font-semibold">No inventory records snapped for this warehouse yet.</p>
+                            <p className="text-[11px]">Select a warehouse and click <span className="text-primary font-bold">Start Audit Snapshot</span>.</p>
+                          </div>
                         </td>
                       </tr>
-                    )
-                  })}
-                  {items.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="text-center py-6 text-xs text-muted-foreground">
-                        {t('inventory.no_items', 'No inventory snap records found in this warehouse location.')}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+
+        {/* Clean Bottom Action Bar Container */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border/80 p-5 rounded-2xl shadow-sm">
+          <div className="text-xs text-muted-foreground font-medium">
+            {isEdit ? (
+              <span>Auditing <span className="font-bold text-foreground">{items.length}</span> item(s) in warehouse snapshot</span>
+            ) : (
+              <span>Select a warehouse location to start audit count</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-xs font-semibold text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors bg-card cursor-pointer"
+            >
+              Cancel
+            </button>
+
+            {!isEdit && (
+              <button
+                type="button"
+                onClick={handleStartOpname}
+                disabled={createMutation.isPending}
+                className="px-6 py-2.5 text-xs font-bold text-white bg-primary rounded-xl flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer"
+              >
+                {createMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Warehouse size={15} />}
+                <span>Start Audit Snapshot</span>
+              </button>
+            )}
+
+            {isEdit && isDraft && (
+              <button
+                type="button"
+                onClick={handleCompleteOpname}
+                disabled={completeMutation.isPending}
+                className="px-5 py-2.5 text-xs font-semibold text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500 active:scale-95 transition-all cursor-pointer"
+              >
+                {completeMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                <span>Verify & Reconcile</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </form>
     </div>
   )
 }

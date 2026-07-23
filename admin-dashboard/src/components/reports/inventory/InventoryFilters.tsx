@@ -1,9 +1,10 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Calendar, Warehouse, Building2, Tag, Layers, RefreshCw, Filter
+  Calendar, Warehouse, Building2, Tag, Layers, RefreshCw, Filter, RotateCcw
 } from 'lucide-react'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { EnterpriseDatePicker } from '@/components/common/EnterpriseDatePicker'
 
 export interface InventoryFilterState {
   date_from: string
@@ -103,47 +104,51 @@ export const InventoryFilters: React.FC<Props> = ({
 
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
+            type="button"
             onClick={onReset}
-            className="px-3 py-1.5 text-xs font-medium rounded-xl border border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground bg-card border border-border/80 rounded-xl hover:bg-accent/70 transition-all shadow-2xs cursor-pointer active:scale-98"
           >
-            Reset
+            <RotateCcw size={13} />
+            <span>Reset</span>
           </button>
+
           <button
+            type="button"
             onClick={onRefresh}
             disabled={isFetching}
-            className="px-3 py-1.5 text-xs font-medium rounded-xl border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 transition-colors flex items-center gap-1.5"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground bg-card border border-border/80 rounded-xl hover:bg-accent/70 transition-all shadow-2xs cursor-pointer active:scale-98 disabled:opacity-50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
       {/* Main Filter Dropdowns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {/* Date From */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 block">
+          <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1 block">
             {t('inventory.dateFrom', 'Date From')}
           </label>
-          <input
-            type="date"
+          <EnterpriseDatePicker
             value={filters.date_from}
-            onChange={(e) => onChange({ ...filters, date_from: e.target.value })}
-            className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
+            onChange={(val) => onChange({ ...filters, date_from: val })}
+            placeholder="Select Start Date"
+            className="w-full"
           />
         </div>
 
         {/* Date To */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 block">
+          <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1 block">
             {t('inventory.dateTo', 'Date To')}
           </label>
-          <input
-            type="date"
+          <EnterpriseDatePicker
             value={filters.date_to}
-            onChange={(e) => onChange({ ...filters, date_to: e.target.value })}
-            className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
+            onChange={(val) => onChange({ ...filters, date_to: val })}
+            placeholder="Select End Date"
+            className="w-full"
           />
         </div>
 

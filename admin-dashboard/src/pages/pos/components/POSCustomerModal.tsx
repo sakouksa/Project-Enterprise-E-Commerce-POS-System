@@ -20,6 +20,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
   const [email, setEmail] = useState('')
   const [group, setGroup] = useState('Retail Member')
   const [address, setAddress] = useState('')
+  const [creditLimit, setCreditLimit] = useState('500')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +34,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
       group,
       loyalty_points: 10, // Initial bonus points
       address: address.trim() || undefined,
+      credit_limit: parseFloat(creditLimit) || 500,
     }
 
     onAddCustomer(newCust)
@@ -105,17 +107,31 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="font-bold text-foreground block mb-1">Customer Group</label>
-            <select
-              value={group}
-              onChange={(e) => setGroup(e.target.value)}
-              className="form-input text-xs cursor-pointer"
-            >
-              <option value="Retail Member">Retail Member</option>
-              <option value="VIP Member">VIP Tier (10% Off)</option>
-              <option value="Wholesale Client">Wholesale Client</option>
-            </select>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-bold text-foreground block mb-1">Customer Group</label>
+              <select
+                value={group}
+                onChange={(e) => setGroup(e.target.value)}
+                className="form-input text-xs cursor-pointer"
+              >
+                <option value="Retail Member">Retail Member</option>
+                <option value="VIP Member">VIP Tier (10% Off)</option>
+                <option value="Wholesale Client">Wholesale Client</option>
+              </select>
+            </div>
+            <div>
+              <label className="font-bold text-foreground block mb-1">Credit Limit ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="50"
+                value={creditLimit}
+                onChange={(e) => setCreditLimit(e.target.value)}
+                placeholder="e.g. 500"
+                className="form-input text-xs"
+              />
+            </div>
           </div>
 
           <div>

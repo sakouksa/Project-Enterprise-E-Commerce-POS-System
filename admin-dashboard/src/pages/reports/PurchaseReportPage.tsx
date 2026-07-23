@@ -38,10 +38,13 @@ export const PurchaseReportPage: React.FC = () => {
   const { t } = useTranslation('reports')
   const toast = useToast()
 
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const todayStr = new Date().toISOString().split('T')[0]
+
   // Filter State
   const [filters, setFilters] = useState<PurchaseFilterState>({
-    date_from: '',
-    date_to: '',
+    date_from: thirtyDaysAgo,
+    date_to: todayStr,
     supplier_id: '',
     branch_id: '',
     warehouse_id: '',

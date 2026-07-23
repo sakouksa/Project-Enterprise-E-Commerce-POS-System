@@ -156,70 +156,41 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors border border-border bg-card">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <span>{isEdit ? t('inventory.view_trf', 'Stock Transfer Details') : t('inventory.create_trf', 'New Stock Transfer')}</span>
-              {isEdit && (
-                <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-muted border border-border/80 text-muted-foreground font-semibold">
-                  {detail?.reference_number || `TRF-${transferId}`}
-                </span>
-              )}
-            </h2>
-            <p className="text-xs text-muted-foreground">{t('inventory.trf_desc', 'Transfer goods between warehouse locations.')}</p>
-          </div>
+      {/* Top Header Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/80 p-5 rounded-2xl shadow-sm">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <span>{isEdit ? t('inventory.view_trf', 'Stock Transfer Details') : t('inventory.create_trf', 'New Stock Transfer')}</span>
+            {isEdit && (
+              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-muted border border-border/80 text-muted-foreground font-semibold">
+                {detail?.reference_number || `TRF-${transferId}`}
+              </span>
+            )}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('inventory.trf_desc', 'Transfer goods between warehouse locations.')}</p>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {isEdit && isDraft && (
-            <button
-              onClick={() => shipMutation.mutate()}
-              disabled={shipMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
-            >
-              {shipMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />}
-              {t('buttons.ship', 'Ship Transfer')}
-            </button>
-          )}
-          {isEdit && isInTransit && (
-            <button
-              onClick={handleReceiveSubmit}
-              disabled={receiveMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500 active:scale-95 transition-all cursor-pointer"
-            >
-              {receiveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-              {t('buttons.receive', 'Receive Transfer')}
-            </button>
-          )}
-          {isDraft && (
-            <button
-              onClick={handleSubmit}
-              disabled={saveMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer"
-            >
-              {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
-              {t('buttons.save', 'Save Draft')}
-            </button>
-          )}
-        </div>
+        {/* Back Button on Right Side with Text */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all font-semibold text-xs shadow-2xs cursor-pointer self-start sm:self-auto"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Transfers</span>
+        </button>
       </div>
 
-      {/* Top Banner Card - Exact Employee Profile Card Style */}
+      {/* Top Banner Card - Status Banner */}
       {isEdit && (
         <div className="bg-muted/30 border border-border/70 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
-          <div className="w-14 h-14 rounded-full bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
-            <ArrowLeftRight size={24} />
+          <div className="w-12 h-12 rounded-xl bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
+            <ArrowLeftRight size={22} />
           </div>
           <div className="space-y-1 min-w-0 flex-1">
-            <h3 className="text-base font-bold text-foreground truncate">{detail?.reference_number || `TRF-${transferId}`}</h3>
+            <h3 className="text-sm font-bold text-foreground truncate">{detail?.reference_number || `TRF-${transferId}`}</h3>
             <p className="text-xs text-muted-foreground truncate">
-              {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Source'} → {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Destination'}
+              {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Source Warehouse'} → {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Destination Warehouse'}
             </p>
             <div>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
@@ -235,188 +206,268 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
       )}
 
       {/* Form Content */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Side: General Info */}
-        <div className="lg:col-span-1 bg-card border border-border/50 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
-          <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider border-b border-border/50 pb-2">
-            GENERAL INFORMATION
-          </h3>
-
-          {!isDraft ? (
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 gap-y-3">
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.from_warehouse', 'Source Warehouse')}</span>
-                  <span className="font-bold text-foreground block">
-                    {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Unknown Warehouse'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.to_warehouse', 'Destination Warehouse')}</span>
-                  <span className="font-bold text-foreground block">
-                    {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Unknown Warehouse'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
-                  <span className="font-medium text-muted-foreground block italic">
-                    "{notes || '—'}"
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Total Line Items</span>
-                  <span className="font-bold text-foreground block">{items.length} items</span>
-                </div>
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Side: General Information Card */}
+          <div className="lg:col-span-1 bg-card border border-border/80 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
+            <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+              <Info size={16} className="text-primary" />
+              <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                GENERAL INFORMATION
+              </h3>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.from_warehouse', 'Source Warehouse')}</label>
-                <ModernSelect
-                  value={fromWarehouseId}
-                  onChange={(val) => setFromWarehouseId(String(val))}
-                  options={[
-                    { value: '', label: 'Select Source' },
-                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
-                  ]}
-                  placeholder="Select Source"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.to_warehouse', 'Destination Warehouse')}</label>
-                <ModernSelect
-                  value={toWarehouseId}
-                  onChange={(val) => setToWarehouseId(String(val))}
-                  options={[
-                    { value: '', label: 'Select Destination' },
-                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
-                  ]}
-                  placeholder="Select Destination"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.notes', 'Notes')}</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Detailed notes/reference..."
-                  className="form-input"
-                />
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Right Side: Items Management */}
-        <div className="lg:col-span-2 bg-card border border-border/50 rounded-2xl p-5 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-foreground font-semibold uppercase tracking-wider">{t('inventory.items', 'Transfer Items')}</h3>
-            {isDraft && (
-              <button
-                type="button"
-                onClick={handleAddItem}
-                className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg flex items-center gap-1 shadow-sm transition-colors"
-              >
-                <Plus size={13} />
-                {t('inventory.add_item', 'Add Item')}
-              </button>
+            {!isDraft ? (
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 gap-y-3.5">
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.from_warehouse', 'Source Warehouse')}</span>
+                    <span className="font-bold text-foreground block">
+                      {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Unknown Warehouse'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.to_warehouse', 'Destination Warehouse')}</span>
+                    <span className="font-bold text-foreground block">
+                      {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Unknown Warehouse'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
+                    <span className="font-medium text-muted-foreground block italic">
+                      "{notes || '—'}"
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Total Line Items</span>
+                    <span className="font-bold text-foreground block">{items.length} items</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
+                    {t('inventory.from_warehouse', 'Source Warehouse')} <span className="text-rose-500">*</span>
+                  </label>
+                  <ModernSelect
+                    value={fromWarehouseId}
+                    onChange={(val) => setFromWarehouseId(String(val))}
+                    options={[
+                      { value: '', label: 'Select Source' },
+                      ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                    ]}
+                    placeholder="Select Source"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
+                    {t('inventory.to_warehouse', 'Destination Warehouse')} <span className="text-rose-500">*</span>
+                  </label>
+                  <ModernSelect
+                    value={toWarehouseId}
+                    onChange={(val) => setToWarehouseId(String(val))}
+                    options={[
+                      { value: '', label: 'Select Destination' },
+                      ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                    ]}
+                    placeholder="Select Destination"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('inventory.notes', 'Notes')}</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder="Detailed notes or transfer reference..."
+                    className="w-full p-3 rounded-xl border border-border bg-card text-foreground text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
             )}
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/20">
-                  <th className="py-2.5 px-3">{t('products.title', 'Product')}</th>
-                  <th className="py-2.5 px-3 w-32">{t('inventory.qty_requested', 'Req Qty')}</th>
-                  {(isInTransit || isReceived) && <th className="py-2.5 px-3 w-32">{t('inventory.qty_received', 'Rec Qty')}</th>}
-                  {isDraft && <th className="py-2.5 px-3 w-12 text-center"></th>}
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, idx) => {
-                  const productObj = products?.find((p: any) => p.id.toString() === item.product_id)
-                  return (
-                    <tr key={idx} className="border-b border-border/20 last:border-0 hover:bg-muted/10">
-                      <td className="py-3 px-3">
-                        {!isDraft ? (
-                          <span className="text-xs text-foreground font-semibold">
-                            {productObj ? `${productObj.name} (${productObj.sku})` : 'Unknown Product'}
-                          </span>
-                        ) : (
-                          <ModernSelect
-                            value={item.product_id}
-                            onChange={(val) => handleItemChange(idx, 'product_id', String(val))}
-                            options={[
-                              { value: '', label: 'Select Product' },
-                              ...(products ?? []).map((p: any) => ({
-                                value: p.id,
-                                label: p.name,
-                                code: p.sku,
-                              })),
-                            ]}
-                            placeholder="Select Product"
-                          />
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-xs text-foreground">
-                        {!isDraft ? (
-                          <span className="font-semibold">{item.quantity}</span>
-                        ) : (
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10) || 0)}
-                            required
-                            min="1"
-                            step="1"
-                            className="form-input text-xs"
-                          />
-                        )}
-                      </td>
-                      {isInTransit && (
-                        <td className="py-2 px-3">
-                          <input
-                            type="number"
-                            value={item.quantity_received ?? item.quantity}
-                            onChange={(e) => handleItemChange(idx, 'quantity_received', parseInt(e.target.value, 10) || 0)}
-                            required
-                            min="0"
-                            step="1"
-                            className="form-input text-xs border-emerald-500/60 focus:ring-emerald-500/30"
-                          />
-                        </td>
-                      )}
-                      {isReceived && (
-                        <td className="py-3 px-3 text-xs text-foreground font-semibold">
-                          {item.quantity_received}
-                        </td>
-                      )}
-                      {isDraft && (
-                        <td className="py-2 px-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(idx)}
-                            className="p-1 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  )
-                })}
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={isInTransit ? 3 : 2} className="text-center py-6 text-xs text-muted-foreground">
-                      {t('inventory.no_items', 'No items added. Click Add Item to start.')}
-                    </td>
-                  </tr>
+          {/* Right Side: Items Management Card */}
+          <div className="lg:col-span-2 bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-sm flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2">
+                  <Package size={16} className="text-primary" />
+                  <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">TRANSFER ITEMS</h3>
+                </div>
+                {isDraft && (
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Plus size={14} />
+                    <span>Add Item</span>
+                  </button>
                 )}
-              </tbody>
-            </table>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/60 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                      <th className="py-3 px-4">{t('products.title', 'PRODUCT MANAGEMENT')}</th>
+                      <th className="py-3 px-4 w-36">{t('inventory.qty_requested', 'REQ QTY')}</th>
+                      {(isInTransit || isReceived) && <th className="py-3 px-4 w-36">{t('inventory.qty_received', 'REC QTY')}</th>}
+                      {isDraft && <th className="py-3 px-4 w-12 text-center"></th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40 text-xs text-foreground font-medium">
+                    {items.map((item, idx) => {
+                      const productObj = products?.find((p: any) => p.id.toString() === item.product_id)
+                      return (
+                        <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4">
+                            {!isDraft ? (
+                              <div className="space-y-0.5">
+                                <span className="text-xs text-foreground font-bold block">
+                                  {productObj?.name || 'Unknown Product'}
+                                </span>
+                                <span className="font-mono text-[10px] text-muted-foreground block">
+                                  {productObj?.sku || 'SKU-0000'}
+                                </span>
+                              </div>
+                            ) : (
+                              <ModernSelect
+                                value={item.product_id}
+                                onChange={(val) => handleItemChange(idx, 'product_id', String(val))}
+                                options={[
+                                  { value: '', label: 'Select Product' },
+                                  ...(products ?? []).map((p: any) => ({
+                                    value: p.id,
+                                    label: p.name,
+                                    code: p.sku,
+                                  })),
+                                ]}
+                                placeholder="Select Product"
+                              />
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-xs text-foreground">
+                            {!isDraft ? (
+                              <span className="font-bold text-sm">{item.quantity}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10) || 0)}
+                                required
+                                min="1"
+                                step="1"
+                                className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                              />
+                            )}
+                          </td>
+                          {isInTransit && (
+                            <td className="py-3 px-4">
+                              <input
+                                type="number"
+                                value={item.quantity_received ?? item.quantity}
+                                onChange={(e) => handleItemChange(idx, 'quantity_received', parseInt(e.target.value, 10) || 0)}
+                                required
+                                min="0"
+                                step="1"
+                                className="w-full p-2.5 rounded-xl border border-emerald-500/60 bg-emerald-500/5 text-emerald-600 font-bold text-xs focus:ring-2 focus:ring-emerald-500/20"
+                              />
+                            </td>
+                          )}
+                          {isReceived && (
+                            <td className="py-3 px-4 text-xs text-foreground font-bold text-emerald-600">
+                              {item.quantity_received}
+                            </td>
+                          )}
+                          {isDraft && (
+                            <td className="py-3 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(idx)}
+                                className="p-1.5 hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                                title="Remove Item"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={isInTransit ? 4 : 3} className="text-center py-12 text-xs text-muted-foreground">
+                          <div className="space-y-2">
+                            <Package size={32} className="mx-auto text-muted-foreground/40" />
+                            <p className="font-semibold">No items added to this transfer yet.</p>
+                            <p className="text-[11px]">Click <span className="text-primary font-bold">Add Item</span> above to select products.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Clean Bottom Action Bar Container */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border/80 p-5 rounded-2xl shadow-sm">
+          <div className="text-xs text-muted-foreground font-medium">
+            {items.length > 0 ? (
+              <span><span className="font-bold text-foreground">{items.length}</span> item(s) configured for warehouse transfer</span>
+            ) : (
+              <span>Please add at least 1 item to proceed</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-xs font-semibold text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors bg-card cursor-pointer"
+            >
+              Cancel
+            </button>
+
+            {isEdit && isDraft && (
+              <button
+                type="button"
+                onClick={() => shipMutation.mutate()}
+                disabled={shipMutation.isPending}
+                className="px-5 py-2.5 text-xs font-semibold text-white bg-blue-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-blue-500 active:scale-95 transition-all cursor-pointer"
+              >
+                {shipMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />}
+                <span>Ship Transfer</span>
+              </button>
+            )}
+
+            {isEdit && isInTransit && (
+              <button
+                type="button"
+                onClick={handleReceiveSubmit}
+                disabled={receiveMutation.isPending}
+                className="px-5 py-2.5 text-xs font-semibold text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500 active:scale-95 transition-all cursor-pointer"
+              >
+                {receiveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                <span>Receive Transfer</span>
+              </button>
+            )}
+
+            {isDraft && (
+              <button
+                type="submit"
+                disabled={saveMutation.isPending}
+                className="px-6 py-2.5 text-xs font-bold text-white bg-primary rounded-xl flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer"
+              >
+                {saveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Clock size={15} />}
+                <span>Save Changes</span>
+              </button>
+            )}
           </div>
         </div>
       </form>

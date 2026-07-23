@@ -17,6 +17,7 @@ import {
   CheckCircle2
 } from 'lucide-react'
 import api from '@/api/client'
+import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
 
 import PurchaseFilters, { type PurchaseFilterState } from '../../components/reports/purchase/PurchaseFilters'
@@ -35,6 +36,7 @@ import PurchaseReturnTable from '../../components/reports/purchase/PurchaseRetur
 
 export const PurchaseReportPage: React.FC = () => {
   const { t } = useTranslation('reports')
+  const toast = useToast()
 
   // Filter State
   const [filters, setFilters] = useState<PurchaseFilterState>({
@@ -121,6 +123,7 @@ export const PurchaseReportPage: React.FC = () => {
     try {
       setExporting(true)
       setShowExcelMenu(false)
+      toast.info(t('purchase.toast.exportingExcel', 'Exporting Excel purchase report, please wait...'))
 
       let exportFilters = { ...filters }
       if (presetRange && presetRange !== 'current') {
@@ -163,8 +166,12 @@ export const PurchaseReportPage: React.FC = () => {
       document.body.appendChild(link)
       link.click()
       link.remove()
+      window.URL.revokeObjectURL(url)
+
+      toast.success(t('purchase.toast.exportExcelSuccess', 'Purchase report exported to Excel successfully!'))
     } catch (err) {
       console.error('Export failed', err)
+      toast.error(t('purchase.toast.exportError', 'Failed to export purchase report. Please try again.'))
     } finally {
       setExporting(false)
     }

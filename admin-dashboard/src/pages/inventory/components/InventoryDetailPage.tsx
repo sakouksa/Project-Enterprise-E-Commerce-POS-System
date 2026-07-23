@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { X, Calendar, Activity, Info, BarChart2, Package, User, Clock } from 'lucide-react'
+import { X, Activity, Info, Package, Warehouse, Clock, AlertTriangle, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
@@ -18,173 +19,290 @@ const formatShortDate = (dateStr: string | null | undefined): string => {
 }
 
 interface InventoryDetailPageProps {
-  itemId: number
+  itemId?: number
+  inventoryId?: number
   onClose: () => void
 }
 
-export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId, onClose }) => {
+export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId, inventoryId, onClose }) => {
   const { t } = useTranslation()
+  const effectiveId = itemId ?? inventoryId
   const [activeSubTab, setActiveSubTab] = useState<'info' | 'movements'>('info')
 
-  const { data: detail, isLoading } = useQuery({
-    queryKey: ['inventory-detail', itemId],
-    queryFn: () => api.get(`/inventory/${itemId}`).then(r => r.data.data),
-    enabled: !!itemId
+  const { data: detail, isLoading, isError, refetch } = useQuery({
+    queryKey: ['inventory-detail', effectiveId],
+    queryFn: () => api.get(`/inventory/${effectiveId}`).then(r => r.data.data),
+    enabled: !!effectiveId
   })
 
   const { data: movements, isLoading: loadingMovements } = useQuery({
     queryKey: ['inventory-item-movements', detail?.product_id, detail?.warehouse_id],
     queryFn: () => api.get('/inventory-movements', {
       params: {
-        product_id: detail.product_id,
-        warehouse_id: detail.warehouse_id,
+        product_id: detail?.product_id,
+        warehouse_id: detail?.warehouse_id,
         per_page: 50
       }
     }).then(r => r.data.data),
     enabled: !!detail?.product_id && !!detail?.warehouse_id
   })
 
-  if (isLoading) {
-    return (
-      <div className="p-8 flex justify-center">
-        <LoadingSpinner />
-      </div>
-    )
-  }
-
-  if (!detail) return null
+  const availableQty = Number(detail?.available_quantity ?? detail?.quantity ?? 0)
+  const totalQty = Number(detail?.quantity ?? 0)
+  const reservedQty = Number(detail?.reserved_quantity ?? 0)
+  const reorderPoint = Number(detail?.reorder_point ?? 5)
+  const reorderQty = Number(detail?.reorder_qty ?? 0)
+  const isOutOfStock = totalQty <= 0
+  const isLowStock = !isOutOfStock && availableQty <= reorderPoint
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-card border-l border-border shadow-2xl z-50 flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
-        <div>
-          <h3 className="font-semibold text-lg text-foreground">{t('inventory.details', 'Inventory Specifications')}</h3>
-          <p className="text-xs text-muted-foreground">{detail.product?.name} ({detail.product?.sku})</p>
+    <div className="fixed inset-0 z-50 overflow-hidden print:hidden flex justify-end">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+      />
+
+      {/* Slide-over Panel */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+        className="relative w-full max-w-lg bg-card border-l border-border shadow-2xl flex flex-col h-full overflow-hidden z-10"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/80 bg-card">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <Package size={18} />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">
+                {t('inventory.item_card', 'Inventory Item Card')}
+              </h2>
+              <p className="text-[11px] text-muted-foreground font-mono">
+                ID: #{effectiveId || '—'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
         </div>
-        <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors">
-          <X size={18} />
-        </button>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border bg-muted/10 px-6 gap-4">
-        <button
-          onClick={() => setActiveSubTab('info')}
-          className={`flex items-center gap-1.5 py-3 border-b-2 text-sm font-semibold transition-colors
-                     ${activeSubTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          <Info size={14} />
-          {t('products.general', 'General Info')}
-        </button>
-        <button
-          onClick={() => setActiveSubTab('movements')}
-          className={`flex items-center gap-1.5 py-3 border-b-2 text-sm font-semibold transition-colors
-                     ${activeSubTab === 'movements' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          <Activity size={14} />
-          {t('inventory.movements', 'Stock History Ledger')}
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {activeSubTab === 'info' ? (
-          <div className="space-y-6">
-            {/* Stock Levels Status Widget */}
-            <div className="grid grid-cols-3 gap-4 bg-muted/10 border border-border/40 p-4 rounded-xl">
-              <div className="text-center">
-                <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.stock', 'On Hand')}</span>
-                <span className="block text-xl font-bold text-foreground mt-1">{parseFloat(detail.quantity)}</span>
-              </div>
-              <div className="text-center border-x border-border/60">
-                <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.reserved_qty', 'Reserved')}</span>
-                <span className="block text-xl font-bold text-amber-500 mt-1">{parseFloat(detail.reserved_quantity)}</span>
-              </div>
-              <div className="text-center">
-                <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.available_qty', 'Available')}</span>
-                <span className="block text-xl font-bold text-emerald-500 mt-1">{parseFloat(detail.available_quantity)}</span>
-              </div>
+        {isLoading ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-3">
+            <LoadingSpinner />
+            <p className="text-xs text-muted-foreground font-medium">Loading inventory details...</p>
+          </div>
+        ) : isError || !detail ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-4 text-center">
+            <div className="p-4 rounded-full bg-rose-500/10 text-rose-500">
+              <AlertCircle size={32} />
             </div>
-
-            {/* Warehouse and Product details */}
-            <div className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
-              <h4 className="text-sm font-bold text-foreground font-semibold flex items-center gap-1.5">
-                <Package size={16} className="text-indigo-500" />
-                {t('inventory.general', 'Specifications')}
-              </h4>
-              <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('products.warehouse', 'Warehouse Location')}</span>
-                  <span className="font-medium text-foreground">{detail.warehouse?.name}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('products.sku', 'SKU')}</span>
-                  <span className="font-medium font-mono text-xs">{detail.product?.sku}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('products.category', 'Category')}</span>
-                  <span className="font-medium text-foreground">{detail.product?.category?.name || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('products.brand', 'Brand')}</span>
-                  <span className="font-medium text-foreground">{detail.product?.brand?.name || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('inventory.reorder_point', 'Reorder Point')}</span>
-                  <span className="font-medium text-foreground">{parseFloat(detail.reorder_point) || 0}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('inventory.reorder_qty', 'Reorder Quantity')}</span>
-                  <span className="font-medium text-foreground">{parseFloat(detail.reorder_qty) || 0}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('products.created', 'Created At')}</span>
-                  <span className="font-medium text-foreground">{formatShortDate(detail.created_at)}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">{t('products.updated', 'Updated At')}</span>
-                  <span className="font-medium text-foreground">{formatShortDate(detail.updated_at)}</span>
-                </div>
-              </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-foreground">Failed to load item</h3>
+              <p className="text-xs text-muted-foreground">The requested inventory record could not be retrieved.</p>
             </div>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              <RefreshCw size={14} />
+              Retry
+            </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <h4 className="text-sm font-bold text-foreground font-semibold flex items-center gap-1.5">
-              <Clock size={16} className="text-indigo-500" />
-              {t('inventory.movements', 'Stock History Ledger')}
-            </h4>
-            {loadingMovements ? (
-              <div className="flex justify-center py-8"><LoadingSpinner /></div>
-            ) : (
-              <div className="relative border-l border-border pl-6 ml-3 space-y-6">
-                {(movements ?? []).map((m: any) => (
-                  <div key={m.id} className="relative">
-                    {/* Circle Indicator */}
-                    <span className={`absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full border-2 border-card
-                                     ${m.quantity > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold uppercase tracking-wider text-muted-foreground">{String(t(`inventory.movement_${m.type}`, m.type))}</span>
-                        <span className="text-muted-foreground font-mono">{formatShortDate(m.created_at)}</span>
+          <>
+            {/* Navigation Sub-Tabs */}
+            <div className="flex border-b border-border bg-muted/20 px-6 gap-6">
+              <button
+                onClick={() => setActiveSubTab('info')}
+                className={`flex items-center gap-1.5 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer
+                           ${activeSubTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+              >
+                <Info size={14} />
+                {t('products.general', 'General Info')}
+              </button>
+              <button
+                onClick={() => setActiveSubTab('movements')}
+                className={`flex items-center gap-1.5 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer
+                           ${activeSubTab === 'movements' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+              >
+                <Activity size={14} />
+                {t('inventory.movements', 'Stock History')}
+              </button>
+            </div>
+
+            {/* Drawer Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Profile Card Banner */}
+              <div className="bg-muted/30 border border-border/70 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
+                <div className="w-12 h-12 rounded-xl bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
+                  <Package size={22} />
+                </div>
+                <div className="space-y-1 min-w-0 flex-1">
+                  <h3 className="text-sm font-bold text-foreground truncate">{detail.product?.name || 'Inventory Item'}</h3>
+                  <p className="text-xs font-mono text-muted-foreground truncate">{detail.product?.sku || 'SKU-0000'}</p>
+                  <div>
+                    {isOutOfStock ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                        <AlertTriangle size={11} />
+                        Out of Stock
+                      </span>
+                    ) : isLowStock ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                        <AlertTriangle size={11} />
+                        Low Stock Alert
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        <CheckCircle size={11} />
+                        In Stock & Healthy
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {activeSubTab === 'info' ? (
+                <div className="space-y-6">
+                  {/* GENERAL INFORMATION */}
+                  <div className="space-y-3">
+                    <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                      GENERAL INFORMATION
+                    </h4>
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Product SKU</span>
+                        <span className="font-mono font-bold text-foreground">{detail.product?.sku || '—'}</span>
                       </div>
-                      <p className="text-sm text-foreground font-medium">
-                        {m.quantity > 0 ? '+' : ''}{parseFloat(m.quantity)} ({t('inventory.before', 'Before')}: {parseFloat(m.quantity_before)} → {t('inventory.after', 'After')}: {parseFloat(m.quantity_after)})
-                      </p>
-                      {m.notes && <p className="text-xs text-muted-foreground italic">"{m.notes}"</p>}
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Warehouse Location</span>
+                        <span className="font-bold text-foreground">{detail.warehouse?.name || 'Main Warehouse'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Category</span>
+                        <span className="font-bold text-foreground">{detail.product?.category?.name || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Brand</span>
+                        <span className="font-bold text-foreground">{detail.product?.brand?.name || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Unit of Measure</span>
+                        <span className="font-bold text-foreground">{detail.product?.unit?.name || 'Pcs'}</span>
+                      </div>
                     </div>
                   </div>
-                ))}
-                {(movements ?? []).length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">{t('inventory.no_movements', 'No stock movement logs found.')}</p>
-                )}
-              </div>
-            )}
-          </div>
+
+                  {/* STOCK BALANCES & AVAILABILITY */}
+                  <div className="space-y-3">
+                    <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                      STOCK BALANCES & AVAILABILITY
+                    </h4>
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                        <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">On Hand Quantity</span>
+                        <span className="font-extrabold text-foreground text-base">{totalQty}</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-bold uppercase tracking-wider mb-1">Reserved Quantity</span>
+                        <span className="font-extrabold text-amber-600 dark:text-amber-400 text-base">{reservedQty}</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold uppercase tracking-wider mb-1">Available For Sale</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-base">{availableQty}</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                        <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">Reorder Point / Qty</span>
+                        <span className="font-bold text-foreground text-sm">{reorderPoint} / {reorderQty}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SYSTEM METADATA */}
+                  <div className="space-y-3">
+                    <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                      SYSTEM METADATA
+                    </h4>
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Record Created</span>
+                        <span className="font-semibold text-foreground">{formatShortDate(detail.created_at)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Last Updated</span>
+                        <span className="font-semibold text-foreground">{formatShortDate(detail.updated_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
+                    STOCK HISTORY LEDGER
+                  </h4>
+                  {loadingMovements ? (
+                    <div className="flex justify-center py-8"><LoadingSpinner /></div>
+                  ) : (
+                    <div className="relative border-l border-border pl-6 ml-3 space-y-5">
+                      {(movements ?? []).map((m: any) => {
+                        const qtyNum = Number(m.quantity ?? 0)
+                        const isPlus = qtyNum > 0 || m.type === 'in' || m.type === 'transfer_in' || m.type === 'adjustment'
+                        return (
+                          <div key={m.id} className="relative">
+                            <span className={`absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full border-2 border-card
+                                             ${isPlus ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <div className="space-y-1 bg-muted/20 border border-border/50 rounded-xl p-3">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold uppercase tracking-wider text-primary text-[10px]">{m.type || 'Movement'}</span>
+                                <span className="text-muted-foreground font-mono text-[10px]">{formatShortDate(m.created_at)}</span>
+                              </div>
+                              <p className="text-xs text-foreground font-semibold">
+                                {qtyNum > 0 ? `+${qtyNum}` : `${qtyNum}`}
+                                <span className="text-muted-foreground font-normal ml-2 text-[11px]">
+                                  (Before: {m.quantity_before ?? 0} → After: {m.quantity_after ?? 0})
+                                </span>
+                              </p>
+                              {m.notes && <p className="text-xs text-muted-foreground italic">"{m.notes}"</p>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {(movements ?? []).length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-8">
+                          {t('inventory.no_movements', 'No stock movement logs found for this item.')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border bg-muted/20 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-2 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }
 export default InventoryDetailPage
+

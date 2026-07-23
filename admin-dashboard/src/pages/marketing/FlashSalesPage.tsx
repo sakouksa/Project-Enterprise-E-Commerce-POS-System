@@ -547,10 +547,6 @@ const FlashSalesPage: React.FC = () => {
     }
   }
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   const hasActiveFilters =
     filterStatus !== 'all' ||
     filterCategory !== 'all' ||
@@ -609,13 +605,6 @@ const FlashSalesPage: React.FC = () => {
           >
             <Download size={15} />
             <span>Export CSV</span>
-          </button>
-          <button
-            onClick={handlePrint}
-            className="p-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
-            title="Print Page"
-          >
-            <Printer size={15} />
           </button>
           <button
             onClick={openCreateModal}

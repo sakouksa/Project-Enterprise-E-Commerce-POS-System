@@ -1,29 +1,36 @@
 import React from 'react'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
-interface FilterSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface FilterSelectProps {
   label?: string
   options: { value: string | number; label: string }[]
+  value?: string | number
+  onChange?: (e: any) => void
+  className?: string
+  placeholder?: string
 }
 
 export const FilterSelect: React.FC<FilterSelectProps> = ({
   label,
   options,
+  value = '',
+  onChange,
   className = '',
-  ...props
+  placeholder = 'Select...',
 }) => {
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2 ${className}`}>
       {label && <span className="text-sm font-medium text-muted-foreground">{label}:</span>}
-      <select
-        className={`bg-background border border-border rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
-        {...props}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <ModernSelect
+        value={value}
+        onChange={(val) => {
+          if (onChange) {
+            onChange({ target: { value: val } })
+          }
+        }}
+        options={options}
+        placeholder={placeholder}
+      />
     </div>
   )
 }

@@ -22,6 +22,7 @@ import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface PurchaseItem {
   id: number
@@ -1341,50 +1342,55 @@ const PurchasesPage: React.FC = () => {
               <label className="block text-sm font-semibold text-foreground mb-1.5">
                 {t('purchases.supplier')} <span className="text-red-500">*</span>
               </label>
-              <select
+              <ModernSelect
                 value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
-                required
-                className="form-input w-full border border-border rounded-lg p-2.5 bg-background text-sm"
-              >
-                <option value="">Select Supplier</option>
-                {(suppliers ?? []).map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-                ))}
-              </select>
+                onChange={(val) => setSupplierId(String(val))}
+                options={[
+                  { value: '', label: 'Select Supplier' },
+                  ...(suppliers ?? []).map((s: any) => ({
+                    value: s.id,
+                    label: s.name,
+                    code: s.code,
+                    subtitle: s.phone || s.email,
+                  })),
+                ]}
+                placeholder="Select Supplier"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">
                 {t('purchases.warehouse')} <span className="text-red-500">*</span>
               </label>
-              <select
+              <ModernSelect
                 value={warehouseId}
-                onChange={(e) => setWarehouseId(e.target.value)}
-                required
-                className="form-input w-full border border-border rounded-lg p-2.5 bg-background text-sm"
-              >
-                <option value="">Select Warehouse</option>
-                {(warehouses ?? []).map((w: any) => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setWarehouseId(String(val))}
+                options={[
+                  { value: '', label: 'Select Warehouse' },
+                  ...(warehouses ?? []).map((w: any) => ({
+                    value: w.id,
+                    label: w.name,
+                    code: w.code,
+                  })),
+                ]}
+                placeholder="Select Warehouse"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">
                 {t('purchases.branch')} <span className="text-red-500">*</span>
               </label>
-              <select
+              <ModernSelect
                 value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                required
-                className="form-input w-full border border-border rounded-lg p-2.5 bg-background text-sm"
-              >
-                {(branches ?? []).map((b: any) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setBranchId(String(val))}
+                options={(branches ?? []).map((b: any) => ({
+                  value: b.id,
+                  label: b.name,
+                  code: b.code,
+                }))}
+                placeholder="Select Branch"
+              />
             </div>
 
             <div>

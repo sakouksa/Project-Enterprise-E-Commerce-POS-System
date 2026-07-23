@@ -18,6 +18,7 @@ import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface AttributeValue {
   id: number
@@ -657,16 +658,17 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Display Option Type</label>
-                    <select
+                    <ModernSelect
                       value={type}
-                      onChange={(e) => setType(e.target.value as any)}
-                      className="form-input"
-                    >
-                      <option value="select">Dropdown (Select)</option>
-                      <option value="color">Color swatches (Color)</option>
-                      <option value="button">Product buttons (Button)</option>
-                      <option value="text">Plain text field (Text)</option>
-                    </select>
+                      onChange={(val) => setType(val as any)}
+                      options={[
+                        { value: 'select', label: 'Dropdown (Select)' },
+                        { value: 'color', label: 'Color swatches (Color)' },
+                        { value: 'button', label: 'Product buttons (Button)' },
+                        { value: 'text', label: 'Plain text field (Text)' },
+                      ]}
+                      placeholder="Select Type"
+                    />
                   </div>
 
                   <div className="flex items-center justify-between pl-4">

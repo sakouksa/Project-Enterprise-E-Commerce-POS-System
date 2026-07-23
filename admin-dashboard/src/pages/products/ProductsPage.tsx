@@ -23,6 +23,7 @@ import Breadcrumb from '@/components/common/Breadcrumb'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 import CategoriesPage from '@/modules/categories/pages/CategoriesPage'
 import BrandsPage from '@/pages/brands/BrandsPage'
@@ -525,37 +526,56 @@ const ProductsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap z-10">
+          {activeWorkspaceTab === 'products' && (
+            <>
+              <button
+                onClick={() => setRecycleBinMode(!recycleBinMode)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border transition-all shadow-2xs cursor-pointer ${
+                  recycleBinMode
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 font-semibold'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                }`}
+              >
+                <Trash2 size={15} />
+                <span>{recycleBinMode ? 'Exit Trash' : 'Trash Bin'}</span>
+              </button>
+              <button
+                onClick={() => setImportOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
+              >
+                <Upload size={15} />
+                <span>Import CSV</span>
+              </button>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
+              >
+                <Download size={15} />
+                <span>Export CSV</span>
+              </button>
+            </>
+          )}
+
           <button
-            onClick={() => setRecycleBinMode(!recycleBinMode)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border transition-all shadow-2xs cursor-pointer ${
-              recycleBinMode
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 font-semibold'
-                : 'border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60'
-            }`}
-          >
-            <Trash2 size={15} />
-            <span>{recycleBinMode ? 'Exit Trash' : 'Trash Bin'}</span>
-          </button>
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
-          >
-            <Upload size={15} />
-            <span>Import CSV</span>
-          </button>
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
-          >
-            <Download size={15} />
-            <span>Export CSV</span>
-          </button>
-          <button
-            onClick={() => navigate('/products/create')}
+            onClick={() => {
+              if (activeWorkspaceTab === 'products') navigate('/products/create')
+              else if (activeWorkspaceTab === 'categories') setCategoryAddTrigger(t => t + 1)
+              else if (activeWorkspaceTab === 'brands') setBrandAddTrigger(t => t + 1)
+              else if (activeWorkspaceTab === 'units') setUnitAddTrigger(t => t + 1)
+              else if (activeWorkspaceTab === 'taxes') setTaxAddTrigger(t => t + 1)
+              else if (activeWorkspaceTab === 'attributes') setAttributeAddTrigger(t => t + 1)
+            }}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <Plus size={16} />
-            <span>Add Product</span>
+            <span>
+              {activeWorkspaceTab === 'products' ? 'Add Product' :
+               activeWorkspaceTab === 'categories' ? 'Add Category' :
+               activeWorkspaceTab === 'brands' ? 'Add Brand' :
+               activeWorkspaceTab === 'units' ? 'Add Unit' :
+               activeWorkspaceTab === 'taxes' ? 'Add Tax' :
+               'Add Attribute'}
+            </span>
           </button>
         </div>
       </div>
@@ -970,7 +990,7 @@ const ProductsPage: React.FC = () => {
                             <input
                               type="checkbox"
                               checked={visibleColumns[col.key as keyof typeof visibleColumns] ?? true}
-                              onChange={() => toggleColumn(col.key as keyof typeof visibleColumns)}
+                              onChange={() => setVisibleColumns(prev => ({ ...prev, [col.key]: !prev[col.key as keyof typeof visibleColumns] }))}
                               className="rounded text-primary focus:ring-primary"
                             />
                             <span>{col.label}</span>
@@ -1295,31 +1315,29 @@ const ProductsPage: React.FC = () => {
                   {/* Category Select */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</label>
-                    <select
+                    <ModernSelect
                       value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-medium"
-                    >
-                      <option value="">All Categories</option>
-                      {(categories ?? []).map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setCategoryFilter(String(val))}
+                      options={[
+                        { value: '', label: 'All Categories' },
+                        ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
+                      ]}
+                      placeholder="All Categories"
+                    />
                   </div>
 
                   {/* Brand Select */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Brand</label>
-                    <select
+                    <ModernSelect
                       value={brandFilter}
-                      onChange={(e) => setBrandFilter(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-medium"
-                    >
-                      <option value="">All Brands</option>
-                      {(brands ?? []).map((b: any) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setBrandFilter(String(val))}
+                      options={[
+                        { value: '', label: 'All Brands' },
+                        ...(brands ?? []).map((b: any) => ({ value: b.id, label: b.name })),
+                      ]}
+                      placeholder="All Brands"
+                    />
                   </div>
 
                   {/* Stock Level Status */}

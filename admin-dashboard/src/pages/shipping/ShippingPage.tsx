@@ -19,6 +19,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 type Tab = 'shipping-methods' | 'shipping-zones' | 'shipping-rates' | 'shipments'
 
@@ -1532,17 +1533,27 @@ const ShippingPage: React.FC = () => {
                   <>
                     <div>
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Shipping Method</label>
-                      <select required value={shippingMethodId} onChange={e => setShippingMethodId(e.target.value)} className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs">
-                        <option value="">Select Method</option>
-                        {methodsList?.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
+                      <ModernSelect
+                        value={shippingMethodId}
+                        onChange={(val) => setShippingMethodId(String(val))}
+                        options={[
+                          { value: '', label: 'Select Method' },
+                          ...(methodsList ?? []).map((m: any) => ({ value: m.id, label: m.name })),
+                        ]}
+                        placeholder="Select Method"
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Shipping Zone</label>
-                      <select required value={shippingZoneId} onChange={e => setShippingZoneId(e.target.value)} className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs">
-                        <option value="">Select Zone</option>
-                        {zonesList?.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
-                      </select>
+                      <ModernSelect
+                        value={shippingZoneId}
+                        onChange={(val) => setShippingZoneId(String(val))}
+                        options={[
+                          { value: '', label: 'Select Zone' },
+                          ...(zonesList ?? []).map((z: any) => ({ value: z.id, label: z.name })),
+                        ]}
+                        placeholder="Select Zone"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -1579,10 +1590,15 @@ const ShippingPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Shipping Method</label>
-                      <select required value={shippingMethodId} onChange={e => setShippingMethodId(e.target.value)} className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs">
-                        <option value="">Select Method</option>
-                        {methodsList?.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
+                      <ModernSelect
+                        value={shippingMethodId}
+                        onChange={(val) => setShippingMethodId(String(val))}
+                        options={[
+                          { value: '', label: 'Select Method' },
+                          ...(methodsList ?? []).map((m: any) => ({ value: m.id, label: m.name })),
+                        ]}
+                        placeholder="Select Method"
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Carrier</label>
@@ -1594,14 +1610,19 @@ const ShippingPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Status</label>
-                      <select value={shipmentStatus} onChange={e => setShipmentStatus(e.target.value)} className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs">
-                        <option value="pending">Pending</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="failed">Failed</option>
-                        <option value="returned">Returned</option>
-                      </select>
+                      <ModernSelect
+                        value={shipmentStatus}
+                        onChange={(val) => setShipmentStatus(String(val))}
+                        options={[
+                          { value: 'pending', label: 'Pending' },
+                          { value: 'processing', label: 'Processing' },
+                          { value: 'shipped', label: 'Shipped' },
+                          { value: 'delivered', label: 'Delivered' },
+                          { value: 'failed', label: 'Failed' },
+                          { value: 'returned', label: 'Returned' },
+                        ]}
+                        placeholder="Status"
+                      />
                     </div>
                   </>
                 )}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, Loader2, DollarSign, Package, User, Save, ArrowLeftRight, FileText, Info, Warehouse } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, Loader2, DollarSign, Package, User, Save, ArrowLeftRight, FileText, Info, Warehouse, Sliders } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/hooks/useToast'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface StockAdjustmentFormProps {
   adjustmentId?: number | null
@@ -35,10 +36,12 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
     queryFn: () => api.get('/warehouses').then(r => r.data.data),
   })
 
-  const { data: products } = useQuery({
+  const { data: rawProducts } = useQuery({
     queryKey: ['products-list'],
     queryFn: () => api.get('/products', { params: { per_page: 1000 } }).then(r => r.data.data),
   })
+
+  const products = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data ?? [])
 
   // Auto fill form if editing
   useEffect(() => {
@@ -157,8 +160,13 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-foreground">
-              {isEdit ? `${t('inventory.edit_adj', 'Stock Adjustment')}: ${detail?.reference_number}` : t('inventory.create_adj', 'New Stock Adjustment')}
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <span>{isEdit ? t('inventory.view_adj', 'Stock Adjustment Details') : t('inventory.create_adj', 'New Stock Adjustment')}</span>
+              {isEdit && (
+                <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-muted border border-border/80 text-muted-foreground font-semibold">
+                  {detail?.reference_number || `ADJ-${adjustmentId}`}
+                </span>
+              )}
             </h2>
             <p className="text-xs text-muted-foreground">{t('inventory.adj_desc', 'Adjust warehouse stock quantities with approval logs.')}</p>
           </div>
@@ -189,115 +197,60 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.status', 'Status')}</span>
-            <span className={`block text-lg font-bold mt-1 uppercase
-                           ${detail?.status === 'approved' ? 'text-emerald-500' : detail?.status === 'cancelled' ? 'text-rose-500' : 'text-amber-500'}`}>
-              {detail?.status || 'Draft'}
-            </span>
+      {/* Top Banner Card - Exact Employee Profile Card Style */}
+      {isEdit && (
+        <div className="bg-muted/30 border border-border/70 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
+          <div className="w-14 h-14 rounded-full bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
+            <Sliders size={24} />
           </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <Clock size={18} />
-          </div>
-        </div>
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.type', 'Adjustment Type')}</span>
-            <span className="block text-lg font-bold text-foreground mt-1 capitalize">{type}</span>
-          </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <Plus size={18} />
+          <div className="space-y-1 min-w-0 flex-1">
+            <h3 className="text-base font-bold text-foreground truncate">{detail?.reference_number || `ADJ-${adjustmentId}`}</h3>
+            <p className="text-xs text-muted-foreground truncate">
+              Warehouse: {warehouses?.find((w: any) => w.id.toString() === warehouseId)?.name || 'Main Warehouse'}
+            </p>
+            <div>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                isApproved ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+              }`}>
+                {detail?.status || 'Draft'}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.total_items', 'Total Items')}</span>
-            <span className="block text-lg font-bold text-foreground mt-1">{items.length}</span>
-          </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <Package size={18} />
-          </div>
-        </div>
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.approved_by', 'Approved By')}</span>
-            <span className="block text-sm font-semibold text-foreground mt-1">{detail?.user?.name || '—'}</span>
-          </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <User size={18} />
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: General Info */}
         <div className="lg:col-span-1 bg-card border border-border/50 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
-          <h3 className="text-sm font-bold text-foreground font-semibold uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-border">
-            <Info size={16} className="text-indigo-500" />
-            {t('inventory.general_info', 'General Info')}
+          <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider border-b border-border/50 pb-2">
+            GENERAL INFORMATION
           </h3>
           
           {isApproved ? (
-            <div className="space-y-4">
-              {/* Warehouse */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <Warehouse size={16} />
-                </div>
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 gap-y-3">
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('products.warehouse', 'Warehouse')}</span>
-                  <span className="text-sm font-semibold text-foreground mt-0.5 block">
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('products.warehouse', 'Warehouse')}</span>
+                  <span className="font-bold text-foreground block">
                     {warehouses?.find((w: any) => w.id.toString() === warehouseId)?.name || 'Unknown Warehouse'}
                   </span>
                 </div>
-              </div>
-
-              {/* Adjustment Type */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <ArrowLeftRight size={16} />
+                <div>
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.type', 'Adjustment Type')}</span>
+                  <span className="font-bold text-foreground block capitalize">{type}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.type', 'Adjustment Type')}</span>
-                  <span className="mt-1 block">
-                    {type === 'addition' ? (
-                      <span className="badge badge-success text-xs font-semibold">Addition (+)</span>
-                    ) : type === 'subtraction' ? (
-                      <span className="badge badge-danger text-xs font-semibold">Subtraction (-)</span>
-                    ) : (
-                      <span className="badge badge-info text-xs font-semibold">Recount (Set Qty)</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Reason */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <FileText size={16} />
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.reason', 'Reason')}</span>
+                  <span className="font-bold text-foreground block">{reason || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.reason', 'Reason')}</span>
-                  <span className="text-sm font-semibold text-foreground mt-0.5 block leading-relaxed font-semibold">
-                    {reason}
-                  </span>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <FileText size={16} />
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
+                  <span className="font-medium text-muted-foreground block italic">"{notes || '—'}"</span>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.notes', 'Notes')}</span>
-                  <span className="text-sm text-muted-foreground mt-1 block leading-relaxed whitespace-pre-wrap font-normal italic">
-                    "{notes || '—'}"
-                  </span>
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.approved_by', 'Approved By')}</span>
+                  <span className="font-bold text-foreground block">{detail?.user?.name || 'Super Admin'}</span>
                 </div>
               </div>
             </div>
@@ -305,29 +258,28 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('products.warehouse', 'Warehouse')}</label>
-                <select
+                <ModernSelect
                   value={warehouseId}
-                  onChange={(e) => setWarehouseId(e.target.value)}
-                  required
-                  className="form-input"
-                >
-                  <option value="">Select Warehouse</option>
-                  {(warehouses ?? []).map((w: any) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setWarehouseId(String(val))}
+                  options={[
+                    { value: '', label: 'Select Warehouse' },
+                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                  ]}
+                  placeholder="Select Warehouse"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.type', 'Adjustment Type')}</label>
-                <select
+                <ModernSelect
                   value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="form-input"
-                >
-                  <option value="addition">Addition (+)</option>
-                  <option value="subtraction">Subtraction (-)</option>
-                  <option value="recount">Recount (Set Qty)</option>
-                </select>
+                  onChange={(val) => setType(String(val))}
+                  options={[
+                    { value: 'addition', label: 'Addition (+)' },
+                    { value: 'subtraction', label: 'Subtraction (-)' },
+                    { value: 'recount', label: 'Recount (Set Qty)' },
+                  ]}
+                  placeholder="Select Type"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.reason', 'Reason')}</label>
@@ -395,22 +347,22 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
                           )}
                         </div>
                       ) : (
-                        <select
+                        <ModernSelect
                           value={item.product_id}
-                          onChange={(e) => handleItemChange(idx, 'product_id', e.target.value)}
-                          required
-                          className="form-input text-xs w-full max-w-md rounded-xl bg-card border-border hover:border-muted-foreground/30 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-                        >
-                          <option value="">Select Product</option>
-                          {item.product && !(products ?? []).some((p: any) => p.id.toString() === item.product_id) && (
-                            <option value={item.product.id.toString()}>
-                              {item.product.name} ({item.product.sku})
-                            </option>
-                          )}
-                          {(products ?? []).map((p: any) => (
-                            <option key={p.id} value={p.id.toString()}>{p.name} ({p.sku})</option>
-                          ))}
-                        </select>
+                          onChange={(val) => handleItemChange(idx, 'product_id', String(val))}
+                          options={[
+                            { value: '', label: 'Select Product' },
+                            ...(item.product && !(products ?? []).some((p: any) => p.id.toString() === item.product_id)
+                              ? [{ value: item.product.id.toString(), label: `${item.product.name} (${item.product.sku})` }]
+                              : []),
+                            ...(products ?? []).map((p: any) => ({
+                              value: p.id.toString(),
+                              label: p.name,
+                              code: p.sku,
+                            })),
+                          ]}
+                          placeholder="Select Product"
+                        />
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">

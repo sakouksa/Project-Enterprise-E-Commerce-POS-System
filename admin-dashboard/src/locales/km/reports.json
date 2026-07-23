@@ -67,6 +67,13 @@
       "serverError": "ម៉ាស៊ីនបម្រើមិនដំណើរការ។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ។",
       "jwtExpired": "កម្រងព័ត៌មានរបស់អ្នកបានផុតកំណត់។ សូមចូលគណនីម្តងទៀត។",
       "permissionDenied": "អ្នកគ្មានសិទ្ធិចូលមើលរបាយការណ៍នេះទេ។"
+    },
+    "toast": {
+      "exportingExcel": "កំពុងទាញយករបាយការណ៍លក់ជា Excel...",
+      "exportExcelSuccess": "ទាញយករបាយការណ៍លក់ជា Excel ជោគជ័យ!",
+      "exportingPdf": "កំពុងទាញយករបាយការណ៍លក់ជា PDF...",
+      "exportPdfSuccess": "ទាញយករបាយការណ៍លក់ជា PDF ជោគជ័យ!",
+      "exportError": "បរាជ័យក្នុងការទាញយករបាយការណ៍លក់។"
     }
   },
   "purchase": {
@@ -146,7 +153,12 @@
     "returnNo": "លេខសង",
     "purchaseRef": "យោងការទិញ",
     "reason": "មូលហេតុ",
-    "refresh": "ផ្ទុកឡើងវិញ"
+    "refresh": "ផ្ទុកឡើងវិញ",
+    "toast": {
+      "exportingExcel": "កំពុងទាញយករបាយការណ៍ទិញចូលជា Excel...",
+      "exportExcelSuccess": "ទាញយករបាយការណ៍ទិញចូលជា Excel ជោគជ័យ!",
+      "exportError": "បរាជ័យក្នុងការទាញយករបាយការណ៍ទិញចូល។"
+    }
   },
   "inventory": {
     "inventoryReportTitle": "របាយការណ៍ស្តុកទំនិញ",
@@ -206,6 +218,16 @@
     "movementTableTitle": "កំណត់ត្រាប្រតិបត្តិការចលនាស្តុក",
     "movementTableSubtitle": "ប្រវត្តិនៃការទិញ លក់ ផ្ទេរ និងកែសម្រួលស្តុក",
     "warehouseSummaryTitle": "សេចក្តីសង្ខេបប្រតិបត្តិការឃ្លាំង",
-    "warehouseSummarySubtitle": "ចំនួនស្តុក តម្លៃសរុប និងភាគរយបែងចែកតាមឃ្លាំង"
+    "warehouseSummarySubtitle": "ចំនួនស្តុក តម្លៃសរុប និងភាគរយបែងចែកតាមឃ្លាំង",
+    "toast": {
+      "exportingExcel": "កំពុងទាញយករបាយការណ៍ស្តុកជា Excel...",
+      "exportExcelSuccess": "ទាញយករបាយការណ៍ស្តុកជា Excel ជោគជ័យ!",
+      "exportError": "បរាជ័យក្នុងការទាញយករបាយការណ៍ស្តុក។"
+    }
+  },
+  "toast": {
+    "exportingExcel": "កំពុងទាញយករបាយការណ៍ជា Excel...",
+    "exportExcelSuccess": "ទាញយករបាយការណ៍ជា Excel ជោគជ័យ!",
+    "exportError": "បរាជ័យក្នុងការទាញយករបាយការណ៍។"
   }
 }

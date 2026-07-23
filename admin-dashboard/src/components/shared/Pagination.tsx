@@ -1,6 +1,7 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface PaginationProps {
   currentPage: number
@@ -48,18 +49,12 @@ const Pagination: React.FC<PaginationProps> = ({
         {onPerPageChange && (
           <div className="flex items-center gap-2">
             <span>{t('pagination.rowsPerPage', 'Rows per page:')}</span>
-            <select
+            <ModernSelect
               value={perPage}
-              onChange={(e) => onPerPageChange(Number(e.target.value))}
-              disabled={disabled}
-              className="bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs disabled:opacity-50"
-            >
-              {perPageOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => onPerPageChange(Number(val))}
+              options={perPageOptions.map((opt) => ({ value: opt, label: String(opt) }))}
+              placeholder={String(perPage)}
+            />
           </div>
         )}
         <div>

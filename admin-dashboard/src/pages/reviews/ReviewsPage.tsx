@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Search, Trash2, RefreshCw, Star, CheckCircle, XCircle, MessageSquare, Loader2, Filter } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
@@ -136,26 +137,30 @@ const ReviewsPage: React.FC = () => {
               className="form-input pl-9"
             />
           </div>
-          <select
+          <ModernSelect
             value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-            className="form-input w-40"
-          >
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-          <select
+            onChange={(val) => { setStatusFilter(String(val)); setPage(1) }}
+            options={[
+              { value: '', label: 'All Status' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'rejected', label: 'Rejected' },
+            ]}
+            placeholder="All Status"
+          />
+          <ModernSelect
             value={ratingFilter}
-            onChange={e => { setRatingFilter(e.target.value); setPage(1) }}
-            className="form-input w-32"
-          >
-            <option value="">All Ratings</option>
-            {[5, 4, 3, 2, 1].map(r => (
-              <option key={r} value={r}>{r} Stars</option>
-            ))}
-          </select>
+            onChange={(val) => { setRatingFilter(String(val)); setPage(1) }}
+            options={[
+              { value: '', label: 'All Ratings' },
+              { value: '5', label: '5 Stars' },
+              { value: '4', label: '4 Stars' },
+              { value: '3', label: '3 Stars' },
+              { value: '2', label: '2 Stars' },
+              { value: '1', label: '1 Star' },
+            ]}
+            placeholder="All Ratings"
+          />
           <button
             onClick={resetFilters}
             className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"

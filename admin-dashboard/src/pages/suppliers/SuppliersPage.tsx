@@ -20,6 +20,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface SupplierContact {
   id:                  number
@@ -1370,15 +1371,16 @@ const SuppliersPage: React.FC = () => {
                   <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Supplier Information</h4>
                   <div className="space-y-1.5">
                     <span className="text-[10px] text-muted-foreground font-semibold block">Supplier Status</span>
-                    <select
+                    <ModernSelect
                       value={statusFilter}
-                      onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                      onChange={(val) => { setStatusFilter(String(val)); setPage(1); }}
+                      options={[
+                        { value: '', label: 'All Statuses' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'inactive', label: 'Inactive' },
+                      ]}
+                      placeholder="All Statuses"
+                    />
                   </div>
                 </div>
 
@@ -1386,17 +1388,18 @@ const SuppliersPage: React.FC = () => {
                 <div className="space-y-3 pb-3 border-b border-border/60">
                   <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Supplier Type</h4>
                   <div className="space-y-1.5">
-                    <select
+                    <ModernSelect
                       value={typeFilter}
-                      onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-                      className="form-input rounded-xl text-sm w-full bg-card border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer text-foreground"
-                    >
-                      <option value="">All Types</option>
-                      <option value="manufacturer">Manufacturer</option>
-                      <option value="wholesaler">Wholesaler</option>
-                      <option value="distributor">Distributor</option>
-                      <option value="other">Other</option>
-                    </select>
+                      onChange={(val) => { setTypeFilter(String(val)); setPage(1); }}
+                      options={[
+                        { value: '', label: 'All Types' },
+                        { value: 'manufacturer', label: 'Manufacturer' },
+                        { value: 'wholesaler', label: 'Wholesaler' },
+                        { value: 'distributor', label: 'Distributor' },
+                        { value: 'other', label: 'Other' },
+                      ]}
+                      placeholder="All Types"
+                    />
                   </div>
                 </div>
 

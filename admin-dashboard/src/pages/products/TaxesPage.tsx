@@ -17,6 +17,7 @@ import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface Tax {
   id: number
@@ -568,14 +569,15 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
 
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Calculation Type</label>
-                    <select
+                    <ModernSelect
                       value={type}
-                      onChange={(e) => setType(e.target.value as any)}
-                      className="form-input"
-                    >
-                      <option value="percentage">Percentage (%)</option>
-                      <option value="fixed">Fixed Flat ($)</option>
-                    </select>
+                      onChange={(val) => setType(val as any)}
+                      options={[
+                        { value: 'percentage', label: 'Percentage (%)' },
+                        { value: 'fixed', label: 'Fixed Flat ($)' },
+                      ]}
+                      placeholder="Select Type"
+                    />
                   </div>
                 </div>
 

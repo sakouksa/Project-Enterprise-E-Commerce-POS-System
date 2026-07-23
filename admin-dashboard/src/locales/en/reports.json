@@ -67,6 +67,13 @@
       "serverError": "Server unavailable. Please try again later.",
       "jwtExpired": "Your session expired. Please login again.",
       "permissionDenied": "You don't have permission to access this report."
+    },
+    "toast": {
+      "exportingExcel": "Downloading Excel sales report, please wait...",
+      "exportExcelSuccess": "Sales report exported to Excel successfully!",
+      "exportingPdf": "Downloading PDF sales report, please wait...",
+      "exportPdfSuccess": "Sales report exported to PDF successfully!",
+      "exportError": "Failed to export sales report. Please try again."
     }
   },
   "purchase": {
@@ -146,7 +153,12 @@
     "returnNo": "Return No",
     "purchaseRef": "Purchase Ref",
     "reason": "Reason",
-    "refresh": "Refresh Data"
+    "refresh": "Refresh Data",
+    "toast": {
+      "exportingExcel": "Downloading Excel purchase report, please wait...",
+      "exportExcelSuccess": "Purchase report exported to Excel successfully!",
+      "exportError": "Failed to export purchase report. Please try again."
+    }
   },
   "inventory": {
     "inventoryReportTitle": "Inventory Reports",
@@ -206,6 +218,16 @@
     "movementTableTitle": "Stock Movement Transaction Logs",
     "movementTableSubtitle": "Real-time stock audit trail across purchases, sales, transfers & adjustments",
     "warehouseSummaryTitle": "Warehouse Operations Summary",
-    "warehouseSummarySubtitle": "Stock quantity, total valuation, and portfolio share per warehouse"
+    "warehouseSummarySubtitle": "Stock quantity, total valuation, and portfolio share per warehouse",
+    "toast": {
+      "exportingExcel": "Downloading Excel inventory report, please wait...",
+      "exportExcelSuccess": "Inventory report exported to Excel successfully!",
+      "exportError": "Failed to export inventory report. Please try again."
+    }
+  },
+  "toast": {
+    "exportingExcel": "Downloading Excel report, please wait...",
+    "exportExcelSuccess": "Report exported to Excel successfully!",
+    "exportError": "Failed to export report. Please try again."
   }
 }

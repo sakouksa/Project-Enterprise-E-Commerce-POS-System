@@ -22,10 +22,15 @@ import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 // Sub Components
 import InventoryDashboard from './components/InventoryDashboard'
 import InventoryDetailPage from './components/InventoryDetailPage'
+import StockMovementDetailPage from './components/StockMovementDetailPage'
+import StockTransferDetailPage from './components/StockTransferDetailPage'
+import StockAdjustmentDetailPage from './components/StockAdjustmentDetailPage'
+import StockOpnameDetailPage from './components/StockOpnameDetailPage'
 import { StockAdjustmentForm } from './components/StockAdjustmentForm'
 import { StockTransferForm } from './components/StockTransferForm'
 import { StockOpnameForm } from './components/StockOpnameForm'
@@ -152,6 +157,10 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
   // Active form view / detail drawer states
   const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
+  const [selectedMovementId, setSelectedMovementId] = useState<number | null>(null)
+  const [selectedTransferId, setSelectedTransferId] = useState<number | null>(null)
+  const [selectedAdjustmentId, setSelectedAdjustmentId] = useState<number | null>(null)
+  const [selectedOpnameId, setSelectedOpnameId] = useState<number | null>(null)
   const [activeFormType, setActiveFormType] = useState<'adjustment' | 'transfer' | 'opname' | null>(null)
   const [activeFormId, setActiveFormId] = useState<number | null>(null)
   const [sortBy, setSortBy] = useState('updated_at')
@@ -507,6 +516,61 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
     if (activeTab === 'opnames') return opnamesData?.pagination
     if (activeTab === 'movements') return movementsData?.pagination
     return null
+  }
+
+  if (activeFormType) {
+    const formTitle = activeTab === 'transfers' ? 'Stock Transfer' : activeTab === 'adjustments' ? 'Stock Adjustment' : 'Stock Opname Audit'
+    const formPath = `/inventory/${activeTab}`
+
+    return (
+      <div className="space-y-6 pb-12 print:p-0 animate-in fade-in duration-200">
+        {/* Page Breadcrumb */}
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', path: '/dashboard' },
+            { label: 'Inventory Management', path: '/inventory' },
+            { label: activeTab === 'transfers' ? 'Transfers' : activeTab === 'adjustments' ? 'Adjustments' : 'Stock Opnames', path: formPath },
+            { label: activeFormId ? `Edit ${formTitle}` : `New ${formTitle}` }
+          ]}
+        />
+
+        {/* Full Form Page Container */}
+        <div className="bg-card border border-border/80 p-6 sm:p-8 rounded-[24px] shadow-sm">
+          {activeFormType === 'transfer' && (
+            <StockTransferForm
+              transferId={activeFormId}
+              onClose={() => {
+                setActiveFormType(null)
+                setActiveFormId(null)
+                qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
+              }}
+            />
+          )}
+
+          {activeFormType === 'adjustment' && (
+            <StockAdjustmentForm
+              adjustmentId={activeFormId}
+              onClose={() => {
+                setActiveFormType(null)
+                setActiveFormId(null)
+                qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
+              }}
+            />
+          )}
+
+          {activeFormType === 'opname' && (
+            <StockOpnameForm
+              opnameId={activeFormId}
+              onClose={() => {
+                setActiveFormType(null)
+                setActiveFormId(null)
+                qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
+              }}
+            />
+          )}
+        </div>
+      </div>
+    )
   }
 
   const pagination = getPagination() ?? { total: 0, current_page: 1, last_page: 1 }
@@ -865,7 +929,6 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
           { id: 'transfers',  label: 'Transfers',        icon: ArrowLeftRight,  path: '/inventory/transfers' },
           { id: 'adjustments',label: 'Adjustments',      icon: Plus,            path: '/inventory/adjustments' },
           { id: 'opnames',    label: 'Stock Opname',     icon: CheckCircle,     path: '/inventory/opnames' },
-          { id: 'reports',    label: 'Inventory Reports',icon: Printer,        path: '/inventory/movements' },
         ].map((item) => {
           const Icon = item.icon
           const isActive = (item.id === 'reports' && activeTab === 'movements' && searchParams.get('report') === 'true') ||
@@ -1219,9 +1282,9 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                         <td className="p-3.5 text-xs text-muted-foreground whitespace-nowrap">{m.created_at ? new Date(m.created_at).toLocaleDateString() : '7/22/2026'}</td>
                         <td className="p-3.5 pr-6 text-right">
                           <button
-                            onClick={() => setSelectedItemId(m.inventory_id || m.product_id)}
+                            onClick={() => setSelectedMovementId(m.id)}
                             className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                            title="View Product Inventory"
+                            title="View Stock Movement Details"
                           >
                             <Eye size={14} />
                           </button>
@@ -1306,11 +1369,11 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => { setActiveFormType('transfer'); setActiveFormId(t.id) }}
+                            onClick={() => setSelectedTransferId(t.id)}
                             className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                            title="Edit Transfer"
+                            title="View Transfer Details"
                           >
-                            <Edit size={14} />
+                            <Eye size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirm({ open: true, type: 'transfer', id: t.id, name: t.reference_number || `TRF-${t.id}` })}
@@ -1398,11 +1461,11 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => { setActiveFormType('adjustment'); setActiveFormId(a.id) }}
+                            onClick={() => setSelectedAdjustmentId(a.id)}
                             className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                            title="Edit Adjustment"
+                            title="View Adjustment Details"
                           >
-                            <Edit size={14} />
+                            <Eye size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirm({ open: true, type: 'adjustment', id: a.id, name: a.reference_number || `ADJ-${a.id}` })}
@@ -1489,11 +1552,11 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                       <td className="p-3.5 pr-6 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => { setActiveFormType('opname'); setActiveFormId(o.id) }}
+                            onClick={() => setSelectedOpnameId(o.id)}
                             className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                            title="View Opname Audit"
+                            title="View Opname Details"
                           >
-                            <Edit size={14} />
+                            <Eye size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirm({ open: true, type: 'opname', id: o.id, name: o.reference_number || `OPN-${o.id}` })}
@@ -1560,16 +1623,15 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                   {/* Warehouse Filter */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Warehouse</label>
-                    <select
+                    <ModernSelect
                       value={selectedWarehouse}
-                      onChange={(e) => setSelectedWarehouse(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-medium"
-                    >
-                      <option value="">All Warehouses</option>
-                      {(warehouses ?? []).map((w: any) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setSelectedWarehouse(String(val))}
+                      options={[
+                        { value: '', label: 'All Warehouses' },
+                        ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                      ]}
+                      placeholder="All Warehouses"
+                    />
                   </div>
 
                   {/* Stock Status */}
@@ -1601,16 +1663,15 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                   {/* Category & Brand */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Product Category</label>
-                    <select
+                    <ModernSelect
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-medium"
-                    >
-                      <option value="">All Categories</option>
-                      {(categories ?? []).map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setSelectedCategory(String(val))}
+                      options={[
+                        { value: '', label: 'All Categories' },
+                        ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
+                      ]}
+                      placeholder="All Categories"
+                    />
                   </div>
 
                   {/* Movement Type */}
@@ -1688,51 +1749,76 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
         )}
       </AnimatePresence>
 
-      {/* ── 9. INVENTORY DETAIL DRAWER & FORMS OVERLAYS ───────────────────────── */}
+      {/* ── 9. INVENTORY DETAIL DRAWERS ───────────────────────── */}
       <AnimatePresence>
         {selectedItemId && (
           <InventoryDetailPage
+            itemId={selectedItemId}
             inventoryId={selectedItemId}
             onClose={() => setSelectedItemId(null)}
           />
         )}
       </AnimatePresence>
 
-      {/* Stock Transfer Form Modal / Overlay */}
-      {activeFormType === 'transfer' && (
-        <StockTransferForm
-          transferId={activeFormId}
-          onClose={() => {
-            setActiveFormType(null)
-            setActiveFormId(null)
-            qc.invalidateQueries({ queryKey: ['inventory-transfers'] })
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedMovementId && (
+          <StockMovementDetailPage
+            movementId={selectedMovementId}
+            onClose={() => setSelectedMovementId(null)}
+            onOpenProductDetail={(invId) => {
+              setSelectedMovementId(null)
+              setSelectedItemId(invId)
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Stock Adjustment Form Modal / Overlay */}
-      {activeFormType === 'adjustment' && (
-        <StockAdjustmentForm
-          adjustmentId={activeFormId}
-          onClose={() => {
-            setActiveFormType(null)
-            setActiveFormId(null)
-            qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedTransferId && (
+          <StockTransferDetailPage
+            transferId={selectedTransferId}
+            onClose={() => setSelectedTransferId(null)}
+            onEdit={() => {
+              const id = selectedTransferId
+              setSelectedTransferId(null)
+              setActiveFormType('transfer')
+              setActiveFormId(id)
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Stock Opname Form Modal / Overlay */}
-      {activeFormType === 'opname' && (
-        <StockOpnameForm
-          opnameId={activeFormId}
-          onClose={() => {
-            setActiveFormType(null)
-            setActiveFormId(null)
-            qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedAdjustmentId && (
+          <StockAdjustmentDetailPage
+            adjustmentId={selectedAdjustmentId}
+            onClose={() => setSelectedAdjustmentId(null)}
+            onEdit={() => {
+              const id = selectedAdjustmentId
+              setSelectedAdjustmentId(null)
+              setActiveFormType('adjustment')
+              setActiveFormId(id)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedOpnameId && (
+          <StockOpnameDetailPage
+            opnameId={selectedOpnameId}
+            onClose={() => setSelectedOpnameId(null)}
+            onEdit={() => {
+              const id = selectedOpnameId
+              setSelectedOpnameId(null)
+              setActiveFormType('opname')
+              setActiveFormId(id)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmDialog

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Search, RefreshCw, Filter } from 'lucide-react'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,23 +57,21 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
     </div>
 
     {/* Dropdown filters */}
-    {filters.map(f => (
-      <div key={f.key} className="relative">
-        <Filter size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        <select
+    {filters.map(f => {
+      const options = [
+        ...(f.placeholder ? [{ value: '', label: f.placeholder }] : []),
+        ...f.options.map(opt => ({ value: opt.value, label: opt.label }))
+      ]
+      return (
+        <ModernSelect
+          key={f.key}
           value={f.value}
-          onChange={e => f.onChange(e.target.value)}
-          className="pl-7 pr-8 py-2 text-sm bg-muted border border-border rounded-lg appearance-none
-                     focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background
-                     text-foreground cursor-pointer transition-all"
-        >
-          {f.placeholder && <option value="">{f.placeholder}</option>}
-          {f.options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-      </div>
-    ))}
+          onChange={(val) => f.onChange(String(val))}
+          options={options}
+          placeholder={f.placeholder || 'Select...'}
+        />
+      )
+    })}
 
     {/* Reset */}
     {onReset && (

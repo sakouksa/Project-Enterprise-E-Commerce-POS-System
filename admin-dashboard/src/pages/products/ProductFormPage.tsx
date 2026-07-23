@@ -11,6 +11,7 @@ import api from '@/api/client'
 import { productService } from '@/services/productService'
 import { useToast } from '@/hooks/useToast'
 import { Breadcrumb, PageHeader, LoadingSpinner } from '@/components/common'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface ProductForm {
   name:                string
@@ -481,58 +482,54 @@ const ProductFormPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Category</label>
-                <select
+                <ModernSelect
                   value={form.category_id}
-                  onChange={e => setField('category_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Category</option>
-                  {categories?.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('category_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Category' },
+                    ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
+                  ]}
+                  placeholder="Select Category"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Brand</label>
-                <select
+                <ModernSelect
                   value={form.brand_id}
-                  onChange={e => setField('brand_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Brand</option>
-                  {brands?.map((b: any) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('brand_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Brand' },
+                    ...(brands ?? []).map((b: any) => ({ value: b.id, label: b.name })),
+                  ]}
+                  placeholder="Select Brand"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Unit</label>
-                <select
+                <ModernSelect
                   value={form.unit_id}
-                  onChange={e => setField('unit_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Unit</option>
-                  {units?.map((u: any) => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.symbol})</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('unit_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Unit' },
+                    ...(units ?? []).map((u: any) => ({ value: u.id, label: `${u.name}${u.symbol ? ` (${u.symbol})` : ''}` })),
+                  ]}
+                  placeholder="Select Unit"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Tax Category</label>
-                <select
+                <ModernSelect
                   value={form.tax_id}
-                  onChange={e => setField('tax_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Tax</option>
-                  {taxes?.map((t: any) => (
-                    <option key={t.id} value={t.id}>{t.name} ({Number(t.rate)}%)</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('tax_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Tax' },
+                    ...(taxes ?? []).map((t: any) => ({ value: t.id, label: `${t.name} (${Number(t.rate)}%)` })),
+                  ]}
+                  placeholder="Select Tax"
+                />
               </div>
             </div>
 
@@ -629,16 +626,17 @@ const ProductFormPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Publish Status</label>
-                <select
+                <ModernSelect
                   value={form.status}
-                  onChange={e => setField('status', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="active">Active (Online)</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="draft">Draft Folder</option>
-                  <option value="archived">Archived</option>
-                </select>
+                  onChange={(val) => setField('status', String(val))}
+                  options={[
+                    { value: 'active', label: 'Active (Online)' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'draft', label: 'Draft Folder' },
+                    { value: 'archived', label: 'Archived' },
+                  ]}
+                  placeholder="Select Status"
+                />
               </div>
             </div>
 
@@ -757,73 +755,70 @@ const ProductFormPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Category</label>
-                <select
+                <ModernSelect
                   value={form.category_id}
-                  onChange={e => setField('category_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Category</option>
-                  {categories?.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('category_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Category' },
+                    ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
+                  ]}
+                  placeholder="Select Category"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Brand</label>
-                <select
+                <ModernSelect
                   value={form.brand_id}
-                  onChange={e => setField('brand_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Brand</option>
-                  {brands?.map((b: any) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('brand_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Brand' },
+                    ...(brands ?? []).map((b: any) => ({ value: b.id, label: b.name })),
+                  ]}
+                  placeholder="Select Brand"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Unit</label>
-                <select
+                <ModernSelect
                   value={form.unit_id}
-                  onChange={e => setField('unit_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Unit</option>
-                  {units?.map((u: any) => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.symbol})</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('unit_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Unit' },
+                    ...(units ?? []).map((u: any) => ({ value: u.id, label: `${u.name}${u.symbol ? ` (${u.symbol})` : ''}` })),
+                  ]}
+                  placeholder="Select Unit"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Tax Category</label>
-                <select
+                <ModernSelect
                   value={form.tax_id}
-                  onChange={e => setField('tax_id', e.target.value)}
-                  className="form-input w-full cursor-pointer"
-                >
-                  <option value="">No Tax</option>
-                  {taxes?.map((t: any) => (
-                    <option key={t.id} value={t.id}>{t.name} ({Number(t.rate)}%)</option>
-                  ))}
-                </select>
+                  onChange={(val) => setField('tax_id', String(val))}
+                  options={[
+                    { value: '', label: 'No Tax' },
+                    ...(taxes ?? []).map((t: any) => ({ value: t.id, label: `${t.name} (${Number(t.rate)}%)` })),
+                  ]}
+                  placeholder="Select Tax"
+                />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">Publish Status</label>
-              <select
+              <ModernSelect
                 value={form.status}
-                onChange={e => setField('status', e.target.value)}
-                className="form-input w-full cursor-pointer"
-              >
-                <option value="active">Active (Online)</option>
-                <option value="inactive">Inactive</option>
-                <option value="draft">Draft Folder</option>
-                <option value="archived">Archived</option>
-              </select>
+                onChange={(val) => setField('status', String(val))}
+                options={[
+                  { value: 'active', label: 'Active (Online)' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'draft', label: 'Draft Folder' },
+                  { value: 'archived', label: 'Archived' },
+                ]}
+                placeholder="Select Status"
+              />
             </div>
 
             <div className="flex flex-wrap gap-6 pt-2">
@@ -981,25 +976,24 @@ const ProductFormPage: React.FC = () => {
               </div>
 
               <form onSubmit={handleAddAdjustment} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
-                <select
+                <ModernSelect
                   value={newAdjustment.warehouse_id}
-                  onChange={e => setNewAdjustment({ ...newAdjustment, warehouse_id: e.target.value })}
-                  className="form-input text-xs cursor-pointer"
-                  required
-                >
-                  <option value="">Choose Warehouse Location</option>
-                  {warehouses?.map((w: any) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
-                <select
+                  onChange={(val) => setNewAdjustment({ ...newAdjustment, warehouse_id: String(val) })}
+                  options={[
+                    { value: '', label: 'Choose Warehouse Location' },
+                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                  ]}
+                  placeholder="Choose Warehouse Location"
+                />
+                <ModernSelect
                   value={newAdjustment.type}
-                  onChange={e => setNewAdjustment({ ...newAdjustment, type: e.target.value })}
-                  className="form-input text-xs cursor-pointer"
-                >
-                  <option value="addition">Addition / Stock In (+)</option>
-                  <option value="subtraction">Reduction / Stock Out (-)</option>
-                </select>
+                  onChange={(val) => setNewAdjustment({ ...newAdjustment, type: String(val) })}
+                  options={[
+                    { value: 'addition', label: 'Addition / Stock In (+)' },
+                    { value: 'subtraction', label: 'Reduction / Stock Out (-)' },
+                  ]}
+                  placeholder="Adjustment Type"
+                />
                 <input
                   type="number"
                   placeholder="Quantity Count"
@@ -1347,15 +1341,16 @@ const ProductFormPage: React.FC = () => {
               </div>
 
               <form onSubmit={handleAddTierPrice} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
-                <select
+                <ModernSelect
                   value={newTierPrice.price_type}
-                  onChange={e => setNewTierPrice({ ...newTierPrice, price_type: e.target.value })}
-                  className="form-input text-xs cursor-pointer"
-                >
-                  <option value="wholesale">Wholesale Discount</option>
-                  <option value="member">Exclusive Member Rate</option>
-                  <option value="retail">Special Retail Campaign</option>
-                </select>
+                  onChange={(val) => setNewTierPrice({ ...newTierPrice, price_type: String(val) })}
+                  options={[
+                    { value: 'wholesale', label: 'Wholesale Discount' },
+                    { value: 'member', label: 'Exclusive Member Rate' },
+                    { value: 'retail', label: 'Special Retail Campaign' },
+                  ]}
+                  placeholder="Price Type"
+                />
                 <input
                   type="number"
                   placeholder="Min Quantity (e.g. 10)"

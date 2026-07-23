@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/hooks/useToast'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface StockTransferFormProps {
   transferId?: number | null
@@ -34,10 +35,12 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
     queryFn: () => api.get('/warehouses').then(r => r.data.data),
   })
 
-  const { data: products } = useQuery({
+  const { data: rawProducts } = useQuery({
     queryKey: ['products-list'],
-    queryFn: () => api.get('/products').then(r => r.data.data),
+    queryFn: () => api.get('/products', { params: { per_page: 1000 } }).then(r => r.data.data),
   })
+
+  const products = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.data ?? [])
 
   // Auto fill form if editing
   useEffect(() => {
@@ -160,8 +163,13 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-foreground">
-              {isEdit ? `${t('inventory.edit_trf', 'Stock Transfer')}: ${detail?.reference_number}` : t('inventory.create_trf', 'New Stock Transfer')}
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <span>{isEdit ? t('inventory.view_trf', 'Stock Transfer Details') : t('inventory.create_trf', 'New Stock Transfer')}</span>
+              {isEdit && (
+                <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-muted border border-border/80 text-muted-foreground font-semibold">
+                  {detail?.reference_number || `TRF-${transferId}`}
+                </span>
+              )}
             </h2>
             <p className="text-xs text-muted-foreground">{t('inventory.trf_desc', 'Transfer goods between warehouse locations.')}</p>
           </div>
@@ -202,96 +210,62 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.status', 'Status')}</span>
-            <span className={`block text-lg font-bold mt-1 uppercase
-                           ${isReceived ? 'text-emerald-500' : isInTransit ? 'text-blue-500' : 'text-amber-500'}`}>
-              {status}
-            </span>
+      {/* Top Banner Card - Exact Employee Profile Card Style */}
+      {isEdit && (
+        <div className="bg-muted/30 border border-border/70 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
+          <div className="w-14 h-14 rounded-full bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
+            <ArrowLeftRight size={24} />
           </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <Truck size={18} />
-          </div>
-        </div>
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.from', 'From Warehouse')}</span>
-            <span className="block text-sm font-bold text-foreground mt-1">{detail?.from_warehouse?.name || '—'}</span>
-          </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <ArrowLeftRight size={18} />
-          </div>
-        </div>
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.to', 'To Warehouse')}</span>
-            <span className="block text-sm font-bold text-foreground mt-1">{detail?.to_warehouse?.name || '—'}</span>
-          </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <ArrowLeftRight size={18} />
+          <div className="space-y-1 min-w-0 flex-1">
+            <h3 className="text-base font-bold text-foreground truncate">{detail?.reference_number || `TRF-${transferId}`}</h3>
+            <p className="text-xs text-muted-foreground truncate">
+              {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Source'} → {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Destination'}
+            </p>
+            <div>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                isReceived ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
+                isInTransit ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20' :
+                'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+              }`}>
+                {status}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-xs text-muted-foreground uppercase font-semibold">{t('inventory.total_items', 'Total Items')}</span>
-            <span className="block text-lg font-bold text-foreground mt-1">{items.length}</span>
-          </div>
-          <div className="p-3 bg-muted/20 rounded-xl">
-            <Package size={18} />
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: General Info */}
         <div className="lg:col-span-1 bg-card border border-border/50 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
-          <h3 className="text-sm font-bold text-foreground font-semibold uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-border">
-            <Info size={16} className="text-indigo-500" />
-            {t('inventory.general_info', 'General Info')}
+          <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider border-b border-border/50 pb-2">
+            GENERAL INFORMATION
           </h3>
 
           {!isDraft ? (
-            <div className="space-y-4">
-              {/* Source Warehouse */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <Warehouse size={16} />
-                </div>
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 gap-y-3">
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.from_warehouse', 'Source Warehouse')}</span>
-                  <span className="text-sm font-semibold text-foreground mt-0.5 block">
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.from_warehouse', 'Source Warehouse')}</span>
+                  <span className="font-bold text-foreground block">
                     {warehouses?.find((w: any) => w.id.toString() === fromWarehouseId)?.name || 'Unknown Warehouse'}
                   </span>
                 </div>
-              </div>
-
-              {/* Destination Warehouse */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <Warehouse size={16} />
-                </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.to_warehouse', 'Destination Warehouse')}</span>
-                  <span className="text-sm font-semibold text-foreground mt-0.5 block">
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.to_warehouse', 'Destination Warehouse')}</span>
+                  <span className="font-bold text-foreground block">
                     {warehouses?.find((w: any) => w.id.toString() === toWarehouseId)?.name || 'Unknown Warehouse'}
                   </span>
                 </div>
-              </div>
-
-              {/* Notes */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-muted/30 border border-border/40 text-muted-foreground rounded-lg">
-                  <FileText size={16} />
-                </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block font-bold uppercase tracking-wider">{t('inventory.notes', 'Notes')}</span>
-                  <span className="text-sm text-muted-foreground mt-1 block leading-relaxed whitespace-pre-wrap font-normal italic">
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
+                  <span className="font-medium text-muted-foreground block italic">
                     "{notes || '—'}"
                   </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Total Line Items</span>
+                  <span className="font-bold text-foreground block">{items.length} items</span>
                 </div>
               </div>
             </div>
@@ -299,31 +273,27 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.from_warehouse', 'Source Warehouse')}</label>
-                <select
+                <ModernSelect
                   value={fromWarehouseId}
-                  onChange={(e) => setFromWarehouseId(e.target.value)}
-                  required
-                  className="form-input"
-                >
-                  <option value="">Select Source</option>
-                  {(warehouses ?? []).map((w: any) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setFromWarehouseId(String(val))}
+                  options={[
+                    { value: '', label: 'Select Source' },
+                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                  ]}
+                  placeholder="Select Source"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.to_warehouse', 'Destination Warehouse')}</label>
-                <select
+                <ModernSelect
                   value={toWarehouseId}
-                  onChange={(e) => setToWarehouseId(e.target.value)}
-                  required
-                  className="form-input"
-                >
-                  <option value="">Select Destination</option>
-                  {(warehouses ?? []).map((w: any) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setToWarehouseId(String(val))}
+                  options={[
+                    { value: '', label: 'Select Destination' },
+                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                  ]}
+                  placeholder="Select Destination"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">{t('inventory.notes', 'Notes')}</label>
@@ -376,17 +346,19 @@ export const StockTransferForm: React.FC<StockTransferFormProps> = ({ transferId
                             {productObj ? `${productObj.name} (${productObj.sku})` : 'Unknown Product'}
                           </span>
                         ) : (
-                          <select
+                          <ModernSelect
                             value={item.product_id}
-                            onChange={(e) => handleItemChange(idx, 'product_id', e.target.value)}
-                            required
-                            className="form-input text-xs"
-                          >
-                            <option value="">Select Product</option>
-                            {(products ?? []).map((p: any) => (
-                              <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                            ))}
-                          </select>
+                            onChange={(val) => handleItemChange(idx, 'product_id', String(val))}
+                            options={[
+                              { value: '', label: 'Select Product' },
+                              ...(products ?? []).map((p: any) => ({
+                                value: p.id,
+                                label: p.name,
+                                code: p.sku,
+                              })),
+                            ]}
+                            placeholder="Select Product"
+                          />
                         )}
                       </td>
                       <td className="py-3 px-3 text-xs text-foreground">

@@ -20,6 +20,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface User {
   id:           number
@@ -1303,16 +1304,17 @@ const UsersPage: React.FC = () => {
                   {/* Role Filter */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Role Filter</label>
-                    <select
+                    <ModernSelect
                       value={filterRole}
-                      onChange={(e) => setFilterRole(e.target.value)}
-                      className="form-input w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs"
-                    >
-                      <option value="all">All System Roles</option>
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                      <option value="staff">Staff</option>
-                    </select>
+                      onChange={(val) => setFilterRole(String(val))}
+                      options={[
+                        { value: 'all', label: 'All System Roles' },
+                        { value: 'admin', label: 'Admin' },
+                        { value: 'manager', label: 'Manager' },
+                        { value: 'staff', label: 'Staff' },
+                      ]}
+                      placeholder="All System Roles"
+                    />
                   </div>
 
                   {/* Date Range */}
@@ -1344,24 +1346,26 @@ const UsersPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Security & Verification</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <select
+                      <ModernSelect
                         value={filterVerified}
-                        onChange={(e) => setFilterVerified(e.target.value)}
-                        className="form-input w-full p-2 rounded-xl border border-border bg-card text-foreground text-xs"
-                      >
-                        <option value="all">All Verification</option>
-                        <option value="verified">Verified Account</option>
-                        <option value="unverified">Unverified Account</option>
-                      </select>
-                      <select
+                        onChange={(val) => setFilterVerified(String(val))}
+                        options={[
+                          { value: 'all', label: 'All Verification' },
+                          { value: 'verified', label: 'Verified Account' },
+                          { value: 'unverified', label: 'Unverified Account' },
+                        ]}
+                        placeholder="All Verification"
+                      />
+                      <ModernSelect
                         value={filter2FA}
-                        onChange={(e) => setFilter2FA(e.target.value)}
-                        className="form-input w-full p-2 rounded-xl border border-border bg-card text-foreground text-xs"
-                      >
-                        <option value="all">2FA Status</option>
-                        <option value="enabled">2FA Enabled</option>
-                        <option value="disabled">2FA Disabled</option>
-                      </select>
+                        onChange={(val) => setFilter2FA(String(val))}
+                        options={[
+                          { value: 'all', label: '2FA Status' },
+                          { value: 'enabled', label: '2FA Enabled' },
+                          { value: 'disabled', label: '2FA Disabled' },
+                        ]}
+                        placeholder="2FA Status"
+                      />
                     </div>
                   </div>
                 </div>

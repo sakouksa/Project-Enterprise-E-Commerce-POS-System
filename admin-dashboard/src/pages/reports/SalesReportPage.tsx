@@ -153,6 +153,12 @@ export const SalesReportPage: React.FC = () => {
     setExporting(true)
     setShowExcelMenu(false)
 
+    if (format === 'excel' || format === 'csv') {
+      toast.info(t('sales.toast.exportingExcel', 'Exporting Excel sales report, please wait...'))
+    } else {
+      toast.info(t('sales.toast.exportingPdf', 'Exporting PDF sales report, please wait...'))
+    }
+
     const exportFilters = overrideDates
       ? { ...filters, date_from: overrideDates.date_from, date_to: overrideDates.date_to }
       : filters
@@ -163,7 +169,7 @@ export const SalesReportPage: React.FC = () => {
         responseType: 'blob',
       })
 
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([response.data], { type: format === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -173,9 +179,13 @@ export const SalesReportPage: React.FC = () => {
       link.remove()
       window.URL.revokeObjectURL(url)
 
-      toast.success(`Sales report exported as ${format.toUpperCase()} successfully.`)
+      toast.success(
+        format === 'excel' || format === 'csv'
+          ? t('sales.toast.exportExcelSuccess', 'Sales report exported to Excel successfully!')
+          : t('sales.toast.exportPdfSuccess', 'Sales report exported to PDF successfully!')
+      )
     } catch (err) {
-      toast.error('Failed to export sales report. Please try again.')
+      toast.error(t('sales.toast.exportError', 'Failed to export sales report. Please try again.'))
     } finally {
       setExporting(false)
     }

@@ -18,6 +18,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import EmptyState from '@/components/shared/EmptyState'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface Category {
   id: number
@@ -744,20 +745,17 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Parent Category</label>
-                    <select
+                    <ModernSelect
                       value={parentId}
-                      onChange={(e) => setParentId(e.target.value)}
-                      className="form-input"
-                    >
-                      <option value="">Root Category (None)</option>
-                      {dropdownCats
-                        .filter(c => !editingCategory || (c.id !== editingCategory.id && c.parent_id !== editingCategory.id))
-                        .map(c => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                    </select>
+                      onChange={(val) => setParentId(String(val))}
+                      options={[
+                        { value: '', label: 'Root Category (None)' },
+                        ...dropdownCats
+                          .filter(c => !editingCategory || (c.id !== editingCategory.id && c.parent_id !== editingCategory.id))
+                          .map(c => ({ value: c.id, label: c.name })),
+                      ]}
+                      placeholder="Root Category (None)"
+                    />
                   </div>
 
                   <div>

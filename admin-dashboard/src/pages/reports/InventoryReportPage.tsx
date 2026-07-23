@@ -89,7 +89,7 @@ export const InventoryReportPage: React.FC = () => {
 
     setExporting(true)
     setShowExcelMenu(false)
-    toast.info('Generating Inventory Analytics Excel export...')
+    toast.info(t('inventory.toast.exportingExcel', 'Downloading Excel inventory report, please wait...'))
 
     let exportParams = { ...filters }
     if (rangeType === 'today') {
@@ -126,9 +126,9 @@ export const InventoryReportPage: React.FC = () => {
       link.remove()
       window.URL.revokeObjectURL(url)
 
-      toast.success('Inventory report exported successfully!')
+      toast.success(t('inventory.toast.exportExcelSuccess', 'Inventory report exported to Excel successfully!'))
     } catch (err: any) {
-      toast.error('Failed to export inventory report.')
+      toast.error(t('inventory.toast.exportError', 'Failed to export inventory report. Please try again.'))
     } finally {
       setExporting(false)
     }

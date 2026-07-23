@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Legend,
@@ -25,6 +26,7 @@ const today = new Date().toISOString().split('T')[0]
 const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
 const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
+  const { t } = useTranslation('reports')
   const toast = useToast()
   const [searchParams] = useSearchParams()
   const tab = searchParams.get('tab')
@@ -73,29 +75,30 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
   })
 
   const handleExcelExport = async () => {
-    if (currentType === 'purchase' || currentType === 'purchases') {
-      toast.error('Excel export for purchases report is not implemented.')
-      return
-    }
     setExporting(true)
-    toast.info('Generating Excel export...')
+    toast.info(t('toast.exportingExcel', 'Downloading Excel report, please wait...'))
     try {
       const endpoint = currentType === 'inventory'
-        ? '/reports/export-inventory'
-        : '/reports/export-sales'
+        ? '/reports/inventory/export'
+        : (currentType === 'purchase' || currentType === 'purchases')
+        ? '/reports/purchase/export'
+        : '/reports/sales/export'
+
       const response = await api.get(endpoint, {
-        params:       filters,
+        params: { ...filters, format: 'excel' },
         responseType: 'blob',
       })
-      const url  = URL.createObjectURL(response.data)
-      const a    = document.createElement('a')
-      a.href     = url
-      a.download = `${currentType}-report-${filters.date_from}-${filters.date_to}.xlsx`
+      const url = URL.createObjectURL(response.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${currentType}-report-${filters.date_from || 'all'}-${filters.date_to || 'all'}.csv`
+      document.body.appendChild(a)
       a.click()
+      a.remove()
       URL.revokeObjectURL(url)
-      toast.success('Report exported successfully.')
+      toast.success(t('toast.exportExcelSuccess', 'Report exported to Excel successfully!'))
     } catch {
-      toast.error('Export failed. Please try again.')
+      toast.error(t('toast.exportError', 'Failed to export report. Please try again.'))
     } finally {
       setExporting(false)
     }

@@ -64,6 +64,8 @@
   "details": "ព័ត៌មានលម្អិត",
   "edit_adj": "Stock Adjustment",
   "edit_trf": "Stock Transfer",
+  "view_adj": "ព័ត៌មានលម្អិតនៃការកែតម្រូវស្តុក",
+  "view_trf": "ព័ត៌មានលម្អិតនៃការផ្ទេរស្តុក",
   "from": "From Warehouse",
   "from_warehouse": "Source Warehouse",
   "general": "លក្ខណៈបច្ចេកទេស",

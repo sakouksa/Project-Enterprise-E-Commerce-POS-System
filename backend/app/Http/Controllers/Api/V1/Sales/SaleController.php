@@ -23,12 +23,21 @@ class SaleController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $sales = Sale::with(['customer', 'cashier'])
-            ->when($request->search, fn($q, $v) => $q->where('invoice_number', 'like', "%{$v}%"))
+            ->when($request->search, function($q, $v) {
+                $q->where(function($sub) use ($v) {
+                    $sub->where('invoice_number', 'like', "%{$v}%")
+                        ->orWhereHas('customer', fn($c) => $c->where('name', 'like', "%{$v}%")->orWhere('phone', 'like', "%{$v}%"));
+                });
+            })
             ->when($request->status, fn($q, $v) => $q->where('status', $v))
-            ->when($request->date_from, fn($q, $v) => $q->whereDate('date', '>=', $v))
-            ->when($request->date_to, fn($q, $v) => $q->whereDate('date', '<=', $v))
+            ->when($request->payment_status, fn($q, $v) => $q->where('payment_status', $v))
+            ->when($request->payment_method, fn($q, $v) => $q->where('payment_method', $v))
+            ->when($request->date_from ?? $request->start_date, fn($q, $v) => $q->whereDate('date', '>=', $v))
+            ->when($request->date_to ?? $request->end_date, fn($q, $v) => $q->whereDate('date', '<=', $v))
+            ->when($request->min_total, fn($q, $v) => $q->where('grand_total', '>=', (float)$v))
+            ->when($request->max_total, fn($q, $v) => $q->where('grand_total', '<=', (float)$v))
             ->latest()
-            ->paginate($request->integer('per_page', 10));
+            ->paginate($request->integer('per_page', 12));
 
         return $this->paginatedResponse($sales);
     }

@@ -11,9 +11,14 @@ class NotificationLog extends Model
 {
     use HasFactory;
 
+    protected $table = 'notification_logs';
+
     protected $fillable = [
-        'company_id', 'user_id', 'channel', 'recipient',
-        'subject', 'content', 'status', 'error_message',
+        'notification_id',
+        'user_id',
+        'channel',
+        'status',
+        'response',
         'sent_at',
     ];
 
@@ -21,8 +26,13 @@ class NotificationLog extends Model
         'sent_at' => 'datetime',
     ];
 
+    public function notification(): BelongsTo
+    {
+        return $this->belongsTo(Notification::class, 'notification_id');
+    }
+
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

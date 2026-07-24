@@ -38,6 +38,9 @@ use App\Http\Controllers\Api\V1\Report\PurchaseReportController;
 use App\Http\Controllers\Api\V1\Report\InventoryReportController;
 use App\Http\Controllers\Api\V1\Report\DashboardController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
+use App\Http\Controllers\Api\V1\Notification\NotificationController;
+use App\Http\Controllers\Api\V1\Notification\NotificationTemplateController;
+use App\Http\Controllers\Api\V1\Notification\NotificationSettingController;
 
 // ─── API Version 1 ────────────────────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
@@ -486,10 +489,38 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('sale-returns', \App\Http\Controllers\Api\V1\Sales\SaleReturnController::class);
         Route::apiResource('stock-adjustment-items', \App\Http\Controllers\Api\V1\Inventory\StockAdjustmentItemController::class);
         Route::apiResource('stock-opname-items', \App\Http\Controllers\Api\V1\Inventory\StockOpnameItemController::class);
-        Route::apiResource('stock-transfer-items', \App\Http\Controllers\Api\V1\Inventory\StockTransferItemController::class);
-        Route::apiResource('supplier-contacts', \App\Http\Controllers\Api\V1\Supplier\SupplierContactController::class);
-        Route::apiResource('wishlists', \App\Http\Controllers\Api\V1\Order\WishlistController::class);
+        // ─── Enterprise Notification Module ──────────────────────────────
+        Route::prefix('notifications')->group(function () {
+            Route::get('stats',              [NotificationController::class, 'stats']);
+            Route::get('unread',             [NotificationController::class, 'unread']);
+            Route::get('export',             [NotificationController::class, 'export']);
+            Route::put('read-all',           [NotificationController::class, 'markAllAsRead']);
+            Route::post('bulk',              [NotificationController::class, 'bulk']);
+            Route::delete('clear',           [NotificationController::class, 'clear']);
+            Route::get('{id}/logs',          [NotificationController::class, 'logs']);
+            Route::post('{id}/duplicate',    [NotificationController::class, 'duplicate']);
+            Route::put('{id}/read',          [NotificationController::class, 'markAsRead']);
+        });
+        Route::apiResource('notifications', NotificationController::class);
+
+        Route::get('notification-templates/export',              [NotificationTemplateController::class, 'export']);
+        Route::post('notification-templates/import',             [NotificationTemplateController::class, 'import']);
+        Route::post('notification-templates/{id}/duplicate',     [NotificationTemplateController::class, 'duplicate']);
+        Route::put('notification-templates/{id}/toggle-status',  [NotificationTemplateController::class, 'toggleStatus']);
+        Route::apiResource('notification-templates', NotificationTemplateController::class);
+
+        Route::prefix('notification-settings')->group(function () {
+            Route::get('/',                  [NotificationSettingController::class, 'show']);
+            Route::put('/',                  [NotificationSettingController::class, 'update']);
+            Route::post('test-email',        [NotificationSettingController::class, 'testEmail']);
+            Route::post('test-telegram',     [NotificationSettingController::class, 'testTelegram']);
+            Route::post('test-sms',          [NotificationSettingController::class, 'testSms']);
+            Route::post('test-push',         [NotificationSettingController::class, 'testPush']);
+            Route::post('test-channel',      [NotificationSettingController::class, 'testChannel']);
+        });
     });
+
+
 
     // ─── Public E-Commerce Storefront Routes ──────────────────────────────────
     Route::prefix('store')->group(function () {

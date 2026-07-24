@@ -1,0 +1,154 @@
+{
+  "module_title": "การจัดการการแจ้งเตือนองค์กร",
+  "all_notifications_title": "การแจ้งเตือนทั้งหมด",
+  "all_notifications_subtitle": "ติดตามการแจ้งเตือนระบบ คลังสินค้า การสั่งซื้อ การขาย การเงิน บุคลากร และความปลอดภัยทั่วทั้งองค์กรของคุณ",
+  "templates_title": "เทมเพลตการแจ้งเตือน",
+  "templates_subtitle": "จัดการเทมเพลตที่ใช้ซ้ำได้สำหรับการแจ้งเตือนอัตโนมัติในองค์กร",
+  "settings_title": "ตั้งค่าการแจ้งเตือน",
+  "settings_subtitle": "กำหนดรูปแบบการส่งการแจ้งเตือนข้ามระบบในองค์กร",
+  "summary": {
+    "total": "การแจ้งเตือนทั้งหมด",
+    "unread": "ยังไม่ได้อ่าน",
+    "critical": "การแจ้งเตือนสำคัญ",
+    "today": "การแจ้งเตือนวันนี้",
+    "system": "ระบบ",
+    "inventory": "คลังสินค้า",
+    "sales": "การขาย",
+    "purchase": "การสั่งซื้อ",
+    "employee": "พนักงาน",
+    "finance": "การเงิน",
+    "security": "ความปลอดภัย",
+    "total_templates": "เทมเพลตทั้งหมด",
+    "active_templates": "เทมเพลตใช้งานอยู่",
+    "inactive_templates": "เทมเพลตปิดใช้งาน",
+    "system_templates": "เทมเพลตระบบ",
+    "sales_templates": "เทมเพลตการขาย",
+    "inventory_templates": "เทมเพลตคลังสินค้า",
+    "finance_templates": "เทมเพลตการเงิน",
+    "employee_templates": "เทมเพลตพนักงาน"
+  },
+  "actions": {
+    "create": "สร้างการแจ้งเตือน",
+    "new_template": "เทมเพลตใหม่",
+    "refresh": "รีเฟรช",
+    "mark_all_read": "ทำเครื่องหมายอ่านแล้วทั้งหมด",
+    "archive_all": "จัดเก็บทั้งหมด",
+    "delete_selected": "ลบรายการที่เลือก",
+    "export_csv": "ส่งออก CSV",
+    "export_excel": "ส่งออก Excel",
+    "import": "นำเข้า JSON",
+    "export": "ส่งออก JSON",
+    "view": "ดูรายละเอียด",
+    "edit": "แก้ไข",
+    "mark_read": "ทำเครื่องหมายว่าอ่านแล้ว",
+    "archive": "จัดเก็บ",
+    "duplicate": "ทำซ้ำ",
+    "delete": "ลบ",
+    "preview": "แสดงตัวอย่าง",
+    "save": "บันทึกการเปลี่ยนแปลง",
+    "reset": "รีเซ็ตเป็นค่าเริ่มต้น",
+    "send_test": "ส่งข้อความทดสอบ",
+    "configure": "ตั้งค่ากำหนด"
+  },
+  "tabs": {
+    "all": "ทั้งหมด",
+    "unread": "ยังไม่ได้อ่าน",
+    "read": "อ่านแล้ว",
+    "archived": "คลังจัดเก็บ",
+    "system": "ระบบ",
+    "inventory": "คลังสินค้า",
+    "sales": "การขาย",
+    "purchase": "การสั่งซื้อ",
+    "finance": "การเงิน",
+    "employees": "พนักงาน",
+    "customers": "ลูกค้า",
+    "suppliers": "ผู้จัดจำหน่าย",
+    "security": "ความปลอดภัย",
+    "reports": "รายงาน",
+    "marketing": "การตลาด",
+    "shipping": "การขนส่ง"
+  },
+  "filters": {
+    "search": "ค้นหาการแจ้งเตือน...",
+    "date_range": "ช่วงวันที่",
+    "priority": "ความสำคัญ",
+    "type": "หมวดหมู่",
+    "status": "สถานะการส่ง",
+    "company": "บริษัท",
+    "branch": "สาขา",
+    "created_by": "สร้างโดย",
+    "channel": "ช่องทาง"
+  },
+  "table": {
+    "priority": "ความสำคัญ",
+    "icon": "ประเภท",
+    "title": "หัวข้อและข้อความ",
+    "category": "หมวดหมู่",
+    "target_users": "ผู้รับเป้าหมาย",
+    "channel": "ช่องทาง",
+    "status": "สถานะ",
+    "created_by": "ผู้สร้าง",
+    "created_at": "วันที่สร้าง",
+    "read_count": "จำนวนการอ่าน",
+    "actions": "การดำเนินการ"
+  },
+  "template": {
+    "code": "รหัสเทมเพลต",
+    "name": "ชื่อเทมเพลต",
+    "title_template": "รูปแบบหัวข้อ",
+    "message_template": "รูปแบบข้อความ",
+    "available_variables": "ตัวแปรที่ใช้งานได้ (คลิกเพื่อแทรก)",
+    "preview_desktop": "เดสก์ท็อป",
+    "preview_mobile": "มือถือ",
+    "preview_email": "อีเมล",
+    "preview_push": "การแจ้งเตือน Push"
+  },
+  "settings": {
+    "categories": {
+      "general": "การตั้งค่าทั่วไป",
+      "channels": "ช่องทางการส่ง",
+      "security": "ความปลอดภัยและการเข้าถึง",
+      "retention": "การเก็บรักษาข้อมูล",
+      "appearance": "รูปลักษณ์และการแสดงผล",
+      "sound": "เสียงการแจ้งเตือน",
+      "test": "ทดสอบระบบช่องทาง"
+    },
+    "general": {
+      "enable_notifications": "เปิดใช้งานการแจ้งเตือนองค์กร",
+      "enable_sound": "เปิดใช้งานเสียงแจ้งเตือน",
+      "desktop_notify": "การแจ้งเตือนระบบเดสก์ท็อป",
+      "browser_notify": "การแจ้งเตือนบนเบราว์เซอร์",
+      "mobile_notify": "การแจ้งเตือนบนมือถือ",
+      "dark_mode": "รองรับ โหมดมืด (Dark Mode)",
+      "auto_refresh": "ความถี่การรีเฟรชอัตโนมัติ"
+    },
+    "security": {
+      "jwt_validation": "การตรวจสอบ JWT เข้มงวด",
+      "permission_check": "การตรวจสอบสิทธิ์การใช้งาน",
+      "role_check": "การแยกตามบทบาทผู้ใช้",
+      "company_isolation": "การแยกข้อมูลระดับบริษัท",
+      "branch_isolation": "การแยกข้อมูลระดับสาขา"
+    },
+    "retention": {
+      "delete_days": "ลบอัตโนมัติหลังจาก (วัน)",
+      "archive_days": "จัดเก็บอัตโนมัติหลังจาก (วัน)",
+      "read_history": "บันทึกประวัติการอ่าน",
+      "max_storage": "ขีดจำกัดพื้นที่จัดเก็บข้อมูล"
+    },
+    "appearance": {
+      "position": "ตำแหน่งการแสดงป๊อปอัป",
+      "animation": "เอฟเฟกต์แอนิเมชัน",
+      "duration": "ระยะเวลาการแสดง (วินาที)",
+      "theme": "ธีมการ์ดแจ้งเตือน"
+    },
+    "sound": {
+      "enable": "เปิดเสียงแจ้งเตือน",
+      "volume": "ระดับความดังเสียง",
+      "sound_select": "รูปแบบเสียงแจ้งเตือน"
+    }
+  },
+  "empty": {
+    "title": "ไม่พบการแจ้งเตือน",
+    "desc": "ไม่มีการแจ้งเตือนที่ตรงกับเงื่อนไขการกรองหรือคำค้นหาของคุณ"
+  }
+}

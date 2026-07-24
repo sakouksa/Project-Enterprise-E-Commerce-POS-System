@@ -1,0 +1,154 @@
+{
+  "module_title": "企业通知管理中心",
+  "all_notifications_title": "所有通知",
+  "all_notifications_subtitle": "实时监控整个企业范围内的系统警报、库存预警、采购、销售、财务、人力资源、客户活动与安全通知。",
+  "templates_title": "通知模板",
+  "templates_subtitle": "管理用于企业自动化通知的可重用模板。",
+  "settings_title": "通知设置",
+  "settings_subtitle": "配置跨系统的企业通知发送方式与渠道。",
+  "summary": {
+    "total": "通知总数",
+    "unread": "未读通知",
+    "critical": "紧急警报",
+    "today": "今日通知",
+    "system": "系统通知",
+    "inventory": "库存预警",
+    "sales": "销售通知",
+    "purchase": "采购通知",
+    "employee": "员工通知",
+    "finance": "财务通知",
+    "security": "安全警报",
+    "total_templates": "模板总数",
+    "active_templates": "启用模板",
+    "inactive_templates": "停用模板",
+    "system_templates": "系统模板",
+    "sales_templates": "销售模板",
+    "inventory_templates": "库存模板",
+    "finance_templates": "财务模板",
+    "employee_templates": "员工模板"
+  },
+  "actions": {
+    "create": "创建通知",
+    "new_template": "新建模板",
+    "refresh": "刷新",
+    "mark_all_read": "全部标记已读",
+    "archive_all": "全部归档",
+    "delete_selected": "删除选中",
+    "export_csv": "导出 CSV",
+    "export_excel": "导出 Excel",
+    "import": "导入 JSON",
+    "export": "导出 JSON",
+    "view": "查看详情",
+    "edit": "编辑",
+    "mark_read": "标为已读",
+    "archive": "归档",
+    "duplicate": "复制",
+    "delete": "删除",
+    "preview": "实时预览",
+    "save": "保存更改",
+    "reset": "恢复默认",
+    "send_test": "发送测试",
+    "configure": "配置"
+  },
+  "tabs": {
+    "all": "全部",
+    "unread": "未读",
+    "read": "已读",
+    "archived": "归档",
+    "system": "系统",
+    "inventory": "库存",
+    "sales": "销售",
+    "purchase": "采购",
+    "finance": "财务",
+    "employees": "员工",
+    "customers": "客户",
+    "suppliers": "供应商",
+    "security": "安全",
+    "reports": "报表",
+    "marketing": "营销",
+    "shipping": "物流"
+  },
+  "filters": {
+    "search": "搜索通知...",
+    "date_range": "日期范围",
+    "priority": "优先级",
+    "type": "分类类型",
+    "status": "发送状态",
+    "company": "所属公司",
+    "branch": "所属门店",
+    "created_by": "创建者",
+    "channel": "发送渠道"
+  },
+  "table": {
+    "priority": "优先级",
+    "icon": "类型",
+    "title": "标题与消息",
+    "category": "分类",
+    "target_users": "接收对象",
+    "channel": "推送渠道",
+    "status": "状态",
+    "created_by": "发布人",
+    "created_at": "创建时间",
+    "read_count": "阅读次数",
+    "actions": "操作"
+  },
+  "template": {
+    "code": "模板代码",
+    "name": "模板名称",
+    "title_template": "标题样式",
+    "message_template": "消息样式",
+    "available_variables": "可用变量 (点击插入)",
+    "preview_desktop": "桌面弹窗",
+    "preview_mobile": "移动端",
+    "preview_email": "电子邮件",
+    "preview_push": "推送通知"
+  },
+  "settings": {
+    "categories": {
+      "general": "通用偏好设置",
+      "channels": "推送渠道配置",
+      "security": "安全与权限控制",
+      "retention": "数据保留与存储",
+      "appearance": "外观与显示",
+      "sound": "音效与提示音",
+      "test": "渠道诊断测试"
+    },
+    "general": {
+      "enable_notifications": "启用企业通知系统",
+      "enable_sound": "启用通知提示音",
+      "desktop_notify": "桌面系统级通知",
+      "browser_notify": "浏览器应用内弹窗",
+      "mobile_notify": "移动端 App 推送",
+      "dark_mode": "支持深色模式",
+      "auto_refresh": "自动刷新频率"
+    },
+    "security": {
+      "jwt_validation": "严格 JWT Token 校验",
+      "permission_check": "强制权限检查",
+      "role_check": "基于角色的广播隔离",
+      "company_isolation": "多租户公司隔离",
+      "branch_isolation": "门店级数据隔离"
+    },
+    "retention": {
+      "delete_days": "过期通知自动删除 (天)",
+      "archive_days": "已读通知自动归档 (天)",
+      "read_history": "保留阅读审计历史",
+      "max_storage": "最大通知存储容量限制"
+    },
+    "appearance": {
+      "position": "通知弹窗显示位置",
+      "animation": "弹窗动画效果",
+      "duration": "停留显示时长 (秒)",
+      "theme": "通知卡片主题风格"
+    },
+    "sound": {
+      "enable": "开启提示音",
+      "volume": "通知音量大小",
+      "sound_select": "提示音效选择"
+    }
+  },
+  "empty": {
+    "title": "未找到通知",
+    "desc": "没有符合您当前筛选条件或搜索关键词的通知。"
+  }
+}

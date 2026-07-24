@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BaseApiController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Return a standardized success response.
      */
+
     protected function successResponse(
         mixed $data = null,
         string $message = 'Success',

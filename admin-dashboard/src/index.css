@@ -164,3 +164,80 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
+
+/* ── Ant Design Dark Mode & Drawer Theme Overrides ───────────────────────── */
+.dark .ant-drawer-content,
+.dark .ant-drawer-header,
+.dark .ant-drawer-body,
+.dark .ant-drawer-footer,
+.dark .ant-modal-content,
+.dark .ant-modal-header,
+.dark .ant-modal-footer {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .ant-drawer-title,
+.dark .ant-modal-title {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .ant-drawer-close,
+.dark .ant-modal-close {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.enterprise-drawer .ant-drawer-content {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.enterprise-drawer .ant-drawer-header {
+  background-color: hsl(var(--card)) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+.enterprise-drawer .ant-drawer-footer {
+  background-color: hsl(var(--card)) !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .ant-input,
+.dark textarea.ant-input,
+.dark .ant-input-affix-wrapper,
+.dark .ant-input-number,
+.dark .ant-select-selector {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .ant-input::placeholder,
+.dark textarea.ant-input::placeholder,
+.dark .ant-input-affix-wrapper input::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .ant-input-prefix,
+.dark .ant-input-suffix {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .ant-form-item-label > label {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600 !important;
+}
+
+.dark .ant-tabs-nav {
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .ant-tabs-tab {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: hsl(var(--primary)) !important;
+}

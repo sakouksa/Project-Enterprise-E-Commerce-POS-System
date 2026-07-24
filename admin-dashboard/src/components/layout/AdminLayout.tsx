@@ -268,6 +268,25 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 
+  // ── 15. Notifications ─────────────────────────────────────────────────────
+  {
+    groupKey: 'notifications',
+    groupLabelKey: '',
+    items: [
+      {
+        labelKey: 'nav.notifications',
+        icon: <Bell size={18} />,
+        permission: 'notification.view',
+        children: [
+          { labelKey: 'nav.allNotifications', path: '/notifications', permission: 'notification.view' },
+          { labelKey: 'nav.notificationTemplates', path: '/notification-templates', permission: 'notification.template.view' },
+          { labelKey: 'nav.notificationSettings', path: '/notifications/settings', permission: 'notification.view' },
+        ],
+      },
+    ],
+  },
+
+
   // ── 15. Settings ──────────────────────────────────────────────────────────
   {
     groupKey: 'settings',

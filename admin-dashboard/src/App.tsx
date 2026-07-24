@@ -84,6 +84,11 @@ const UnitsPage           = React.lazy(() => import('@/pages/settings/UnitsPage'
 const ReviewsPage         = React.lazy(() => import('@/pages/reviews/ReviewsPage'))
 const ProfilePage         = React.lazy(() => import('@/pages/profile/ProfilePage'))
 
+// Notifications
+const NotificationListPage        = React.lazy(() => import('@/pages/notifications/NotificationListPage'))
+const NotificationTemplateListPage = React.lazy(() => import('@/pages/notifications/NotificationTemplateListPage'))
+const NotificationSettingsPage    = React.lazy(() => import('@/pages/notifications/NotificationSettingsPage'))
+
 // ─── Query Client ────────────────────────────────────────────────────────────
 
 const queryClient = new QueryClient({
@@ -237,6 +242,12 @@ const AppContent: React.FC = () => {
             <Route path="/permissions"             element={<ProtectedRoute permission="permissions.view"><PermissionsPage /></ProtectedRoute>} />
             <Route path="/activity-logs"           element={<ProtectedRoute permission="activity_logs.view"><ActivityLogsPage /></ProtectedRoute>} />
             <Route path="/recycle-bin"             element={<ProtectedRoute permission="recycle_bin.view"><RecycleBinPage /></ProtectedRoute>} />
+
+            {/* ── Notifications ────────────────────────────────────────── */}
+            <Route path="/notifications"            element={<ProtectedRoute permission="notification.view"><NotificationListPage /></ProtectedRoute>} />
+            <Route path="/notification-templates"   element={<ProtectedRoute permission="notification.template.view"><NotificationTemplateListPage /></ProtectedRoute>} />
+            <Route path="/notifications/settings"  element={<ProtectedRoute permission="notification.view"><NotificationSettingsPage /></ProtectedRoute>} />
+
 
             {/* ── Settings / Reviews ────────────────────────────────────── */}
             <Route path="/settings"                element={<ProtectedRoute permission="settings.view"><SettingsPage /></ProtectedRoute>} />

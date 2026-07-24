@@ -1,0 +1,154 @@
+{
+  "module_title": "Quản lý Thông báo Doanh nghiệp",
+  "all_notifications_title": "Tất cả Thông báo",
+  "all_notifications_subtitle": "Theo dõi cảnh báo hệ thống, tồn kho, mua hàng, bán hàng, tài chính, nhân sự và an ninh trên toàn doanh nghiệp.",
+  "templates_title": "Mẫu Thông báo",
+  "templates_subtitle": "Quản lý các mẫu thông báo tái sử dụng cho thông báo tự động doanh nghiệp.",
+  "settings_title": "Cấu hình Thông báo",
+  "settings_subtitle": "Cấu hình phương thức gửi thông báo doanh nghiệp trên toàn hệ thống.",
+  "summary": {
+    "total": "Tổng số Thông báo",
+    "unread": "Chưa đọc",
+    "critical": "Cảnh báo Khẩn cấp",
+    "today": "Thông báo Hôm nay",
+    "system": "Hệ thống",
+    "inventory": "Kho hàng",
+    "sales": "Bán hàng",
+    "purchase": "Mua hàng",
+    "employee": "Nhân viên",
+    "finance": "Tài chính",
+    "security": "An ninh",
+    "total_templates": "Tổng mẫu",
+    "active_templates": "Mẫu hoạt động",
+    "inactive_templates": "Mẫu vô hiệu",
+    "system_templates": "Mẫu hệ thống",
+    "sales_templates": "Mẫu bán hàng",
+    "inventory_templates": "Mẫu kho hàng",
+    "finance_templates": "Mẫu tài chính",
+    "employee_templates": "Mẫu nhân viên"
+  },
+  "actions": {
+    "create": "Tạo Thông báo",
+    "new_template": "Mẫu Mới",
+    "refresh": "Làm mới",
+    "mark_all_read": "Đánh dấu tất cả đã đọc",
+    "archive_all": "Lưu trữ tất cả",
+    "delete_selected": "Xóa mục đã chọn",
+    "export_csv": "Xuất CSV",
+    "export_excel": "Xuất Excel",
+    "import": "Nhập JSON",
+    "export": "Xuất JSON",
+    "view": "Xem Chi tiết",
+    "edit": "Chỉnh sửa",
+    "mark_read": "Đánh dấu đã đọc",
+    "archive": "Lưu trữ",
+    "duplicate": "Nhân bản",
+    "delete": "Xóa",
+    "preview": "Xem trước",
+    "save": "Lưu Thay đổi",
+    "reset": "Khôi phục Mặc định",
+    "send_test": "Gửi Thử nghiệm",
+    "configure": "Cấu hình"
+  },
+  "tabs": {
+    "all": "Tất cả",
+    "unread": "Chưa đọc",
+    "read": "Đã đọc",
+    "archived": "Đã lưu trữ",
+    "system": "Hệ thống",
+    "inventory": "Kho hàng",
+    "sales": "Bán hàng",
+    "purchase": "Mua hàng",
+    "finance": "Tài chính",
+    "employees": "Nhân viên",
+    "customers": "Khách hàng",
+    "suppliers": "Nhà cung cấp",
+    "security": "An ninh",
+    "reports": "Báo cáo",
+    "marketing": "Tiếp thị",
+    "shipping": "Vận chuyển"
+  },
+  "filters": {
+    "search": "Tìm kiếm thông báo...",
+    "date_range": "Khoảng thời gian",
+    "priority": "Độ ưu tiên",
+    "type": "Loại danh mục",
+    "status": "Trạng thái",
+    "company": "Công ty",
+    "branch": "Chi nhánh",
+    "created_by": "Tạo bởi",
+    "channel": "Kênh gửi"
+  },
+  "table": {
+    "priority": "Ưu tiên",
+    "icon": "Loại",
+    "title": "Tiêu đề & Nội dung",
+    "category": "Danh mục",
+    "target_users": "Người nhận",
+    "channel": "Kênh truyền",
+    "status": "Trạng thái",
+    "created_by": "Tác giả",
+    "created_at": "Thời gian tạo",
+    "read_count": "Lượt đọc",
+    "actions": "Thao tác"
+  },
+  "template": {
+    "code": "Mã mẫu",
+    "name": "Tên mẫu",
+    "title_template": "Mẫu tiêu đề",
+    "message_template": "Mẫu nội dung",
+    "available_variables": "Biến khả dụng (Nhấp để chèn)",
+    "preview_desktop": "Máy tính",
+    "preview_mobile": "Điện thoại",
+    "preview_email": "Email",
+    "preview_push": "Thông báo Push"
+  },
+  "settings": {
+    "categories": {
+      "general": "Cấu hình Cơ bản",
+      "channels": "Kênh Gửi Thông báo",
+      "security": "Bảo mật & Quyền hạn",
+      "retention": "Lưu trữ Dữ liệu",
+      "appearance": "Giao diện & Hiển thị",
+      "sound": "Âm thanh Thông báo",
+      "test": "Kiểm tra Kênh Gửi"
+    },
+    "general": {
+      "enable_notifications": "Bật Thông báo Doanh nghiệp",
+      "enable_sound": "Bật Âm thanh Thông báo",
+      "desktop_notify": "Thông báo Hệ thống Desktop",
+      "browser_notify": "Thông báo Trình duyệt",
+      "mobile_notify": "Thông báo Đẩy Di động",
+      "dark_mode": "Hỗ trợ Chế độ Tối",
+      "auto_refresh": "Tần suất Làm mới Tự động"
+    },
+    "security": {
+      "jwt_validation": "Xác thực JWT Nghiêm ngặt",
+      "permission_check": "Kiểm tra Quyền hạn",
+      "role_check": "Phân lập Theo Vai trò",
+      "company_isolation": "Phân lập Theo Công ty",
+      "branch_isolation": "Phân lập Theo Chi nhánh"
+    },
+    "retention": {
+      "delete_days": "Tự động xóa sau (Ngày)",
+      "archive_days": "Tự động lưu trữ sau (Ngày)",
+      "read_history": "Lưu lịch sử đã đọc",
+      "max_storage": "Giới hạn dung lượng lưu trữ"
+    },
+    "appearance": {
+      "position": "Vị trí Hiển thị Popup",
+      "animation": "Hiệu ứng Chuyển động",
+      "duration": "Thời gian Hiển thị (Giây)",
+      "theme": "Giao diện Thẻ Thông báo"
+    },
+    "sound": {
+      "enable": "Bật Âm báo",
+      "volume": "Mức Âm lượng",
+      "sound_select": "Kiểu Âm báo"
+    }
+  },
+  "empty": {
+    "title": "Không tìm thấy thông báo",
+    "desc": "Không có thông báo nào phù hợp với bộ lọc hoặc từ khóa tìm kiếm của bạn."
+  }
+}

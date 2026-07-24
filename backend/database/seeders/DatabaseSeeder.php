@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
             CMSSeeder::class,
             PromotionSeeder::class,
             LogSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }
+

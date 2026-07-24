@@ -11,6 +11,40 @@ const api = axios.create({
   timeout: 30000,
 })
 
+// Notification Debouncer to prevent duplicate toast popups
+const keyTimeMap = new Map<string, number>()
+let globalLastNotificationTime = 0
+
+const notifyOnce = (key: string, type: 'warning' | 'error' | 'info', title: string, desc: string) => {
+  const now = Date.now()
+  const lastKeyTime = keyTimeMap.get(key) || 0
+
+  // Deduplicate identical error key within 5 seconds
+  if (now - lastKeyTime < 5000) {
+    return
+  }
+
+  // Global throttle: prevent showing more than 1 error toast within 1.5 seconds to avoid toast stacking
+  if (now - globalLastNotificationTime < 1500) {
+    return
+  }
+
+  keyTimeMap.set(key, now)
+  globalLastNotificationTime = now
+
+  notification[type]({
+    key: `api_notification_${key}`,
+    message: title,
+    description: desc,
+    placement: 'topRight',
+    duration: 4,
+    style: {
+      borderRadius: '16px',
+      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+    },
+  })
+}
+
 // Queue mechanism for handling simultaneous 401 refresh requests
 let isRefreshing = false
 let failedQueue: Array<{
@@ -62,23 +96,11 @@ api.interceptors.response.use(
     // If network error / offline
     if (!error.response) {
       if (!navigator.onLine || error.code === 'ERR_NETWORK') {
-        notification.error({
-          message: 'No Internet Connection',
-          description: 'No internet connection. Please check your network.',
-          placement: 'topRight',
-        })
+        notifyOnce('network', 'error', 'No Internet Connection', 'No internet connection. Please check your network.')
       } else if (error.code === 'ECONNABORTED') {
-        notification.error({
-          message: 'Request Timeout',
-          description: 'The request timed out. Please try again.',
-          placement: 'topRight',
-        })
+        notifyOnce('timeout', 'error', 'Request Timeout', 'The request timed out. Please try again.')
       } else {
-        notification.error({
-          message: 'Server Error',
-          description: 'Unable to connect to server.',
-          placement: 'topRight',
-        })
+        notifyOnce('server', 'error', 'Server Connection Error', 'Unable to connect to backend system server.')
       }
       return Promise.reject(error)
     }
@@ -109,11 +131,7 @@ api.interceptors.response.use(
       if (!refreshToken) {
         isRefreshing = false
         useAuthStore.getState().logout()
-        notification.error({
-          message: 'Session Expired',
-          description: 'Your session has expired. Please sign in again.',
-          placement: 'topRight',
-        })
+        notifyOnce('session', 'error', 'Session Expired', 'Your session has expired. Please sign in again.')
         if (window.location.pathname !== '/login') {
           window.location.href = '/login'
         }
@@ -142,11 +160,7 @@ api.interceptors.response.use(
         isRefreshing = false
         useAuthStore.getState().logout()
 
-        notification.error({
-          message: 'Session Expired',
-          description: 'Your session has expired. Please sign in again.',
-          placement: 'topRight',
-        })
+        notifyOnce('session', 'error', 'Session Expired', 'Your session has expired. Please sign in again.')
 
         if (window.location.pathname !== '/login') {
           window.location.href = '/login'
@@ -155,40 +169,25 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle 403 Forbidden
+    // Handle 403 Forbidden with debounced notification
     if (status === 403) {
-      notification.warning({
-        message: 'Access Denied',
-        description: error.response?.data?.message || 'You do not have permission.',
-        placement: 'topRight',
-      })
+      const serverMsg = error.response?.data?.message || 'Access restricted for current user role.'
+      notifyOnce('403', 'warning', '🔒 Security Access Control', serverMsg)
     }
 
     // Handle 429 Too Many Requests
     if (status === 429) {
-      notification.warning({
-        message: 'Too Many Requests',
-        description: error.response?.data?.message || 'Too many requests. Please wait before trying again.',
-        placement: 'topRight',
-      })
+      notifyOnce('429', 'warning', 'Too Many Requests', 'Too many requests. Please wait before trying again.')
     }
 
-    // Handle 500 Server Error
-    if (status === 500) {
-      notification.error({
-        message: 'Server Error',
-        description: 'Unexpected server error.',
-        placement: 'topRight',
-      })
-    }
-
-    // Handle 503 Maintenance Mode
-    if (status === 503) {
-      notification.info({
-        message: 'Maintenance Mode',
-        description: 'The system is currently under maintenance.',
-        placement: 'topRight',
-      })
+    // Handle 5xx Server Error
+    if (status >= 500) {
+      if (status === 503) {
+        notifyOnce('503', 'info', 'Maintenance Mode', 'The system is currently undergoing scheduled maintenance.')
+      } else {
+        const msg = error.response?.data?.message || 'Unexpected server error encountered.'
+        notifyOnce('500', 'error', 'Server Error', msg)
+      }
     }
 
     return Promise.reject(error)

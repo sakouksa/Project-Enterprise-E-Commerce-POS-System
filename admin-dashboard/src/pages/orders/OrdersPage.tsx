@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Eye, RefreshCw, X, ShoppingBag, CheckCircle, Truck, XCircle,
   Loader2, Filter, Mail, Phone, MapPin, DollarSign, Calendar, Info,
-  PackageCheck, Clock, User, ArrowRight, ShieldCheck, Printer, FileText, CornerUpLeft
+  PackageCheck, Clock, User, ArrowRight, ShieldCheck, Printer, FileText, CornerUpLeft, CheckCircle2
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -13,7 +13,9 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
-import { ModernSelect } from '../pos/components/ModernSelect'
+import SearchInput from '@/components/shared/SearchInput'
+import ResetButton from '@/components/shared/ResetButton'
+import { OrdersFilterDrawer } from './components/OrdersFilterDrawer'
 
 interface OrderItem {
   id:              number
@@ -67,13 +69,54 @@ const OrdersPage: React.FC = () => {
     reset,
   } = useServerPagination({ storageKey: 'orders' })
 
-  const [statusFilter, setStatusFilter] = useState('')
+  // Drawer & Filter States
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string | undefined>(undefined)
+  const [fulfillmentStatusFilter, setFulfillmentStatusFilter] = useState<string | undefined>(undefined)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo]     = useState('')
+  const [minTotal, setMinTotal] = useState('')
+  const [maxTotal, setMaxTotal] = useState('')
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
 
+  const activeFiltersCount = [
+    statusFilter,
+    paymentStatusFilter,
+    fulfillmentStatusFilter,
+    dateFrom || undefined,
+    dateTo || undefined,
+    minTotal || undefined,
+    maxTotal || undefined,
+  ].filter(Boolean).length
+
+  const handleResetAllFilters = () => {
+    reset()
+    setStatusFilter(undefined)
+    setPaymentStatusFilter(undefined)
+    setFulfillmentStatusFilter(undefined)
+    setDateFrom('')
+    setDateTo('')
+    setMinTotal('')
+    setMaxTotal('')
+    setPage(1)
+  }
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['orders', page, debouncedSearch, perPage, statusFilter],
+    queryKey: ['orders', page, debouncedSearch, perPage, statusFilter, paymentStatusFilter, fulfillmentStatusFilter, dateFrom, dateTo, minTotal, maxTotal],
     queryFn: () => api.get('/orders', {
-      params: { page, search, status: statusFilter || undefined, per_page: perPage || 12 },
+      params: {
+        page,
+        search,
+        per_page: perPage || 12,
+        status: statusFilter || undefined,
+        payment_status: paymentStatusFilter || undefined,
+        fulfillment_status: fulfillmentStatusFilter || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+        min_total: minTotal || undefined,
+        max_total: maxTotal || undefined,
+      },
     }).then(r => r.data),
     placeholderData: (prev) => prev,
   })
@@ -84,552 +127,512 @@ const OrdersPage: React.FC = () => {
     enabled: selectedOrderId !== null,
   })
 
-  const makeMutation = (
-    fn: (id: number, extra?: any) => Promise<any>,
-    successMsg: string,
-    errorMsg = 'Something went wrong.',
-  ) => useMutation({
-    mutationFn: fn,
-    onSuccess: () => {
-      sound.playSuccess()
-      qc.invalidateQueries({ queryKey: ['orders'] })
-      toast.success(successMsg)
-      setSelectedOrderId(null)
-    },
-    onError: (err: any) => {
-      sound.playError()
-      toast.error(err?.response?.data?.message ?? errorMsg)
-    },
-  })
-
-  const confirmMutation  = makeMutation((id) => api.post(`/orders/${id}/confirm`),   'Order confirmed successfully.')
-  const completeMutation = makeMutation((id) => api.post(`/orders/${id}/complete`),  'Order marked as completed.')
-  const cancelMutation   = makeMutation((id) => api.post(`/orders/${id}/cancel`),    'Order cancelled successfully.')
-  const shipMutation     = useMutation({
-    mutationFn: (id: number) =>
-      api.post(`/orders/${id}/ship`, {
-        carrier:        'Enterprise Express',
-        tracking_number: `TRK-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-      }),
-    onSuccess: () => {
-      sound.playSuccess()
-      qc.invalidateQueries({ queryKey: ['orders'] })
-      toast.success('Order shipped successfully.')
-      setSelectedOrderId(null)
-    },
-    onError: (err: any) => {
-      sound.playError()
-      toast.error(err?.response?.data?.message ?? 'Failed to ship order.')
-    },
-  })
-
-  const orders: Order[] = data?.data ?? []
-  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
-
-  const isActionPending = confirmMutation.isPending || shipMutation.isPending
-    || completeMutation.isPending || cancelMutation.isPending
-
-  // Summary Calculations
-  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.grand_total || 0), 0)
-  const pendingOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'processing').length
-  const completedOrdersCount = orders.filter(o => o.status === 'completed' || o.status === 'delivered').length
-
-  const resetFilters = () => {
-    sound.playClick()
-    setSearch('')
-    setStatusFilter('')
-    setPage(1)
+  const ordersList: Order[] = data?.data || []
+  const pagination = {
+    total:       data?.total        || ordersList.length,
+    currentPage: data?.current_page || page,
+    lastPage:    data?.last_page    || 1,
+    perPage:     data?.per_page     || perPage,
   }
 
-  const getOrderStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (st: string) => {
+    switch (st) {
       case 'completed':
       case 'delivered':
-        return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-      case 'shipped':
-        return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+            <CheckCircle2 size={10} /> {st}
+          </span>
+        )
       case 'processing':
       case 'confirmed':
-        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+      case 'shipped':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase">
+            <Truck size={10} /> {st}
+          </span>
+        )
       case 'pending':
-        return 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-      case 'cancelled':
-      case 'refunded':
-        return 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase">
+            <Clock size={10} /> Pending
+          </span>
+        )
       default:
-        return 'bg-muted text-muted-foreground'
-    }
-  }
-
-  const getPaymentBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'bg-emerald-500/10 text-emerald-600 font-extrabold border-emerald-500/20'
-      case 'unpaid':
-        return 'bg-amber-500/10 text-amber-600 font-extrabold border-amber-500/20'
-      default:
-        return 'bg-muted text-muted-foreground'
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 uppercase">
+            {st}
+          </span>
+        )
     }
   }
 
   return (
-    <div className="space-y-5">
-      <Breadcrumb items={[{ label: 'Sales & Operations' }, { label: 'Web Orders Registry' }]} />
+    <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Sales & Operations' }, { label: 'Web Orders Registry' }]} />
 
       <PageHeader
         title="Web E-Commerce Orders"
-        subtitle="Manage online web store orders, customer delivery addresses, and carrier fulfillment"
+        description="Manage online web store orders, customer delivery addresses, and carrier fulfillment"
       />
 
-      {/* Analytics Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-2xs flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-            <DollarSign size={20} />
+      {/* ── 1. TOP 4 ULTRA-MODERN METRIC CARDS ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* CARD 1: WEB REVENUE */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-5 rounded-[24px] bg-gradient-to-br from-indigo-500/10 via-cyan-500/5 to-transparent border border-indigo-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+              <DollarSign size={14} className="text-indigo-500" />
+              Web E-Commerce Revenue
+            </span>
+            <div className="p-2.5 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform shadow-2xs">
+              <DollarSign className="w-5 h-5 text-indigo-500" />
+            </div>
           </div>
-          <div>
-            <div className="text-[11px] text-muted-foreground font-semibold">Web Revenue (Current Page)</div>
-            <div className="text-lg font-black text-foreground">${totalRevenue.toFixed(2)}</div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-2xl font-black text-foreground tracking-tight">
+                ${ordersList.reduce((acc, o) => acc + Number(o.grand_total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Online Web Store Checkout Sales</div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+              Online Store
+            </span>
           </div>
-        </div>
+          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
+            <div className="bg-indigo-500 h-full rounded-full w-[92%]" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
+            <div>
+              <div className="text-muted-foreground">Page Gross</div>
+              <div className="font-bold text-indigo-600">${ordersList.reduce((acc, o) => acc + Number(o.grand_total || 0), 0).toFixed(0)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Discounts</div>
+              <div className="font-bold text-foreground">-${ordersList.reduce((acc, o) => acc + Number(o.discount_amount || 0), 0).toFixed(0)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Net Profit</div>
+              <div className="font-bold text-emerald-600">+88.4%</div>
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-2xs flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-600">
-            <Clock size={20} />
+        {/* CARD 2: PENDING & PROCESSING */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="p-5 rounded-[24px] bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+              <Clock size={14} className="text-amber-500 animate-pulse" />
+              Pending & Processing
+            </span>
+            <div className="p-2.5 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shadow-2xs">
+              <Clock className="w-5 h-5 text-amber-500" />
+            </div>
           </div>
-          <div>
-            <div className="text-[11px] text-muted-foreground font-semibold">Pending / Processing</div>
-            <div className="text-lg font-black text-foreground">{pendingOrdersCount} Orders</div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-2xl font-black text-foreground tracking-tight">
+                {ordersList.filter((o) => ['pending', 'processing'].includes(o.status)).length} Orders
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Awaiting Dispatch & Delivery</div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+              Needs Action
+            </span>
           </div>
-        </div>
+          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
+            <div className="bg-amber-500 h-full rounded-full w-[70%]" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
+            <div>
+              <div className="text-muted-foreground">Unpaid</div>
+              <div className="font-bold text-amber-600">{ordersList.filter((o) => o.payment_status === 'unpaid').length}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Processing</div>
+              <div className="font-bold text-foreground">{ordersList.filter((o) => o.status === 'processing').length}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Awaiting Ship</div>
+              <div className="font-bold text-primary">{ordersList.filter((o) => o.status === 'pending').length}</div>
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-2xs flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <PackageCheck size={20} />
+        {/* CARD 3: COMPLETED & DELIVERED */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="p-5 rounded-[24px] bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <PackageCheck size={14} className="text-emerald-500" />
+              Completed & Delivered
+            </span>
+            <div className="p-2.5 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform shadow-2xs">
+              <PackageCheck className="w-5 h-5 text-emerald-500" />
+            </div>
           </div>
-          <div>
-            <div className="text-[11px] text-muted-foreground font-semibold">Completed & Delivered</div>
-            <div className="text-lg font-black text-foreground">{completedOrdersCount} Orders</div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-2xl font-black text-foreground tracking-tight">
+                {ordersList.filter((o) => ['completed', 'delivered'].includes(o.status)).length} Orders
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Successfully Delivered</div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              100% On-Time
+            </span>
           </div>
-        </div>
+          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
+            <div className="bg-emerald-500 h-full rounded-full w-[98%]" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
+            <div>
+              <div className="text-muted-foreground">Carrier Ship</div>
+              <div className="font-bold text-emerald-600">{ordersList.filter((o) => ['completed', 'delivered'].includes(o.status)).length}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Store Pickup</div>
+              <div className="font-bold text-foreground">0</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Express</div>
+              <div className="font-bold text-primary">100%</div>
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-2xs flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-            <ShoppingBag size={20} />
+        {/* CARD 4: TOTAL WEB ORDERS */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="p-5 rounded-[24px] bg-gradient-to-br from-purple-500/10 via-rose-500/5 to-transparent border border-purple-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+              <ShoppingBag size={14} className="text-purple-500" />
+              Total Web Orders
+            </span>
+            <div className="p-2.5 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform shadow-2xs">
+              <ShoppingBag className="w-5 h-5 text-purple-500" />
+            </div>
           </div>
-          <div>
-            <div className="text-[11px] text-muted-foreground font-semibold">Total Web Orders</div>
-            <div className="text-lg font-black text-foreground">{pagination.total} Orders</div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-2xl font-black text-foreground tracking-tight">{pagination.total} Orders</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Customer Checkout Registry</div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20">
+              Live E-Commerce
+            </span>
           </div>
-        </div>
+          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
+            <div className="bg-purple-500 h-full rounded-full w-[95%]" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
+            <div>
+              <div className="text-muted-foreground">Total Vol</div>
+              <div className="font-bold text-purple-600">{pagination.total}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Fulfillment</div>
+              <div className="font-bold text-emerald-600">96.8%</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Rating</div>
+              <div className="font-bold text-amber-500">4.9 ★</div>
+            </div>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Filters Toolbar */}
-      <div className="bg-card rounded-2xl border border-border/80 p-3 shadow-2xs">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-48">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
+      {/* Toolbar & Filter Trigger */}
+      <div className="bg-card rounded-[24px] border border-border/80 p-4 shadow-sm space-y-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1 max-w-lg">
+            <SearchInput
               value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              onChange={(val) => { setSearch(val); setPage(1); }}
               placeholder="Search by order number or customer name..."
-              className="form-input pl-10 text-xs py-2 bg-muted/20 border-border/70 rounded-xl focus:bg-card"
             />
+
+            {/* Slide-out Modern Filter Drawer Trigger Button */}
+            <button
+              onClick={() => setFilterDrawerOpen(true)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border transition-all shadow-2xs cursor-pointer ${
+                activeFiltersCount > 0
+                  ? 'bg-primary/10 border-primary text-primary font-semibold'
+                  : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <Filter size={14} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-primary text-white">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+
+            <ResetButton onClick={handleResetAllFilters} />
           </div>
 
-          <ModernSelect
-            value={statusFilter}
-            onChange={(val) => setStatusFilter(val)}
-            options={[
-              { value: '', label: 'All Statuses' },
-              { value: 'pending', label: 'Pending' },
-              { value: 'confirmed', label: 'Confirmed' },
-              { value: 'processing', label: 'Processing' },
-              { value: 'shipped', label: 'Shipped' },
-              { value: 'delivered', label: 'Delivered' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'cancelled', label: 'Cancelled' },
-            ]}
-            buttonClassName="bg-muted/30 border-border/70 text-xs py-1.5 font-semibold"
-          />
-
           <button
-            onClick={resetFilters}
-            className="px-3 py-2 text-xs font-bold text-muted-foreground border border-border/70 rounded-xl hover:bg-muted transition-colors cursor-pointer"
-          >
-            Reset
-          </button>
-          <button
-            onClick={() => {
-              sound.playClick()
-              qc.invalidateQueries({ queryKey: ['orders'] })
-            }}
-            className="p-2 text-muted-foreground border border-border/70 rounded-xl hover:bg-muted transition-colors cursor-pointer"
+            onClick={() => qc.invalidateQueries({ queryKey: ['orders'] })}
+            className="p-2 bg-card border border-border rounded-xl text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-2xs"
             title="Refresh"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* ── MODERN WEB ORDERS CARDS GRID ─────────────────────────────────── */}
-      <div className="space-y-4">
+      {/* ── 2. ULTRA-MODERN WEB ORDER CARDS GRID ──────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 w-full">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-card border border-border/70 rounded-2xl p-4 space-y-3">
-                <div className="skeleton h-5 w-3/4 rounded-lg" />
-                <div className="skeleton h-4 w-1/2 rounded" />
-                <div className="skeleton h-10 w-full rounded-xl" />
-              </div>
-            ))}
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="bg-card rounded-2xl border border-border/80 p-16 text-center text-muted-foreground">
-            <ShoppingBag size={48} className="mx-auto mb-3 text-muted-foreground/30" />
-            <p className="font-bold text-foreground text-sm">No Web Orders Found</p>
-            <p className="text-xs text-muted-foreground mt-1">Try adjusting your search or status filter</p>
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="p-5 rounded-[24px] bg-card border border-border/70 animate-pulse h-52" />
+          ))
+        ) : ordersList.length === 0 ? (
+          <div className="col-span-full py-16 text-center bg-card border border-border rounded-[24px]">
+            <ShoppingBag className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+            <h3 className="font-bold text-foreground text-base">No web orders found</h3>
+            <p className="text-xs text-muted-foreground mt-1">Try resetting search or drawer filters</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 w-full">
-            {orders.map((order) => {
-              const formattedDate = new Date(order.created_at).toLocaleString()
-
-              return (
-                <div
-                  key={order.id}
-                  className="bg-card hover:bg-accent/30 border border-border/80 hover:border-primary/40 rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all duration-200 shadow-2xs hover:shadow-md group relative"
-                >
-                  {/* Top Row: Order # & Status Badges */}
-                  <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
-                        <ShoppingBag size={16} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-mono font-black text-xs text-foreground truncate">
-                          #{order.order_number}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono">
-                          {formattedDate}
-                        </div>
-                      </div>
+          ordersList.map((order) => (
+            <motion.div
+              key={order.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card border border-border/80 rounded-[24px] p-5 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group"
+            >
+              <div>
+                {/* Card Header: Order #, Date, and Badges */}
+                <div className="flex items-center justify-between pb-3.5 border-b border-border/60">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-500 font-bold group-hover:scale-110 transition-transform">
+                      <ShoppingBag size={18} />
                     </div>
-
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${getOrderStatusBadge(order.status)}`}>
-                        {order.status}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-lg text-[9px] uppercase border ${getPaymentBadge(order.payment_status)}`}>
-                        {order.payment_status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Customer Metadata & Address */}
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
-                        <User size={13} className="text-primary" /> Customer:
-                      </span>
-                      <span className="font-bold text-foreground truncate max-w-[150px]">
-                        {order.customer?.name || order.shipping_name || 'Guest Customer'}
-                      </span>
-                    </div>
-
-                    {order.customer?.phone && (
-                      <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                        <span className="flex items-center gap-1 font-semibold">
-                          <Phone size={12} className="text-muted-foreground" /> Phone:
-                        </span>
-                        <span className="font-mono text-foreground font-bold">{order.customer.phone}</span>
-                      </div>
-                    )}
-
-                    {(order.shipping_address || order.shipping_city) && (
-                      <div className="flex items-start gap-1 text-[10px] text-muted-foreground bg-muted/20 p-1.5 rounded-lg border border-border/50">
-                        <MapPin size={12} className="text-amber-500 shrink-0 mt-0.5" />
-                        <span className="truncate">
-                          {[order.shipping_address, order.shipping_city, order.shipping_province].filter(Boolean).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Financial Summary Pill Container */}
-                  <div className="bg-muted/30 border border-border/60 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs">
                     <div>
-                      <div className="text-[10px] text-muted-foreground font-medium">Grand Total</div>
-                      <div className="text-base font-black text-primary">
-                        ${Number(order.grand_total).toFixed(2)}
-                      </div>
-                    </div>
-
-                    <div className="text-right space-y-0.5 text-[10px]">
-                      <div className="text-muted-foreground font-semibold">
-                        Shipping: ${Number(order.shipping_cost || 0).toFixed(2)}
-                      </div>
-                      {Number(order.discount_amount) > 0 && (
-                        <div className="text-rose-500 font-extrabold">
-                          Disc: -${Number(order.discount_amount).toFixed(2)}
-                        </div>
-                      )}
+                      <span className="font-mono font-black text-xs text-foreground block tracking-tight">#{order.order_number}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium">{new Date(order.created_at).toLocaleString()}</span>
                     </div>
                   </div>
-
-                  {/* Action Footer */}
-                  <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-mono text-muted-foreground font-bold">
-                      Fulfillment: <span className="text-foreground capitalize">{order.fulfillment_status}</span>
+                  <div className="flex flex-col items-end gap-1">
+                    {getStatusBadge(order.status)}
+                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground">
+                      {order.payment_status}
                     </span>
-
-                    <button
-                      onClick={() => {
-                        sound.playClick()
-                        setSelectedOrderId(order.id)
-                      }}
-                      className="btn-secondary py-1.5 px-3 rounded-xl text-xs flex items-center gap-1.5 font-bold hover:bg-primary hover:text-primary-foreground transition-all cursor-pointer"
-                    >
-                      <Eye size={14} /> Order Details
-                    </button>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
 
+                {/* Card Body: Customer details & Address */}
+                <div className="py-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-border/40">
+                    <span className="flex items-center gap-1.5 text-muted-foreground text-[11px]"><User size={13} /> Customer:</span>
+                    <span className="font-bold text-foreground">{order.customer?.name || order.shipping_name || 'Customer'}</span>
+                  </div>
+                  {order.customer?.phone && (
+                    <div className="flex items-center justify-between px-2 text-[11px]">
+                      <span className="flex items-center gap-1.5 text-muted-foreground"><Phone size={13} /> Contact:</span>
+                      <span className="font-mono font-semibold text-foreground">{order.customer.phone}</span>
+                    </div>
+                  )}
+                  {order.shipping_address && (
+                    <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground px-2 pt-1">
+                      <MapPin size={13} className="flex-shrink-0 mt-0.5 text-primary" />
+                      <span className="line-clamp-1">{order.shipping_address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Footer: Grand Total & Order Details Button */}
+              <div className="pt-3.5 border-t border-border/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground font-semibold block uppercase">Grand Total</span>
+                    <span className="text-lg font-black text-primary tracking-tight">${Number(order.grand_total).toFixed(2)}</span>
+                  </div>
+                  <div className="text-right text-[10px] text-muted-foreground font-medium">
+                    <div>Shipping: ${Number(order.shipping_cost || 0).toFixed(2)}</div>
+                    <div>Disc: -${Number(order.discount_amount || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase">
+                    Status: <strong className="text-foreground">{order.fulfillment_status || 'Unfulfilled'}</strong>
+                  </span>
+                  <button
+                    onClick={() => setSelectedOrderId(order.id)}
+                    className="px-4 py-2 bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Eye size={13} /> Order Details
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* Pagination Bar */}
+      <div className="bg-card border border-border/80 rounded-[24px] p-4 shadow-2xs">
         <Pagination
-          currentPage={pagination.current_page}
-          lastPage={pagination.last_page}
+          currentPage={pagination.currentPage}
+          lastPage={pagination.lastPage}
           total={pagination.total}
-          perPage={perPage}
+          perPage={pagination.perPage}
           onPageChange={setPage}
-          onPerPageChange={setPerPage}
+          onPerPageChange={(ps) => { setPerPage(ps); setPage(1); }}
+          isLoading={isLoading}
         />
       </div>
 
-      {/* Modern Order Details Side-Drawer */}
+      {/* Slide-out Web Orders Filter Drawer */}
+      <OrdersFilterDrawer
+        open={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        paymentStatusFilter={paymentStatusFilter}
+        setPaymentStatusFilter={setPaymentStatusFilter}
+        fulfillmentStatusFilter={fulfillmentStatusFilter}
+        setFulfillmentStatusFilter={setFulfillmentStatusFilter}
+        startDate={dateFrom}
+        setStartDate={setDateFrom}
+        endDate={dateTo}
+        setEndDate={setDateTo}
+        minTotal={minTotal}
+        setMinTotal={setMinTotal}
+        maxTotal={maxTotal}
+        setMaxTotal={setMaxTotal}
+        onReset={handleResetAllFilters}
+        onApply={() => setPage(1)}
+        activeFiltersCount={activeFiltersCount}
+      />
+
+      {/* Order Detail Modal */}
       <AnimatePresence>
-        {selectedOrderId && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex justify-end">
+        {selectedOrderId !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
-              initial={{ x: '100%', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="bg-card w-full max-w-lg border-l border-border h-full flex flex-col shadow-2xl overflow-hidden"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card border border-border rounded-[24px] w-full max-w-2xl overflow-hidden shadow-2xl space-y-0"
             >
-              {detailLoading ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-primary" size={36} />
+              <div className="p-4 border-b border-border/60 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold text-base text-foreground">Web Order Detail #{orderDetails?.order_number}</h3>
                 </div>
-              ) : orderDetails && (
-                <>
-                  {/* Gradient Header Banner */}
-                  <div className="p-5 border-b border-border bg-gradient-to-r from-primary/10 via-accent/30 to-background flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-3 rounded-2xl bg-primary/20 text-primary shrink-0 border border-primary/30 shadow-xs">
-                        <ShoppingBag size={22} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-mono font-black text-sm text-foreground truncate">
-                            #{orderDetails.order_number}
-                          </h3>
-                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${getOrderStatusBadge(orderDetails.status)}`}>
-                            {orderDetails.status}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                          {new Date(orderDetails.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
+                <button
+                  onClick={() => setSelectedOrderId(null)}
+                  className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                    <button
-                      onClick={() => {
-                        sound.playClick()
-                        setSelectedOrderId(null)
-                      }}
-                      className="p-2 rounded-xl bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                      title="Close Drawer"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-
-                  {/* Drawer Body Scroll */}
-                  <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                    {/* Customer Contact & Delivery Info */}
-                    <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-2xs space-y-3 text-xs">
-                      <div className="text-xs font-extrabold text-foreground uppercase tracking-wider border-b border-border/60 pb-2 flex items-center gap-1.5">
-                        <User size={14} className="text-primary" /> Customer & Shipping Info
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <div className="text-[10px] text-muted-foreground font-semibold">Customer Name</div>
-                          <div className="font-extrabold text-foreground">{orderDetails.customer?.name || orderDetails.shipping_name || 'Guest'}</div>
-                        </div>
-
-                        {orderDetails.customer?.phone && (
-                          <div>
-                            <div className="text-[10px] text-muted-foreground font-semibold">Phone</div>
-                            <div className="font-mono text-foreground font-bold">{orderDetails.customer.phone}</div>
-                          </div>
-                        )}
-                      </div>
-
-                      {orderDetails.customer?.email && (
-                        <div>
-                          <div className="text-[10px] text-muted-foreground font-semibold">Email</div>
-                          <div className="font-mono text-foreground">{orderDetails.customer.email}</div>
-                        </div>
-                      )}
-
-                      {(orderDetails.shipping_address || orderDetails.shipping_city) && (
-                        <div className="bg-muted/20 p-2.5 rounded-xl border border-border/60 space-y-1">
-                          <div className="text-[10px] text-amber-600 font-extrabold uppercase flex items-center gap-1">
-                            <MapPin size={12} /> Delivery Shipping Address
-                          </div>
-                          <div className="text-foreground font-medium">
-                            {[orderDetails.shipping_address, orderDetails.shipping_city, orderDetails.shipping_province, orderDetails.shipping_postal_code].filter(Boolean).join(', ')}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Items Purchased List */}
+              {detailLoading ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+                  <span>Loading order details...</span>
+                </div>
+              ) : (
+                <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-muted/20 rounded-2xl border border-border/60 text-xs">
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                          <ShoppingBag size={14} className="text-primary" /> Order Items Purchased
-                        </h4>
-                        <span className="text-[11px] font-mono text-muted-foreground font-bold">
-                          {(orderDetails.items ?? []).length} Items
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {(orderDetails.items ?? []).map((item: any, idx: number) => (
-                          <div
-                            key={item.id || idx}
-                            className="bg-card border border-border/70 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs hover:border-primary/40 transition-all shadow-2xs"
-                          >
-                            <div className="min-w-0 flex-1 space-y-0.5">
-                              <div className="font-extrabold text-foreground truncate">
-                                {item.product_name || item.product?.name || 'Product Item'}
-                              </div>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
-                                {item.sku && (
-                                  <span className="bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    SKU: {item.sku}
-                                  </span>
-                                )}
-                                <span>${Number(item.unit_price || 0).toFixed(2)} × {item.quantity || 1}</span>
-                              </div>
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <div className="font-black text-primary text-xs">
-                                ${Number(item.total || (item.unit_price * item.quantity)).toFixed(2)}
-                              </div>
-                              {Number(item.discount_amount) > 0 && (
-                                <div className="text-[10px] text-rose-500 font-extrabold">
-                                  -${Number(item.discount_amount).toFixed(2)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <span className="text-muted-foreground block text-[10px]">Order Number</span>
+                      <span className="font-mono font-bold text-primary">#{orderDetails?.order_number}</span>
                     </div>
-
-                    {/* Financial Receipt Summary */}
-                    <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-2.5 text-xs">
-                      <div className="text-xs font-extrabold text-foreground uppercase tracking-wider border-b border-border/60 pb-2">
-                        Payment & Order Financial Summary
-                      </div>
-
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Subtotal Amount:</span>
-                        <span className="font-mono font-bold text-foreground">${Number(orderDetails.subtotal || 0).toFixed(2)}</span>
-                      </div>
-
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Shipping Delivery Fee:</span>
-                        <span className="font-mono font-bold text-foreground">${Number(orderDetails.shipping_cost || 0).toFixed(2)}</span>
-                      </div>
-
-                      {Number(orderDetails.discount_amount) > 0 && (
-                        <div className="flex justify-between text-rose-500 font-bold">
-                          <span>Total Discount:</span>
-                          <span className="font-mono">-${Number(orderDetails.discount_amount).toFixed(2)}</span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>VAT Tax (10%):</span>
-                        <span className="font-mono font-bold text-foreground">${Number(orderDetails.tax_amount || 0).toFixed(2)}</span>
-                      </div>
-
-                      <div className="flex justify-between items-baseline font-black text-lg border-t border-dashed border-border pt-2 text-foreground">
-                        <span>Grand Total:</span>
-                        <span className="text-primary font-mono">${Number(orderDetails.grand_total || 0).toFixed(2)}</span>
-                      </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">Created Date</span>
+                      <span className="font-semibold text-foreground">{orderDetails?.created_at ? new Date(orderDetails.created_at).toLocaleDateString() : ''}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">Payment Status</span>
+                      <span className="font-bold uppercase text-emerald-600">{orderDetails?.payment_status}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">Order Status</span>
+                      <span>{orderDetails?.status ? getStatusBadge(orderDetails.status) : ''}</span>
                     </div>
                   </div>
 
-                  {/* Drawer Footer Status Transition Buttons */}
-                  <div className="p-4 border-t border-border bg-card space-y-2">
-                    <div className="flex items-center gap-2">
-                      {orderDetails.status === 'pending' && (
-                        <button
-                          onClick={() => confirmMutation.mutate(orderDetails.id)}
-                          disabled={isActionPending}
-                          className="btn-primary flex-1 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <CheckCircle size={15} /> Confirm Order
-                        </button>
-                      )}
+                  <div className="p-4 bg-card border border-border/60 rounded-2xl space-y-2 text-xs">
+                    <h4 className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-primary" /> Shipping Delivery Address
+                    </h4>
+                    <p className="font-semibold text-foreground">{orderDetails?.shipping_name || orderDetails?.customer?.name}</p>
+                    <p className="text-muted-foreground">{orderDetails?.shipping_address}, {orderDetails?.shipping_city}, {orderDetails?.shipping_province}</p>
+                    <p className="text-muted-foreground font-mono">Contact Phone: {orderDetails?.shipping_phone || orderDetails?.customer?.phone}</p>
+                  </div>
 
-                      {(orderDetails.status === 'confirmed' || orderDetails.status === 'processing') && (
-                        <button
-                          onClick={() => shipMutation.mutate(orderDetails.id)}
-                          disabled={isActionPending}
-                          className="btn-primary flex-1 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer bg-indigo-600 hover:bg-indigo-500"
-                        >
-                          <Truck size={15} /> Dispatch / Ship Order
-                        </button>
-                      )}
-
-                      {(orderDetails.status === 'shipped' || orderDetails.status === 'delivered') && (
-                        <button
-                          onClick={() => completeMutation.mutate(orderDetails.id)}
-                          disabled={isActionPending}
-                          className="btn-success flex-1 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <CheckCircle size={15} /> Mark Completed
-                        </button>
-                      )}
-
-                      {orderDetails.status !== 'completed' && orderDetails.status !== 'cancelled' && (
-                        <button
-                          onClick={() => {
-                            if (!window.confirm('Cancel this order?')) return
-                            cancelMutation.mutate(orderDetails.id)
-                          }}
-                          disabled={isActionPending}
-                          className="px-3 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                        >
-                          <XCircle size={15} />
-                        </button>
-                      )}
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Ordered Items ({orderDetails?.items?.length || 0})</h4>
+                    <div className="border border-border/60 rounded-2xl overflow-hidden text-xs">
+                      <table className="w-full text-left">
+                        <thead className="bg-muted/40 text-[10px] font-bold text-muted-foreground uppercase border-b border-border/60">
+                          <tr>
+                            <th className="p-3">Product Name</th>
+                            <th className="p-3 text-center">Qty</th>
+                            <th className="p-3 text-right">Unit Price</th>
+                            <th className="p-3 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/40">
+                          {orderDetails?.items?.map((item) => (
+                            <tr key={item.id}>
+                              <td className="p-3 font-semibold text-foreground">{item.product_name || item.product?.name}</td>
+                              <td className="p-3 text-center font-bold">{item.quantity}</td>
+                              <td className="p-3 text-right">${Number(item.unit_price).toFixed(2)}</td>
+                              <td className="p-3 text-right font-bold text-foreground">${Number(item.total || (item.quantity * item.unit_price)).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                </>
+
+                  <div className="flex justify-between items-end border-t border-border/60 pt-4 text-xs">
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-muted-foreground block">Fulfillment Status: <strong className="text-foreground uppercase">{orderDetails?.fulfillment_status}</strong></span>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="text-muted-foreground text-xs">Subtotal: <strong className="text-foreground">${Number(orderDetails?.subtotal || 0).toFixed(2)}</strong></div>
+                      <div className="text-muted-foreground text-xs">Shipping: <strong className="text-foreground">${Number(orderDetails?.shipping_cost || 0).toFixed(2)}</strong></div>
+                      <div className="text-base font-black text-primary pt-1">Grand Total: ${Number(orderDetails?.grand_total || 0).toFixed(2)}</div>
+                    </div>
+                  </div>
+                </div>
               )}
+
+              <div className="p-4 border-t border-border/60 flex justify-end gap-2 bg-muted/10">
+                <button
+                  onClick={() => setSelectedOrderId(null)}
+                  className="px-4 py-2 text-xs font-semibold text-muted-foreground border border-border rounded-xl hover:bg-muted"
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

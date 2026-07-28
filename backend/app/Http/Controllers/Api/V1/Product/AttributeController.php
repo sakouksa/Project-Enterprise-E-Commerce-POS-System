@@ -45,14 +45,37 @@ class AttributeController extends BaseApiController
     public function store(StoreAttributeRequest $request): JsonResponse
     {
         $attribute = Attribute::create($request->validated());
-        return $this->successResponse($attribute, 'Attribute created successfully', 201);
+        if ($request->has('values') && is_array($request->values)) {
+            foreach ($request->values as $val) {
+                if (!empty($val['value'])) {
+                    $attribute->values()->create([
+                        'value'      => $val['value'],
+                        'color_code' => $val['color_code'] ?? null,
+                        'sort_order' => $val['sort_order'] ?? 0,
+                    ]);
+                }
+            }
+        }
+        return $this->successResponse($attribute->load('values'), 'Attribute created successfully', 201);
     }
 
     public function update(UpdateAttributeRequest $request, int $id): JsonResponse
     {
         $attribute = Attribute::findOrFail($id);
         $attribute->update($request->validated());
-        return $this->successResponse($attribute, 'Attribute updated successfully');
+        if ($request->has('values') && is_array($request->values)) {
+            $attribute->values()->delete();
+            foreach ($request->values as $val) {
+                if (!empty($val['value'])) {
+                    $attribute->values()->create([
+                        'value'      => $val['value'],
+                        'color_code' => $val['color_code'] ?? null,
+                        'sort_order' => $val['sort_order'] ?? 0,
+                    ]);
+                }
+            }
+        }
+        return $this->successResponse($attribute->load('values'), 'Attribute updated successfully');
     }
 
     public function destroy(int $id): JsonResponse
@@ -107,7 +130,7 @@ class AttributeController extends BaseApiController
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $headers = [
-            'Content-type'        => 'text/csv',
+            'Content-type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename=attributes_export_' . now()->format('Y-m-d') . '.csv',
             'Pragma'              => 'no-cache',
             'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',

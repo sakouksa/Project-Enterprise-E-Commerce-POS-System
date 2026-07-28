@@ -109,5 +109,7 @@
   },
   "subtitle": "管理您的身份特征、个性化偏好选项以及登录会话安全性。",
   "title": "个人账户设置",
-  "update_profile": "保存个人信息"
+  "update_profile": "保存个人信息",
+  "loading_specs": "Loading Specs",
+  "overview_tab": "Overview Tab"
 }

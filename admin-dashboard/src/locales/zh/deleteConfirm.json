@@ -1,8 +1,13 @@
 {
   "archive": "归档",
   "cancel": "取消",
-  "delete": "删除",
-  "prompt": "提示",
+  "delete": "确认删除",
+  "prompt": "您确定要删除此 {{title}} 吗？",
   "title": "确认删除",
-  "warning": "警告：此操作无法撤销"
+  "warning": "此项目将被移至回收站，您可以稍后恢复或永久删除。",
+  "deleteConfirm.warning": "此项目将被移至回收站，您可以稍后恢复或永久删除。",
+  "deleteConfirm.title": "确认删除",
+  "deleteConfirm.prompt": "您确定要删除此 {{title}} 吗？",
+  "deleteConfirm.cancel": "取消",
+  "deleteConfirm.delete": "确认删除"
 }

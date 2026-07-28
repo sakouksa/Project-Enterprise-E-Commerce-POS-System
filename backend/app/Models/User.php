@@ -36,9 +36,25 @@ class User extends Authenticatable
         'branch_id',
         'timezone',
         'language',
+        // Notification channel toggles
         'email_notify',
         'push_notify',
         'sms_notify',
+        'telegram_notify',
+        'whatsapp_notify',
+        'slack_notify',
+        'teams_notify',
+        // General notification settings
+        'browser_notify',
+        'sound_notify',
+        'desktop_notify',
+        'default_priority',
+        'notification_language',
+        // JSON settings blobs
+        'quiet_hours',
+        'notification_events',
+        'email_preferences',
+        // Account
         'is_active',
         'failed_login_attempts',
         'locked_until',
@@ -60,12 +76,43 @@ class User extends Authenticatable
             'is_active'             => 'boolean',
             'failed_login_attempts' => 'integer',
             'date_of_birth'         => 'date',
+            // Notification booleans
+            'email_notify'          => 'boolean',
+            'push_notify'           => 'boolean',
+            'sms_notify'            => 'boolean',
+            'telegram_notify'       => 'boolean',
+            'whatsapp_notify'       => 'boolean',
+            'slack_notify'          => 'boolean',
+            'teams_notify'          => 'boolean',
+            'browser_notify'        => 'boolean',
+            'sound_notify'          => 'boolean',
+            'desktop_notify'        => 'boolean',
         ];
     }
 
     public function isLocked(): bool
     {
         return $this->locked_until !== null && $this->locked_until->isFuture();
+    }
+
+    public function incrementFailedAttempts(): void
+    {
+        $attempts = ($this->failed_login_attempts ?? 0) + 1;
+        $lockedUntil = $attempts >= 5 ? now()->addMinutes(15) : $this->locked_until;
+
+        $this->update([
+            'failed_login_attempts' => $attempts,
+            'locked_until'          => $lockedUntil,
+        ]);
+    }
+
+    public function resetFailedAttempts(): void
+    {
+        $this->update([
+            'failed_login_attempts' => 0,
+            'locked_until'          => null,
+            'last_login_at'         => now(),
+        ]);
     }
 
     public function getActivitylogOptions(): LogOptions

@@ -101,7 +101,7 @@ class AuthController extends BaseApiController
             'refresh_token' => $result['refresh_token'],
             'token_expire'  => $result['expires_in'],
             'expires_in'    => $result['expires_in'],
-        ], 'Token refreshed successfully');
+        ], 'Token refreshed');
     }
 
     /**
@@ -110,6 +110,7 @@ class AuthController extends BaseApiController
     public function logout(Request $request): JsonResponse
     {
         $refreshToken = $request->input('refresh_token') ?? $request->header('X-Refresh-Token');
+
         if ($refreshToken) {
             $this->authService->logout($refreshToken);
         }
@@ -122,11 +123,9 @@ class AuthController extends BaseApiController
      */
     public function logoutAllDevices(Request $request): JsonResponse
     {
-        if ($request->user()) {
-            $this->authService->logoutAllDevices($request->user()->id);
-        }
+        $this->authService->logoutAllDevices($request->user()->id);
 
-        return $this->successResponse(null, 'Logged out from all devices successfully');
+        return $this->successResponse(null, 'Logged out from all devices');
     }
 
     /**
@@ -136,7 +135,13 @@ class AuthController extends BaseApiController
     {
         $user = $request->user()->load(['roles', 'permissions', 'company', 'branch', 'employee']);
 
-        return $this->successResponse(new UserResource($user));
+        return $this->successResponse([
+            'user'        => new UserResource($user),
+            'roles'       => $user->getRoleNames()->toArray(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
+            'company'     => $user->company,
+            'branch'      => $user->branch,
+        ]);
     }
 
     /**
@@ -145,8 +150,14 @@ class AuthController extends BaseApiController
     public function updateProfile(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->update($request->only(['name', 'phone', 'address', 'city', 'province', 'country']));
-        $user->load(['roles', 'permissions', 'company', 'branch', 'employee']);
+
+        $request->validate([
+            'name'  => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|string|max:20',
+        ]);
+
+        $user->update($request->only(['name', 'email', 'phone']));
 
         return $this->successResponse(new UserResource($user), 'Profile updated successfully');
     }
@@ -172,6 +183,40 @@ class AuthController extends BaseApiController
         }
 
         return $this->successResponse(null, 'Password changed successfully');
+    }
+
+    /**
+     * POST /api/v1/auth/forgot-password
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $identifier = $request->input('identifier') ?? $request->input('email') ?? $request->input('username');
+
+        $result = $this->authService->requestPasswordReset((string) $identifier);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, $result['code'] ?? 400);
+        }
+
+        return $this->successResponse($result, $result['message']);
+    }
+
+    /**
+     * POST /api/v1/auth/reset-password
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $identifier  = $request->input('identifier') ?? $request->input('username') ?? $request->input('email');
+        $resetToken  = $request->input('reset_token') ?? $request->input('otp_code') ?? $request->input('token');
+        $newPassword = $request->input('password') ?? $request->input('new_password');
+
+        $result = $this->authService->resetPasswordWithToken((string) $identifier, (string) $resetToken, (string) $newPassword);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, $result['code'] ?? 400);
+        }
+
+        return $this->successResponse($result, $result['message']);
     }
 
     private function getAvailableMenus(array $roles, array $permissions): array

@@ -103,83 +103,72 @@ const AnimatedCounter: React.FC<{ value: number; prefix?: string; suffix?: strin
   )
 }
 
-// ── Sub-component: Circular Progress Ring ────────────────────────────────────
-const CircularProgressRing: React.FC<{ percentage: number; colorClass: string; size?: number }> = ({
+// ── Sub-component: Circular Progress Ring ──────────────────────────────────
+const CircularProgressRing: React.FC<{ percentage: number; colorClass?: string }> = ({
   percentage,
-  colorClass,
-  size = 48,
+  colorClass = 'text-primary'
 }) => {
-  const strokeWidth = 4.5
-  const radius = (size - strokeWidth) / 2
+  const radius = 18
   const circumference = 2 * Math.PI * radius
-  const clampedPercentage = Math.min(Math.max(percentage, 0), 100)
-  const strokeDashoffset = circumference - (clampedPercentage / 100) * circumference
+  const strokeDashoffset = circumference - (Math.min(percentage, 100) / 100) * circumference
 
   return (
     <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
+      <svg className="w-12 h-12 transform -rotate-90">
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="24"
+          cy="24"
           r={radius}
           stroke="currentColor"
-          strokeWidth={strokeWidth}
+          strokeWidth="3.5"
           className="text-muted/30"
           fill="transparent"
         />
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="24"
+          cy="24"
           r={radius}
           stroke="currentColor"
-          strokeWidth={strokeWidth}
-          className={colorClass}
-          fill="transparent"
+          strokeWidth="3.5"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s ease-in-out' }}
+          className={`${colorClass} transition-all duration-1000 ease-out`}
+          fill="transparent"
         />
       </svg>
-      <span className="absolute text-[10px] font-bold text-foreground">
-        {Math.round(clampedPercentage)}%
+      <span className="absolute text-[10px] font-extrabold text-foreground">
+        {Math.round(percentage)}%
       </span>
     </div>
   )
 }
 
 const ProductsPage: React.FC = () => {
-  const { t, i18n } = useTranslation(['products', 'deleteConfirm', 'buttons', 'common'])
-  const qc    = useQueryClient()
-  const toast = useToast()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const qc = useQueryClient()
+  const toast = useToast()
 
-  const txt = (key: string) => t(`products.${key}`, t(`common.${key}`, key))
-
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    open: boolean
-    id: number | null
-    force: boolean
-    name?: string
-  }>({
-    open: false,
-    id: null,
-    force: false,
-    name: ''
-  })
-
-  // Workspace tab routing
-  const activeWorkspaceTab = (searchParams.get('workspaceTab') as 'products' | 'categories' | 'brands' | 'units' | 'taxes' | 'attributes') || 'products'
-  const setActiveWorkspaceTab = (tab: string) => {
-    if (tab === 'products') {
-      setSearchParams({})
-    } else {
-      setSearchParams({ workspaceTab: tab })
-    }
+  // Format currency based on locale
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount || 0)
   }
 
-  // List states
+  // Active Tab management
+  const activeTabParam = searchParams.get('tab') || 'products'
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<string>(activeTabParam)
+
+  useEffect(() => {
+    setSearchParams({ tab: activeWorkspaceTab }, { replace: true })
+  }, [activeWorkspaceTab, setSearchParams])
+
   const {
     page,
     setPage,
@@ -192,7 +181,15 @@ const ProductsPage: React.FC = () => {
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'products' })
 
-  // Filters state
+  // Delete modal state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number | null; force: boolean; name?: string }>({
+    open: false,
+    id: null,
+    force: false,
+    name: ''
+  })
+
+  // Advanced Filters
   const [statusFilter, setStatusFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [brandFilter, setBrandFilter] = useState('')
@@ -290,7 +287,7 @@ const ProductsPage: React.FC = () => {
     }
     const cleaned = urlOrPath.startsWith('/') ? urlOrPath.substring(1) : urlOrPath
     const path = cleaned.startsWith('storage/') ? cleaned : `storage/${cleaned}`
-    const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.split('/api')[0] : 'http://127.0.0.1:8001'
+    const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.split('/api')[0] : 'http://127.0.0.1:8000'
     return `${baseUrl}/${path}`
   }
 
@@ -299,11 +296,6 @@ const ProductsPage: React.FC = () => {
     queryKey: ['products-dashboard-statistics'],
     queryFn: () => api.get('/products/dashboard-statistics').then(r => r.data.data ?? r.data),
     staleTime: 30000,
-  })
-
-  const { data: inventoryStats } = useQuery({
-    queryKey: ['inventory-stats'],
-    queryFn: () => api.get('/inventory/stats').then(r => r.data.data),
   })
 
   const { data, isLoading, isFetching, refetch } = useQuery({
@@ -342,7 +334,6 @@ const ProductsPage: React.FC = () => {
 
   const products = useMemo(() => {
     return rawProducts.filter(p => {
-      // Created Date Range Filter
       if (startDate) {
         const itemDate = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : ''
         if (itemDate && itemDate < startDate) return false
@@ -368,75 +359,70 @@ const ProductsPage: React.FC = () => {
     queryFn: () => api.get('/brands', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
   })
 
-  // ── Dynamic Analytics Aggregation ──────────────────────────────────────────
+  // ── Dynamic Real Analytics Aggregation (NO Mock Fallbacks) ─────────────────
   const analytics = useMemo(() => {
-    const totalProducts = statsData?.total_products ?? pagination.total ?? products.length ?? 48
-    const activeProducts = statsData?.active_products ?? products.filter(p => p.status === 'active').length ?? totalProducts
-    const inactiveProducts = statsData?.inactive_products ?? products.filter(p => p.status !== 'active').length ?? 0
-    const outOfStock = statsData?.out_of_stock ?? products.filter(p => (p.stock ?? 0) <= 0).length ?? 5
+    const totalProducts = statsData?.total_products ?? pagination.total ?? products.length ?? 0
+    const activeProducts = statsData?.active_products ?? products.filter(p => p.status === 'active').length
+    const inactiveProducts = statsData?.inactive_products ?? products.filter(p => p.status !== 'active').length
+    const outOfStock = statsData?.out_of_stock ?? products.filter(p => (p.stock ?? 0) <= 0).length
 
-    const categoriesCount = statsData?.categories ?? categories?.length ?? 12
-    const brandsCount = statsData?.brands ?? brands?.length ?? 8
-    const attributesCount = statsData?.attributes ?? 15
-    const variantsCount = statsData?.variants ?? 34
+    const categoriesCount = statsData?.categories ?? categories?.length ?? 0
+    const brandsCount = statsData?.brands ?? brands?.length ?? 0
+    const attributesCount = statsData?.attributes ?? 0
+    const variantsCount = statsData?.variants ?? 0
 
-    const costValue = statsData?.cost_value ?? 185000
-    const sellingValue = statsData?.selling_value ?? statsData?.inventory_value ?? 275000
-    const potentialProfit = statsData?.potential_profit ?? statsData?.profit_value ?? 90000
-    const averagePrice = statsData?.average_price ?? 45.80
+    const costValue = Number(statsData?.cost_value ?? 0)
+    const sellingValue = Number(statsData?.selling_value ?? statsData?.inventory_value ?? 0)
+    const potentialProfit = Number(statsData?.potential_profit ?? statsData?.profit_value ?? 0)
+    const averagePrice = Number(statsData?.average_price ?? 0)
 
-    const bestSelling = statsData?.best_selling ?? 680
-    const lowSelling = statsData?.low_selling ?? 12
-    const mostViewed = statsData?.most_viewed ?? 1420
-    const averageRating = statsData?.average_rating ?? 4.8
+    const bestSelling = statsData?.best_selling ?? 0
+    const lowSelling = statsData?.low_selling ?? 0
+    const mostViewed = statsData?.most_viewed ?? 0
+    const averageRating = statsData?.average_rating ?? 0
 
-    const todayNewProducts = statsData?.today_new_products ?? 4
-    const lowStockProducts = statsData?.low_stock ?? statsData?.low_stock_products ?? 12
-    const productsOnSale = statsData?.products_on_sale ?? 18
-    const productsWithDiscount = statsData?.products_with_discount ?? 8
-    const recentlyUpdated = statsData?.recently_updated ?? 24
+    const todayNewProducts = statsData?.today_new_products ?? 0
+    const lowStockProducts = statsData?.low_stock ?? statsData?.low_stock_products ?? 0
+    const productsOnSale = statsData?.products_on_sale ?? 0
+    const productsWithDiscount = statsData?.products_with_discount ?? 0
+    const recentlyUpdated = statsData?.recently_updated ?? 0
 
     return {
       totalProducts,
       activeProducts,
       inactiveProducts,
       outOfStock,
-
       categoriesCount,
       brandsCount,
       attributesCount,
       variantsCount,
-
       costValue,
       sellingValue,
       potentialProfit,
       averagePrice,
-
       bestSelling,
       lowSelling,
       mostViewed,
       averageRating,
-
       todayNewProducts,
       lowStockProducts,
       productsOnSale,
       productsWithDiscount,
-      recentlyUpdated,
+      recentlyUpdated
     }
-  }, [statsData, pagination.total, products, categories, brands])
+  }, [statsData, pagination, products, categories, brands])
 
   // Mutations
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/products/${id}`),
-    onSuccess: (data, id) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['products-dashboard-statistics'] })
-      toast.success('Product deleted successfully')
+      toast.success(t('toast.deleted'))
       adjustAfterDelete(products.length)
-      setSelectedRows(r => r.filter(x => x !== id))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to delete product')
+      toast.error(err?.response?.data?.message ?? t('toast.error'))
     }
   })
 
@@ -445,10 +431,10 @@ const ProductsPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['products-dashboard-statistics'] })
-      toast.success('Product restored successfully')
+      toast.success(t('toast.restored'))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to restore product')
+      toast.error(err?.response?.data?.message ?? t('toast.error'))
     }
   })
 
@@ -457,15 +443,14 @@ const ProductsPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['products-dashboard-statistics'] })
-      toast.success('Product permanently deleted')
+      toast.success(t('toast.deleted'))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to permanently delete product')
+      toast.error(err?.response?.data?.message ?? t('toast.error'))
     }
   })
 
   const handleExport = () => {
-    toast.info('Generating product CSV export... download will begin shortly.')
     api.get('/products/export', {
       params: {
         search: debouncedSearch,
@@ -479,15 +464,18 @@ const ProductsPage: React.FC = () => {
       responseType: 'blob'
     })
       .then(res => {
-        const url = window.URL.createObjectURL(new Blob([res.data]))
+        const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
+        const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`)
         document.body.appendChild(link)
         link.click()
         link.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success(t('toast.exportSuccess'))
       })
-      .catch(() => toast.error('Failed to export products'))
+      .catch(() => toast.error(t('toast.exportError')))
   }
 
   const handleImport = async (e: React.FormEvent) => {
@@ -497,21 +485,17 @@ const ProductsPage: React.FC = () => {
     const fd = new FormData()
     fd.append('file', importFile)
     try {
-      const res = await api.post('/products/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      toast.success(res.data.message || 'Import completed')
+      await api.post('/products/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['products-dashboard-statistics'] })
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Import failed')
+      toast.error(err?.response?.data?.message ?? t('toast.importError'))
     } finally {
       setImporting(false)
     }
-  }
-
-  const handlePrint = () => {
-    window.print()
   }
 
   const resetAllFilters = () => {
@@ -532,46 +516,35 @@ const ProductsPage: React.FC = () => {
   return (
     <div className="space-y-5 print:p-0">
       {/* ── 1. BREADCRUMB ─────────────────────────────────────────────────── */}
-      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Products Management' }]} />
+      <Breadcrumb items={[{ label: t('dashboard.title') || 'Dashboard', path: '/dashboard' }, { label: t('products.title') || 'Products Management' }]} />
 
       {/* ── 2. HERO HEADER ─────────────────────────────────────────────────── */}
       <div className="bg-card border border-border/80 p-6 rounded-[24px] flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm print:hidden relative overflow-hidden">
         <div className="space-y-1.5 flex-1 z-10">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Package className="h-6 w-6 text-primary animate-pulse" />
-            <span>Products Management</span>
+            <span>{t('products.heroTitle')}</span>
           </h1>
           <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            Manage products, inventory items, categories, brands, pricing, taxes, attributes, and product performance across the Enterprise E-Commerce and POS platform.
+            {t('products.heroSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap z-10">
           {activeWorkspaceTab === 'products' && (
             <>
-              {/* <button
-                onClick={() => setRecycleBinMode(!recycleBinMode)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border transition-all shadow-2xs cursor-pointer ${
-                  recycleBinMode
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 font-semibold'
-                    : 'border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                }`}
-              >
-                <Trash2 size={15} />
-                <span>{recycleBinMode ? 'Exit Trash' : 'Trash Bin'}</span>
-              </button> */}
               <button
                 onClick={() => setImportOpen(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
               >
                 <Upload size={15} />
-                <span>Import CSV</span>
+                <span>{t('products.importCSV')}</span>
               </button>
               <button
                 onClick={handleExport}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs cursor-pointer"
               >
                 <Download size={15} />
-                <span>Export CSV</span>
+                <span>{t('products.exportCSV')}</span>
               </button>
             </>
           )}
@@ -589,12 +562,12 @@ const ProductsPage: React.FC = () => {
           >
             <Plus size={16} />
             <span>
-              {activeWorkspaceTab === 'products' ? 'Add Product' :
-               activeWorkspaceTab === 'categories' ? 'Add Category' :
-               activeWorkspaceTab === 'brands' ? 'Add Brand' :
-               activeWorkspaceTab === 'units' ? 'Add Unit' :
-               activeWorkspaceTab === 'taxes' ? 'Add Tax' :
-               'Add Attribute'}
+              {activeWorkspaceTab === 'products' ? t('products.addProduct') :
+               activeWorkspaceTab === 'categories' ? t('products.addCategory') :
+               activeWorkspaceTab === 'brands' ? t('products.addBrand') :
+               activeWorkspaceTab === 'units' ? t('products.addUnit') :
+               activeWorkspaceTab === 'taxes' ? t('products.addTaxRule') :
+               t('products.addAttribute')}
             </span>
           </button>
         </div>
@@ -602,7 +575,7 @@ const ProductsPage: React.FC = () => {
 
       {/* ── 3. TOP 4 LARGE UNIQUE PRODUCT KPI CARDS ───────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* CARD 1: PRODUCT INVENTORY OVERVIEW (Blue / Indigo Theme - Package Icon) */}
+        {/* CARD 1: PRODUCT INVENTORY OVERVIEW */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -611,13 +584,9 @@ const ProductsPage: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              Inventory Overview
+              {t('products.inventoryOverview')}
             </span>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight size={11} />
-                <span>+12.5%</span>
-              </span>
               <span className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
                 <Package size={18} />
               </span>
@@ -628,7 +597,7 @@ const ProductsPage: React.FC = () => {
               <div className="text-2xl font-bold text-foreground tracking-tight">
                 <AnimatedCounter value={analytics.totalProducts} />
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total System Products</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">{t('products.totalSystemProducts')}</div>
             </div>
             <CircularProgressRing
               percentage={Math.min(((analytics.activeProducts / (analytics.totalProducts || 1)) * 100), 100)}
@@ -643,21 +612,21 @@ const ProductsPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
             <div>
-              <div className="text-muted-foreground">Active</div>
+              <div className="text-muted-foreground">{t('products.active')}</div>
               <div className="font-semibold text-emerald-600 dark:text-emerald-400">{analytics.activeProducts}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Inactive</div>
+              <div className="text-muted-foreground">{t('products.inactive')}</div>
               <div className="font-semibold text-slate-500">{analytics.inactiveProducts}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Out of Stock</div>
+              <div className="text-muted-foreground">{t('products.outOfStock')}</div>
               <div className="font-semibold text-rose-600 dark:text-rose-400">{analytics.outOfStock}</div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 2: PRODUCT CATALOG STRUCTURE (Purple Theme - Grid / LayoutGrid Icon) */}
+        {/* CARD 2: PRODUCT CATALOG STRUCTURE */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -666,12 +635,12 @@ const ProductsPage: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-              Catalog Structure
+              {t('products.catalogStructure')}
             </span>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400">
                 <Grid size={11} />
-                <span>Organized</span>
+                <span>{t('products.organized')}</span>
               </span>
               <span className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
                 <LayoutGrid size={18} />
@@ -683,33 +652,33 @@ const ProductsPage: React.FC = () => {
               <div className="text-2xl font-bold text-foreground tracking-tight">
                 <AnimatedCounter value={analytics.categoriesCount} />
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Categories Configured</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">{t('products.categoriesConfigured')}</div>
             </div>
             <CircularProgressRing
-              percentage={92}
+              percentage={analytics.categoriesCount > 0 ? 100 : 0}
               colorClass="text-purple-500"
             />
           </div>
           <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-purple-500 h-full rounded-full w-[92%]" />
+            <div className="bg-purple-500 h-full rounded-full w-full" />
           </div>
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
             <div>
-              <div className="text-muted-foreground">Brands</div>
+              <div className="text-muted-foreground">{t('products.brands')}</div>
               <div className="font-semibold text-purple-600 dark:text-purple-400">{analytics.brandsCount}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Attributes</div>
+              <div className="text-muted-foreground">{t('products.attributes')}</div>
               <div className="font-semibold text-foreground">{analytics.attributesCount}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Variants</div>
+              <div className="text-muted-foreground">{t('products.variants')}</div>
               <div className="font-semibold text-teal-600">{analytics.variantsCount}</div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 3: INVENTORY VALUE (Emerald Theme - DollarSign / TrendingUp Icon) */}
+        {/* CARD 3: INVENTORY VALUE */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -718,13 +687,9 @@ const ProductsPage: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Inventory Value ($)
+              {t('products.inventoryValueHeader')}
             </span>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <TrendingUp size={11} />
-                <span>+18.4%</span>
-              </span>
               <span className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                 <DollarSign size={18} />
               </span>
@@ -733,35 +698,35 @@ const ProductsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-2xl font-bold text-foreground tracking-tight">
-                $<AnimatedCounter value={analytics.sellingValue} decimals={2} />
+                {formatCurrency(analytics.sellingValue)}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total Selling Inventory Value</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">{t('products.totalSellingValue')}</div>
             </div>
             <CircularProgressRing
-              percentage={88}
+              percentage={analytics.sellingValue > 0 ? 100 : 0}
               colorClass="text-emerald-500"
             />
           </div>
           <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-emerald-500 h-full rounded-full w-[88%]" />
+            <div className="bg-emerald-500 h-full rounded-full w-full" />
           </div>
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
             <div>
-              <div className="text-muted-foreground">Cost Value</div>
-              <div className="font-semibold text-slate-500">${analytics.costValue.toLocaleString()}</div>
+              <div className="text-muted-foreground">{t('products.costValue')}</div>
+              <div className="font-semibold text-slate-500">{formatCurrency(analytics.costValue)}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Potential Profit</div>
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">${analytics.potentialProfit.toLocaleString()}</div>
+              <div className="text-muted-foreground">{t('products.potentialProfit')}</div>
+              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(analytics.potentialProfit)}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Avg Price</div>
-              <div className="font-semibold text-teal-600">${analytics.averagePrice}</div>
+              <div className="text-muted-foreground">{t('products.avgPrice')}</div>
+              <div className="font-semibold text-teal-600">{formatCurrency(analytics.averagePrice)}</div>
             </div>
           </div>
         </motion.div>
 
-        {/* CARD 4: PRODUCT PERFORMANCE (Orange / Gold Theme - Star / TrendingUp Icon) */}
+        {/* CARD 4: PRODUCT PERFORMANCE */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -770,12 +735,12 @@ const ProductsPage: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Product Performance
+              {t('products.productPerformance')}
             </span>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
                 <Star size={11} />
-                <span>High Sales</span>
+                <span>{t('products.highSales')}</span>
               </span>
               <span className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
                 <TrendingUp size={18} />
@@ -787,27 +752,27 @@ const ProductsPage: React.FC = () => {
               <div className="text-2xl font-bold text-foreground tracking-tight">
                 <AnimatedCounter value={analytics.bestSelling} />
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total Items Sold</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">{t('products.totalItemsSold')}</div>
             </div>
             <CircularProgressRing
-              percentage={96}
+              percentage={analytics.bestSelling > 0 ? 100 : 0}
               colorClass="text-amber-500"
             />
           </div>
           <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-amber-500 h-full rounded-full w-[96%]" />
+            <div className="bg-amber-500 h-full rounded-full w-full" />
           </div>
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
             <div>
-              <div className="text-muted-foreground">Most Viewed</div>
+              <div className="text-muted-foreground">{t('products.mostViewed')}</div>
               <div className="font-semibold text-amber-600 dark:text-amber-400">{analytics.mostViewed}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Low Selling</div>
+              <div className="text-muted-foreground">{t('products.lowSelling')}</div>
               <div className="font-semibold text-slate-500">{analytics.lowSelling}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Avg Rating</div>
+              <div className="text-muted-foreground">{t('products.avgRating')}</div>
               <div className="font-semibold text-emerald-600">{analytics.averageRating} ★</div>
             </div>
           </div>
@@ -823,7 +788,7 @@ const ProductsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold text-foreground">+{analytics.todayNewProducts}</div>
-            <div className="text-[10px] text-muted-foreground font-medium">Today New</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{t('products.todayNew')}</div>
           </div>
         </div>
 
@@ -834,7 +799,7 @@ const ProductsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold text-amber-600 dark:text-amber-400">{analytics.lowStockProducts}</div>
-            <div className="text-[10px] text-muted-foreground font-medium">Low Stock</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{t('products.lowStock')}</div>
           </div>
         </div>
 
@@ -845,7 +810,7 @@ const ProductsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold text-rose-600 dark:text-rose-400">{analytics.outOfStock}</div>
-            <div className="text-[10px] text-muted-foreground font-medium">Out of Stock</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{t('products.outOfStock')}</div>
           </div>
         </div>
 
@@ -856,7 +821,7 @@ const ProductsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{analytics.productsOnSale}</div>
-            <div className="text-[10px] text-muted-foreground font-medium">On Sale</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{t('products.onSale')}</div>
           </div>
         </div>
 
@@ -867,7 +832,7 @@ const ProductsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold text-purple-600 dark:text-purple-400">{analytics.productsWithDiscount}</div>
-            <div className="text-[10px] text-muted-foreground font-medium">Discounted</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{t('products.discounted')}</div>
           </div>
         </div>
 
@@ -878,7 +843,7 @@ const ProductsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold text-foreground">{analytics.recentlyUpdated}</div>
-            <div className="text-[10px] text-muted-foreground font-medium">Recent Updated</div>
+            <div className="text-[10px] text-muted-foreground font-medium">{t('products.recentUpdated')}</div>
           </div>
         </div>
       </div>
@@ -886,12 +851,12 @@ const ProductsPage: React.FC = () => {
       {/* ── 5. PRODUCT NAVIGATION TABS ───────────────────────────────────────── */}
       <div className="flex border border-border bg-card rounded-[20px] p-1.5 overflow-x-auto gap-1.5 shadow-2xs print:hidden">
         {[
-          { id: 'products',   label: 'All Products', icon: Package },
-          { id: 'categories', label: 'Categories', icon: Layers },
-          { id: 'brands',     label: 'Brands', icon: Tag },
-          { id: 'units',      label: 'Units', icon: Sliders },
-          { id: 'taxes',      label: 'Taxes', icon: Percent },
-          { id: 'attributes', label: 'Attributes', icon: Settings },
+          { id: 'products',   label: t('products.tabProducts'), icon: Package },
+          { id: 'categories', label: t('products.tabCategories'), icon: Layers },
+          { id: 'brands',     label: t('products.tabBrands'), icon: Tag },
+          { id: 'units',      label: t('products.tabUnits'), icon: Sliders },
+          { id: 'taxes',      label: t('products.tabTaxes'), icon: Percent },
+          { id: 'attributes', label: t('products.tabAttributes'), icon: Settings },
         ].map((tab) => {
           const Icon = tab.icon
           const isActive = activeWorkspaceTab === tab.id
@@ -932,7 +897,7 @@ const ProductsPage: React.FC = () => {
                 <SearchInput
                   value={search}
                   onChange={setSearch}
-                  placeholder="Search products by name, SKU, barcode, brand..."
+                  placeholder={t('products.searchPlaceholder')}
                 />
               </div>
 
@@ -945,7 +910,7 @@ const ProductsPage: React.FC = () => {
                 }`}
               >
                 <Filter size={14} />
-                <span>Filters</span>
+                <span>{t('products.filter')}</span>
                 {activeFiltersCount > 0 && (
                   <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-primary text-white">
                     {activeFiltersCount}
@@ -964,7 +929,7 @@ const ProductsPage: React.FC = () => {
                   qc.invalidateQueries({ queryKey: ['products-dashboard-statistics'] })
                 }}
                 className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-2xs cursor-pointer"
-                title="Refresh Data"
+                title={t('products.refresh')}
               >
                 <RefreshCw size={15} className={isFetching ? 'animate-spin text-primary' : ''} />
               </button>
@@ -974,7 +939,7 @@ const ProductsPage: React.FC = () => {
                 <button
                   onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
                   className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
-                  title="Column Customization Settings"
+                  title={t('products.toggleColumns')}
                 >
                   <Settings size={15} />
                 </button>
@@ -988,7 +953,7 @@ const ProductsPage: React.FC = () => {
                       className="absolute right-0 top-full mt-2 w-60 bg-card border border-border rounded-2xl shadow-xl z-50 p-3 space-y-2"
                     >
                       <div className="text-xs font-bold text-foreground pb-2 border-b border-border flex items-center justify-between">
-                        <span>Product Columns</span>
+                        <span>{t('products.toggleColumns')}</span>
                         <button
                           onClick={() => setColumnDropdownOpen(false)}
                           className="text-muted-foreground hover:text-foreground"
@@ -998,13 +963,13 @@ const ProductsPage: React.FC = () => {
                       </div>
                       <div className="space-y-1.5 max-h-52 overflow-y-auto">
                         {[
-                          { key: 'image', label: 'Product Image' },
-                          { key: 'name', label: 'Product Name & SKU' },
-                          { key: 'category', label: 'Category & Brand' },
-                          { key: 'price', label: 'Selling & Cost Price' },
-                          { key: 'stock', label: 'Stock Inventory' },
-                          { key: 'status', label: 'Status' },
-                          { key: 'rating', label: 'Rating' },
+                          { key: 'image', label: t('products.colPhoto') },
+                          { key: 'name', label: t('products.colName') },
+                          { key: 'category', label: t('products.colCategory') },
+                          { key: 'price', label: t('products.colSellingPrice') },
+                          { key: 'stock', label: t('products.colStock') },
+                          { key: 'status', label: t('products.colStatus') },
+                          { key: 'rating', label: t('products.colRating') },
                         ].map((col) => (
                           <label key={col.key} className="flex items-center gap-2 text-xs text-foreground cursor-pointer py-1 px-1.5 hover:bg-muted/50 rounded-lg">
                             <input
@@ -1024,7 +989,7 @@ const ProductsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ── 7. ENTERPRISE PRODUCT DATA TABLE (EMPLOYEE STYLE LAYOUT) ─────────── */}
+          {/* ── 7. ENTERPRISE PRODUCT DATA TABLE ───────────────────────────── */}
           <div className="bg-card rounded-[24px] border border-border/80 shadow-lg overflow-hidden relative">
             <TableWrapper isFetching={isFetching}>
               <table className="w-full text-left border-collapse">
@@ -1042,28 +1007,28 @@ const ProductsPage: React.FC = () => {
                       />
                     </th>
                     <th className="p-3.5 cursor-pointer hover:text-foreground" onClick={() => handleSort('id')}>
-                      ID {renderSortIcon('id')}
+                      {t('products.colId')} {renderSortIcon('id')}
                     </th>
-                    <th className="p-3.5">PHOTO</th>
+                    <th className="p-3.5">{t('products.colPhoto')}</th>
                     <th className="p-3.5 cursor-pointer hover:text-foreground" onClick={() => handleSort('sku')}>
-                      PRODUCT NUMBER {renderSortIcon('sku')}
+                      {t('products.colProductNumber')} {renderSortIcon('sku')}
                     </th>
                     <th className="p-3.5 cursor-pointer hover:text-foreground" onClick={() => handleSort('name')}>
-                      NAME {renderSortIcon('name')}
+                      {t('products.colName')} {renderSortIcon('name')}
                     </th>
-                    <th className="p-3.5">CATEGORY</th>
-                    <th className="p-3.5">BRAND</th>
-                    <th className="p-3.5">BARCODE</th>
+                    <th className="p-3.5">{t('products.colCategory')}</th>
+                    <th className="p-3.5">{t('products.colBrand')}</th>
+                    <th className="p-3.5">{t('products.colBarcode')}</th>
                     <th className="p-3.5 cursor-pointer hover:text-foreground" onClick={() => handleSort('selling_price')}>
-                      SELLING PRICE {renderSortIcon('selling_price')}
+                      {t('products.colSellingPrice')} {renderSortIcon('selling_price')}
                     </th>
-                    <th className="p-3.5">COST PRICE</th>
-                    <th className="p-3.5">STOCK</th>
+                    <th className="p-3.5">{t('products.colCostPrice')}</th>
+                    <th className="p-3.5">{t('products.colStock')}</th>
                     <th className="p-3.5 cursor-pointer hover:text-foreground" onClick={() => handleSort('created_at')}>
-                      CREATED AT {renderSortIcon('created_at')}
+                      {t('products.colCreatedAt')} {renderSortIcon('created_at')}
                     </th>
-                    <th className="p-3.5">STATUS</th>
-                    <th className="p-3.5 pr-6 text-right">ACTIONS</th>
+                    <th className="p-3.5">{t('products.colStatus')}</th>
+                    <th className="p-3.5 pr-6 text-right">{t('products.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50 text-xs text-foreground font-medium">
@@ -1093,16 +1058,13 @@ const ProductsPage: React.FC = () => {
                           <div className="p-4 rounded-full bg-muted/40 w-fit mx-auto text-muted-foreground/40">
                             <Package size={40} />
                           </div>
-                          <h3 className="text-base font-bold text-foreground">No products found.</h3>
-                          <p className="text-xs text-muted-foreground">
-                            Try adjusting your search criteria or register a new product item.
-                          </p>
+                          <h3 className="text-base font-bold text-foreground">{t('products.noProducts')}</h3>
                           <button
                             onClick={() => navigate('/products/create')}
                             className="btn-primary px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:opacity-90 inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
                           >
                             <Plus size={14} />
-                            Add Product
+                            {t('products.addProduct')}
                           </button>
                         </div>
                       </td>
@@ -1117,14 +1079,14 @@ const ProductsPage: React.FC = () => {
                       let statusBadge = (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Active
+                          {t('products.active')}
                         </span>
                       )
 
                       if (p.status === 'inactive') {
                         statusBadge = (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 text-slate-600 border border-slate-500/20">
-                            Inactive
+                            {t('products.inactive')}
                           </span>
                         )
                       } else if (p.status === 'draft') {
@@ -1142,7 +1104,6 @@ const ProductsPage: React.FC = () => {
                             isSelected ? 'bg-primary/5' : ''
                           }`}
                         >
-                          {/* Checkbox */}
                           <td className="p-3.5 pl-6" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
@@ -1156,12 +1117,10 @@ const ProductsPage: React.FC = () => {
                             />
                           </td>
 
-                          {/* ID */}
                           <td className="p-3.5 font-bold text-foreground">
                             {p.id}
                           </td>
 
-                          {/* PHOTO */}
                           <td className="p-3.5">
                             <div className="w-9 h-9 rounded-full overflow-hidden bg-muted/60 border border-border/80 flex items-center justify-center">
                               {imgUrl ? (
@@ -1172,42 +1131,34 @@ const ProductsPage: React.FC = () => {
                             </div>
                           </td>
 
-                          {/* PRODUCT NUMBER / SKU */}
                           <td className="p-3.5 font-mono text-xs font-semibold text-muted-foreground">
                             {p.sku || `PRD-${String(p.id).padStart(4, '0')}`}
                           </td>
 
-                          {/* NAME */}
                           <td className="p-3.5 font-bold text-foreground">
                             {p.name}
                           </td>
 
-                          {/* CATEGORY */}
                           <td className="p-3.5 text-xs text-foreground font-medium">
-                            {p.category?.name || 'Uncategorized'}
+                            {p.category?.name || '—'}
                           </td>
 
-                          {/* BRAND */}
                           <td className="p-3.5 text-xs text-muted-foreground font-medium">
-                            {p.brand?.name || 'Generic'}
+                            {p.brand?.name || '—'}
                           </td>
 
-                          {/* BARCODE */}
                           <td className="p-3.5 font-mono text-xs text-muted-foreground">
-                            {p.barcode || 'N/A'}
+                            {p.barcode || '—'}
                           </td>
 
-                          {/* SELLING PRICE */}
                           <td className="p-3.5 text-xs font-bold text-foreground">
-                            ${(Number(p.selling_price) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatCurrency(Number(p.selling_price) || 0)}
                           </td>
 
-                          {/* COST PRICE */}
                           <td className="p-3.5 text-xs font-medium text-muted-foreground">
-                            {p.cost_price ? `$${Number(p.cost_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
+                            {p.cost_price ? formatCurrency(Number(p.cost_price)) : '—'}
                           </td>
 
-                          {/* STOCK */}
                           <td className="p-3.5">
                             {isOut ? (
                               <span className="text-rose-600 font-bold">0</span>
@@ -1218,35 +1169,32 @@ const ProductsPage: React.FC = () => {
                             )}
                           </td>
 
-                          {/* CREATED AT */}
                           <td className="p-3.5 text-xs text-muted-foreground whitespace-nowrap">
-                            {(p as any).created_at ? new Date((p as any).created_at).toLocaleDateString() : '7/22/2026'}
+                            {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
                           </td>
 
-                          {/* STATUS */}
                           <td className="p-3.5">{statusBadge}</td>
 
-                          {/* ACTIONS */}
                           <td className="p-3.5 pr-6 text-right">
                             <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setViewProduct(p)}
                                 className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                                title="View Details"
+                                title={t('products.view')}
                               >
                                 <Eye size={14} />
                               </button>
                               <button
                                 onClick={() => navigate(`/products/${p.id}/edit`)}
                                 className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                                title="Edit Product"
+                                title={t('products.edit')}
                               >
                                 <Edit2 size={14} />
                               </button>
                               <button
                                 onClick={() => setDeleteConfirm({ open: true, id: p.id, force: recycleBinMode, name: p.name })}
                                 className="p-1.5 hover:bg-rose-500/10 rounded-lg text-muted-foreground hover:text-rose-500 transition-colors cursor-pointer"
-                                title="Delete Product"
+                                title={t('products.delete')}
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -1272,7 +1220,7 @@ const ProductsPage: React.FC = () => {
         </>
       )}
 
-      {/* ── 8. ADVANCED FILTER DRAWER (ANT DESIGN DRAWER STYLE) ──────────────── */}
+      {/* ── 8. ADVANCED FILTER DRAWER ─────────────────────────────────────────── */}
       <AnimatePresence>
         {filterDrawerOpen && (
           <div className="fixed inset-0 z-50 overflow-hidden print:hidden">
@@ -1295,7 +1243,7 @@ const ProductsPage: React.FC = () => {
                 <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-muted/30">
                   <div className="flex items-center gap-2">
                     <Sliders className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-bold text-foreground">Advanced Product Filters</h2>
+                    <h2 className="text-lg font-bold text-foreground">{t('products.drawerTitle')}</h2>
                   </div>
                   <button
                     onClick={() => setFilterDrawerOpen(false)}
@@ -1309,12 +1257,12 @@ const ProductsPage: React.FC = () => {
                 <div className="p-6 space-y-6 overflow-y-auto flex-1">
                   {/* Product Status */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Product Status</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('products.filterStatus')}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: '', label: 'All Status' },
-                        { id: 'active', label: 'Active' },
-                        { id: 'inactive', label: 'Inactive' },
+                        { id: '', label: t('products.allStatus') },
+                        { id: 'active', label: t('products.active') },
+                        { id: 'inactive', label: t('products.inactive') },
                       ].map((st) => (
                         <button
                           key={st.id}
@@ -1334,40 +1282,40 @@ const ProductsPage: React.FC = () => {
 
                   {/* Category Select */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('products.filterCategory')}</label>
                     <ModernSelect
                       value={categoryFilter}
                       onChange={(val) => setCategoryFilter(String(val))}
                       options={[
-                        { value: '', label: 'All Categories' },
+                        { value: '', label: t('products.allCategories') },
                         ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
                       ]}
-                      placeholder="All Categories"
+                      placeholder={t('products.allCategories')}
                     />
                   </div>
 
                   {/* Brand Select */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Brand</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('products.filterBrand')}</label>
                     <ModernSelect
                       value={brandFilter}
                       onChange={(val) => setBrandFilter(String(val))}
                       options={[
-                        { value: '', label: 'All Brands' },
+                        { value: '', label: t('products.allBrands') },
                         ...(brands ?? []).map((b: any) => ({ value: b.id, label: b.name })),
                       ]}
-                      placeholder="All Brands"
+                      placeholder={t('products.allBrands')}
                     />
                   </div>
 
                   {/* Stock Level Status */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Stock Inventory Status</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('products.filterStockLevel')}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: '', label: 'All Stock' },
-                        { id: 'in_stock', label: 'In Stock' },
-                        { id: 'low_stock', label: 'Low Stock' },
+                        { id: '', label: t('products.allStatus') },
+                        { id: 'in_stock', label: t('products.active') },
+                        { id: 'low_stock', label: t('products.lowStock') },
                       ].map((sk) => (
                         <button
                           key={sk.id}
@@ -1387,18 +1335,18 @@ const ProductsPage: React.FC = () => {
 
                   {/* Price Range */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Price Range ($)</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('products.filterPriceRange')}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         type="number"
-                        placeholder="Min Price ($)"
+                        placeholder={t('products.minPrice')}
                         value={priceMinFilter}
                         onChange={(e) => setPriceMinFilter(e.target.value)}
                         className="w-full p-2 rounded-xl border border-border bg-card text-foreground text-xs"
                       />
                       <input
                         type="number"
-                        placeholder="Max Price ($)"
+                        placeholder={t('products.maxPrice')}
                         value={priceMaxFilter}
                         onChange={(e) => setPriceMaxFilter(e.target.value)}
                         className="w-full p-2 rounded-xl border border-border bg-card text-foreground text-xs"
@@ -1408,10 +1356,9 @@ const ProductsPage: React.FC = () => {
 
                   {/* Created Date Range */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Created Date Range</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.date') || 'Date Range'}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-[10px] text-muted-foreground">Start Date</span>
                         <input
                           type="date"
                           value={startDate}
@@ -1420,7 +1367,6 @@ const ProductsPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-muted-foreground">End Date</span>
                         <input
                           type="date"
                           value={endDate}
@@ -1439,14 +1385,14 @@ const ProductsPage: React.FC = () => {
                     onClick={resetAllFilters}
                     className="flex-1 py-2.5 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                   >
-                    Reset Filters
+                    {t('products.reset')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setFilterDrawerOpen(false)}
                     className="flex-1 py-2.5 px-4 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
                   >
-                    Apply Filters
+                    {t('products.applyFilters')}
                   </button>
                 </div>
               </motion.div>
@@ -1469,7 +1415,7 @@ const ProductsPage: React.FC = () => {
               <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
                 <h3 className="font-bold text-base text-foreground flex items-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
-                  <span>Product Specification</span>
+                  <span>{t('products.view')}</span>
                 </h3>
                 <button onClick={() => setViewProduct(null)} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X size={18} />
@@ -1489,22 +1435,22 @@ const ProductsPage: React.FC = () => {
                     <p className="font-bold text-foreground text-sm">{viewProduct.name}</p>
                     <p className="text-muted-foreground text-xs font-mono">SKU: {viewProduct.sku}</p>
                     <span className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                      ${Number(viewProduct.selling_price).toFixed(2)} USD
+                      {formatCurrency(Number(viewProduct.selling_price))}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   {[
-                    { label: 'Product Name', value: viewProduct.name },
-                    { label: 'SKU Code', value: viewProduct.sku },
-                    { label: 'Barcode', value: viewProduct.barcode || 'N/A' },
-                    { label: 'Category', value: viewProduct.category?.name || 'Uncategorized' },
-                    { label: 'Brand', value: viewProduct.brand?.name || 'N/A' },
-                    { label: 'Selling Price', value: `$${Number(viewProduct.selling_price).toFixed(2)}` },
-                    { label: 'Cost Price', value: viewProduct.cost_price ? `$${Number(viewProduct.cost_price).toFixed(2)}` : 'N/A' },
-                    { label: 'Stock Quantity', value: `${viewProduct.stock ?? 0} units` },
-                    { label: 'Status', value: viewProduct.status.toUpperCase() },
+                    { label: t('products.colName'), value: viewProduct.name },
+                    { label: t('products.colProductNumber'), value: viewProduct.sku },
+                    { label: t('products.colBarcode'), value: viewProduct.barcode || '—' },
+                    { label: t('products.colCategory'), value: viewProduct.category?.name || '—' },
+                    { label: t('products.colBrand'), value: viewProduct.brand?.name || '—' },
+                    { label: t('products.colSellingPrice'), value: formatCurrency(Number(viewProduct.selling_price)) },
+                    { label: t('products.colCostPrice'), value: viewProduct.cost_price ? formatCurrency(Number(viewProduct.cost_price)) : '—' },
+                    { label: t('products.colStock'), value: `${viewProduct.stock ?? 0}` },
+                    { label: t('products.colStatus'), value: viewProduct.status.toUpperCase() },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-border/60">
                       <span className="text-muted-foreground font-medium">{row.label}</span>
@@ -1519,7 +1465,7 @@ const ProductsPage: React.FC = () => {
                   onClick={() => { setViewProduct(null); navigate(`/products/${viewProduct.id}/edit`) }}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-primary text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
                 >
-                  <Edit2 size={14} /> Edit Product
+                  <Edit2 size={14} /> {t('products.edit')}
                 </button>
               </div>
             </motion.div>
@@ -1540,7 +1486,7 @@ const ProductsPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <Upload size={18} className="text-primary" />
-                  <span>Import Products CSV</span>
+                  <span>{t('products.importCSV')}</span>
                 </h3>
                 <button
                   onClick={() => setImportOpen(false)}
@@ -1568,10 +1514,10 @@ const ProductsPage: React.FC = () => {
                       <Upload size={24} />
                     </div>
                     <div className="text-xs font-bold text-foreground">
-                      {importFile ? importFile.name : 'Click to upload or drag CSV file here'}
+                      {importFile ? importFile.name : t('products.clickToUploadCSV')}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      Supported format: .csv, .txt (Max size 10MB)
+                      {t('products.csvSupportedFormat')}
                     </div>
                   </label>
                 </div>
@@ -1582,7 +1528,7 @@ const ProductsPage: React.FC = () => {
                     onClick={() => setImportOpen(false)}
                     className="px-4 py-2 text-xs font-semibold rounded-xl border border-border text-muted-foreground hover:bg-muted cursor-pointer"
                   >
-                    Cancel
+                    {t('products.closeBtn')}
                   </button>
                   <button
                     type="submit"
@@ -1590,7 +1536,7 @@ const ProductsPage: React.FC = () => {
                     className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:opacity-90 flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
                   >
                     {importing && <Loader2 className="animate-spin" size={14} />}
-                    Confirm Import
+                    {t('products.importCSV')}
                   </button>
                 </div>
               </form>

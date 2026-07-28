@@ -1,5 +1,8 @@
 {
   "confirmDelete": "确认删除",
   "deleteMessage": "您确定要删除此项目吗？",
-  "deleteTitle": "确认删除"
+  "deleteTitle": "确认删除",
+  "confirm.confirmDelete": "Confirm Delete",
+  "confirm.deleteMessage": "Delete Message",
+  "confirm.deleteTitle": "Delete Title"
 }

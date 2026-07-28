@@ -25,6 +25,9 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // Enforce dynamic base URL
+        options.baseUrl = ApiEndpoints.baseUrl;
+
         final token = await storage.getAccessToken();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -55,7 +58,7 @@ final dioProvider = Provider<Dio>((ref) {
                 final newRefresh = response.data['data']['refresh_token'] ?? refreshToken;
                 await storage.saveTokens(accessToken: newAccess, refreshToken: newRefresh);
 
-                // Retry original request
+                // Retry original request with new token
                 final opts = error.requestOptions;
                 opts.headers['Authorization'] = 'Bearer $newAccess';
                 final cloneReq = await dio.fetch(opts);

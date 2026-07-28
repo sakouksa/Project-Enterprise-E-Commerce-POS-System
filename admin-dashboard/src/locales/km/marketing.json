@@ -26,5 +26,8 @@
   "expiresAt": "ថ្ងៃផុតកំណត់",
   "createCoupon": "បង្កើតប័ណ្ណថ្មី",
   "editCoupon": "កែប្រែប័ណ្ណ",
-  "generateCode": "បង្កើតកូដ"
+  "generateCode": "បង្កើតកូដ",
+  "marketing.campaigns": "Campaigns",
+  "marketing.coupons": "Coupons",
+  "marketing.referrals": "Referrals"
 }

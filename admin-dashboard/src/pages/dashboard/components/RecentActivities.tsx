@@ -1,90 +1,67 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { ShoppingCart, ShoppingBag, Lock, Cpu, Settings2, ShieldAlert } from 'lucide-react'
+import { Activity, Clock } from 'lucide-react'
 
-const MOCK_ACTIVITIES = [
-  {
-    id: 1,
-    type: 'sale',
-    title: 'Sale Order completed',
-    desc: 'Rp 1,438,000 paid by cash via POS terminal',
-    time: '2 mins ago',
-    icon: <ShoppingCart className="w-3 h-3 text-blue-500" />,
-    bg: 'bg-blue-500/10'
-  },
-  {
-    id: 2,
-    type: 'inventory',
-    title: 'Stock Adjustment',
-    desc: 'JBL Laptop 2 increased +10 pieces (Purchase Order received)',
-    time: '15 mins ago',
-    icon: <Settings2 className="w-3 h-3 text-emerald-500" />,
-    bg: 'bg-emerald-500/10'
-  },
-  {
-    id: 3,
-    type: 'login',
-    title: 'Secure login detected',
-    desc: 'Super Admin signed in from IP 127.0.0.1 (Windows Chrome)',
-    time: '1 hour ago',
-    icon: <Lock className="w-3 h-3 text-purple-500" />,
-    bg: 'bg-purple-500/10'
-  },
-  {
-    id: 4,
-    type: 'purchase',
-    title: 'PO Created',
-    desc: 'Purchase Order #PO-20260718-5080 sent to Supplier JBL',
-    time: '3 hours ago',
-    icon: <ShoppingBag className="w-3 h-3 text-pink-500" />,
-    bg: 'bg-pink-500/10'
-  },
-  {
-    id: 5,
-    type: 'system',
-    title: 'Audit Warning',
-    desc: 'Low stock threshold triggered for product SKU-JBL-LAP-0002',
-    time: '12 hours ago',
-    icon: <ShieldAlert className="w-3 h-3 text-rose-500" />,
-    bg: 'bg-rose-500/10'
-  },
-]
+interface RecentActivitiesProps {
+  activityLog?: any[]
+  isLoading?: boolean
+}
 
-export const RecentActivities: React.FC = () => {
+export const RecentActivities: React.FC<RecentActivitiesProps> = ({ activityLog, isLoading }) => {
   const { t } = useTranslation()
+
+  if (isLoading) {
+    return (
+      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm space-y-3 animate-pulse">
+        <div className="h-4 w-32 bg-muted rounded" />
+        <div className="h-24 bg-muted rounded-xl" />
+      </div>
+    )
+  }
+
+  const logs = activityLog && activityLog.length > 0 ? activityLog : []
 
   return (
     <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
-      <h3 className="font-bold text-sm text-foreground mb-4">
-        {t('dashboard.recentActivities', 'Recent Activity')}
+      <h3 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2">
+        <Activity className="w-4 h-4 text-primary" />
+        {t('dashboard.activityTimeline')}
       </h3>
-      <div className="relative border-l border-border/60 ml-2.5 pl-5 space-y-5">
-        {MOCK_ACTIVITIES.map((act, idx) => (
+
+      <div className="relative border-l border-border/60 ml-2.5 pl-5 space-y-4">
+        {logs.map((act: any, idx: number) => (
           <motion.div
-            key={act.id}
-            initial={{ opacity: 0, x: -10 }}
+            key={act.id || idx}
+            initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.05 }}
+            transition={{ delay: idx * 0.04 }}
             className="relative"
           >
-            {/* Dot icon */}
-            <span className={`absolute -left-[30px] top-0 p-1.5 rounded-lg flex items-center justify-center ${act.bg}`}>
-              {act.icon}
-            </span>
+            {/* Timeline Dot */}
+            <span className="absolute -left-[27px] top-1 w-2.5 h-2.5 rounded-full bg-primary/80 ring-4 ring-card" />
 
             {/* Content */}
             <div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs font-bold text-foreground leading-none">{act.title}</span>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{act.time}</span>
+                <span className="text-xs font-bold text-foreground leading-none">{act.description || 'System Event'}</span>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  {act.created_at ? new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                </span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                {act.desc}
+                {t('common.by', 'By')}: <span className="font-semibold text-foreground">{act.causer_name || 'System User'}</span>
               </p>
             </div>
           </motion.div>
         ))}
+
+        {logs.length === 0 && (
+          <div className="py-6 text-center text-xs text-muted-foreground">
+            {t('dashboard.noDataAvailable')}
+          </div>
+        )}
       </div>
     </div>
   )

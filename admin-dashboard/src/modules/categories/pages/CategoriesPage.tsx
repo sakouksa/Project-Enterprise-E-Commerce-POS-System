@@ -19,6 +19,7 @@ import EmptyState from '@/components/shared/EmptyState'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
 
 interface Category {
   id: number
@@ -182,7 +183,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
-      toast.success('Category restored successfully')
+      toast.success(t('toast.restored'))
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error'))
@@ -194,38 +195,38 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
-      toast.success('Category permanently deleted')
+      toast.success(t('toast.deleted'))
       setDeleteTarget(null)
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to permanently delete category')
+      toast.error(err?.response?.data?.message ?? t('toast.error'))
       setDeleteTarget(null)
     }
   })
 
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/categories/bulk-delete', { ids }),
-    onSuccess: (res) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
-      toast.success(res.data.message || 'Categories deleted successfully')
+      toast.success(t('toast.deleted'))
       setSelectedRows([])
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to delete selected categories')
+      toast.error(err?.response?.data?.message ?? t('toast.error'))
     }
   })
 
   const bulkRestoreMutation = useMutation({
     mutationFn: (ids: number[]) => api.post('/categories/bulk-restore', { ids }),
-    onSuccess: (res) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
-      toast.success(res.data.message || 'Categories restored successfully')
+      toast.success(t('toast.restored'))
       setSelectedRows([])
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to restore selected categories')
+      toast.error(err?.response?.data?.message ?? t('toast.error'))
     }
   })
 
@@ -298,13 +299,13 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     fd.append('file', importFile)
     try {
       const res = await api.post('/categories/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      toast.success(res.data.message || 'Import completed')
+      toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Import failed')
+      toast.error(err?.response?.data?.message ?? t('toast.importError'))
     } finally {
       setImporting(false)
     }
@@ -313,15 +314,18 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   const handleExport = () => {
     api.get('/categories/export', { responseType: 'blob' })
       .then(res => {
-        const url = window.URL.createObjectURL(new Blob([res.data]))
+        const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
+        const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.setAttribute('download', `categories_export_${new Date().toISOString().split('T')[0]}.csv`)
         document.body.appendChild(link)
         link.click()
         link.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success(t('toast.exportSuccess'))
       })
-      .catch(() => toast.error('Failed to export categories'))
+      .catch(() => toast.error(t('toast.exportError')))
   }
 
   // Construct Tree structure if not in search or recycle bin
@@ -415,7 +419,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
           <td className="text-muted-foreground text-sm text-center">{node.sort_order ?? 0}</td>
           <td>
             <span className={node.is_active ? 'badge-success' : 'badge-muted'}>
-              {node.is_active ? t('common.active') : t('common.inactive')}
+              {node.is_active ? t('products.active') : t('products.inactive')}
             </span>
           </td>
           <td className="text-right pr-4">
@@ -464,7 +468,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                                : 'bg-card border-border text-muted-foreground hover:text-foreground'}`}
                 >
                   <Trash size={15} />
-                  {recycleBinMode ? 'Recycle Bin' : 'Trash'}
+                  {recycleBinMode ? t('products.recycleBin') : t('products.trash')}
                 </button>
 
                 <button
@@ -472,7 +476,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Download size={15} />
-                  Export
+                  {t('products.exportCSV')}
                 </button>
 
                 <button
@@ -480,7 +484,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Upload size={15} />
-                  Import
+                  {t('products.importCSV')}
                 </button>
 
                 <button
@@ -489,7 +493,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                              bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Plus size={16} />
-                  {t('pageContent.Add Category')}
+                  {t('products.addCategory')}
                 </button>
               </div>
             }
@@ -502,7 +506,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
           <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium">
             <AlertCircle size={16} />
-            <span>{selectedRows.length} categories selected</span>
+            <span>{selectedRows.length} {t('products.selectedCount')}</span>
           </div>
           <div className="flex items-center gap-2">
             {recycleBinMode ? (
@@ -512,12 +516,11 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500"
                 >
                   <RefreshCw size={13} />
-                  Restore Selected
+                  {t('products.restoreSelected')}
                 </button>
                 <button
                   onClick={() => {
                     if (confirm('Permanently delete selected categories? This cannot be undone.')) {
-                      // Bulk force delete (looping or creating a dedicated endpoint if available. Since there's no bulk force delete endpoint, loop it)
                       selectedRows.forEach(id => forceDeleteMutation.mutate(id))
                       setSelectedRows([])
                     }
@@ -525,7 +528,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500"
                 >
                   <Trash size={13} />
-                  Permanent Delete
+                  {t('products.permanentDelete')}
                 </button>
               </>
             ) : (
@@ -534,14 +537,14 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500"
               >
                 <Trash size={13} />
-                Delete Selected
+                {t('products.deleteSelected')}
               </button>
             )}
             <button
               onClick={() => setSelectedRows([])}
               className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -585,21 +588,21 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   />
                 </th>
                 <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('pageContent.Name')} {renderSortIcon('name')}
+                  {t('products.colName')} {renderSortIcon('name')}
                 </th>
                 <th onClick={() => handleSort('slug')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('pageContent.Slug')} {renderSortIcon('slug')}
+                  {t('products.colSlug')} {renderSortIcon('slug')}
                 </th>
                 <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('pageContent.Description')} {renderSortIcon('description')}
+                  {t('products.colDescription')} {renderSortIcon('description')}
                 </th>
                 <th onClick={() => handleSort('sort_order')} className="text-center cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  Sort Order {renderSortIcon('sort_order')}
+                  {t('products.colSortOrder')} {renderSortIcon('sort_order')}
                 </th>
                 <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  {t('pageContent.Status')} {renderSortIcon('is_active')}
+                  {t('products.colStatus')} {renderSortIcon('is_active')}
                 </th>
-                <th className="text-right pr-4 py-3 select-none w-28">{t('pageContent.Actions')}</th>
+                <th className="text-right pr-4 py-3 select-none w-28">{t('products.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -651,7 +654,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     <td className="text-muted-foreground text-sm text-center">{cat.sort_order ?? 0}</td>
                     <td>
                       <span className={cat.is_active ? 'badge-success' : 'badge-muted'}>
-                        {cat.is_active ? t('common.active') : t('common.inactive')}
+                        {cat.is_active ? t('products.active') : t('products.inactive')}
                       </span>
                     </td>
                     <td className="text-right pr-4">
@@ -744,22 +747,23 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   </div>
 
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Parent Category</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.parentCategory')}</label>
                     <ModernSelect
                       value={parentId}
                       onChange={(val) => setParentId(String(val))}
                       options={[
-                        { value: '', label: 'Root Category (None)' },
+                        { value: '', label: t('products.rootCategory') },
                         ...dropdownCats
                           .filter(c => !editingCategory || (c.id !== editingCategory.id && c.parent_id !== editingCategory.id))
                           .map(c => ({ value: c.id, label: c.name })),
                       ]}
-                      placeholder="Root Category (None)"
+                      placeholder={t('products.parentCategory')}
+                      buttonClassName="font-normal text-sm border-border bg-card cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Sort Order</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.sortOrder')}</label>
                     <input
                       type="number"
                       value={sortOrder}
@@ -770,11 +774,11 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   </div>
 
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm font-medium text-muted-foreground">{t('pageContent.Status')}</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t('products.colStatus')}</span>
                     <button
                       type="button"
                       onClick={() => setIsActive(!isActive)}
-                      className="text-primary hover:opacity-80 transition-opacity"
+                      className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
                     >
                       {isActive ? <ToggleRight size={36} /> : <ToggleLeft size={36} className="text-muted-foreground" />}
                     </button>
@@ -783,7 +787,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
                 {/* Category Image picker */}
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">Category Image</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">{t('products.categoryImage')}</label>
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 rounded-xl border border-border overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
                       {imagePreview ? (
@@ -804,9 +808,9 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                         htmlFor="category-image-upload"
                         className="inline-flex items-center justify-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted cursor-pointer transition-colors"
                       >
-                        Upload Image
+                        {t('products.uploadImage')}
                       </label>
-                      <p className="text-xs text-muted-foreground mt-1">Recommended: PNG or JPG, square resolution.</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('products.imageRecommendation')}</p>
                     </div>
                   </div>
                 </div>
@@ -856,7 +860,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
               className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">Import Categories</h3>
+                <h3 className="font-semibold text-lg text-foreground">{t('products.importCSV')}</h3>
                 <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground">
                   <X size={18} />
                 </button>
@@ -874,9 +878,9 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     required
                   />
                   <label htmlFor="csv-file-upload" className="cursor-pointer font-medium text-primary hover:underline">
-                    {importFile ? importFile.name : 'Click to select CSV File'}
+                    {importFile ? importFile.name : t('products.clickToUploadCSV')}
                   </label>
-                  <p className="text-xs text-muted-foreground mt-1">Columns needed: Parent Category, Name, Slug, Description, Image, Sort Order, Active</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('products.categoriesImportInstruction')}</p>
                 </div>
 
                 <div className="flex items-center justify-end gap-2">
@@ -885,7 +889,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     onClick={() => setImportOpen(false)}
                     className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -893,7 +897,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg flex items-center gap-1.5"
                   >
                     {importing && <Loader2 size={14} className="animate-spin" />}
-                    Import CSV
+                    {t('products.importCSV')}
                   </button>
                 </div>
               </form>
@@ -902,51 +906,23 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         )}
       </AnimatePresence>
 
-      {/* Delete/Force Delete Confirmation Dialog */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-4"
-            >
-              <div className="flex items-center gap-3 text-red-500">
-                <AlertCircle size={28} />
-                <h3 className="font-semibold text-lg text-foreground">Confirm Delete</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete category <strong>{deleteTarget.name}</strong>?
-                {recycleBinMode 
-                  ? ' This will permanently remove it from the database and cannot be undone.'
-                  : ' You can restore it later from the recycle bin.'}
-              </p>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (recycleBinMode) {
-                      forceDeleteMutation.mutate(deleteTarget.id)
-                    } else {
-                      deleteMutation.mutate(deleteTarget.id)
-                    }
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg"
-                >
-                  Confirm Delete
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Unified Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        title={t('products.tabCategories')}
+        itemName={deleteTarget?.name || ''}
+        isPending={deleteMutation.isPending || forceDeleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onSoftDelete={() => {
+          if (deleteTarget) {
+            if (recycleBinMode) {
+              forceDeleteMutation.mutate(deleteTarget.id)
+            } else {
+              deleteMutation.mutate(deleteTarget.id)
+            }
+          }
+        }}
+      />
     </div>
   )
 }

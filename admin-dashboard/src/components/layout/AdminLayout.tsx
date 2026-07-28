@@ -449,8 +449,9 @@ const AdminLayout: React.FC = () => {
       {/* ── Sidebar ────────────────────────────────────────────────────────── */}
       <aside
         className={`hidden lg:flex flex-col ${sidebarWidth} transition-all duration-300 ease-in-out
-                    bg-[hsl(222,47%,11%)] border-r border-white/5 relative z-20 flex-shrink-0`}
+                    bg-[hsl(222,47%,11%)] border-r border-white/5 relative z-50 flex-shrink-0`}
       >
+
         {/* Logo */}
         <div className="flex items-center h-16 px-4 border-b border-white/5 flex-shrink-0">
           {!collapsed ? (

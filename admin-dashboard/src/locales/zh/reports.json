@@ -206,5 +206,6 @@
     "movementTableSubtitle": "采购入库、销售出库、调拨及盘点调整实时审计日志",
     "warehouseSummaryTitle": "仓库运营概要",
     "warehouseSummarySubtitle": "各仓库库存总量、总估值及资产占比"
-  }
+  },
+  "toast": "Toast"
 }

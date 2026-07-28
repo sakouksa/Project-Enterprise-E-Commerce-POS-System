@@ -26,5 +26,8 @@
   "expiresAt": "到期日期",
   "createCoupon": "创建优惠券",
   "editCoupon": "编辑优惠券",
-  "generateCode": "生成代码"
+  "generateCode": "生成代码",
+  "marketing.campaigns": "Campaigns",
+  "marketing.coupons": "Coupons",
+  "marketing.referrals": "Referrals"
 }

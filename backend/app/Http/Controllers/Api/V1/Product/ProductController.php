@@ -253,22 +253,20 @@ class ProductController extends BaseApiController
             ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= products.low_stock_threshold')
             ->count();
 
-        $costValue = \App\Models\Product\Product::where('company_id', $companyId)
-            ->selectRaw('COALESCE(SUM(cost_price * (SELECT COALESCE(SUM(quantity), 10) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
-            ->value('val') ?? 0;
+        $costValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
+            ->selectRaw('COALESCE(SUM(cost_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
+            ->value('val') ?? 0);
 
-        $sellingValue = \App\Models\Product\Product::where('company_id', $companyId)
-            ->selectRaw('COALESCE(SUM(selling_price * (SELECT COALESCE(SUM(quantity), 10) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
-            ->value('val') ?? 0;
+        $sellingValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
+            ->selectRaw('COALESCE(SUM(selling_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
+            ->value('val') ?? 0);
 
-        if ($costValue == 0) $costValue = 185000;
-        if ($sellingValue == 0) $sellingValue = 275000;
         $potentialProfit = max(0, $sellingValue - $costValue);
 
-        $avgPrice = \App\Models\Product\Product::where('company_id', $companyId)->avg('selling_price') ?? 0;
-        $averageRating = \App\Models\Product\Product::where('company_id', $companyId)->avg('rating_avg') ?? 4.8;
-        $totalViews = \App\Models\Product\Product::where('company_id', $companyId)->sum('view_count') ?? 1420;
-        $totalSold = \App\Models\Product\Product::where('company_id', $companyId)->sum('sold_count') ?? 680;
+        $avgPrice = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('selling_price') ?? 0);
+        $averageRating = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('rating_avg') ?? 0);
+        $totalViews = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('view_count') ?? 0);
+        $totalSold = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('sold_count') ?? 0);
 
         $todayNew = \App\Models\Product\Product::where('company_id', $companyId)->whereDate('created_at', now()->today())->count();
         $productsOnSale = \App\Models\Product\Product::where('company_id', $companyId)->whereNotNull('compare_price')->count();
@@ -296,7 +294,7 @@ class ProductController extends BaseApiController
             'average_price'          => round($avgPrice, 2),
 
             'best_selling'           => (int) $totalSold,
-            'low_selling'            => 12,
+            'low_selling'            => 0,
             'most_viewed'            => (int) $totalViews,
             'average_rating'         => round($averageRating, 2),
 
@@ -312,7 +310,7 @@ class ProductController extends BaseApiController
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $headers = [
-            'Content-type'        => 'text/csv',
+            'Content-type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename=products_export_' . now()->format('Y-m-d') . '.csv',
             'Pragma'              => 'no-cache',
             'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
@@ -329,25 +327,55 @@ class ProductController extends BaseApiController
                 'Track Inventory', 'Low Stock Threshold', 'Status', 'Featured', 'Digital'
             ]);
 
-            $products = \App\Models\Product\Product::with(['category', 'brand', 'unit', 'tax'])->get();
+            $query = \App\Models\Product\Product::with(['category', 'brand', 'unit', 'tax']);
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('sku', 'like', "%{$search}%")
+                      ->orWhere('barcode', 'like', "%{$search}%");
+                });
+            }
+
+            if ($request->filled('status')) {
+                if ($request->status === 'deleted') {
+                    $query->onlyTrashed();
+                } else {
+                    $query->where('status', $request->status);
+                }
+            }
+
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            if ($request->filled('brand_id')) {
+                $query->where('brand_id', $request->brand_id);
+            }
+
+            $products = $query->latest()->get();
 
             foreach ($products as $prod) {
+                // Prevent Excel scientific notation for barcode (e.g. 8.88E+12)
+                $barcode = $prod->barcode ? '="' . $prod->barcode . '"' : '';
+
                 fputcsv($file, [
                     $prod->sku,
                     $prod->name,
                     $prod->slug,
-                    $prod->barcode ?? '',
+                    $barcode,
                     $prod->category?->name ?? '',
                     $prod->brand?->name ?? '',
                     $prod->unit?->name ?? '',
                     $prod->tax?->name ?? '',
-                    $prod->cost_price,
-                    $prod->selling_price,
-                    $prod->compare_price ?? '',
-                    $prod->weight ?? '',
-                    $prod->length ?? '',
-                    $prod->width ?? '',
-                    $prod->height ?? '',
+                    number_format((float) $prod->cost_price, 2, '.', ''),
+                    number_format((float) $prod->selling_price, 2, '.', ''),
+                    $prod->compare_price !== null ? number_format((float) $prod->compare_price, 2, '.', '') : '',
+                    $prod->weight !== null ? number_format((float) $prod->weight, 2, '.', '') : '',
+                    $prod->length !== null ? number_format((float) $prod->length, 2, '.', '') : '',
+                    $prod->width !== null ? number_format((float) $prod->width, 2, '.', '') : '',
+                    $prod->height !== null ? number_format((float) $prod->height, 2, '.', '') : '',
                     $prod->track_inventory ? '1' : '0',
                     $prod->low_stock_threshold,
                     $prod->status,
@@ -427,12 +455,15 @@ class ProductController extends BaseApiController
                 $taxId = \App\Models\Product\Tax::where('name', $taxName)->value('id');
             }
 
+            $rawBarcode = trim($data['barcode'] ?? '');
+            $barcode = trim(trim($rawBarcode, '="\''));
+
             \App\Models\Product\Product::create([
                 'company_id'          => $request->user()->company_id ?? 1,
                 'sku'                 => $sku,
                 'name'                => $name,
                 'slug'                => trim($data['slug'] ?? '') ?: \Illuminate\Support\Str::slug($name),
-                'barcode'             => trim($data['barcode'] ?? '') ?: null,
+                'barcode'             => $barcode ?: null,
                 'category_id'         => $catId,
                 'brand_id'            => $brandId,
                 'unit_id'             => $unitId,

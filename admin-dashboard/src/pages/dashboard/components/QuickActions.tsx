@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   ShoppingCart, ShoppingBag, Package, Users, Truck, 
-  Settings2, RefreshCw, BarChart2 
+  Settings2, RefreshCw, BarChart2, UserPlus, Monitor
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,56 +14,70 @@ export const QuickActions: React.FC = () => {
 
   const items = [
     {
-      label: t('nav.posTerminal', 'Create Sale'),
+      label: t('dashboard.createSale'),
       path: '/pos',
       icon: <ShoppingCart className="w-4 h-4 text-blue-500" />,
       permission: 'sale.create',
       color: 'hover:bg-blue-500/5 hover:border-blue-500/20'
     },
     {
-      label: t('purchases.createPO', 'Create Purchase'),
-      path: '/purchases',
-      icon: <ShoppingBag className="w-4 h-4 text-emerald-500" />,
-      permission: 'purchase.create',
+      label: t('dashboard.openPOS'),
+      path: '/pos',
+      icon: <Monitor className="w-4 h-4 text-emerald-500" />,
+      permission: 'sale.create',
       color: 'hover:bg-emerald-500/5 hover:border-emerald-500/20'
     },
     {
-      label: t('products.create', 'Add Product'),
-      path: '/products/create',
-      icon: <Package className="w-4 h-4 text-indigo-500" />,
-      permission: 'product.create',
+      label: t('dashboard.createPurchase'),
+      path: '/purchases',
+      icon: <ShoppingBag className="w-4 h-4 text-indigo-500" />,
+      permission: 'purchase.create',
       color: 'hover:bg-indigo-500/5 hover:border-indigo-500/20'
     },
     {
-      label: t('customers.create', 'Add Customer'),
-      path: '/customers',
-      icon: <Users className="w-4 h-4 text-purple-500" />,
-      permission: 'customer.create',
-      color: 'hover:bg-purple-500/5 hover:border-purple-500/20'
+      label: t('dashboard.addProduct'),
+      path: '/products/create',
+      icon: <Package className="w-4 h-4 text-violet-500" />,
+      permission: 'product.create',
+      color: 'hover:bg-violet-500/5 hover:border-violet-500/20'
     },
     {
-      label: t('suppliers.create', 'Add Supplier'),
-      path: '/suppliers',
-      icon: <Truck className="w-4 h-4 text-pink-500" />,
-      permission: 'supplier.create',
-      color: 'hover:bg-pink-500/5 hover:border-pink-500/20'
-    },
-    {
-      label: t('inventory.adjustments', 'Inventory Adjustment'),
-      path: '/inventory/adjustments',
+      label: t('dashboard.receiveStock'),
+      path: '/inventory',
       icon: <Settings2 className="w-4 h-4 text-amber-500" />,
       permission: 'inventory.edit',
       color: 'hover:bg-amber-500/5 hover:border-amber-500/20'
     },
     {
-      label: t('inventory.stock_transfer', 'Transfer Stock'),
+      label: t('dashboard.transferStock'),
       path: '/inventory/transfers',
       icon: <RefreshCw className="w-4 h-4 text-cyan-500" />,
       permission: 'inventory.edit',
       color: 'hover:bg-cyan-500/5 hover:border-cyan-500/20'
     },
     {
-      label: t('nav.reportsManagement', 'Generate Report'),
+      label: t('dashboard.createCustomer'),
+      path: '/customers',
+      icon: <Users className="w-4 h-4 text-purple-500" />,
+      permission: 'customer.create',
+      color: 'hover:bg-purple-500/5 hover:border-purple-500/20'
+    },
+    {
+      label: t('dashboard.createSupplier'),
+      path: '/suppliers',
+      icon: <Truck className="w-4 h-4 text-pink-500" />,
+      permission: 'supplier.create',
+      color: 'hover:bg-pink-500/5 hover:border-pink-500/20'
+    },
+    {
+      label: t('dashboard.addEmployee'),
+      path: '/employees',
+      icon: <UserPlus className="w-4 h-4 text-teal-500" />,
+      permission: 'employee.create',
+      color: 'hover:bg-teal-500/5 hover:border-teal-500/20'
+    },
+    {
+      label: t('dashboard.generateReport'),
       path: '/reports',
       icon: <BarChart2 className="w-4 h-4 text-slate-500" />,
       permission: 'reports.view',
@@ -76,16 +90,16 @@ export const QuickActions: React.FC = () => {
   return (
     <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
       <h3 className="font-bold text-sm text-foreground mb-4">
-        {t('common.quick_actions', 'Quick Actions')}
+        {t('dashboard.quickActions')}
       </h3>
       <div className="grid grid-cols-1 gap-2.5">
-        {allowedItems.map((item) => (
+        {allowedItems.map((item, idx) => (
           <button
-            key={item.path}
+            key={idx}
             onClick={() => navigate(item.path)}
-            className={`w-full p-3 rounded-xl border border-border/60 text-left flex items-center gap-3 transition-all duration-200 ${item.color}`}
+            className={`w-full p-2.5 rounded-xl border border-border/60 text-left flex items-center gap-3 transition-all duration-200 ${item.color}`}
           >
-            <span className="p-1.5 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="p-1.5 bg-muted/60 rounded-lg flex items-center justify-center flex-shrink-0">
               {item.icon}
             </span>
             <span className="text-xs font-bold text-foreground truncate">{item.label}</span>

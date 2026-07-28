@@ -107,44 +107,39 @@ export interface ChannelCredentials {
 }
 
 export interface NotificationSettings {
-  email_notify: boolean
-  telegram_notify: boolean
-  sms_notify: boolean
-  push_notify: boolean
-  browser_notify: boolean
-  sound_notify: boolean
-  desktop_notify?: boolean
-  websocket_notify?: boolean
-  slack_notify?: boolean
-  teams_notify?: boolean
-  discord_notify?: boolean
-  default_priority?: string
-  retention_days?: number
-  archive_after_days?: number
-  max_storage_mb?: number
-  smtp_status?: string
-  sender_name?: string
-  sender_email?: string
-  telegram_status?: string
-  sms_status?: string
-  push_status?: string
+  // General
+  enable_notifications: boolean
+  enable_desktop:       boolean
+  enable_sound:         boolean
+  language:             string
+  default_priority:     string
+  // Channels (flat booleans)
+  email:    boolean
+  push:     boolean
+  sms:      boolean
+  telegram: boolean
+  whatsapp: boolean
+  slack:    boolean
+  teams:    boolean
+  // Complex (JSON)
+  quiet_hours?: {
+    enabled:    boolean
+    start_time: string
+    end_time:   string
+    timezone:   string
+    repeat:     string
+  }
+  events?:            Record<string, boolean>
+  email_preferences?: Record<string, boolean>
+  // Metadata (read-only)
+  smtp_status?:      string
+  sender_name?:      string
+  sender_email?:     string
+  telegram_status?:  string
+  sms_status?:       string
+  push_status?:      string
   websocket_status?: string
-  slack_status?: string
-  teams_status?: string
-  discord_status?: string
-  jwt_validation?: boolean
-  permission_check?: boolean
-  role_check?: boolean
-  company_isolation?: boolean
-  branch_isolation?: boolean
-  position?: 'top_right' | 'bottom_right' | 'bottom_left' | 'top_left'
-  animation?: 'slide' | 'fade' | 'scale' | 'bounce'
-  duration_seconds?: number
-  theme?: 'glass' | 'dark' | 'light'
-  sound_volume?: number
-  sound_name?: 'chime' | 'bell' | 'pulse' | 'crystal' | 'subtle'
-  auto_refresh_sec?: number
-  channels_config?: Record<string, ChannelCredentials>
+  retention_days?:   number
 }
 
 export interface NotificationFilters {

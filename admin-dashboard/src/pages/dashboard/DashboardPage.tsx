@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { AlertCircle, RefreshCw, WifiOff } from 'lucide-react'
 import api from '@/api/client'
 
 // Subcomponents imports
@@ -11,56 +12,103 @@ import DashboardCharts from './components/DashboardCharts'
 import DashboardRow3 from './components/DashboardRow3'
 import DashboardRow4 from './components/DashboardRow4'
 import DashboardRow5 from './components/DashboardRow5'
-import DashboardRow6 from './components/DashboardRow6'
-import DashboardRow7 from './components/DashboardRow7'
-import DashboardRow8 from './components/DashboardRow8'
-import DashboardRow9 from './components/DashboardRow9'
-import DashboardRow10 from './components/DashboardRow10'
 import QuickActions from './components/QuickActions'
 import RecentActivities from './components/RecentActivities'
+import BusinessAlertsWidget from './components/BusinessAlertsWidget'
+import SystemHealthWidget from './components/SystemHealthWidget'
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation()
+  const [selectedBranchId, setSelectedBranchId] = useState<number | undefined>(undefined)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Real backend queries
-  const { data: statsRes, isLoading: statsLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: () => api.get('/dashboard/stats').then((r) => r.data.data),
+  // Real backend query for stats
+  const { 
+    data: statsRes, 
+    isLoading: statsLoading, 
+    isError: statsError,
+    refetch: refetchStats 
+  } = useQuery({
+    queryKey: ['dashboard-stats', selectedBranchId],
+    queryFn: () => api.get('/dashboard/stats', { params: { branch_id: selectedBranchId } }).then((r) => r.data.data),
+    staleTime: 30000,
   })
 
-  const { data: chartRes, isLoading: chartLoading } = useQuery({
-    queryKey: ['sales-chart'],
-    queryFn: () => api.get('/dashboard/sales-chart').then((r) => r.data.data),
+  // Real backend query for multi-dataset charts
+  const { 
+    data: chartsRes, 
+    isLoading: chartsLoading,
+    refetch: refetchCharts
+  } = useQuery({
+    queryKey: ['dashboard-charts', selectedBranchId],
+    queryFn: () => api.get('/dashboard/charts', { params: { branch_id: selectedBranchId } }).then((r) => r.data.data),
+    staleTime: 60000,
   })
 
-  const { data: topProducts } = useQuery({
+  // Real backend query for sales chart fallback
+  const { data: salesChartRes } = useQuery({
+    queryKey: ['sales-chart', selectedBranchId],
+    queryFn: () => api.get('/dashboard/sales-chart', { params: { branch_id: selectedBranchId } }).then((r) => r.data.data),
+    staleTime: 60000,
+  })
+
+  // Real backend query for operation panels
+  const { data: panelsRes, refetch: refetchPanels } = useQuery({
+    queryKey: ['dashboard-operation-panels'],
+    queryFn: () => api.get('/dashboard/operation-panels').then((r) => r.data.data),
+    staleTime: 30000,
+  })
+
+  // Real backend query for business alerts
+  const { data: alertsRes, isLoading: alertsLoading, refetch: refetchAlerts } = useQuery({
+    queryKey: ['dashboard-alerts'],
+    queryFn: () => api.get('/dashboard/alerts').then((r) => r.data.data),
+    staleTime: 30000,
+  })
+
+  // Real backend query for system health
+  const { data: healthRes, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
+    queryKey: ['dashboard-system-health'],
+    queryFn: () => api.get('/dashboard/system-health').then((r) => r.data.data),
+    staleTime: 60000,
+  })
+
+  // Legacy fallback queries
+  const { data: topProductsRes } = useQuery({
     queryKey: ['top-products'],
     queryFn: () => api.get('/dashboard/top-products').then((r) => r.data.data),
   })
 
-  const { data: recentOrders } = useQuery({
-    queryKey: ['recent-orders'],
-    queryFn: () => api.get('/dashboard/recent-orders').then((r) => r.data.data),
-  })
-
-  const { data: lowStock } = useQuery({
+  const { data: lowStockRes } = useQuery({
     queryKey: ['low-stock'],
     queryFn: () => api.get('/dashboard/low-stock').then((r) => r.data.data),
   })
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await Promise.all([
+      refetchStats(),
+      refetchCharts(),
+      refetchPanels(),
+      refetchAlerts(),
+      refetchHealth(),
+    ])
+    setIsRefreshing(false)
+  }
 
   const containerVariants = {
     initial: { opacity: 0 },
     animate: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08,
+        staggerChildren: 0.06,
       },
     },
   }
 
   const itemVariants = {
-    initial: { opacity: 0, y: 15 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+    initial: { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
   }
 
   return (
@@ -68,76 +116,95 @@ const DashboardPage: React.FC = () => {
       variants={containerVariants}
       initial="initial"
       animate="animate"
-      className="space-y-6 max-w-[1600px] mx-auto p-1.5"
+      className="space-y-6 max-w-[1700px] mx-auto p-2 sm:p-4"
     >
-      {/* Welcome & Branch selection */}
+      {/* Dashboard Top Header */}
       <motion.div variants={itemVariants}>
-        <DashboardHeader />
+        <DashboardHeader 
+          onBranchChange={(bId) => setSelectedBranchId(bId)}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
       </motion.div>
+
+      {/* Error state banner */}
+      {statsError && (
+        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between text-rose-700 dark:text-rose-400 text-xs font-bold">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            <span>{t('dashboard.errorLoading')}</span>
+          </div>
+          <button 
+            onClick={handleRefresh}
+            className="px-3 py-1 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors flex items-center gap-1"
+          >
+            <RefreshCw className="w-3 h-3" />
+            {t('dashboard.retry')}
+          </button>
+        </div>
+      )}
 
       {/* Primary Layout Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-        {/* Left side main content widgets (Row 1 to 10) */}
+        {/* Main Center Panel (3 columns on XL) */}
         <div className="xl:col-span-3 space-y-6">
-          {/* ROW 1: Gradient Stats Cards */}
+          {/* Business Alerts Feed Widget */}
+          <motion.div variants={itemVariants}>
+            <BusinessAlertsWidget alerts={alertsRes || []} isLoading={alertsLoading} />
+          </motion.div>
+
+          {/* 3 Rows of Real PostgreSQL Enterprise KPI Cards */}
           <motion.div variants={itemVariants}>
             <DashboardStats stats={statsRes} isLoading={statsLoading} />
           </motion.div>
 
-          {/* ROW 2: Primary Analytics Charts */}
+          {/* Primary Analytics Charts */}
           <motion.div variants={itemVariants}>
-            <DashboardCharts salesData={chartRes ?? []} />
+            <DashboardCharts 
+              salesData={salesChartRes || []} 
+              chartsData={chartsRes} 
+              isLoading={chartsLoading} 
+            />
           </motion.div>
 
-          {/* ROW 3: Top Selling, Recent Orders, Customers */}
+          {/* Row 3: Top Selling, Recent Orders, Latest Customers */}
           <motion.div variants={itemVariants}>
-            <DashboardRow3 topProducts={topProducts ?? []} recentOrders={recentOrders ?? []} />
+            <DashboardRow3 
+              topProducts={topProductsRes || []} 
+              recentOrders={panelsRes?.pending_orders || []}
+              latestCustomers={panelsRes?.latest_customers || []} 
+            />
           </motion.div>
 
-          {/* ROW 4: Inventory summary */}
+          {/* Row 4: Inventory & Warehouse Summary */}
           <motion.div variants={itemVariants}>
-            <DashboardRow4 lowStockList={lowStock ?? []} />
+            <DashboardRow4 
+              lowStockList={lowStockRes || []} 
+              stats={statsRes} 
+            />
           </motion.div>
 
-          {/* ROW 5: Finance details */}
+          {/* Row 5: Financial Metrics & Margins */}
           <motion.div variants={itemVariants}>
-            <DashboardRow5 />
+            <DashboardRow5 stats={statsRes} />
           </motion.div>
 
-          {/* ROW 6: Marketing promotions */}
+          {/* System Health Diagnostics Monitor */}
           <motion.div variants={itemVariants}>
-            <DashboardRow6 />
-          </motion.div>
-
-          {/* ROW 7: Customer analytics */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow7 />
-          </motion.div>
-
-          {/* ROW 8: Website traffic */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow8 />
-          </motion.div>
-
-          {/* ROW 9: Mobile App downloads */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow9 />
-          </motion.div>
-
-          {/* ROW 10: HR & Employee stats */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow10 />
+            <SystemHealthWidget healthData={healthRes} isLoading={healthLoading} />
           </motion.div>
         </div>
 
-        {/* Right side widgets (Quick Actions & Recent Activity) */}
+        {/* Right Sidebar Widgets (Quick Actions & Activity Timeline) */}
         <div className="space-y-6">
           <motion.div variants={itemVariants}>
             <QuickActions />
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <RecentActivities />
+            <RecentActivities 
+              activityLog={panelsRes?.activity_log || []} 
+            />
           </motion.div>
         </div>
       </div>

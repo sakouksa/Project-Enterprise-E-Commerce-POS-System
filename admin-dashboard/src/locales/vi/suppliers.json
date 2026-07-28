@@ -6,5 +6,7 @@
   "editSupplier": "Sửa nhà cung cấp",
   "supplierList": "Danh sách nhà cung cấp",
   "supplierName": "Tên nhà cung cấp",
-  "title": "Nhà cung cấp"
+  "title": "Nhà cung cấp",
+  "suppliers.addSupplier": "Add Supplier",
+  "suppliers.create": "Create"
 }

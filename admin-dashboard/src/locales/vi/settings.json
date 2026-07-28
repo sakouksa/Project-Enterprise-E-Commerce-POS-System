@@ -109,5 +109,7 @@
   },
   "subtitle": "Quản lý danh tính, tùy chọn cá nhân và bảo mật phiên làm việc.",
   "title": "Cài đặt & Hồ sơ",
-  "update_profile": "Cập nhật hồ sơ"
+  "update_profile": "Cập nhật hồ sơ",
+  "loading_specs": "Loading Specs",
+  "overview_tab": "Overview Tab"
 }

@@ -20,5 +20,13 @@
   "validationFailed": "การตรวจสอบข้อมูลล้มเหลว กรุณาตรวจสอบข้อมูลที่กรอก",
   "warning": "คำเตือน",
   "restored": "กู้คืน {{item}} สำเร็จแล้ว",
-  "permanentlyDeleted": "ลบ {{item}} ถาวรสำเร็จแล้ว"
+  "permanentlyDeleted": "ลบ {{item}} ถาวรสำเร็จแล้ว",
+  "archive": "Archive",
+  "cancel": "ยกเลิก",
+  "confirmDelete": "Confirmdelete",
+  "delete": "ลบ",
+  "deleteMessage": "Deletemessage",
+  "deleteTitle": "Deletetitle",
+  "prompt": "Prompt",
+  "title": "หัวข้อ"
 }

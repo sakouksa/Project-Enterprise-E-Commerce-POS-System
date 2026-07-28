@@ -302,9 +302,9 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
 
   // Size styling
   const sizeClasses = {
-    sm: 'px-2.5 py-1 text-xs rounded-xl h-[34px]',
-    md: 'px-3 py-1.5 text-xs rounded-xl h-[38px]',
-    lg: 'px-4 py-2 text-sm rounded-2xl h-[44px]',
+    sm: 'px-2.5 py-1 text-xs rounded-lg h-[34px] min-h-[35px] max-h-[30px] box-border',
+    md: 'px-3 py-2 text-sm rounded-lg h-[38px] min-h-[35px] max-h-[30px] box-border',
+    lg: 'px-4 py-2.5 text-sm rounded-xl h-[44px] min-h-[35px] max-h-[35px] box-border',
   }[size]
 
   const displayPlaceholder = placeholder || t('select.placeholder', 'Select option...')
@@ -318,7 +318,7 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
   return (
     <div ref={containerRef} className={`relative inline-block w-full ${className}`} onKeyDown={handleKeyDown}>
       {label && (
-        <label className="block text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground mb-1">
+        <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
@@ -348,17 +348,17 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
                 {selectedOption.slice(0, 3).map((opt) => (
                   <span
                     key={opt.value}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[11px] font-bold"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[11px] font-medium"
                   >
                     {opt.label}
                   </span>
                 ))}
                 {selectedOption.length > 3 && (
-                  <span className="text-[10px] font-bold text-muted-foreground">+{selectedOption.length - 3}</span>
+                  <span className="text-[10px] font-semibold text-muted-foreground">+{selectedOption.length - 3}</span>
                 )}
               </div>
             ) : (
-              <span className="text-muted-foreground font-medium truncate">{displayPlaceholder}</span>
+              <span className="text-muted-foreground font-normal text-sm truncate">{displayPlaceholder}</span>
             )
           ) : !multiple && selectedOption && !Array.isArray(selectedOption) ? (
             <div className="flex items-center gap-2 min-w-0 truncate">
@@ -368,7 +368,7 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
                 <span className="shrink-0">{selectedOption.icon}</span>
               ) : null}
               <div className="flex items-center gap-1.5 truncate">
-                <span className="font-extrabold text-foreground truncate">{selectedOption.label}</span>
+                <span className="font-normal text-sm text-foreground truncate">{selectedOption.label}</span>
                 {selectedOption.subtitle && (
                   <span className="text-[11px] text-muted-foreground truncate hidden sm:inline">
                     ({selectedOption.subtitle})
@@ -377,7 +377,7 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
               </div>
             </div>
           ) : (
-            <span className="text-muted-foreground font-medium truncate">{displayPlaceholder}</span>
+            <span className="text-muted-foreground font-normal text-sm truncate">{displayPlaceholder}</span>
           )}
         </div>
 

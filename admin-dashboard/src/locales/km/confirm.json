@@ -1,5 +1,8 @@
 {
   "confirmDelete": "បញ្ជាក់ការលុប",
   "deleteMessage": "តើអ្នកប្រាកដជាចង់លុបមុខទំនិញនេះមែនទេ?",
-  "deleteTitle": "បញ្ជាក់ការលុប"
+  "deleteTitle": "បញ្ជាក់ការលុប",
+  "confirm.confirmDelete": "Confirm Delete",
+  "confirm.deleteMessage": "Delete Message",
+  "confirm.deleteTitle": "Delete Title"
 }

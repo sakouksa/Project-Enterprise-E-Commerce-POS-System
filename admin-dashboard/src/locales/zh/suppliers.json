@@ -6,5 +6,7 @@
   "editSupplier": "编辑供应商信息",
   "supplierList": "供应商列表",
   "supplierName": "供应商名称",
-  "title": "供应商管理"
+  "title": "供应商管理",
+  "suppliers.addSupplier": "Add Supplier",
+  "suppliers.create": "Create"
 }

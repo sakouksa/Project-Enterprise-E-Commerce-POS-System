@@ -2,5 +2,9 @@
   "comment": "Comment",
   "product": "Product",
   "rating": "Rating",
-  "reviewer": "Reviewer"
+  "reviewer": "Reviewer",
+  "reviews.reviewer": "Reviewer",
+  "reviews.rating": "Rating",
+  "reviews.comment": "Comment",
+  "reviews.product": "Product"
 }

@@ -90,5 +90,8 @@
   "updated_at": "Record Updated",
   "upload_process": "Upload & Process",
   "view_detail": "View Detail Profile",
-  "working_days": "Working Days"
+  "working_days": "Working Days",
+  "employees.departments": "Departments",
+  "employees.top_employees": "Top Employees",
+  "employees.attendance_payroll": "Attendance Payroll"
 }

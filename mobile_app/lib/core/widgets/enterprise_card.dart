@@ -13,8 +13,8 @@ class EnterpriseCard extends StatelessWidget {
   const EnterpriseCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
-    this.margin = const EdgeInsets.only(bottom: 16),
+    this.padding = const EdgeInsets.all(18),
+    this.margin = const EdgeInsets.only(bottom: 12),
     this.onTap,
     this.isGlass = false,
     this.backgroundColor,
@@ -30,12 +30,12 @@ class EnterpriseCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: isGlass ? Colors.transparent : cardBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.04),
-            blurRadius: 16,
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -45,14 +45,14 @@ class EnterpriseCard extends StatelessWidget {
 
     if (isGlass) {
       cardContent = ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
               gradient: isDark ? AppColors.glassGradientDark : AppColors.glassGradientLight,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: borderColor, width: 1),
             ),
             child: child,
@@ -66,7 +66,7 @@ class EnterpriseCard extends StatelessWidget {
         margin: margin,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           child: cardContent,
         ),
       );

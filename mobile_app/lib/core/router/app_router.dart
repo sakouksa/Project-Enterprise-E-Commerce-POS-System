@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../storage/secure_storage.dart';
 import '../network/api_client.dart';
 import '../widgets/enterprise_bottom_nav.dart';
 
@@ -22,6 +21,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/product/presentation/product_list_screen.dart';
 import '../../features/purchase/presentation/purchase_list_screen.dart';
 import '../../features/sales/presentation/sales_list_screen.dart';
+import '../../features/sales/presentation/transactions_hub_screen.dart';
 import '../../features/customer/presentation/customer_list_screen.dart';
 import '../../features/supplier/presentation/supplier_list_screen.dart';
 import '../../features/employee/presentation/employee_list_screen.dart';
@@ -140,6 +140,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sales',
         builder: (context, state) => const SalesListScreen(),
+      ),
+      GoRoute(
+        path: '/transactions',
+        builder: (context, state) => const TransactionsHubScreen(),
       ),
       GoRoute(
         path: '/customers',

@@ -10,3 +10,6 @@ export { default as EmptyState }     from './EmptyState'
 export { default as LoadingSpinner } from './LoadingSpinner'
 export { default as EnterpriseSelect } from './EnterpriseSelect'
 export type { EnterpriseSelectOption, EnterpriseSelectProps } from './EnterpriseSelect'
+export { default as ToggleSwitch }     from './ToggleSwitch'
+export type { ToggleSwitchProps }       from './ToggleSwitch'
+

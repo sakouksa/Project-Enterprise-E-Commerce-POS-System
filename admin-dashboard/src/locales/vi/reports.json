@@ -71,5 +71,7 @@
       "jwtExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
       "permissionDenied": "Bạn không có quyền truy cập báo cáo này."
     }
-  }
+  },
+  "inventory": "Hàng tồn kho & Kho",
+  "toast": "Toast"
 }

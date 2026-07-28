@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/app_localization.dart';
 
 class ForgotPasswordBottomSheet extends ConsumerStatefulWidget {
@@ -38,9 +39,21 @@ class _ForgotPasswordBottomSheetState extends ConsumerState<ForgotPasswordBottom
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system && MediaQuery.of(context).platformBrightness == Brightness.dark);
+
+    final bg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryTextColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
         left: 24,
         right: 24,
         top: 24,
@@ -54,10 +67,10 @@ class _ForgotPasswordBottomSheetState extends ConsumerState<ForgotPasswordBottom
             children: [
               Text(
                 context.tr(ref, 'forgot_password_sheet_title'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
               ),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: Icon(Icons.close, color: secondaryTextColor),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -65,13 +78,14 @@ class _ForgotPasswordBottomSheetState extends ConsumerState<ForgotPasswordBottom
           const SizedBox(height: 16),
 
           if (_step == 1) ...[
-            Text(context.tr(ref, 'phone_or_username'), style: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 13)),
+            Text(context.tr(ref, 'phone_or_username'), style: TextStyle(color: secondaryTextColor, fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
               controller: _inputController,
+              style: TextStyle(color: textColor),
               decoration: InputDecoration(
                 hintText: context.tr(ref, 'enter_username'),
-                prefixIcon: const Icon(Icons.person_outline),
+                prefixIcon: Icon(Icons.person_outline, color: secondaryTextColor),
               ),
             ),
             const SizedBox(height: 24),
@@ -84,14 +98,14 @@ class _ForgotPasswordBottomSheetState extends ConsumerState<ForgotPasswordBottom
               ),
             ),
           ] else if (_step == 2) ...[
-            Text(context.tr(ref, 'enter_otp'), style: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 13)),
+            Text(context.tr(ref, 'enter_otp'), style: TextStyle(color: secondaryTextColor, fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
               controller: _otpController,
               keyboardType: TextInputType.number,
               maxLength: 6,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold, color: textColor),
               decoration: const InputDecoration(hintText: '• • • • • •'),
             ),
             const SizedBox(height: 24),
@@ -104,14 +118,15 @@ class _ForgotPasswordBottomSheetState extends ConsumerState<ForgotPasswordBottom
               ),
             ),
           ] else ...[
-            Text(context.tr(ref, 'new_password'), style: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 13)),
+            Text(context.tr(ref, 'new_password'), style: TextStyle(color: secondaryTextColor, fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
               controller: _newPasswordController,
               obscureText: true,
+              style: TextStyle(color: textColor),
               decoration: InputDecoration(
                 hintText: context.tr(ref, 'new_password'),
-                prefixIcon: const Icon(Icons.lock_outline),
+                prefixIcon: Icon(Icons.lock_outline, color: secondaryTextColor),
               ),
             ),
             const SizedBox(height: 24),
@@ -124,7 +139,6 @@ class _ForgotPasswordBottomSheetState extends ConsumerState<ForgotPasswordBottom
               ),
             ),
           ],
-          const SizedBox(height: 24),
         ],
       ),
     );

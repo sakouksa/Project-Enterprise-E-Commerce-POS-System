@@ -50,6 +50,8 @@ Route::prefix('v1')->group(function () {
         Route::post('login',             [AuthController::class, 'login']);
         Route::post('register',          [AuthController::class, 'register']);
         Route::post('refresh',           [AuthController::class, 'refresh']);
+        Route::post('forgot-password',   [AuthController::class, 'forgotPassword']);
+        Route::post('reset-password',    [AuthController::class, 'resetPassword']);
 
         Route::middleware('auth.jwt')->group(function () {
             Route::post('logout',             [AuthController::class, 'logout']);
@@ -77,11 +79,15 @@ Route::prefix('v1')->group(function () {
 
         // ─── Dashboard ────────────────────────────────────────────────────
         Route::prefix('dashboard')->group(function () {
-            Route::get('stats',        [DashboardController::class, 'stats']);
-            Route::get('sales-chart',  [DashboardController::class, 'salesChart']);
-            Route::get('top-products', [DashboardController::class, 'topProducts']);
-            Route::get('recent-orders',[DashboardController::class, 'recentOrders']);
-            Route::get('low-stock',    [DashboardController::class, 'lowStock']);
+            Route::get('stats',            [DashboardController::class, 'stats']);
+            Route::get('charts',           [DashboardController::class, 'charts']);
+            Route::get('operation-panels', [DashboardController::class, 'operationPanels']);
+            Route::get('alerts',           [DashboardController::class, 'alerts']);
+            Route::get('system-health',    [DashboardController::class, 'systemHealth']);
+            Route::get('sales-chart',      [DashboardController::class, 'salesChart']);
+            Route::get('top-products',     [DashboardController::class, 'topProducts']);
+            Route::get('recent-orders',    [DashboardController::class, 'recentOrders']);
+            Route::get('low-stock',        [DashboardController::class, 'lowStock']);
         });
 
         // ─── Company ───────────────────────────────────────────────────────

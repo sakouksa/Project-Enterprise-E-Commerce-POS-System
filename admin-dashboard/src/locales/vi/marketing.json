@@ -26,5 +26,8 @@
   "expiresAt": "Ngày hết hạn",
   "createCoupon": "Tạo phiếu mới",
   "editCoupon": "Sửa phiếu",
-  "generateCode": "Tạo mã"
+  "generateCode": "Tạo mã",
+  "marketing.campaigns": "Campaigns",
+  "marketing.coupons": "Coupons",
+  "marketing.referrals": "Referrals"
 }

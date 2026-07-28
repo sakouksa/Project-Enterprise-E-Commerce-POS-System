@@ -1,5 +1,8 @@
 {
   "confirmDelete": "Confirm Delete",
   "deleteMessage": "Delete Message",
-  "deleteTitle": "Delete Title"
+  "deleteTitle": "Delete Title",
+  "confirm.confirmDelete": "Confirm Delete",
+  "confirm.deleteMessage": "Delete Message",
+  "confirm.deleteTitle": "Delete Title"
 }

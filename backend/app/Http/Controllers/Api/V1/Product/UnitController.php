@@ -127,7 +127,7 @@ class UnitController extends BaseApiController
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $headers = [
-            'Content-type'        => 'text/csv',
+            'Content-type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename=units_export_' . now()->format('Y-m-d') . '.csv',
             'Pragma'              => 'no-cache',
             'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',

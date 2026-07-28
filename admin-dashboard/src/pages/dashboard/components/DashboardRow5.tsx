@@ -1,9 +1,28 @@
 import React from 'react'
-import { DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Percent } from 'lucide-react'
+import { DollarSign, Wallet, Percent } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
-export const DashboardRow5: React.FC = () => {
-  const { t } = useTranslation()
+interface DashboardRow5Props {
+  stats?: any
+}
+
+export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
+  const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(val || 0)
+  }
+
+  const sales = stats?.today_sales || 0
+  const expenses = stats?.today_expenses || 0
+  const grossProfit = stats?.gross_profit || 0
+  const netMargin = sales > 0 ? ((grossProfit - expenses) / sales) * 100 : 0
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -15,21 +34,15 @@ export const DashboardRow5: React.FC = () => {
         </h4>
         <div className="space-y-4">
           <div>
-            <span className="text-[11px] text-muted-foreground font-semibold">Incoming Cash</span>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.todayIncome')}</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-bold text-sm text-foreground">Rp 98.400.000</span>
-              <span className="text-[10px] text-green-500 font-bold flex items-center gap-0.5">
-                <ArrowUpRight className="w-3 h-3" /> +12.5%
-              </span>
+              <span className="font-bold text-sm text-foreground">{formatCurrency(stats?.today_income || sales)}</span>
             </div>
           </div>
           <div className="border-t border-border/20 pt-3">
-            <span className="text-[11px] text-muted-foreground font-semibold">Outgoing Expenses</span>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.todayExpenses')}</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-bold text-sm text-foreground">Rp 24,120,000</span>
-              <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5">
-                <ArrowDownRight className="w-3 h-3" /> +3.2%
-              </span>
+              <span className="font-bold text-sm text-foreground">{formatCurrency(expenses)}</span>
             </div>
           </div>
         </div>
@@ -43,32 +56,34 @@ export const DashboardRow5: React.FC = () => {
         </h4>
         <div className="space-y-4">
           <div>
-            <span className="text-[11px] text-muted-foreground font-semibold">Accounts Receivable (Customer Due)</span>
-            <h5 className="font-bold text-sm text-foreground mt-1">Rp 12.800.000</h5>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.pendingPayment')}</span>
+            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(stats?.pending_payments || 0)}</h5>
           </div>
           <div className="border-t border-border/20 pt-3">
-            <span className="text-[11px] text-muted-foreground font-semibold">Accounts Payable (Supplier Due)</span>
-            <h5 className="font-bold text-sm text-foreground mt-1">Rp 8.450.000</h5>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.pendingPurchase')}</span>
+            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(stats?.today_purchases || 0)}</h5>
           </div>
         </div>
       </div>
 
-      {/* Taxes & Net Margin */}
+      {/* Net Profit Margin */}
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Percent className="w-4 h-4 text-purple-500" />
-          {t('finance.taxes_margin', 'Taxes & Margins')}
+          {t('dashboard.profitTrend', 'Profit Margin Trend')}
         </h4>
         <div className="space-y-4">
           <div>
-            <span className="text-[11px] text-muted-foreground font-semibold">Accrued Tax Liability (VAT / GST)</span>
-            <h5 className="font-bold text-sm text-foreground mt-1">Rp 4.950.000</h5>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.grossProfit')}</span>
+            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(grossProfit)}</h5>
           </div>
           <div className="border-t border-border/20 pt-3">
-            <span className="text-[11px] text-muted-foreground font-semibold">Net Profit Margin</span>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.netProfit')}</span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="font-bold text-sm text-foreground">34.2%</span>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Healthy</span>
+              <span className="font-bold text-sm text-foreground">{netMargin.toFixed(1)}%</span>
+              <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                {netMargin >= 0 ? 'Positive' : 'Deficit'}
+              </span>
             </div>
           </div>
         </div>

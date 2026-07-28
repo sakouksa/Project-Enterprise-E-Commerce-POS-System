@@ -90,5 +90,8 @@
   "updated_at": "បានធ្វើបច្ចុប្បន្នភាពកំណត់ត្រា",
   "upload_process": "បង្ហោះ និងដំណើរការ",
   "view_detail": "មើលប្រវត្តិរូបលម្អិត",
-  "working_days": "ថ្ងៃធ្វើការ"
+  "working_days": "ថ្ងៃធ្វើការ",
+  "employees.departments": "Departments",
+  "employees.top_employees": "Top Employees",
+  "employees.attendance_payroll": "Attendance Payroll"
 }

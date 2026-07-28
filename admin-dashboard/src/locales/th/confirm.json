@@ -1,5 +1,8 @@
 {
   "confirmDelete": "ยืนยันการลบ",
   "deleteMessage": "คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?",
-  "deleteTitle": "ยืนยันการลบ"
+  "deleteTitle": "ยืนยันการลบ",
+  "confirm.confirmDelete": "Confirm Delete",
+  "confirm.deleteMessage": "Delete Message",
+  "confirm.deleteTitle": "Delete Title"
 }

@@ -3,5 +3,10 @@
   "create_expense": "New Expense",
   "expenses": "Expenses",
   "receivables_payables": "Receivables & Payables",
-  "taxes_margin": "Taxes & Margins"
+  "taxes_margin": "Taxes & Margins",
+  "finance.expenses": "Expenses",
+  "finance.receivables_payables": "Receivables Payables",
+  "finance.taxes_margin": "Taxes Margin",
+  "finance.cash_flow": "Cash Flow",
+  "finance.create_expense": "Create Expense"
 }

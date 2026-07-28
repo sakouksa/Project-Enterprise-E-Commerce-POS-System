@@ -13,9 +13,12 @@ class LoginRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $username = $this->input('username') ?? $this->input('identifier') ?? $this->input('email');
+        $password = $this->input('password');
+
         $this->merge([
-            'username' => trim($this->input('username', $this->input('identifier', $this->input('email', '')))),
-            'password' => $this->input('password', ''),
+            'username' => is_string($username) ? trim($username) : '',
+            'password' => is_string($password) ? $password : '',
         ]);
     }
 
@@ -23,7 +26,7 @@ class LoginRequest extends FormRequest
     {
         return [
             'username' => 'required|string|min:2|max:100',
-            'password' => 'required|string|min:6|max:128',
+            'password' => 'required|string|min:4|max:128',
             'remember' => 'sometimes|boolean',
         ];
     }
@@ -34,7 +37,7 @@ class LoginRequest extends FormRequest
             'username.required' => 'Username is required.',
             'username.min'      => 'Username must be at least 2 characters.',
             'password.required' => 'Password is required.',
-            'password.min'      => 'Password must be at least 6 characters.',
+            'password.min'      => 'Password must be at least 4 characters.',
         ];
     }
 }

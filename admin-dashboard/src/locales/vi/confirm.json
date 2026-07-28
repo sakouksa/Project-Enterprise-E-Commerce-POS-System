@@ -1,5 +1,8 @@
 {
   "confirmDelete": "Xác nhận xóa",
   "deleteMessage": "Bạn có chắc chắn muốn xóa mục này không?",
-  "deleteTitle": "Xác nhận xóa"
+  "deleteTitle": "Xác nhận xóa",
+  "confirm.confirmDelete": "Confirm Delete",
+  "confirm.deleteMessage": "Delete Message",
+  "confirm.deleteTitle": "Delete Title"
 }

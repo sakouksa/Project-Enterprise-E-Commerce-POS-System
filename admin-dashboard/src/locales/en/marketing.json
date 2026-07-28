@@ -26,5 +26,8 @@
   "expiresAt": "Expiration Date",
   "createCoupon": "Create Coupon",
   "editCoupon": "Edit Coupon",
-  "generateCode": "Generate Code"
+  "generateCode": "Generate Code",
+  "marketing.campaigns": "Campaigns",
+  "marketing.coupons": "Coupons",
+  "marketing.referrals": "Referrals"
 }

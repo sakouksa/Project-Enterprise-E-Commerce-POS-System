@@ -26,6 +26,21 @@ class JwtTokenService
     }
 
     /**
+     * Generate Token Pair (Access Token + Refresh Token)
+     */
+    public function generateTokenPair(User $user, bool $rememberDevice = false, ?array $clientInfo = null): array
+    {
+        $accessTokenData = $this->generateAccessToken($user);
+        $refreshToken = $this->createRefreshToken($user, $clientInfo);
+
+        return [
+            'access_token'  => $accessTokenData['token'],
+            'refresh_token' => $refreshToken,
+            'expires_in'    => $accessTokenData['ttl'],
+        ];
+    }
+
+    /**
      * Generate Access Token (JWT)
      */
     public function generateAccessToken(User $user): array

@@ -2,7 +2,12 @@
   "archive": "Archive",
   "cancel": "Cancel",
   "delete": "Confirm Delete",
-  "prompt": "Are you sure you want to delete this record?",
+  "prompt": "Are you sure you want to delete {{title}}?",
   "title": "Confirm Deletion",
-  "warning": "This action cannot be undone. You can restore it later from the recycle bin."
+  "warning": "This item will be moved to the Recycle Bin where it can be restored or permanently deleted.",
+  "deleteConfirm.warning": "This item will be moved to the Recycle Bin where it can be restored or permanently deleted.",
+  "deleteConfirm.title": "Confirm Deletion",
+  "deleteConfirm.prompt": "Are you sure you want to delete {{title}}?",
+  "deleteConfirm.cancel": "Cancel",
+  "deleteConfirm.delete": "Confirm Delete"
 }

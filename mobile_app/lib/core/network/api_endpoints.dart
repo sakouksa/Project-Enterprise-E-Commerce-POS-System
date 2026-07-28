@@ -1,5 +1,23 @@
+import 'package:flutter/foundation.dart';
+
 class ApiEndpoints {
-  static const String baseUrl = 'http://10.0.2.2:8000/api/v1'; // Default Android emulator host -> Laravel artisan serve
+  // Dynamic Host resolution: Chrome/Desktop uses localhost (127.0.0.1:8000), Android emulator uses 10.0.2.2:8000
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000/api/v1';
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:8000/api/v1';
+      case TargetPlatform.windows:
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.iOS:
+      default:
+        return 'http://127.0.0.1:8000/api/v1';
+    }
+  }
+
   static const String liveBaseUrl = 'http://127.0.0.1:8000/api/v1';
 
   // Auth

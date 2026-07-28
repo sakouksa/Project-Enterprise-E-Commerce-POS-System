@@ -14,9 +14,13 @@ class UpdateAttributeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'       => 'sometimes|required|string|max:100',
-            'type'       => 'sometimes|required|string|in:select,color,button,text',
-            'is_active'  => 'sometimes|boolean',
+            'name'                => 'sometimes|required|string|max:100',
+            'type'                => 'sometimes|required|string|in:select,color,button,text',
+            'is_active'           => 'sometimes|boolean',
+            'values'              => 'nullable|array',
+            'values.*.value'      => 'required|string|max:100',
+            'values.*.color_code' => 'nullable|string|max:50',
+            'values.*.sort_order' => 'nullable|integer',
         ];
     }
 }

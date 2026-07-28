@@ -63,7 +63,13 @@
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
   ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground; }
+  /* AntD Switch Custom Primary Theme Integration */
+  .ant-switch.ant-switch-checked {
+    background-color: hsl(var(--primary)) !important;
+  }
+  .ant-switch.ant-switch-checked:hover:not(.ant-switch-disabled) {
+    background-color: hsl(var(--primary) / 0.85) !important;
+  }
 }
 
 @layer components {

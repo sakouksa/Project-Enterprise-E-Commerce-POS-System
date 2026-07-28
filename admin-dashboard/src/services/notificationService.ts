@@ -28,8 +28,8 @@ export const notificationService = {
     return response.data.data
   },
 
-  getUnread: async (limit = 10): Promise<{ unread_count: number; data: NotificationItem[] }> => {
-    const response = await api.get('/notifications/unread', { params: { limit } })
+  getUnread: async (limit = 10, options?: { silent?: boolean }): Promise<{ unread_count: number; data: NotificationItem[] }> => {
+    const response = await api.get('/notifications/unread', { params: { limit }, ...(options?.silent ? { silent: true } : {}) } as any)
     return response.data
   },
 

@@ -20,5 +20,13 @@
   "validationFailed": "验证失败。请检查您的输入。",
   "warning": "警告",
   "restored": "{{item}} 恢复成功。",
-  "permanentlyDeleted": "{{item}} 永久删除成功。"
+  "permanentlyDeleted": "{{item}} 永久删除成功。",
+  "archive": "Archive",
+  "cancel": "取消",
+  "confirmDelete": "Confirmdelete",
+  "delete": "删除",
+  "deleteMessage": "Deletemessage",
+  "deleteTitle": "Deletetitle",
+  "prompt": "Prompt",
+  "title": "标题"
 }

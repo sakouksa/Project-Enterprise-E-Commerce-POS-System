@@ -109,5 +109,7 @@
   },
   "subtitle": "จัดการตัวตน ตั้งค่ากำหนดส่วนตัว และการรักษาความปลอดภัยเซสชัน",
   "title": "การตั้งค่าบัญชีและโปรไฟล์",
-  "update_profile": "อัปเดตข้อมูลผู้ใช้งาน"
+  "update_profile": "อัปเดตข้อมูลผู้ใช้งาน",
+  "loading_specs": "Loading Specs",
+  "overview_tab": "Overview Tab"
 }

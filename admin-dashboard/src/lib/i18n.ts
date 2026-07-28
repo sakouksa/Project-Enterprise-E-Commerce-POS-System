@@ -5,9 +5,9 @@ import { initReactI18next } from 'react-i18next'
 const locales = import.meta.glob('../locales/*/*.json')
 
 export const namespaces = [
-  'common', 'buttons', 'validation', 'messages', 'dashboard', 'products',
-  'inventory', 'customers', 'suppliers', 'sales', 'purchases', 'employees',
-  'settings', 'reports', 'auth', 'tables', 'forms', 'pagination', 'errors', 'empty',
+  'common', 'buttons', 'button', 'validation', 'messages', 'dashboard', 'products', 'product',
+  'inventory', 'customers', 'customer', 'suppliers', 'sales', 'purchases', 'purchase', 'employees', 'employee',
+  'settings', 'setting', 'reports', 'report', 'auth', 'tables', 'table', 'forms', 'form', 'pagination', 'errors', 'empty',
   'confirm', 'deleteConfirm', 'finance', 'logs', 'marketing', 'mobile',
   'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website'
 ]
@@ -70,6 +70,22 @@ export function translateString(text: string): string {
     const lead = text.match(/^\s*/)?.[0] || ''
     const trail = text.match(/\s*$/)?.[0] || ''
     return lead + activeLowerDict[lowerTrimmed] + trail
+  }
+
+  // Handle dotted keys like 'common.reset', 'button.add', 'table.id', 'pageContent.name'
+  if (trimmed.includes('.')) {
+    const parts = trimmed.split('.')
+    const lastPart = parts[parts.length - 1]
+    if (activeDict[lastPart]) {
+      const lead = text.match(/^\s*/)?.[0] || ''
+      const trail = text.match(/\s*$/)?.[0] || ''
+      return lead + activeDict[lastPart] + trail
+    }
+    if (activeLowerDict[lastPart.toLowerCase()]) {
+      const lead = text.match(/^\s*/)?.[0] || ''
+      const trail = text.match(/\s*$/)?.[0] || ''
+      return lead + activeLowerDict[lastPart.toLowerCase()] + trail
+    }
   }
 
   // ─── Pattern translation for standard database actions ───
@@ -155,6 +171,18 @@ export function translateString(text: string): string {
   return text
 }
 
+const namespaceAliases: Record<string, string> = {
+  button: 'buttons',
+  table: 'tables',
+  form: 'forms',
+  purchase: 'purchases',
+  product: 'products',
+  customer: 'customers',
+  employee: 'employees',
+  report: 'reports',
+  setting: 'settings',
+}
+
 export async function ensureLanguageLoaded(lng: string) {
   // Always load fallback language (en) as reference, plus requested language
   const langsToLoad = lng === 'en' ? ['en'] : ['en', lng]
@@ -164,11 +192,18 @@ export async function ensureLanguageLoaded(lng: string) {
       await Promise.all(
         namespaces.map(async (ns) => {
           if (i18n.hasResourceBundle(l, ns)) return
-          const key = `../locales/${l}/${ns}.json`
+          const targetNs = namespaceAliases[ns] || ns
+          const key = `../locales/${l}/${targetNs}.json`
           if (locales[key]) {
             try {
               const mod = await locales[key]() as { default: Record<string, any> }
               i18n.addResourceBundle(l, ns, mod.default, true, true)
+              // If plural namespace is loaded, also alias the singular namespace bundle
+              for (const [sing, plur] of Object.entries(namespaceAliases)) {
+                if (plur === ns) {
+                  i18n.addResourceBundle(l, sing, mod.default, true, true)
+                }
+              }
             } catch (err) {
               console.error(`Failed to load locale file: ${key}`, err)
             }
@@ -195,8 +230,11 @@ i18n
     },
     parseMissingKeyHandler: (key: string) => {
       if (!key) return key
+      if (activeDict[key]) return activeDict[key]
       const parts = key.split('.')
-      const rawTerm = parts[parts.length - 1].replace(/_/g, ' ')
+      const lastPart = parts[parts.length - 1]
+      if (activeDict[lastPart]) return activeDict[lastPart]
+      const rawTerm = lastPart.replace(/_/g, ' ')
       const formattedTerm = rawTerm.charAt(0).toUpperCase() + rawTerm.slice(1)
       return translateString(formattedTerm)
     },

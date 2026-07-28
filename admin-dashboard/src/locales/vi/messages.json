@@ -20,5 +20,13 @@
   "validationFailed": "Xác thực dữ liệu thất bại. Vui lòng kiểm tra lại thông tin nhập.",
   "warning": "Cảnh báo",
   "restored": "Đã khôi phục {{item}} thành công.",
-  "permanentlyDeleted": "Đã xóa {{item}} vĩnh viễn thành công."
+  "permanentlyDeleted": "Đã xóa {{item}} vĩnh viễn thành công.",
+  "archive": "Archive",
+  "cancel": "Hủy",
+  "confirmDelete": "Confirmdelete",
+  "delete": "Xóa",
+  "deleteMessage": "Deletemessage",
+  "deleteTitle": "Deletetitle",
+  "prompt": "Prompt",
+  "title": "Tiêu đề"
 }

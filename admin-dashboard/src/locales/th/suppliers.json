@@ -6,5 +6,7 @@
   "editSupplier": "แก้ไขข้อมูลผู้จัดจำหน่าย",
   "supplierList": "รายชื่อผู้จำหน่าย",
   "supplierName": "ชื่อผู้ผลิต/ผู้จัดจำหน่าย",
-  "title": "ผู้ผลิต/ผู้จัดจำหน่าย"
+  "title": "ผู้ผลิต/ผู้จัดจำหน่าย",
+  "suppliers.addSupplier": "Add Supplier",
+  "suppliers.create": "Create"
 }

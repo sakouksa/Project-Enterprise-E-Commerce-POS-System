@@ -14,10 +14,14 @@ class StoreAttributeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|integer|exists:companies,id',
-            'name'       => 'required|string|max:100',
-            'type'       => 'sometimes|required|string|in:select,color,button,text',
-            'is_active'  => 'sometimes|boolean',
+            'company_id'          => 'required|integer|exists:companies,id',
+            'name'                => 'required|string|max:100',
+            'type'                => 'sometimes|required|string|in:select,color,button,text',
+            'is_active'           => 'sometimes|boolean',
+            'values'              => 'nullable|array',
+            'values.*.value'      => 'required|string|max:100',
+            'values.*.color_code' => 'nullable|string|max:50',
+            'values.*.sort_order' => 'nullable|integer',
         ];
     }
 }

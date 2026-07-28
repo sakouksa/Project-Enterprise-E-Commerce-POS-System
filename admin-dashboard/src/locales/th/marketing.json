@@ -26,5 +26,8 @@
   "expiresAt": "วันที่หมดอายุ",
   "createCoupon": "สร้างคูปองใหม่",
   "editCoupon": "แก้ไขคูปอง",
-  "generateCode": "สร้างรหัส"
+  "generateCode": "สร้างรหัส",
+  "marketing.campaigns": "Campaigns",
+  "marketing.coupons": "Coupons",
+  "marketing.referrals": "Referrals"
 }

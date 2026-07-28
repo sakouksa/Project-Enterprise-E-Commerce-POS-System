@@ -1,8 +1,13 @@
 {
   "archive": "Lưu trữ",
-  "cancel": "Hủy",
-  "delete": "Xóa",
-  "prompt": "Gợi ý",
+  "cancel": "Hủy bỏ",
+  "delete": "Xác nhận xóa",
+  "prompt": "Bạn có chắc chắn muốn xóa {{title}} này không?",
   "title": "Xác nhận xóa",
-  "warning": "Cảnh báo: Hành động này không thể hoàn tác"
+  "warning": "Mục này sẽ được chuyển vào Thùng rác, nơi bạn có thể khôi phục hoặc xóa vĩnh viễn.",
+  "deleteConfirm.warning": "Mục này sẽ được chuyển vào Thùng rác, nơi bạn có thể khôi phục hoặc xóa vĩnh viễn.",
+  "deleteConfirm.title": "Xác nhận xóa",
+  "deleteConfirm.prompt": "Bạn có chắc chắn muốn xóa {{title}} này không?",
+  "deleteConfirm.cancel": "Hủy bỏ",
+  "deleteConfirm.delete": "Xác nhận xóa"
 }

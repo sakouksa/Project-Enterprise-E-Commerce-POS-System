@@ -6,5 +6,7 @@
   "editSupplier": "Edit Supplier",
   "supplierList": "Supplier List",
   "supplierName": "Supplier Name",
-  "title": "Suppliers"
+  "title": "Suppliers",
+  "suppliers.addSupplier": "Add Supplier",
+  "suppliers.create": "Create"
 }

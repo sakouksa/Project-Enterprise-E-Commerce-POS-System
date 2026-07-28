@@ -58,9 +58,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   fetchUnreadCount: async () => {
     try {
-      const res = await notificationService.getUnread(10)
+      const res = await notificationService.getUnread(10, { silent: true })
       const prevCount = get().unreadCount
-      const newCount = res.unread_count || 0
+      const newCount = res?.unread_count || 0
       
       // Play sound alert if new unread notification received
       if (newCount > prevCount && prevCount >= 0) {
@@ -68,8 +68,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       }
 
       set({ unreadCount: newCount })
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error)
+    } catch (error: any) {
+      if (error?.code === 'ERR_NETWORK' || !error?.response) {
+        console.warn('Failed to fetch unread count: Backend server unavailable or network disconnected.')
+      } else {
+        console.error('Failed to fetch unread count:', error?.message || error)
+      }
     }
   },
 

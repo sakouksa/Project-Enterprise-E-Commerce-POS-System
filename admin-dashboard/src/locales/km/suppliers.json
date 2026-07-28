@@ -6,5 +6,7 @@
   "editSupplier": "កែអ្នកផ្គត់ផ្គង់",
   "supplierList": "បញ្ជីអ្នកផ្គត់ផ្គង់",
   "supplierName": "ឈ្មោះអ្នកផ្គត់ផ្គង់",
-  "title": "អ្នកផ្គត់ផ្គង់"
+  "title": "អ្នកផ្គត់ផ្គង់",
+  "suppliers.addSupplier": "Add Supplier",
+  "suppliers.create": "Create"
 }

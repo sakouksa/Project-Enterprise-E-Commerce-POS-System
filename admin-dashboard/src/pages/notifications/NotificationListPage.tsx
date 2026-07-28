@@ -184,7 +184,7 @@ const NotificationListPage: React.FC = () => {
       sound.playSuccess()
       toast.success(t('common.success', 'Bulk operation completed!'))
       setSelectedRows([])
-      if (action === 'archive' || action === 'delete') {
+      if (action === 'archive') {
         setNotifications((prev) => prev.filter((n) => !targetIds.includes(n.id)))
         setTotal((prev) => Math.max(0, prev - targetIds.length))
       }

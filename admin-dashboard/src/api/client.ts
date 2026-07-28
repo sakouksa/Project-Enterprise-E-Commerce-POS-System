@@ -2,8 +2,21 @@ import axios, { type AxiosRequestConfig } from 'axios'
 import { notification } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  if (import.meta.env.DEV) {
+    return '/api/v1'
+  }
+  const hostname = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
+  return `http://${hostname}:8001/api/v1`
+}
+
+export const API_BASE_URL = getBaseURL()
+
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8001/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept':       'application/json',
@@ -34,7 +47,7 @@ const notifyOnce = (key: string, type: 'warning' | 'error' | 'info', title: stri
 
   notification[type]({
     key: `api_notification_${key}`,
-    message: title,
+    title: title,
     description: desc,
     placement: 'topRight',
     duration: 4,
@@ -93,9 +106,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
 
+    // If request specifies silent handling (e.g. background polling), skip toast notification
+    if ((originalRequest as any)?.silent) {
+      return Promise.reject(error)
+    }
+
     // If network error / offline
     if (!error.response) {
-      if (!navigator.onLine || error.code === 'ERR_NETWORK') {
+      if (!navigator.onLine) {
         notifyOnce('network', 'error', 'No Internet Connection', 'No internet connection. Please check your network.')
       } else if (error.code === 'ECONNABORTED') {
         notifyOnce('timeout', 'error', 'Request Timeout', 'The request timed out. Please try again.')
@@ -125,7 +143,6 @@ api.interceptors.response.use(
 
       originalRequest._retry = true
       isRefreshing = true
-
       const refreshToken = useAuthStore.getState().refreshToken
 
       if (!refreshToken) {
@@ -139,7 +156,7 @@ api.interceptors.response.use(
       }
 
       try {
-        const refreshResponse = await axios.post('http://127.0.0.1:8001/api/v1/auth/refresh', {
+        const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
           refresh_token: refreshToken,
         })
 

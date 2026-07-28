@@ -84,6 +84,9 @@ const ProductFormPage: React.FC = () => {
   const [newVariant, setNewVariant] = useState({ name: '', sku: '', cost_price: '', selling_price: '' })
   const [newAdjustment, setNewAdjustment] = useState({ warehouse_id: '', type: 'addition', quantity: '', reason: '' })
 
+  // Compact ModernSelect button class matching standard input height exactly (38px)
+  const compactSelectBtnClass = "font-normal text-sm border-border bg-card cursor-pointer"
+
   // ─── Queries ──────────────────────────────────────────────────────────────
   const { data: productDetail, isLoading: isLoadingDetail, refetch: refetchDetail } = useQuery({
     queryKey: ['product-detail-page', productId],
@@ -437,16 +440,16 @@ const ProductFormPage: React.FC = () => {
       />
 
       <PageHeader
-        title={isEdit ? `${t('products.editProduct', 'Edit Product')}: ${productDetail?.name}` : t('products.createProduct', 'Create Product')}
-        subtitle={t('products.formSubtitle', 'Fill in product details, pricing, SKU, and stock settings.')}
+        title={isEdit ? `${t('products.editProduct')}: ${productDetail?.name}` : t('products.createProduct')}
+        subtitle={t('products.formSubtitle')}
         action={
           <button
             onClick={() => navigate('/products')}
             className="flex items-center gap-1.5 px-3.5 py-2 text-sm text-muted-foreground border border-border
-                       rounded-lg hover:bg-muted transition-colors font-medium bg-card"
+                       rounded-lg hover:bg-muted transition-colors font-medium bg-card cursor-pointer"
           >
             <ArrowLeft size={15} />
-            {t('products.backToProducts', 'Back to Products')}
+            {t('products.backToProducts')}
           </button>
         }
       />
@@ -455,20 +458,20 @@ const ProductFormPage: React.FC = () => {
       {isEdit && (
         <div className="flex border-b border-border bg-card rounded-t-2xl px-4 overflow-x-auto gap-2 shadow-sm">
           {[
-            { id: 'general',      label: t('products.general', 'General'),           icon: <Layers size={14} /> },
-            { id: 'pricing',      label: t('products.pricing', 'Pricing'),           icon: <DollarSign size={14} /> },
-            { id: 'inventory',    label: t('products.inventory', 'Inventory'),       icon: <History size={14} /> },
-            { id: 'dimensions',   label: t('products.dimensions', 'Dimensions'),      icon: <Scale size={14} /> },
-            { id: 'seo',          label: t('products.seo', 'SEO'),                 icon: <Shield size={14} /> },
-            { id: 'images',       label: t('products.images', 'Images'),            icon: <ImageIcon size={14} /> },
-            { id: 'variants',     label: t('products.variants', 'Variants'),          icon: <Sparkles size={14} /> },
-            { id: 'tier_pricing', label: t('products.tierPricing', 'Tier Pricing'), icon: <Percent size={14} /> },
+            { id: 'general',      label: t('products.general'),      icon: <Layers size={14} /> },
+            { id: 'pricing',      label: t('products.pricing'),      icon: <DollarSign size={14} /> },
+            { id: 'inventory',    label: t('products.inventory'),    icon: <History size={14} /> },
+            { id: 'dimensions',   label: t('products.dimensions'),   icon: <Scale size={14} /> },
+            { id: 'seo',          label: t('products.seo'),          icon: <Shield size={14} /> },
+            { id: 'images',       label: t('products.images'),       icon: <ImageIcon size={14} /> },
+            { id: 'variants',     label: t('products.variants'),     icon: <Sparkles size={14} /> },
+            { id: 'tier_pricing', label: t('products.tierPricing'),  icon: <Percent size={14} /> },
           ].map(tab => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 -mb-[2px] transition-colors whitespace-nowrap
+              className={`flex items-center gap-2 py-4 px-4 text-sm font-semibold border-b-2 -mb-[2px] transition-colors whitespace-nowrap cursor-pointer
                           ${activeTab === tab.id
                             ? 'border-indigo-600 text-indigo-600 font-bold'
                             : 'border-transparent text-muted-foreground hover:text-foreground'}`}
@@ -486,7 +489,7 @@ const ProductFormPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                  Product Name <span className="text-red-500">*</span>
+                  {t('products.colName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={form.name}
@@ -507,7 +510,7 @@ const ProductFormPage: React.FC = () => {
                     className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw size={12} />
-                    Auto Generate
+                    {t('products.autoGenerate')}
                   </button>
                 </div>
                 <input
@@ -522,7 +525,7 @@ const ProductFormPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Barcode</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colBarcode')}</label>
                 <input
                   value={form.barcode}
                   onChange={e => setField('barcode', e.target.value)}
@@ -531,61 +534,65 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Category</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colCategory')}</label>
                 <ModernSelect
                   value={form.category_id}
                   onChange={(val) => setField('category_id', String(val))}
                   options={[
-                    { value: '', label: 'No Category' },
+                    { value: '', label: t('products.allCategories') },
                     ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
                   ]}
-                  placeholder="Select Category"
+                  placeholder={t('products.colCategory')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Brand</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colBrand')}</label>
                 <ModernSelect
                   value={form.brand_id}
                   onChange={(val) => setField('brand_id', String(val))}
                   options={[
-                    { value: '', label: 'No Brand' },
+                    { value: '', label: t('products.allBrands') },
                     ...(brands ?? []).map((b: any) => ({ value: b.id, label: b.name })),
                   ]}
-                  placeholder="Select Brand"
+                  placeholder={t('products.colBrand')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Unit</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colUnitName')}</label>
                 <ModernSelect
                   value={form.unit_id}
                   onChange={(val) => setField('unit_id', String(val))}
                   options={[
-                    { value: '', label: 'No Unit' },
+                    { value: '', label: t('products.allUnits') },
                     ...(units ?? []).map((u: any) => ({ value: u.id, label: `${u.name}${u.symbol ? ` (${u.symbol})` : ''}` })),
                   ]}
-                  placeholder="Select Unit"
+                  placeholder={t('products.colUnitName')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Tax Category</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.filterTax')}</label>
                 <ModernSelect
                   value={form.tax_id}
                   onChange={(val) => setField('tax_id', String(val))}
                   options={[
-                    { value: '', label: 'No Tax' },
-                    ...(taxes ?? []).map((t: any) => ({ value: t.id, label: `${t.name} (${Number(t.rate)}%)` })),
+                    { value: '', label: t('products.allTaxes') },
+                    ...(taxes ?? []).map((tItem: any) => ({ value: tItem.id, label: `${tItem.name} (${Number(tItem.rate)}%)` })),
                   ]}
-                  placeholder="Select Tax"
+                  placeholder={t('products.filterTax')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Cost Price ($)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colCostPrice')} ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -596,7 +603,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Selling Price ($) <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colSellingPrice')} ($) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   step="0.01"
@@ -608,7 +615,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Compare Price ($)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.comparePrice')} ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -622,7 +629,7 @@ const ProductFormPage: React.FC = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weight (kg)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.weight')} (kg)</label>
                 <input
                   type="number"
                   step="0.001"
@@ -633,7 +640,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Length (cm)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.length')} (cm)</label>
                 <input
                   type="number"
                   value={form.length}
@@ -643,7 +650,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Width (cm)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.width')} (cm)</label>
                 <input
                   type="number"
                   value={form.width}
@@ -653,7 +660,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Height (cm)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.height')} (cm)</label>
                 <input
                   type="number"
                   value={form.height}
@@ -666,7 +673,7 @@ const ProductFormPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Low Stock Threshold</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.lowStockThreshold')}</label>
                 <input
                   type="number"
                   value={form.low_stock_threshold}
@@ -675,17 +682,18 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Publish Status</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.publishStatus')}</label>
                 <ModernSelect
                   value={form.status}
                   onChange={(val) => setField('status', String(val))}
                   options={[
-                    { value: 'active', label: 'Active (Online)' },
-                    { value: 'inactive', label: 'Inactive' },
-                    { value: 'draft', label: 'Draft Folder' },
-                    { value: 'archived', label: 'Archived' },
+                    { value: 'active', label: t('products.active') },
+                    { value: 'inactive', label: t('products.inactive') },
+                    { value: 'draft', label: t('products.draft') },
+                    { value: 'archived', label: t('products.archived') },
                   ]}
-                  placeholder="Select Status"
+                  placeholder={t('products.publishStatus')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
             </div>
@@ -696,9 +704,9 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.track_inventory}
                   onChange={e => setField('track_inventory', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30 cursor-pointer"
                 />
-                <span className="text-sm font-semibold text-foreground">Track Stock Level</span>
+                <span className="text-sm font-semibold text-foreground">{t('products.trackStockLevel')}</span>
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -706,9 +714,9 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_featured}
                   onChange={e => setField('is_featured', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30 cursor-pointer"
                 />
-                <span className="text-sm font-semibold text-foreground">Featured Spotlight Listing</span>
+                <span className="text-sm font-semibold text-foreground">{t('products.featuredSpotlight')}</span>
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -716,14 +724,14 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_digital}
                   onChange={e => setField('is_digital', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30 cursor-pointer"
                 />
-                <span className="text-sm font-semibold text-foreground">Digital Product (No physical shipping)</span>
+                <span className="text-sm font-semibold text-foreground">{t('products.digitalProduct')}</span>
               </label>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Short Description</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.shortDescription')}</label>
               <input
                 value={form.short_description}
                 onChange={e => setField('short_description', e.target.value)}
@@ -733,7 +741,7 @@ const ProductFormPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Product Narrative Description</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.narrativeDescription')}</label>
               <textarea
                 value={form.description}
                 onChange={e => setField('description', e.target.value)}
@@ -747,17 +755,17 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/products')}
-                className="px-5 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted border border-border rounded-lg transition-colors"
+                className="px-5 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted border border-border rounded-lg transition-colors cursor-pointer"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                Create & Continue
+                {t('products.createProduct')}
               </button>
             </div>
           </form>
@@ -769,7 +777,7 @@ const ProductFormPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                  Product Name <span className="text-red-500">*</span>
+                  {t('products.colName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={form.name}
@@ -790,7 +798,7 @@ const ProductFormPage: React.FC = () => {
                     className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw size={12} />
-                    Auto Generate
+                    {t('products.autoGenerate')}
                   </button>
                 </div>
                 <input
@@ -805,7 +813,7 @@ const ProductFormPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Barcode</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colBarcode')}</label>
                 <input
                   value={form.barcode}
                   onChange={e => setField('barcode', e.target.value)}
@@ -814,70 +822,75 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Category</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colCategory')}</label>
                 <ModernSelect
                   value={form.category_id}
                   onChange={(val) => setField('category_id', String(val))}
                   options={[
-                    { value: '', label: 'No Category' },
+                    { value: '', label: t('products.noCategory') },
                     ...(categories ?? []).map((c: any) => ({ value: c.id, label: c.name })),
                   ]}
-                  placeholder="Select Category"
+                  placeholder={t('products.colCategory')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Brand</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colBrand')}</label>
                 <ModernSelect
                   value={form.brand_id}
                   onChange={(val) => setField('brand_id', String(val))}
                   options={[
-                    { value: '', label: 'No Brand' },
+                    { value: '', label: t('products.noBrand') },
                     ...(brands ?? []).map((b: any) => ({ value: b.id, label: b.name })),
                   ]}
-                  placeholder="Select Brand"
+                  placeholder={t('products.colBrand')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Unit</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colUnitName')}</label>
                 <ModernSelect
                   value={form.unit_id}
                   onChange={(val) => setField('unit_id', String(val))}
                   options={[
-                    { value: '', label: 'No Unit' },
+                    { value: '', label: t('products.noUnit') },
                     ...(units ?? []).map((u: any) => ({ value: u.id, label: `${u.name}${u.symbol ? ` (${u.symbol})` : ''}` })),
                   ]}
-                  placeholder="Select Unit"
+                  placeholder={t('products.colUnitName')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Tax Category</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.filterTax')}</label>
                 <ModernSelect
                   value={form.tax_id}
                   onChange={(val) => setField('tax_id', String(val))}
                   options={[
-                    { value: '', label: 'No Tax' },
-                    ...(taxes ?? []).map((t: any) => ({ value: t.id, label: `${t.name} (${Number(t.rate)}%)` })),
+                    { value: '', label: t('products.noTax') },
+                    ...(taxes ?? []).map((taxItem: any) => ({ value: taxItem.id, label: `${taxItem.name} (${Number(taxItem.rate)}%)` })),
                   ]}
-                  placeholder="Select Tax"
+                  placeholder={t('products.filterTax')}
+                  buttonClassName={compactSelectBtnClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Publish Status</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.publishStatus')}</label>
               <ModernSelect
                 value={form.status}
                 onChange={(val) => setField('status', String(val))}
                 options={[
-                  { value: 'active', label: 'Active (Online)' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'draft', label: 'Draft Folder' },
-                  { value: 'archived', label: 'Archived' },
+                  { value: 'active', label: t('products.active') },
+                  { value: 'inactive', label: t('products.inactive') },
+                  { value: 'draft', label: t('products.draft') },
+                  { value: 'archived', label: t('products.archived') },
                 ]}
-                placeholder="Select Status"
+                placeholder={t('products.publishStatus')}
+                buttonClassName={compactSelectBtnClass}
               />
             </div>
 
@@ -887,9 +900,9 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_featured}
                   onChange={e => setField('is_featured', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30 cursor-pointer"
                 />
-                <span className="text-sm font-semibold text-foreground">Featured Spotlight Listing</span>
+                <span className="text-sm font-semibold text-foreground">{t('products.featuredSpotlight')}</span>
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -897,14 +910,14 @@ const ProductFormPage: React.FC = () => {
                   type="checkbox"
                   checked={form.is_digital}
                   onChange={e => setField('is_digital', e.target.checked)}
-                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
+                  className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30 cursor-pointer"
                 />
-                <span className="text-sm font-semibold text-foreground">Digital Product (No physical shipping)</span>
+                <span className="text-sm font-semibold text-foreground">{t('products.digitalProduct')}</span>
               </label>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Short Description</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.shortDescription')}</label>
               <input
                 value={form.short_description}
                 onChange={e => setField('short_description', e.target.value)}
@@ -914,7 +927,7 @@ const ProductFormPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Product Narrative Description</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.narrativeDescription')}</label>
               <textarea
                 value={form.description}
                 onChange={e => setField('description', e.target.value)}
@@ -928,10 +941,10 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                Save General Info
+                {t('products.saveGeneralInfo')}
               </button>
             </div>
           </form>
@@ -942,7 +955,7 @@ const ProductFormPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Cost Price ($)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colCostPrice')} ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -953,7 +966,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Selling Price ($) *</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.colSellingPrice')} ($) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   step="0.01"
@@ -965,7 +978,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Compare Price ($)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.comparePrice')} ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -981,10 +994,10 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                Save Pricing
+                {t('products.savePricing')}
               </button>
             </div>
           </form>
@@ -994,20 +1007,20 @@ const ProductFormPage: React.FC = () => {
         {isEdit && activeTab === 'inventory' && productId && (
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4 bg-muted/10 p-5 rounded-2xl border border-border/60">
-              <h4 className="text-sm font-bold text-foreground">Stock Tracking Settings</h4>
+              <h4 className="text-sm font-bold text-foreground">{t('products.stockTrackingSettings')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <label className="flex items-center gap-3 cursor-pointer py-2">
                   <input
                     type="checkbox"
                     checked={form.track_inventory}
                     onChange={e => setField('track_inventory', e.target.checked)}
-                    className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30"
+                    className="w-4.5 h-4.5 rounded border-border text-indigo-600 focus:ring-indigo-600/30 cursor-pointer"
                   />
-                  <span className="text-sm font-semibold text-foreground">Track Stock Level</span>
+                  <span className="text-sm font-semibold text-foreground">{t('products.trackStockLevel')}</span>
                 </label>
 
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">Low Stock Threshold</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.lowStockThreshold')}</label>
                   <input
                     type="number"
                     value={form.low_stock_threshold}
@@ -1021,18 +1034,18 @@ const ProductFormPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={saveMutation.isPending}
-                  className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors"
+                  className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors cursor-pointer"
                 >
                   {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                  Save Settings
+                  {t('products.saveSettings')}
                 </button>
               </div>
             </form>
 
             <div className="space-y-3">
               <div>
-                <h4 className="text-base font-semibold text-foreground">Warehouse Stock Ledger</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Log custom warehouse addition or subtraction inventory adjustments.</p>
+                <h4 className="text-base font-semibold text-foreground">{t('products.warehouseStockLedger')}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('products.stockLedgerSub')}</p>
               </div>
 
               <form onSubmit={handleAddAdjustment} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
@@ -1040,44 +1053,46 @@ const ProductFormPage: React.FC = () => {
                   value={newAdjustment.warehouse_id}
                   onChange={(val) => setNewAdjustment({ ...newAdjustment, warehouse_id: String(val) })}
                   options={[
-                    { value: '', label: 'Choose Warehouse Location' },
+                    { value: '', label: t('products.chooseWarehouse') },
                     ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
                   ]}
-                  placeholder="Choose Warehouse Location"
+                  placeholder={t('products.chooseWarehouse')}
+                  buttonClassName={compactSelectBtnClass}
                 />
                 <ModernSelect
                   value={newAdjustment.type}
                   onChange={(val) => setNewAdjustment({ ...newAdjustment, type: String(val) })}
                   options={[
-                    { value: 'addition', label: 'Addition / Stock In (+)' },
-                    { value: 'subtraction', label: 'Reduction / Stock Out (-)' },
+                    { value: 'addition', label: t('products.addition') },
+                    { value: 'subtraction', label: t('products.subtraction') },
                   ]}
-                  placeholder="Adjustment Type"
+                  placeholder={t('products.adjustmentType')}
+                  buttonClassName={compactSelectBtnClass}
                 />
                 <input
                   type="number"
-                  placeholder="Quantity Count"
+                  placeholder={t('products.quantityCount')}
                   value={newAdjustment.quantity}
                   onChange={e => setNewAdjustment({ ...newAdjustment, quantity: e.target.value })}
                   className="form-input text-xs"
                   required
                 />
-                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
-                  Log Adjustment
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm cursor-pointer">
+                  {t('products.logAdjustment')}
                 </button>
               </form>
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground">Stock Movement History</h4>
+              <h4 className="text-sm font-semibold text-foreground">{t('products.stockMovementHistory')}</h4>
               <div className="border border-border rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full data-table text-xs">
                   <thead>
                     <tr className="border-b border-border bg-muted/20">
-                      <th className="text-left py-2.5 px-3">Logged Date</th>
-                      <th className="text-left py-2.5 px-3">Transaction</th>
-                      <th className="text-left py-2.5 px-3">Count Difference</th>
-                      <th className="text-left py-2.5 px-3">Reason</th>
+                      <th className="text-left py-2.5 px-3">{t('products.colLoggedDate')}</th>
+                      <th className="text-left py-2.5 px-3">{t('products.colTransaction')}</th>
+                      <th className="text-left py-2.5 px-3">{t('products.colCountDifference')}</th>
+                      <th className="text-left py-2.5 px-3">{t('products.colReason')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1112,7 +1127,7 @@ const ProductFormPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weight (kg)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.weight')} (kg)</label>
                 <input
                   type="number"
                   step="0.001"
@@ -1123,7 +1138,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Length (cm)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.length')} (cm)</label>
                 <input
                   type="number"
                   value={form.length}
@@ -1133,7 +1148,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Width (cm)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.width')} (cm)</label>
                 <input
                   type="number"
                   value={form.width}
@@ -1143,7 +1158,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Height (cm)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.height')} (cm)</label>
                 <input
                   type="number"
                   value={form.height}
@@ -1158,10 +1173,10 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                Save Dimensions
+                {t('products.saveDimensions')}
               </button>
             </div>
           </form>
@@ -1172,7 +1187,7 @@ const ProductFormPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Title (SEO)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.metaTitle')}</label>
                 <input
                   value={form.meta_title}
                   onChange={e => setField('meta_title', e.target.value)}
@@ -1181,7 +1196,7 @@ const ProductFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Keywords (SEO)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.metaKeywords')}</label>
                 <input
                   value={form.meta_keywords}
                   onChange={e => setField('meta_keywords', e.target.value)}
@@ -1192,7 +1207,7 @@ const ProductFormPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Meta Description (SEO)</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('products.metaDescription')}</label>
               <textarea
                 value={form.meta_description}
                 onChange={e => setField('meta_description', e.target.value)}
@@ -1206,10 +1221,10 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-primary text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {saveMutation.isPending && <Loader2 className="animate-spin" size={15} />}
-                Save SEO Settings
+                {t('products.saveSeoSettings')}
               </button>
             </div>
           </form>
@@ -1220,12 +1235,12 @@ const ProductFormPage: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-base font-semibold text-foreground">Photo Gallery</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Upload product images, set the catalog thumbnail, or sort ordering.</p>
+                <h4 className="text-base font-semibold text-foreground">{t('products.mediaGallery')}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('products.mediaGallerySub')}</p>
               </div>
               <label className="flex items-center gap-2 px-4 py-2 border border-border text-sm font-semibold rounded-lg hover:bg-muted transition-colors cursor-pointer bg-card">
                 <ImageIcon size={15} />
-                Upload Images
+                {t('products.uploadImages')}
                 <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageFileChange} />
               </label>
             </div>
@@ -1241,7 +1256,7 @@ const ProductFormPage: React.FC = () => {
             >
               <Upload className="text-muted-foreground/45 animate-pulse" size={32} />
               <p className="text-sm font-medium text-foreground">
-                Drag and drop your product images here, or <label className="text-indigo-600 hover:underline cursor-pointer">browse<input type="file" multiple accept="image/*" className="hidden" onChange={handleImageFileChange} /></label>
+                {t('products.dragDropText')}
               </p>
               <p className="text-xs text-muted-foreground">Supports JPG, PNG, WEBP up to 5MB</p>
             </div>
@@ -1255,7 +1270,7 @@ const ProductFormPage: React.FC = () => {
                     
                     {img.is_primary && (
                       <span className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
-                        Primary
+                        {t('products.primaryImage')}
                       </span>
                     )}
 
@@ -1265,8 +1280,8 @@ const ProductFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => updateImageMutation.mutate({ imgId: img.id, data: { is_primary: true } })}
-                          className="bg-indigo-600/90 text-white p-2 rounded-lg hover:bg-indigo-600 shadow transition-colors"
-                          title="Make Primary"
+                          className="bg-indigo-600/90 text-white p-2 rounded-lg hover:bg-indigo-600 shadow transition-colors cursor-pointer"
+                          title={t('products.setPrimary')}
                         >
                           <Star size={14} fill="currentColor" />
                         </button>
@@ -1274,8 +1289,8 @@ const ProductFormPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => deleteImageMutation.mutate({ productId: productId!, imgId: img.id })}
-                        className="bg-red-600/90 text-white p-2 rounded-lg hover:bg-red-600 shadow transition-colors"
-                        title="Delete Image"
+                        className="bg-red-600/90 text-white p-2 rounded-lg hover:bg-red-600 shadow transition-colors cursor-pointer"
+                        title={t('products.delete')}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1289,7 +1304,7 @@ const ProductFormPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => updateImageMutation.mutate({ imgId: img.id, data: { sort_order: Math.max(0, img.sort_order - 1) } })}
-                        className="p-1 border border-border rounded hover:bg-muted font-bold text-[10px]"
+                        className="p-1 border border-border rounded hover:bg-muted font-bold text-[10px] cursor-pointer"
                         title="Move Up"
                       >
                         ▲
@@ -1297,7 +1312,7 @@ const ProductFormPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => updateImageMutation.mutate({ imgId: img.id, data: { sort_order: img.sort_order + 1 } })}
-                        className="p-1 border border-border rounded hover:bg-muted font-bold text-[10px]"
+                        className="p-1 border border-border rounded hover:bg-muted font-bold text-[10px] cursor-pointer"
                         title="Move Down"
                       >
                         ▼
@@ -1322,14 +1337,14 @@ const ProductFormPage: React.FC = () => {
           <div className="space-y-6">
             <div className="space-y-3">
               <div>
-                <h4 className="text-base font-semibold text-foreground font-sans">Generate SKU Variants</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Create custom product variations (e.g. Red, XL, 128GB).</p>
+                <h4 className="text-base font-semibold text-foreground font-sans">{t('products.generateVariants')}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('products.variantsSub')}</p>
               </div>
 
               <form onSubmit={handleAddVariant} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
                 <input
                   type="text"
-                  placeholder="Variant Spec (e.g., Red, 128GB)"
+                  placeholder={t('products.variantName')}
                   value={newVariant.name}
                   onChange={e => setNewVariant({ ...newVariant, name: e.target.value })}
                   className="form-input text-xs"
@@ -1337,21 +1352,21 @@ const ProductFormPage: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Variant SKU Suffix"
+                  placeholder={t('products.variantSkuSuffix')}
                   value={newVariant.sku}
                   onChange={e => setNewVariant({ ...newVariant, sku: e.target.value })}
                   className="form-input text-xs font-mono"
                 />
                 <input
                   type="number"
-                  placeholder="Selling Price ($)"
+                  placeholder={`${t('products.colSellingPrice')} ($)`}
                   value={newVariant.selling_price}
                   onChange={e => setNewVariant({ ...newVariant, selling_price: e.target.value })}
                   className="form-input text-xs"
                   required
                 />
-                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
-                  Generate Variant SKU
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm cursor-pointer">
+                  {t('products.addVariant')}
                 </button>
               </form>
             </div>
@@ -1361,10 +1376,10 @@ const ProductFormPage: React.FC = () => {
               <table className="w-full data-table text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/10">
-                    <th className="text-left py-2.5 px-3">Variant Specification</th>
-                    <th className="text-left py-2.5 px-3">Derived SKU</th>
-                    <th className="text-left py-2.5 px-3">Price Rate</th>
-                    <th className="text-right py-2.5 px-3">Actions</th>
+                    <th className="text-left py-2.5 px-3">{t('products.colVariantSpec')}</th>
+                    <th className="text-left py-2.5 px-3">{t('products.colDerivedSku')}</th>
+                    <th className="text-left py-2.5 px-3">{t('products.colPriceRate')}</th>
+                    <th className="text-right py-2.5 px-3">{t('products.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1374,8 +1389,8 @@ const ProductFormPage: React.FC = () => {
                       <td className="py-2.5 px-3 text-muted-foreground font-mono">{v.sku}</td>
                       <td className="py-2.5 px-3 font-semibold font-mono">${Number(v.selling_price).toFixed(2)}</td>
                       <td className="py-2.5 px-3 text-right">
-                        <button type="button" onClick={() => deleteVariantMutation.mutate(v.id)} className="text-red-500 hover:text-red-700 font-semibold text-xs">
-                          Delete SKU
+                        <button type="button" onClick={() => deleteVariantMutation.mutate(v.id)} className="text-red-500 hover:text-red-700 font-semibold text-xs cursor-pointer">
+                          {t('products.delete')}
                         </button>
                       </td>
                     </tr>
@@ -1396,8 +1411,8 @@ const ProductFormPage: React.FC = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <div>
-                <h4 className="text-base font-semibold text-foreground font-sans">Multi-Tier Pricing Matrix</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Define discounts or bulk order parameters for wholesale and retail accounts.</p>
+                <h4 className="text-base font-semibold text-foreground font-sans">{t('products.tierPricing')}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('products.tierPricingSub')}</p>
               </div>
 
               <form onSubmit={handleAddTierPrice} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-muted/20 p-4 rounded-xl border border-border/60">
@@ -1405,15 +1420,15 @@ const ProductFormPage: React.FC = () => {
                   value={newTierPrice.price_type}
                   onChange={(val) => setNewTierPrice({ ...newTierPrice, price_type: String(val) })}
                   options={[
-                    { value: 'wholesale', label: 'Wholesale Discount' },
-                    { value: 'member', label: 'Exclusive Member Rate' },
-                    { value: 'retail', label: 'Special Retail Campaign' },
+                    { value: 'wholesale', label: t('products.wholesale') },
+                    { value: 'special', label: t('products.special') },
                   ]}
-                  placeholder="Price Type"
+                  placeholder={t('products.priceType')}
+                  buttonClassName={compactSelectBtnClass}
                 />
                 <input
                   type="number"
-                  placeholder="Min Quantity (e.g. 10)"
+                  placeholder={t('products.minQty')}
                   value={newTierPrice.min_qty}
                   onChange={e => setNewTierPrice({ ...newTierPrice, min_qty: e.target.value })}
                   className="form-input text-xs"
@@ -1422,42 +1437,42 @@ const ProductFormPage: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Tier Unit Price ($)"
+                  placeholder={`${t('products.colPrice')} ($)`}
                   value={newTierPrice.price}
                   onChange={e => setNewTierPrice({ ...newTierPrice, price: e.target.value })}
                   className="form-input text-xs"
                   required
                 />
-                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm">
-                  Add Pricing Rule
+                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-1.5 px-4 font-semibold text-xs transition-colors shadow-sm cursor-pointer">
+                  {t('products.addTierPrice')}
                 </button>
               </form>
 
               <table className="w-full data-table text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/10">
-                    <th className="text-left py-2.5 px-3">Price Classification</th>
-                    <th className="text-left py-2.5 px-3">Volume Condition</th>
-                    <th className="text-left py-2.5 px-3">Adjusted Rate</th>
-                    <th className="text-right py-2.5 px-3">Action</th>
+                    <th className="text-left py-2.5 px-3">{t('products.colPriceClass')}</th>
+                    <th className="text-left py-2.5 px-3">{t('products.colVolumeCond')}</th>
+                    <th className="text-left py-2.5 px-3">{t('products.colAdjustedRate')}</th>
+                    <th className="text-right py-2.5 px-3">{t('products.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {productDetail?.prices?.map((p: any) => (
                     <tr key={p.id} className="border-b border-border/40">
                       <td className="py-2.5 px-3 text-foreground font-semibold capitalize">{p.price_type}</td>
-                      <td className="py-2.5 px-3">{p.min_qty} items or more</td>
-                      <td className="py-2.5 px-3 font-mono font-bold">${Number(p.price).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-muted-foreground font-mono">≥ {p.min_qty} units</td>
+                      <td className="py-2.5 px-3 font-semibold font-mono">${Number(p.price).toFixed(2)}</td>
                       <td className="py-2.5 px-3 text-right">
-                        <button type="button" onClick={() => deletePriceMutation.mutate(p.id)} className="text-red-500 hover:text-red-700 font-semibold text-xs">
-                          Delete Rule
+                        <button type="button" onClick={() => deletePriceMutation.mutate(p.id)} className="text-red-500 hover:text-red-700 font-semibold text-xs cursor-pointer">
+                          {t('products.delete')}
                         </button>
                       </td>
                     </tr>
                   ))}
                   {(!productDetail?.prices || productDetail.prices.length === 0) && (
                     <tr>
-                      <td colSpan={4} className="text-center py-6 text-muted-foreground text-xs">No wholesale or volume rules have been defined yet.</td>
+                      <td colSpan={4} className="text-center py-6 text-muted-foreground text-xs">No tier pricing rules configured.</td>
                     </tr>
                   )}
                 </tbody>

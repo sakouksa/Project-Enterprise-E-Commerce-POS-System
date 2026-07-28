@@ -1,18 +1,22 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/security/permission_guard.dart';
 import '../../../core/security/biometric_service.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/widgets/state_widgets.dart';
 
-import 'widgets/password_strength_indicator.dart';
+import 'widgets/enterprise_text_field.dart';
 import 'widgets/forgot_password_bottom_sheet.dart';
-import 'widgets/error_dialog_card.dart';
+import 'widgets/contact_admin_sheet.dart';
+import 'widgets/terms_privacy_dialog.dart';
+import 'widgets/login_state_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -23,26 +27,31 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController(text: 'admin@enterprise-pos.com');
-  final _passwordController = TextEditingController(text: 'password');
+  final _usernameController = TextEditingController(text: 'admin_master');
+  final _passwordController = TextEditingController(text: 'Password@123');
 
   bool _isLoading = false;
+  bool _isSuccess = false;
   bool _obscurePassword = true;
-  bool _rememberMe = true;
+  bool _rememberDevice = true;
   bool _isOffline = false;
 
   final BiometricService _biometricService = BiometricService();
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 650),
     );
-    _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic);
+    _scaleAnimation = Tween<double>(begin: 0.97, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
+    );
     _animController.forward();
     _checkConnectivity();
   }
@@ -57,32 +66,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
   Future<void> _checkConnectivity() async {
     final connectivityResult = await Connectivity().checkConnectivity();
-    setState(() {
-      _isOffline = connectivityResult.contains(ConnectivityResult.none);
-    });
+    if (mounted) {
+      setState(() {
+        _isOffline = connectivityResult.contains(ConnectivityResult.none);
+      });
+    }
   }
 
   Future<void> _handleLogin() async {
     if (_isOffline) {
-      _showErrorDialog(
-        title: 'Offline Mode Active',
-        description: 'Cannot authenticate online while network is disconnected. Please connect to Wi-Fi/Mobile network or use Biometric login.',
+      _showLoginStateDialog(
+        stateType: LoginStateType.offlineMode,
+        title: 'Offline Connection Active',
+        message: 'Cannot perform online authentication while network is disconnected. Please connect to Wi-Fi/Cellular network or use Biometric Auth.',
       );
       return;
     }
 
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isSuccess = false;
+    });
 
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '/auth/login',
         data: {
-          'email': _usernameController.text.trim(),
           'username': _usernameController.text.trim(),
           'password': _passwordController.text,
+          'remember_device': _rememberDevice,
         },
       );
 
@@ -99,32 +114,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
         ref.read(permissionGuardProvider.notifier).state = PermissionGuard.fromUserMap(userMap);
 
         if (mounted) {
-          context.go('/home');
+          setState(() {
+            _isLoading = false;
+            _isSuccess = true;
+          });
+          await Future.delayed(const Duration(milliseconds: 400));
+          if (mounted) {
+            context.go('/home');
+          }
         }
       } else {
-        _showErrorDialog(
-          title: 'Authentication Failed',
-          description: response.data['message'] ?? 'Invalid username or password credentials.',
-        );
+        _handleLoginError(response.data['message'] ?? 'Authentication failed.');
       }
     } catch (e) {
-      // Fallback demo for development testing
+      // Development Fallback Authentication Engine
       final storage = ref.read(secureStorageProvider);
-      await storage.saveTokens(accessToken: 'mock_jwt_enterprise_token_12345');
+      await storage.saveTokens(accessToken: 'jwt_mock_enterprise_access_token_v1');
       await storage.saveUser({
-        'name': 'Super Admin',
-        'username': _usernameController.text,
+        'name': 'Senior Admin',
+        'username': _usernameController.text.trim(),
         'email': 'admin@enterprise-pos.com',
-        'roles': ['SuperAdmin'],
+        'company': 'Project-Enterprise-E-Commerce',
+        'branch': 'Headquarters Flagship Store',
+        'roles': ['SuperAdmin', 'POSManager'],
         'permissions': ['*'],
       });
+
       if (mounted) {
-        context.go('/home');
+        setState(() {
+          _isLoading = false;
+          _isSuccess = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 350));
+        if (mounted) {
+          context.go('/home');
+        }
       }
     } finally {
-      if (mounted) {
+      if (mounted && !_isSuccess) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  void _handleLoginError(String message) {
+    if (message.contains('disabled')) {
+      _showLoginStateDialog(
+        stateType: LoginStateType.userDisabled,
+        title: 'Account Disabled',
+        message: context.tr(ref, 'user_disabled'),
+      );
+    } else if (message.contains('locked')) {
+      _showLoginStateDialog(
+        stateType: LoginStateType.accountLocked,
+        title: 'Account Locked',
+        message: context.tr(ref, 'account_locked'),
+      );
+    } else if (message.contains('expired')) {
+      _showLoginStateDialog(
+        stateType: LoginStateType.passwordExpired,
+        title: 'Password Expired',
+        message: context.tr(ref, 'password_expired'),
+      );
+    } else {
+      _showLoginStateDialog(
+        stateType: LoginStateType.wrongCredentials,
+        title: 'Authentication Error',
+        message: message.isNotEmpty ? message : context.tr(ref, 'wrong_credentials'),
+      );
     }
   }
 
@@ -133,26 +190,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     if (!canAuth) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometrics hardware not available on this device.')),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text('Biometrics hardware not available or not configured.'),
+            ],
+          ),
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
       return;
     }
 
     final success = await _biometricService.authenticate(
-      localizedReason: 'Authenticate to access Enterprise POS Terminal',
+      localizedReason: 'Authenticate with Biometrics to access Enterprise ERP Terminal',
     );
     if (success && mounted) {
       context.go('/home');
     }
   }
 
-  void _showErrorDialog({required String title, required String description}) {
+  void _showLoginStateDialog({
+    required LoginStateType stateType,
+    required String title,
+    required String message,
+  }) {
+    final isDark = _isDarkMode(context);
     showDialog(
       context: context,
-      builder: (context) => ErrorDialogCard(
+      builder: (context) => LoginStateDialog(
+        stateType: stateType,
         title: title,
-        description: description,
-        onRetry: _handleLogin,
+        message: message,
+        isDark: isDark,
+        onPrimaryAction: () {},
       ),
     );
   }
@@ -161,401 +236,632 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => const ForgotPasswordBottomSheet(),
     );
+  }
+
+  void _openContactAdminSheet() {
+    final isDark = _isDarkMode(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ContactAdminSheet(isDark: isDark),
+    );
+  }
+
+  void _openTermsDialog(String title, String content) {
+    final isDark = _isDarkMode(context);
+    showDialog(
+      context: context,
+      builder: (context) => TermsPrivacyDialog(
+        title: title,
+        content: content,
+        isDark: isDark,
+      ),
+    );
+  }
+
+  bool _isDarkMode(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+    if (themeMode == ThemeMode.dark) return true;
+    if (themeMode == ThemeMode.light) return false;
+    return MediaQuery.of(context).platformBrightness == Brightness.dark;
   }
 
   @override
   Widget build(BuildContext context) {
     final currentLocale = ref.watch(localeProvider);
-    final bgColor = const Color(0xFFF8FAFC); // Pure clean light background
-    final cardBg = Colors.white;
-    final textColor = const Color(0xFF111827); // Dark text
-    final secondaryTextColor = const Color(0xFF6B7280); // Slate grey subtitle text
-    final inputFill = Colors.white; // White input field fill
-    final borderColor = const Color(0xFFE5E7EB); // Clean subtle border
+    final isDark = _isDarkMode(context);
+
+    final bgColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final cardBg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryTextColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Offline Status Bar if network disconnected
-            if (_isOffline)
-              OfflineStatusBar(
-                pendingCount: 0,
-                onSyncNow: _checkConnectivity,
-              ),
-
-            // Top Header Bar (Back button icon & Language pill)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(Icons.arrow_back_ios_new, size: 16, color: textColor),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              // COMPACT TOP HERO SHAPE BACKGROUND (22% Height)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: constraints.maxHeight * 0.22,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: isDark ? AppColors.heroDarkGradient : AppColors.heroGradient,
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.elliptical(400, 30),
                     ),
                   ),
-
-                  // Language Switcher Pill
-                  PopupMenuButton<String>(
-                    icon: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -30,
+                        right: -20,
+                        child: Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
-                        ],
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.language, color: secondaryTextColor, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            currentLocale.languageCode.toUpperCase(),
-                            style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
-                          Icon(Icons.keyboard_arrow_down, color: secondaryTextColor, size: 18),
-                        ],
-                      ),
-                    ),
-                    onSelected: (lang) {
-                      ref.read(localeProvider.notifier).state = Locale(lang);
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'en', child: Text('🇺🇸 English')),
-                      const PopupMenuItem(value: 'km', child: Text('🇰🇭 Khmer')),
-                      const PopupMenuItem(value: 'th', child: Text('🇹🇭 Thai')),
-                      const PopupMenuItem(value: 'vi', child: Text('🇻🇳 Vietnamese')),
-                      const PopupMenuItem(value: 'zh', child: Text('🇨🇳 Chinese')),
                     ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Main Content Body matching attached simple design
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const SizedBox(height: 12),
-
-                            // Main Title: "Log in"
-                            Text(
-                              'Log in',
-                              style: TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Subtitle
-                            Text(
-                              'Enter your email and password to securely access your account and manage your services.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: secondaryTextColor,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 36),
-
-                            // Username / Email Input Field
-                            TextFormField(
-                              controller: _usernameController,
-                              style: TextStyle(color: textColor),
-                              decoration: InputDecoration(
-                                hintText: 'Email address',
-                                hintStyle: TextStyle(color: secondaryTextColor.withOpacity(0.5)),
-                                filled: true,
-                                fillColor: inputFill,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                prefixIcon: Icon(Icons.mail_outline, color: secondaryTextColor, size: 20),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                                ),
-                              ),
-                              validator: (val) {
-                                if (val == null || val.trim().isEmpty) {
-                                  return context.tr(ref, 'username_required');
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Password Input Field
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              onChanged: (val) => setState(() {}),
-                              style: TextStyle(color: textColor),
-                              decoration: InputDecoration(
-                                hintText: 'Password',
-                                hintStyle: TextStyle(color: secondaryTextColor.withOpacity(0.5)),
-                                filled: true,
-                                fillColor: inputFill,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                prefixIcon: Icon(Icons.lock_outline, color: secondaryTextColor, size: 20),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    color: secondaryTextColor,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                                ),
-                              ),
-                              validator: (val) {
-                                if (val == null || val.isEmpty) {
-                                  return context.tr(ref, 'password_required');
-                                }
-                                return null;
-                              },
-                            ),
-
-                            // Password Strength Indicator Bar
-                            PasswordStrengthIndicator(password: _passwordController.text),
-                            const SizedBox(height: 16),
-
-                            // Options Row: Checkbox "Remember me" & "Forgot Password?"
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => setState(() => _rememberMe = !_rememberMe),
-                                      child: Container(
-                                        width: 20,
-                                        height: 20,
-                                        decoration: BoxDecoration(
-                                          color: _rememberMe ? AppColors.primary : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(
-                                            color: _rememberMe ? AppColors.primary : secondaryTextColor.withOpacity(0.4),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: _rememberMe ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Remember me',
-                                      style: TextStyle(color: secondaryTextColor, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                                GestureDetector(
-                                  onTap: _openForgotPasswordSheet,
-                                  child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 28),
-
-                            // Primary Action Button: Mint Emerald Green Pill Button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 54,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  elevation: 4,
-                                  shadowColor: AppColors.primary.withOpacity(0.3),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                                ),
-                                onPressed: (_isLoading || _isOffline) ? null : _handleLogin,
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
-                                    : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.auto_awesome, size: 18, color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Login',
-                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Or Continue With Account Divider
-                            Row(
-                              children: [
-                                Expanded(child: Divider(color: borderColor)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                  child: Text(
-                                    'Or Continue With Account',
-                                    style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                                  ),
-                                ),
-                                Expanded(child: Divider(color: borderColor)),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Circular Quick Action Buttons (Biometric, Scan QR, Guest Demo)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildSocialCircleButton(
-                                  icon: Icons.fingerprint,
-                                  color: AppColors.primary,
-                                  onTap: _handleBiometricLogin,
-                                  cardBg: cardBg,
-                                  borderColor: borderColor,
-                                ),
-                                const SizedBox(width: 20),
-                                _buildSocialCircleButton(
-                                  icon: Icons.qr_code_scanner,
-                                  color: AppColors.accent,
-                                  onTap: () {},
-                                  cardBg: cardBg,
-                                  borderColor: borderColor,
-                                ),
-                                const SizedBox(width: 20),
-                                _buildSocialCircleButton(
-                                  icon: Icons.flash_on,
-                                  color: AppColors.warning,
-                                  onTap: () {
-                                    _usernameController.text = 'admin@enterprise-pos.com';
-                                    _passwordController.text = 'password';
-                                    _handleLogin();
-                                  },
-                                  cardBg: cardBg,
-                                  borderColor: borderColor,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Bottom Link: Don't have an account? Contact Admin
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Don't have an account? ",
-                                  style: TextStyle(color: secondaryTextColor, fontSize: 13),
-                                ),
-                                GestureDetector(
-                                  onTap: () {},
-                                  child: const Text(
-                                    "Contact Admin",
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+
+              // MAIN CONTENT
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Offline Alert Banner
+                    if (_isOffline)
+                      OfflineStatusBar(
+                        pendingCount: 0,
+                        onSyncNow: _checkConnectivity,
+                      ),
+
+                    // Top Action Bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // App Branding Tag
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.security, color: Colors.white, size: 12),
+                                SizedBox(width: 4),
+                                Text(
+                                  'ERP SECURE POS',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Top Controls (Theme Mode & Language Dropdown)
+                          Row(
+                            children: [
+                              IconButton(
+                                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                                padding: EdgeInsets.zero,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.white.withValues(alpha: 0.18),
+                                  shape: const CircleBorder(),
+                                ),
+                                icon: Icon(
+                                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                onPressed: () {
+                                  ref.read(themeModeProvider.notifier).state =
+                                      isDark ? ThemeMode.light : ThemeMode.dark;
+                                },
+                              ),
+                              const SizedBox(width: 6),
+
+                              PopupMenuButton<String>(
+                                icon: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.language, color: Colors.white, size: 13),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        currentLocale.languageCode.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 14),
+                                    ],
+                                  ),
+                                ),
+                                onSelected: (lang) {
+                                  ref.read(localeProvider.notifier).state = Locale(lang);
+                                },
+                                itemBuilder: (context) => const [
+                                  PopupMenuItem(value: 'en', child: Text('🇺🇸 English')),
+                                  PopupMenuItem(value: 'km', child: Text('🇰🇭 Khmer')),
+                                  PopupMenuItem(value: 'th', child: Text('🇹🇭 Thai')),
+                                  PopupMenuItem(value: 'vi', child: Text('🇻🇳 Vietnamese')),
+                                  PopupMenuItem(value: 'zh', child: Text('🇨🇳 Chinese')),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // CENTER CONTENT (Fit 100% on screen)
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 420),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // TOP EMBLEM ICON
+                                    Container(
+                                      width: 46,
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: AppColors.primaryGradient,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.primary.withValues(alpha: 0.35),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.storefront_rounded,
+                                        size: 24,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    // FLOATING CARD (No overlapping text!)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(18),
+                                          decoration: BoxDecoration(
+                                            color: cardBg.withValues(alpha: isDark ? 0.94 : 0.98),
+                                            borderRadius: BorderRadius.circular(24),
+                                            border: Border.all(
+                                              color: borderColor.withValues(alpha: isDark ? 0.6 : 0.8),
+                                              width: 1.1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                                                blurRadius: 20,
+                                                spreadRadius: 2,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Form(
+                                            key: _formKey,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                // Card Header Title (Clean contrast, non-overlapping)
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      context.tr(ref, 'company_title'),
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: textColor,
+                                                        letterSpacing: -0.3,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      context.tr(ref, 'welcome_back'),
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: secondaryTextColor,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+
+                                                const SizedBox(height: 14),
+
+                                                // USERNAME INPUT FIELD
+                                                EnterpriseTextField(
+                                                  controller: _usernameController,
+                                                  label: context.tr(ref, 'username'),
+                                                  hint: context.tr(ref, 'enter_username'),
+                                                  leadingIcon: Icons.person_outline_rounded,
+                                                  isDark: isDark,
+                                                  validator: (val) {
+                                                    if (val == null || val.trim().isEmpty) {
+                                                      return context.tr(ref, 'username_required');
+                                                    }
+                                                    if (val.trim().length < 3) {
+                                                      return context.tr(ref, 'username_too_short');
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 10),
+
+                                                // PASSWORD INPUT FIELD
+                                                EnterpriseTextField(
+                                                  controller: _passwordController,
+                                                  label: context.tr(ref, 'password'),
+                                                  hint: context.tr(ref, 'enter_password'),
+                                                  leadingIcon: Icons.lock_outline_rounded,
+                                                  obscureText: _obscurePassword,
+                                                  isDark: isDark,
+                                                  onChanged: (val) => setState(() {}),
+                                                  suffixIcon: IconButton(
+                                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                                    padding: EdgeInsets.zero,
+                                                    icon: Icon(
+                                                      _obscurePassword
+                                                          ? Icons.visibility_off_outlined
+                                                          : Icons.visibility_outlined,
+                                                      color: secondaryTextColor,
+                                                      size: 18,
+                                                    ),
+                                                    onPressed: () =>
+                                                        setState(() => _obscurePassword = !_obscurePassword),
+                                                  ),
+                                                  validator: (val) {
+                                                    if (val == null || val.isEmpty) {
+                                                      return context.tr(ref, 'password_required');
+                                                    }
+                                                    if (val.length < 6) {
+                                                      return context.tr(ref, 'password_too_short');
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 10),
+
+                                                // OPTIONS ROW (Remember Device & Forgot Password)
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () => setState(() => _rememberDevice = !_rememberDevice),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.symmetric(vertical: 2),
+                                                        child: Row(
+                                                          children: [
+                                                            AnimatedContainer(
+                                                              duration: const Duration(milliseconds: 180),
+                                                              width: 18,
+                                                              height: 18,
+                                                              decoration: BoxDecoration(
+                                                                color: _rememberDevice ? AppColors.primary : Colors.transparent,
+                                                                borderRadius: BorderRadius.circular(5),
+                                                                border: Border.all(
+                                                                  color: _rememberDevice
+                                                                      ? AppColors.primary
+                                                                      : secondaryTextColor.withValues(alpha: 0.4),
+                                                                  width: 1.4,
+                                                                ),
+                                                              ),
+                                                              child: _rememberDevice
+                                                                  ? const Icon(Icons.check, size: 12, color: Colors.white)
+                                                                  : null,
+                                                            ),
+                                                            const SizedBox(width: 6),
+                                                            Text(
+                                                              context.tr(ref, 'remember_device'),
+                                                              style: TextStyle(
+                                                                color: secondaryTextColor,
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+
+                                                    GestureDetector(
+                                                      onTap: _openForgotPasswordSheet,
+                                                      child: Text(
+                                                        context.tr(ref, 'forgot_password'),
+                                                        style: const TextStyle(
+                                                          color: AppColors.primary,
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+
+                                                const SizedBox(height: 16),
+
+                                                // PRIMARY SIGN IN BUTTON (48px Height)
+                                                SizedBox(
+                                                  height: 48,
+                                                  child: ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.transparent,
+                                                      shadowColor: AppColors.primary.withValues(alpha: 0.35),
+                                                      elevation: 4,
+                                                      padding: EdgeInsets.zero,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(14),
+                                                      ),
+                                                    ),
+                                                    onPressed: (_isLoading || _isSuccess || _isOffline)
+                                                        ? null
+                                                        : _handleLogin,
+                                                    child: Ink(
+                                                      decoration: BoxDecoration(
+                                                        gradient: AppColors.primaryGradient,
+                                                        borderRadius: BorderRadius.circular(14),
+                                                      ),
+                                                      child: Center(
+                                                        child: _isLoading
+                                                            ? Row(
+                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                children: [
+                                                                  const SizedBox(
+                                                                    width: 18,
+                                                                    height: 18,
+                                                                    child: CircularProgressIndicator(
+                                                                      color: Colors.white,
+                                                                      strokeWidth: 2.2,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(width: 10),
+                                                                  Text(
+                                                                    context.tr(ref, 'signing_in'),
+                                                                    style: const TextStyle(
+                                                                      fontSize: 15,
+                                                                      fontWeight: FontWeight.bold,
+                                                                      color: Colors.white,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              )
+                                                            : _isSuccess
+                                                                ? Row(
+                                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                                    children: [
+                                                                      const Icon(Icons.check_circle_rounded,
+                                                                          color: Colors.white, size: 20),
+                                                                      const SizedBox(width: 6),
+                                                                      Text(
+                                                                        context.tr(ref, 'login_success'),
+                                                                        style: const TextStyle(
+                                                                          fontSize: 15,
+                                                                          fontWeight: FontWeight.bold,
+                                                                          color: Colors.white,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  )
+                                                                : Row(
+                                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                                    children: [
+                                                                      const Icon(Icons.lock_open_rounded,
+                                                                          size: 18, color: Colors.white),
+                                                                      const SizedBox(width: 8),
+                                                                      Text(
+                                                                        context.tr(ref, 'login').toUpperCase(),
+                                                                        style: const TextStyle(
+                                                                          fontSize: 14,
+                                                                          fontWeight: FontWeight.bold,
+                                                                          letterSpacing: 0.4,
+                                                                          color: Colors.white,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                const SizedBox(height: 12),
+
+                                                // QUICK ACTION BUTTONS
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    _buildQuickActionButton(
+                                                      icon: Icons.fingerprint_rounded,
+                                                      label: context.tr(ref, 'biometric_login'),
+                                                      color: AppColors.primary,
+                                                      onTap: _handleBiometricLogin,
+                                                      borderColor: borderColor,
+                                                      textColor: textColor,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    _buildQuickActionButton(
+                                                      icon: Icons.bolt_rounded,
+                                                      label: context.tr(ref, 'guest_demo'),
+                                                      color: AppColors.warning,
+                                                      onTap: () {
+                                                        _usernameController.text = 'admin_master';
+                                                        _passwordController.text = 'Password@123';
+                                                        _handleLogin();
+                                                      },
+                                                      borderColor: borderColor,
+                                                      textColor: textColor,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 14),
+
+                                    // UNDER LOGIN LINKS (Contact Admin, Privacy & Terms)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: _openContactAdminSheet,
+                                          child: Text(
+                                            context.tr(ref, 'contact_admin'),
+                                            style: const TextStyle(
+                                              color: AppColors.primary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          child: Text('•', style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () => _openTermsDialog(
+                                            context.tr(ref, 'privacy_policy'),
+                                            'This enterprise mobile application collects authentication telemetry, session data, and transaction logs strictly to protect user accounts and enforce enterprise RBAC access control.',
+                                          ),
+                                          child: Text(
+                                            context.tr(ref, 'privacy_policy'),
+                                            style: TextStyle(color: secondaryTextColor, fontSize: 12),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          child: Text('•', style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () => _openTermsDialog(
+                                            context.tr(ref, 'terms_of_service'),
+                                            'Authorized enterprise use only. All POS operations, inventory modifications, and user logins are audited in realtime by the Enterprise ERP Core Server.',
+                                          ),
+                                          child: Text(
+                                            context.tr(ref, 'terms_of_service'),
+                                            style: TextStyle(color: secondaryTextColor, fontSize: 12),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    // VERSION & COPYRIGHT
+                                    Text(
+                                      '${context.tr(ref, 'version')}  |  ${context.tr(ref, 'copyright')}',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: secondaryTextColor.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSocialCircleButton({
+  Widget _buildQuickActionButton({
     required IconData icon,
+    required String label,
     required Color color,
     required VoidCallback onTap,
-    required Color cardBg,
     required Color borderColor,
+    required Color textColor,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        width: 50,
-        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: cardBg,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
             ),
           ],
-        ),
-        child: Center(
-          child: Icon(icon, color: color, size: 22),
         ),
       ),
     );

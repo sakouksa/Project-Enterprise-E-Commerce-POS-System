@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
-import { Plus, Heart, Info, Sparkles, Tag, Layers, AlertTriangle } from 'lucide-react'
+import { Plus, Heart, Sparkles, Tag, Layers } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Product } from '../types'
 import { sound } from '@/utils/sound'
+import { getAbsoluteImageUrl } from '@/utils/image'
 
 interface POSProductCardProps {
   product: Product
@@ -18,20 +20,18 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
   isFavorite,
   onToggleFavorite,
 }) => {
+  const { t } = useTranslation(['pos', 'common'])
   const [imgError, setImgError] = useState(false)
 
-  // Resolve product image
   const fallbackImg = 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80'
 
   const getImageUrl = (): string => {
     if (imgError) return fallbackImg
-    if (typeof product.primary_image === 'string' && product.primary_image) return product.primary_image
-    if (typeof product.primary_image === 'object' && product.primary_image?.url) return product.primary_image.url
-    if (product.images && product.images.length > 0 && product.images[0]?.url) return product.images[0].url
-    return fallbackImg
+    const url = getAbsoluteImageUrl(product.primary_image || (product.images && product.images[0]))
+    return url || fallbackImg
   }
 
-  const stock = product.stock ?? 50
+  const stock = (product.stock !== undefined && product.stock !== null) ? Number(product.stock) : 0
   const isOutOfStock = stock <= 0
   const isLowStock = stock > 0 && stock <= (product.low_stock_threshold ?? 5)
   const imageUrl = getImageUrl()
@@ -39,6 +39,9 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
   const handleAddClick = () => {
     if (isOutOfStock) {
       sound.playError()
+    } else if (product.has_variants) {
+      sound.playClick()
+      onOpenDetails(product)
     } else {
       sound.playSuccess()
       onAddToCart(product)
@@ -55,17 +58,17 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
         <div className="flex flex-wrap gap-1">
           {product.compare_price && product.compare_price > product.selling_price && (
             <span className="px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[9px] font-black uppercase flex items-center gap-0.5 shadow-xs">
-              <Tag size={10} /> Sale
+              <Tag size={10} /> {t('sale', 'Sale')}
             </span>
           )}
           {product.is_featured && (
             <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-white text-[9px] font-black uppercase flex items-center gap-0.5 shadow-xs">
-              <Sparkles size={10} /> Featured
+              <Sparkles size={10} /> {t('featured', 'Featured')}
             </span>
           )}
           {product.has_variants && (
             <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-[9px] font-extrabold flex items-center gap-0.5">
-              <Layers size={10} /> Variants
+              <Layers size={10} /> {t('variants', 'Variants')}
             </span>
           )}
         </div>
@@ -81,7 +84,7 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
               ? 'text-rose-500 bg-rose-500/10'
               : 'text-muted-foreground hover:text-rose-500 hover:bg-muted'
           }`}
-          title="Toggle Favorite"
+          title={t('toggleFavorite', 'Toggle Favorite')}
         >
           <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
@@ -106,15 +109,15 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
         <div className="absolute bottom-2 left-2 z-10">
           {isOutOfStock ? (
             <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white font-extrabold text-[10px] shadow-sm">
-              Out of Stock
+              {t('outOfStock', 'Out of Stock')}
             </span>
           ) : isLowStock ? (
             <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white font-extrabold text-[10px] shadow-sm">
-              Low: {stock} left
+              {t('lowStockLeft', `Low: ${stock} left`, { stock })}
             </span>
           ) : (
             <span className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white font-mono text-[10px]">
-              Stock: {stock}
+              {t('stockCount', `Stock: ${stock}`, { stock })}
             </span>
           )}
         </div>
@@ -132,7 +135,7 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
           {product.name}
         </h4>
         <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-          <span>SKU: {product.sku}</span>
+          <span>{t('sku', 'SKU:')} {product.sku}</span>
           {product.category && <span className="font-sans font-medium text-[10px] bg-muted px-1.5 py-0.2 rounded truncate max-w-[80px]">{product.category.name}</span>}
         </div>
       </div>
@@ -154,10 +157,10 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
           onClick={handleAddClick}
           disabled={isOutOfStock}
           className="btn-primary p-2 rounded-xl text-xs flex items-center justify-center gap-1 shadow-xs hover:scale-105 active:scale-95 transition-all disabled:opacity-40 cursor-pointer"
-          title="Quick Add to Cart"
+          title={t('quickAddToCart', 'Quick Add to Cart')}
         >
           <Plus size={15} />
-          <span className="font-bold hidden sm:inline text-[11px]">Add</span>
+          <span className="font-bold hidden sm:inline text-[11px]">{t('add', 'Add')}</span>
         </button>
       </div>
     </div>

@@ -18,10 +18,10 @@ class TaxController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
-        $allowedSorts = ['name', 'rate', 'type', 'is_active', 'created_at'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'created_at';
+        $allowedSorts = ['id', 'name', 'rate', 'type', 'is_active', 'created_at'];
+        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
         $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
 
         $query = \App\Models\Product\Tax::when($request->status === 'deleted', function ($q) {

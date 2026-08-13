@@ -16,6 +16,8 @@ import EmptyState from '@/components/shared/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
@@ -31,7 +33,7 @@ interface Tax {
 }
 
 const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
-  const { t, i18n } = useTranslation()
+  const { t, i18n } = useTranslation(['products', 'common'])
   const qc = useQueryClient()
   const toast = useToast()
 
@@ -57,6 +59,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   const [deleteTarget, setDeleteTarget] = useState<Tax | null>(null)
   const [recycleBinMode, setRecycleBinMode] = useState(false)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
 
   // CSV Import Modal
   const [importOpen, setImportOpen] = useState(false)
@@ -70,7 +73,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   const [isActive, setIsActive] = useState(true)
 
   // Sorting states
-  const [sortBy, setSortBy] = useState('created_at')
+  const [sortBy, setSortBy] = useState('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   const handleSort = (field: string) => {
@@ -78,7 +81,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrder('asc')
+      setSortOrder('desc')
     }
     setPage(1)
   }
@@ -175,6 +178,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.deleted'))
       setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error'))
@@ -254,8 +258,10 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   }
 
   const handleExport = () => {
+    const infoId = toast.info(t('products.toast.exportDownloading', 'Downloading CSV export...'))
     api.get('/taxes/export', { responseType: 'blob' })
       .then(res => {
+        if (infoId) toast.dismiss(infoId)
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -265,9 +271,12 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
         link.click()
         link.remove()
         window.URL.revokeObjectURL(url)
-        toast.success(t('toast.exportSuccess'))
+        toast.success(t('products.toast.exportSuccess', 'CSV exported successfully.'))
       })
-      .catch(() => toast.error(t('toast.exportError')))
+      .catch(() => {
+        if (infoId) toast.dismiss(infoId)
+        toast.error(t('products.toast.exportError', 'Failed to export.'))
+      })
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending
@@ -322,7 +331,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => bulkDeleteMutation.mutate(selectedRows)}
+              onClick={() => setBulkDeleteConfirmOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500 cursor-pointer"
             >
               <Trash size={13} />
@@ -435,22 +444,10 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                       </span>
                     </td>
                     <td className="text-right pr-4">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => openEditModal(tax)}
-                          className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          title={t('products.edit')}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(tax)}
-                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
-                          title={t('products.delete')}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      <TableActionMenu
+                        onEdit={() => openEditModal(tax)}
+                        onDelete={() => setDeleteTarget(tax)}
+                      />
                     </td>
                   </tr>
                 ))
@@ -500,7 +497,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    placeholder="e.g. VAT 11%, GST"
+                    placeholder={t('forms.taxNamePlaceholder', 'e.g. VAT 11%, GST')}
                     className="form-input"
                   />
                 </div>
@@ -627,13 +624,20 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       </AnimatePresence>
 
       {/* Unified Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        isOpen={!!deleteTarget}
-        title={t('products.tabTaxes')}
-        itemName={deleteTarget?.name || ''}
-        isPending={deleteMutation.isPending || forceDeleteMutation.isPending}
-        onCancel={() => setDeleteTarget(null)}
-        onSoftDelete={() => {
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t('taxes.deleteTitle', 'Delete Tax Rule')}
+        message={
+          <div>
+            <div>{t('taxes.confirmDeleteTaxMessage', 'Are you sure you want to delete tax rule')}</div>
+            <div className="mt-1">
+              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
+            </div>
+          </div>
+        }
+        confirmText={t('taxes.deleteTitle', 'Delete Tax Rule')}
+        cancelText={t('common.cancel', 'Cancel')}
+        onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {
               forceDeleteMutation.mutate(deleteTarget.id)
@@ -642,6 +646,24 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
             }
           }
         }}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleteMutation.isPending || forceDeleteMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('taxes.bulkDeleteTitle', 'Delete Selected Taxes')}
+        message={t('taxes.confirmBulkDeleteMessage', {
+          count: selectedRows.length,
+          defaultValue: `Are you sure you want to delete ${selectedRows.length} selected taxes? This action cannot be undone.`
+        }).replace('{{count}}', String(selectedRows.length))}
+        confirmText={t('products.deleteSelected', 'Delete Selected')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
+        variant="danger"
       />
     </div>
   )

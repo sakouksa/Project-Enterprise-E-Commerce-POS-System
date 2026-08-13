@@ -4,6 +4,7 @@ import { Menu, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import HeaderSearch from './HeaderSearch'
 import HeaderActions from './HeaderActions'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -12,6 +13,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { t } = useTranslation()
   const location = useLocation()
+  const { navbar } = useThemeStore()
 
   // Generate dynamic breadcrumbs based on active route path
   const pathSegments = location.pathname.split('/').filter(Boolean)
@@ -86,24 +88,51 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     }
   }
 
+  const customTextColor = navbar?.textColor
+
+  const shadowClass =
+    navbar?.shadow === 'none'
+      ? 'shadow-none'
+      : navbar?.shadow === 'lg'
+      ? 'shadow-lg'
+      : navbar?.shadow === 'md'
+      ? 'shadow-md'
+      : 'shadow-sm'
+
   return (
-    <header className="h-[72px] sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 bg-white/70 dark:bg-slate-900/70 border-b border-border/40 backdrop-blur-md transition-all duration-300">
+    <header
+      style={{
+        backgroundColor: navbar?.bgColor || undefined,
+        color: navbar?.textColor || undefined,
+        borderColor: navbar?.borderColor || undefined,
+        height: navbar?.height ? `${navbar.height}px` : undefined,
+        opacity: navbar?.transparency !== undefined ? navbar.transparency : 1,
+      }}
+      className={`sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 border-b backdrop-blur-md transition-all duration-300 ${shadowClass} ${
+        !navbar?.bgColor ? 'bg-white/70 dark:bg-slate-900/70 border-border/40' : ''
+      }`}
+    >
       {/* Left side actions */}
       <div className="flex items-center gap-4 min-w-0">
         {/* Toggle button */}
         <button
           onClick={onToggleSidebar}
-          className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors flex-shrink-0"
+          style={{ color: customTextColor || undefined }}
+          className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 opacity-90 hover:opacity-100 rounded-lg transition-all flex-shrink-0"
           title={t('common.toggle_sidebar', 'Toggle Sidebar')}
         >
           <Menu size={20} />
         </button>
 
         {/* Dynamic breadcrumb */}
-        <nav className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground font-semibold min-w-0 truncate">
+        <nav
+          style={{ color: customTextColor || undefined }}
+          className="hidden md:flex items-center gap-1.5 text-xs font-semibold min-w-0 truncate opacity-90"
+        >
           <Link
             to="/dashboard"
-            className="hover:text-foreground transition-colors"
+            style={{ color: customTextColor || undefined }}
+            className="hover:opacity-100 transition-opacity"
           >
             {t('Dashboard', 'Dashboard')}
           </Link>
@@ -118,13 +147,19 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
             return (
               <React.Fragment key={idx}>
-                <ChevronRight size={12} className="opacity-50 flex-shrink-0" />
+                <ChevronRight size={12} className="opacity-60 flex-shrink-0" />
                 {isLast ? (
-                  <span className="text-foreground truncate max-w-[120px] font-bold">{label}</span>
+                  <span
+                    style={{ color: customTextColor || undefined }}
+                    className="truncate max-w-[140px] font-bold opacity-100"
+                  >
+                    {label}
+                  </span>
                 ) : (
                   <Link
                     to={path}
-                    className="hover:text-foreground transition-colors truncate max-w-[100px]"
+                    style={{ color: customTextColor || undefined }}
+                    className="hover:opacity-100 transition-opacity truncate max-w-[100px]"
                   >
                     {label}
                   </Link>

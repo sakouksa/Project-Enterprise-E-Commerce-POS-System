@@ -145,4 +145,18 @@ class PurchaseReturnController extends BaseApiController
             return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
+
+    /**
+     * POST /api/v1/purchase-returns/bulk-delete
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array']);
+        try {
+            $count = $this->service->bulkDelete($request->ids);
+            return $this->successResponse(['count' => $count], "{$count} purchase returns deleted successfully");
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), null, 400);
+        }
+    }
 }

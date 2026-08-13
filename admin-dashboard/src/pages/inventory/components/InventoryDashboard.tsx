@@ -9,36 +9,23 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-interface InventoryDashboardProps {
-  stats: {
-    summary: {
-      total_items: number
-      total_qty: number
-      available_qty: number
-      reserved_qty: number
-      low_stock: number
-      out_of_stock: number
-      overstock: number
-      warehouses: number
-      inventory_cost: number
-      inventory_value: number
-      profit_potential: number
-      turnover_rate: number
-    }
-    charts: {
-      by_warehouse: Array<{ name: string; value: number }>
-      by_category: Array<{ name: string; value: number }>
-      by_brand: Array<{ name: string; value: number }>
-      monthly_movement: Array<{ month: string; in: number; out: number }>
-    }
-  }
-}
-
 const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
-export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ stats }) => {
+interface InventoryDashboardProps {
+  stats?: any
+  statsData?: any
+  loadingStats?: boolean
+  onTabChange: (tabId: any) => void
+}
+
+export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
+  stats,
+  statsData,
+  onTabChange
+}) => {
+  const currentStats = stats || statsData
   const { t } = useTranslation()
-  const { summary, charts } = stats
+  const { summary, charts } = currentStats
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {

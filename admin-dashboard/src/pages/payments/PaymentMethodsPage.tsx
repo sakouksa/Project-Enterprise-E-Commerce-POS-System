@@ -8,6 +8,7 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 import FormDrawer from '@/components/common/FormDrawer'
 import { useTranslation } from 'react-i18next'
 
@@ -259,15 +260,11 @@ const PaymentMethodsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = (
                         {method.is_active ? t('common.active') : t('common.inactive')}
                       </button>
                     </td>
-                    <td className="text-right py-4 px-5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => openEditModal(method)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors border border-border">
-                          <Edit2 size={13} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(method)} className="p-1.5 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 rounded-lg transition-colors border border-border">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
+                    <td className="text-right py-4 px-5" onClick={(e) => e.stopPropagation()}>
+                      <TableActionMenu
+                        onEdit={() => openEditModal(method)}
+                        onDelete={() => setDeleteTarget(method)}
+                      />
                     </td>
                   </tr>
                 ))

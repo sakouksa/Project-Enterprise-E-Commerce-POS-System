@@ -12,7 +12,8 @@ import { useTranslation } from 'react-i18next'
 
 interface DashboardStatsProps {
   stats: any
-  isLoading: boolean
+  isLoading?: boolean
+  visibleWidgetIds?: string[]
 }
 
 // Generate dynamic sparklines based on stat values
@@ -31,9 +32,17 @@ const generateSparkline = (baseVal: number) => {
   ]
 }
 
-export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading }) => {
+export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading, visibleWidgetIds }) => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+
+  const filterCard = (cardId: string) => {
+    if (!visibleWidgetIds || visibleWidgetIds.length === 0) return true
+    const statGeneralIds = ['today_sales', 'today_orders', 'total_customers', 'total_products', 'kpi_stats', 'financial_metrics']
+    const hasAnyGeneralStat = visibleWidgetIds.some(id => statGeneralIds.includes(id))
+    if (hasAnyGeneralStat) return true
+    return visibleWidgetIds.includes(cardId)
+  }
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
@@ -49,6 +58,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
 
   // Row 1: Primary Enterprise Financials & Sales
   const topRowCards = [
+
     {
       id: 'today_sales',
       title: t('dashboard.todaySales'),
@@ -335,11 +345,11 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
             >
               {/* Header info */}
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block truncate">{card.title}</span>
-                  <h3 className="text-lg md:text-xl font-black text-foreground mt-1 tracking-tight truncate">{card.value}</h3>
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-muted-foreground block leading-snug">{card.title}</span>
+                  <h3 className="text-lg md:text-xl font-black text-foreground mt-1 tracking-tight">{card.value}</h3>
                 </div>
-                <div className={`p-2 bg-gradient-to-br ${card.gradient} rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                <div className={`p-2 bg-gradient-to-br ${card.gradient} rounded-xl shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
                   {card.icon}
                 </div>
               </div>
@@ -384,22 +394,36 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
     )
   }
 
+  const filteredTop = topRowCards.filter(c => filterCard(c.id))
+  const filteredSecond = secondRowCards.filter(c => filterCard(c.id))
+  const filteredThird = thirdRowCards.filter(c => filterCard(c.id))
+
+  if (filteredTop.length === 0 && filteredSecond.length === 0 && filteredThird.length === 0) {
+    return null
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Row: Primary Financial KPIs */}
-      <div>
-        {renderCardGrid(topRowCards, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
-      </div>
+      {filteredTop.length > 0 && (
+        <div>
+          {renderCardGrid(filteredTop, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
+        </div>
+      )}
 
       {/* Second Row: Enterprise Entity Stats */}
-      <div>
-        {renderCardGrid(secondRowCards, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
-      </div>
+      {filteredSecond.length > 0 && (
+        <div>
+          {renderCardGrid(filteredSecond, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
+        </div>
+      )}
 
       {/* Third Row: Operational Alert Counters */}
-      <div>
-        {renderCardGrid(thirdRowCards, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
-      </div>
+      {filteredThird.length > 0 && (
+        <div>
+          {renderCardGrid(filteredThird, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
+        </div>
+      )}
     </div>
   )
 }

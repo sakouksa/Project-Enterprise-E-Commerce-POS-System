@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,32 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   fullPage = false,
   className = '',
 }) => {
+  const { t } = useTranslation(['common', 'products', 'inventory', 'profile'])
+
+  const resolveLabel = (): string => {
+    if (!label) {
+      return t('loading', t('common.loading', 'Loading...'))
+    }
+
+    const lower = label.toLowerCase().trim()
+    if (lower.includes('product specifications') || lower.includes('product specs')) {
+      return t('loading_specs', t('products.loading_specs', t('loading_product_specs', 'Loading product specifications...')))
+    }
+    if (lower.includes('profile specifications') || lower.includes('profile specs')) {
+      return t('profile.loading_specs', t('loading_profile_specs', 'Loading profile specifications...'))
+    }
+    if (lower.includes('details') || lower.includes('detail')) {
+      return t('loadingDetails', t('common.loadingDetails', 'Loading details...'))
+    }
+    if (lower === 'loading...' || lower === 'loading') {
+      return t('loading', t('common.loading', 'Loading...'))
+    }
+
+    return t(label, t(`common.${label}`, label))
+  }
+
+  const displayLabel = resolveLabel()
+
   const inner =
     variant === 'ring' ? (
       <div className={`rounded-full border-border border-t-primary animate-spin ${RING_SIZES[size]}`} />
@@ -61,7 +88,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const wrapper = (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
       {inner}
-      {label && <p className="text-sm text-muted-foreground">{label}</p>}
+      <p className="text-sm text-muted-foreground font-medium">{displayLabel}</p>
     </div>
   )
 

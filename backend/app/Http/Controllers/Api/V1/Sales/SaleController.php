@@ -22,7 +22,7 @@ class SaleController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $sales = Sale::with(['customer', 'cashier'])
+        $sales = Sale::with(['customer', 'cashier', 'items.product'])
             ->when($request->search, function($q, $v) {
                 $q->where(function($sub) use ($v) {
                     $sub->where('invoice_number', 'like', "%{$v}%")
@@ -47,10 +47,21 @@ class SaleController extends BaseApiController
      */
     public function store(Request $request): JsonResponse
     {
+        $subtotalInput = $request->input('subtotal') ?? $request->input('sub_total');
+        $taxInput = $request->input('tax_amount') ?? $request->input('vat_amount') ?? 0;
+        $totalInput = $request->input('grand_total') ?? $request->input('total_amount');
+
+        $request->merge([
+            'subtotal'    => $subtotalInput,
+            'tax_amount' => $taxInput,
+            'grand_total' => $totalInput,
+        ]);
+
         $validated = $request->validate([
             'customer_id'                => 'nullable|integer',
             'payment_status'             => 'nullable|string',
             'payment_method'             => 'nullable|string',
+            'payment_details'            => 'nullable|array',
             'coupon_code'                => 'nullable|string',
             'subtotal'                   => 'required|numeric|min:0',
             'discount_amount'            => 'nullable|numeric|min:0',
@@ -60,10 +71,12 @@ class SaleController extends BaseApiController
             'items'                      => 'required|array|min:1',
             'items.*.product_id'         => 'required|integer',
             'items.*.product_variant_id' => 'nullable|integer',
-            'items.*.quantity'           => 'required|numeric|min:0.01',
-            'items.*.unit_price'         => 'required|numeric|min:0',
+            'items.*.quantity'           => 'nullable|numeric|min:0.01',
+            'items.*.qty'                => 'nullable|numeric|min:0.01',
+            'items.*.unit_price'         => 'nullable|numeric|min:0',
+            'items.*.price'              => 'nullable|numeric|min:0',
             'items.*.discount_amount'    => 'nullable|numeric|min:0',
-            'items.*.total'              => 'required|numeric|min:0',
+            'items.*.total'              => 'nullable|numeric|min:0',
         ]);
 
         $user = auth()->user();
@@ -77,13 +90,30 @@ class SaleController extends BaseApiController
             $paidAmount = (float) ($validated['paid_amount'] ?? $grandTotal);
             $changeAmount = max(0, $paidAmount - $grandTotal);
 
+            $paymentDetails = $validated['payment_details'] ?? null;
+            $paymentMethod = $validated['payment_method'] ?? 'card';
+
+            $notesText = 'POS Terminal Transaction';
+            if ($paymentDetails) {
+                $bank = $paymentDetails['bank_name'] ?? 'Bank';
+                if (!empty($paymentDetails['txn_reference'])) {
+                    $ref = $paymentDetails['txn_reference'];
+                    $acc = $paymentDetails['account_number'] ?? '';
+                    $notesText .= " | Bank Transfer: {$bank} (Acc: {$acc}), Txn Ref: #{$ref}";
+                } else {
+                    $card = $paymentDetails['card_type'] ?? 'Card';
+                    $code = $paymentDetails['approval_code'] ?? '';
+                    $notesText .= " | Card Payment: {$card} ({$bank}), Approval Code: {$code}";
+                }
+            }
+
             // 1. Create Sale Header
             $sale = Sale::create([
                 'company_id'      => $user->company_id ?? 1,
                 'branch_id'       => $user->branch_id ?? 1,
                 'store_id'        => $user->store_id ?? 1,
                 'warehouse_id'    => $user->warehouse_id ?? 1,
-                'customer_id'     => $validated['customer_id'] ?? 1,
+                'customer_id'     => array_key_exists('customer_id', $validated) ? $validated['customer_id'] : null,
                 'user_id'         => $user->id ?? 1,
                 'invoice_number'  => $invoiceNumber,
                 'date'            => now(),
@@ -95,15 +125,18 @@ class SaleController extends BaseApiController
                 'paid_amount'     => $paidAmount,
                 'change_amount'   => $changeAmount,
                 'currency_code'   => 'USD',
-                'notes'           => 'POS Terminal Transaction',
+                'payment_method'  => $paymentMethod,
+                'payment_details' => $paymentDetails,
+                'notes'           => $notesText,
             ]);
 
             // 2. Create Sale Items, Deduct Inventory Stock & Record Inventory Movement
             foreach ($validated['items'] as $itemData) {
                 $productId = (int) $itemData['product_id'];
                 $variantId = !empty($itemData['product_variant_id']) ? (int) $itemData['product_variant_id'] : null;
-                $quantity  = (float) $itemData['quantity'];
-                $unitPrice = (float) $itemData['unit_price'];
+                $quantity  = (float) ($itemData['quantity'] ?? $itemData['qty'] ?? 1);
+                $unitPrice = (float) ($itemData['unit_price'] ?? $itemData['price'] ?? 0);
+                $itemTotal = (float) ($itemData['total'] ?? ($unitPrice * $quantity));
 
                 $product = Product::find($productId);
                 $variant = $variantId ? ProductVariant::find($variantId) : null;
@@ -118,7 +151,7 @@ class SaleController extends BaseApiController
                     'unit_price'         => $unitPrice,
                     'discount_amount'    => (float) ($itemData['discount_amount'] ?? 0),
                     'subtotal'           => (float) ($unitPrice * $quantity),
-                    'total'              => (float) $itemData['total'],
+                    'total'              => (float) $itemTotal,
                 ]);
 
                 // Query or initialize Inventory record for warehouse + product

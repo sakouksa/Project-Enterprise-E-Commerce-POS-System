@@ -31,6 +31,7 @@ class StoreProductRequest extends FormRequest
             'width'               => 'nullable|numeric|min:0',
             'height'              => 'nullable|numeric|min:0',
             'track_inventory'     => 'boolean',
+            'has_variants'        => 'nullable|boolean',
             'low_stock_threshold' => 'integer|min:0',
             'status'              => 'required|string|in:active,inactive,draft,archived',
             'is_featured'         => 'boolean',
@@ -38,6 +39,14 @@ class StoreProductRequest extends FormRequest
             'meta_title'          => 'nullable|string|max:255',
             'meta_description'    => 'nullable|string',
             'meta_keywords'       => 'nullable|string',
+            'variants'            => 'nullable|array',
+            'variants.*.name'     => 'nullable|string|max:255',
+            'variants.*.sku'      => 'nullable|string|max:100',
+            'variants.*.barcode'  => 'nullable|string|max:100',
+            'variants.*.cost_price' => 'nullable|numeric|min:0',
+            'variants.*.selling_price' => 'nullable|numeric|min:0',
+            'variants.*.image'    => 'nullable|string',
+            'variants.*.attribute_values' => 'nullable|array',
         ];
     }
 }

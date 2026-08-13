@@ -14,9 +14,11 @@ export interface Brand {
 
 export interface ProductVariant {
   id: number
+  name?: string
   sku: string
   barcode?: string
   selling_price: number
+  cost_price?: number
   stock?: number
   attributes?: { name: string; value: string }[]
 }
@@ -41,7 +43,9 @@ export interface Product {
   category?: Category
   brand_id?: number
   brand?: Brand
-  primary_image?: string | { url: string }
+  tax_id?: number
+  tax?: { id: number; name: string; rate: number; type: 'percentage' | 'fixed' } | null
+  primary_image?: string | { url: string } | null
   images?: ProductImage[]
   stock?: number
   low_stock_threshold?: number
@@ -59,13 +63,15 @@ export interface CartItem {
   imei?: string
   quantity: number
   unit_price: number
+  cost_price?: number
+  tax_rate?: number
   discount_amount: number
   tax_amount: number
   total: number
 }
 
 export interface Customer {
-  id: number
+  id: number | null
   name: string
   phone?: string
   email?: string
@@ -81,7 +87,22 @@ export interface HeldCart {
   name: string
   timestamp: string
   items: CartItem[]
-  customer: Customer
+  customer: Customer | null
+}
+
+export interface CardPaymentDetails {
+  card_type: string
+  approval_code: string
+  bank_name: string
+  card_last4?: string
+  terminal_id?: string
+}
+
+export interface TransferPaymentDetails {
+  bank_name: string
+  account_number: string
+  account_name: string
+  txn_reference: string
 }
 
 export interface ReceiptData {
@@ -102,4 +123,6 @@ export interface ReceiptData {
   change_due: number
   payment_method: string
   payment_reference?: string
+  payment_details?: CardPaymentDetails | TransferPaymentDetails | any
 }
+

@@ -12,6 +12,8 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
+import ModernSelect from '@/components/shared/ModernSelect'
 import { useTranslation } from 'react-i18next'
 
 interface CustomerGroup {
@@ -97,6 +99,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
   })
 
   const formIsActive = watch('is_active')
+  const watchCompanyId = watch('company_id')
 
   // Queries
   const { data: companies } = useQuery({
@@ -217,28 +220,79 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
   }
 
   const handleExport = () => {
-    toast.info('Downloading...')
+    const infoId = toast.info(t('customers.toast.exportDownloading', 'Downloading customer groups data...'))
     setTimeout(() => {
-      const headers = ['ID', 'Company Name', 'Group Name', 'Description', 'Discount Percent', 'Status', 'Created At']
-      const rows = groups.map(g => [
-        g.id,
-        g.company?.name || `Company #${g.company_id}`,
-        `"${g.name.replace(/"/g, '""')}"`,
-        g.description ? `"${g.description.replace(/"/g, '""')}"` : '',
-        g.discount_percent,
-        g.is_active ? 'Active' : 'Inactive',
-        g.created_at
-      ])
-      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-      const encodedUri = encodeURI(csvContent)
+      if (infoId) toast.dismiss(infoId)
+
+      const titleText = t('customers.customerGroups', 'Customer Groups')
+      const headers = [
+        t('customers.id', 'ID'),
+        t('customers.company', 'Company Name'),
+        t('customers.groupName', 'Group Name'),
+        t('customers.description', 'Description'),
+        t('customers.discountPercent', 'Discount Percent (%)'),
+        t('customers.status', 'Status'),
+        t('customers.registeredAt', 'Created At')
+      ]
+
+      let tbodyHtml = ''
+      groups.forEach(g => {
+        const companyName = g.company?.name || (g.company_id ? `Company #${g.company_id}` : '—')
+        const statusText = g.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')
+        const statusClass = g.is_active ? 'badge-completed' : 'badge-cancelled'
+
+        tbodyHtml += '<tr>' +
+          '<td class="ref-cell">' + g.id + '</td>' +
+          '<td>' + companyName + '</td>' +
+          '<td><b>' + g.name + '</b></td>' +
+          '<td>' + (g.description || '—') + '</td>' +
+          '<td class="text-center">' + (g.discount_percent || 0) + '%</td>' +
+          '<td class="text-center"><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
+          '<td class="text-center">' + (g.created_at ? new Date(g.created_at).toLocaleDateString() : '—') + '</td>' +
+          '</tr>'
+      })
+
+      const html = '<html>' +
+        '<head>' +
+        '<meta charset="utf-8" />' +
+        '<style>' +
+        '  table { border-collapse: collapse; width: 100%; font-family: "Segoe UI", Tahoma, Geneva, sans-serif; }' +
+        '  .title-cell { background-color: #0f172a; color: #ffffff; font-size: 16pt; font-weight: bold; text-align: center; padding: 15px; }' +
+        '  .subtitle-cell { background-color: #1e293b; color: #cbd5e1; font-size: 10pt; text-align: center; padding: 8px; font-style: italic; }' +
+        '  th { background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 10pt; border: 1px solid #cbd5e1; padding: 10px; text-transform: uppercase; }' +
+        '  td { border: 1px solid #e2e8f0; padding: 8px; font-size: 9.5pt; color: #334155; }' +
+        '  tr:nth-child(even) { background-color: #f8fafc; }' +
+        '  .text-center { text-align: center; }' +
+        '  .ref-cell { font-family: monospace; font-weight: bold; color: #1e40af; }' +
+        '  .badge { font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }' +
+        '  .badge-completed { background-color: #d1fae5; color: #065f46; }' +
+        '  .badge-cancelled { background-color: #fee2e2; color: #991b1b; }' +
+        '</style>' +
+        '</head>' +
+        '<body>' +
+        '  <table>' +
+        '    <thead>' +
+        '      <tr><th colspan="7" class="title-cell">ENTERPRISE POS - ' + titleText + '</th></tr>' +
+        '      <tr><th colspan="7" class="subtitle-cell">Generated on: ' + new Date().toLocaleString() + ' | Total Records: ' + groups.length + '</th></tr>' +
+        '      <tr>' +
+        headers.map(h => '<th>' + h + '</th>').join('') +
+        '      </tr>' +
+        '    </thead>' +
+        '    <tbody>' +
+        tbodyHtml +
+        '    </tbody>' +
+        '  </table>' +
+        '</body>' +
+        '</html>'
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
       const link = document.createElement("a")
-      link.setAttribute("href", encodedUri)
-      link.setAttribute("download", `customer_groups_${new Date().toISOString().slice(0, 10)}.csv`)
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `customer_groups_${new Date().toISOString().slice(0, 10)}.xls`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      toast.success('Customer groups list exported successfully.')
+      toast.success(t('customers.toast.exportSuccessGroups', 'Customer groups list exported successfully.'))
     }, 800)
   }
 
@@ -306,16 +360,17 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
             </div>
             
             {/* Status Filter */}
-            <select
+            <ModernSelect
               value={statusFilter}
-              onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-              className="form-input w-40"
-            >
-              <option value="all">{t('common.status')}: {t('common.active')} / {t('common.inactive')}</option>
-              <option value="active">{t('common.active')}</option>
-              <option value="inactive">{t('common.inactive')}</option>
-              <option value="deleted">{t('common.archived')}</option>
-            </select>
+              onChange={val => { setStatusFilter(val); setPage(1); }}
+              options={[
+                { value: 'all', label: `${t('common.status')}: ${t('common.active')} / ${t('common.inactive')}` },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
+                { value: 'deleted', label: t('common.archived') }
+              ]}
+              className="w-52"
+            />
 
             <button
               onClick={handleResetFilters}
@@ -346,17 +401,27 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                   <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
                     <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
-                    {Object.keys(visibleColumns).map(col => (
-                      <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                        <input
-                          type="checkbox"
-                          checked={visibleColumns[col as keyof typeof visibleColumns]}
-                          onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
-                          className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                        />
-                        <span>{col}</span>
-                      </label>
-                    ))}
+                    {Object.keys(visibleColumns).map(col => {
+                      const colLabels: Record<string, string> = {
+                        id: t('customers.id', 'ID'),
+                        name: t('customers.name', 'Group Name'),
+                        description: t('customers.description', 'Description'),
+                        discount: t('customers.discount', 'Discount'),
+                        status: t('common.status', 'Status'),
+                        actions: t('common.actions', 'Actions')
+                      }
+                      return (
+                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col as keyof typeof visibleColumns]}
+                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                          />
+                          <span>{colLabels[col] || col}</span>
+                        </label>
+                      )
+                    })}
                   </div>
                 </>
               )}
@@ -373,7 +438,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                 <tr>
                   {visibleColumns.id && (
                     <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      ID {renderSortIcon('id')}
+                      {t('customers.id', 'ID')} {renderSortIcon('id')}
                     </th>
                   )}
                   {visibleColumns.name && (
@@ -437,14 +502,10 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                       )}
                       {visibleColumns.actions && (
                         <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => openEditModal(group)} className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors">
-                              <Edit2 size={14} />
-                            </button>
-                            <button onClick={() => setDeleteTarget(group)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                          <TableActionMenu
+                            onEdit={() => openEditModal(group)}
+                            onDelete={() => setDeleteTarget(group)}
+                          />
                         </td>
                       )}
                     </tr>
@@ -472,102 +533,108 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card w-full max-w-md border border-border rounded-xl shadow-2xl overflow-hidden my-8"
+              className="bg-card w-full max-w-md border border-border rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[85vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingGroup ? t('customers.editGroup') : t('customers.addGroup')}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <h3 className="font-bold text-lg text-foreground">
+                  {editingGroup ? t('customers.editGroup', 'Edit Group') : t('customers.addGroup', 'Add Group')}
                 </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
+                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-4">
-                {/* Company Select */}
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                    {t('customers.company')} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    {...register('company_id', { required: t('customers.validation.companyRequired') })}
-                    className="form-input"
-                  >
-                    <option value="">-- {t('customers.selectCompany')} --</option>
-                    {companies?.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  {errors.company_id && <p className="text-red-500 text-xs mt-1">{errors.company_id.message}</p>}
+              <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                  {/* Company Select */}
+                  <div>
+                    <ModernSelect
+                      label={`${t('customers.company', 'Company')} *`}
+                      value={watchCompanyId || ''}
+                      onChange={(val) => setValue('company_id', val, { shouldValidate: true })}
+                      options={[
+                        { value: '', label: t('customers.selectCompany', '-- Select Company --') },
+                        ...(companies ?? []).map((c: any) => ({ value: String(c.id), label: c.name }))
+                      ]}
+                    />
+                    {errors.company_id && <p className="text-rose-500 text-xs mt-1">{errors.company_id.message}</p>}
+                  </div>
+
+                  {/* Group Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                      {t('customers.groupName', 'Group Name')} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      {...register('name', { required: t('customers.validation.nameRequired', 'Group name is required') })}
+                      placeholder={t('customers.groupNamePlaceholder', 'e.g. VIP Customers')}
+                      className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                    />
+                    {errors.name && <p className="text-rose-500 text-xs mt-1">{errors.name.message}</p>}
+                  </div>
+
+                  {/* Discount Percentage */}
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                      {t('customers.discountPercent', 'Discount Percent (%)')} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      {...register('discount_percent', {
+                        required: t('customers.validation.discountNumeric', 'Discount percent is required'),
+                        valueAsNumber: true,
+                        min: { value: 0, message: t('customers.validation.discountMin', 'Discount must be positive') },
+                        max: { value: 100, message: t('customers.validation.discountMax', 'Discount cannot exceed 100%') }
+                      })}
+                      placeholder="0.00"
+                      className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                    />
+                    {errors.discount_percent && <p className="text-rose-500 text-xs mt-1">{errors.discount_percent.message}</p>}
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                      {t('customers.description', 'Description')}
+                    </label>
+                    <textarea
+                      {...register('description')}
+                      placeholder={t('customers.groupDescriptionPlaceholder', 'Description of the group...')}
+                      rows={3}
+                      className="form-input w-full border border-border rounded-xl p-3 bg-background text-foreground text-xs resize-none dark:[color-scheme:dark]"
+                    />
+                  </div>
+
+                  {/* Active Status toggle */}
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs font-semibold text-foreground uppercase">{t('customers.activeStatus', 'Active Status')}</span>
+                    <button
+                      type="button"
+                      onClick={() => setValue('is_active', !formIsActive)}
+                      className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
+                    >
+                      {formIsActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} className="text-muted-foreground" />}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Group Name */}
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                    {t('customers.groupName')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    {...register('name', { required: t('customers.validation.nameRequired') })}
-                    placeholder="e.g. VIP Customers"
-                    className="form-input"
-                  />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-                </div>
-
-                {/* Discount Percentage */}
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                    {t('customers.discountPercent')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    {...register('discount_percent', {
-                      required: t('customers.validation.discountNumeric'),
-                      valueAsNumber: true,
-                      min: { value: 0, message: t('customers.validation.discountMin') },
-                      max: { value: 100, message: t('customers.validation.discountMax') }
-                    })}
-                    className="form-input"
-                  />
-                  {errors.discount_percent && <p className="text-red-500 text-xs mt-1">{errors.discount_percent.message}</p>}
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                    {t('customers.description')}
-                  </label>
-                  <textarea
-                    {...register('description')}
-                    placeholder="Description of the group..."
-                    className="form-input h-20 resize-none"
-                  />
-                </div>
-
-                {/* Active Status toggle */}
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">{t('customers.activeStatus')}</span>
+                {/* PINNED FOOTER */}
+                <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-card shrink-0 z-10">
                   <button
                     type="button"
-                    onClick={() => setValue('is_active', !formIsActive)}
-                    className="text-primary hover:opacity-80 transition-opacity"
+                    onClick={closeModal}
+                    className="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
                   >
-                    {formIsActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} className="text-muted-foreground" />}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                  <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted">
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-2"
+                    className="px-5 py-2 text-sm font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {(isSubmitting || createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {t('common.save')}
+                    {editingGroup ? t('customers.saveChanges', 'Save Changes') : t('customers.addGroup', 'Add Group')}
                   </button>
                 </div>
               </form>

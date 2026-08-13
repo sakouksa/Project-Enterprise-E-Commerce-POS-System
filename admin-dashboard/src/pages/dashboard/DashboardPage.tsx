@@ -2,8 +2,10 @@ import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, RefreshCw, WifiOff } from 'lucide-react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import api from '@/api/client'
+import { useThemeStore } from '@/stores/themeStore'
+import { DEFAULT_WIDGETS_LIST } from '@/config/dashboardWidgets'
 
 // Subcomponents imports
 import DashboardHeader from './components/DashboardHeader'
@@ -12,6 +14,11 @@ import DashboardCharts from './components/DashboardCharts'
 import DashboardRow3 from './components/DashboardRow3'
 import DashboardRow4 from './components/DashboardRow4'
 import DashboardRow5 from './components/DashboardRow5'
+import DashboardRow6 from './components/DashboardRow6'
+import DashboardRow7 from './components/DashboardRow7'
+import DashboardRow8 from './components/DashboardRow8'
+import DashboardRow9 from './components/DashboardRow9'
+import DashboardRow10 from './components/DashboardRow10'
 import QuickActions from './components/QuickActions'
 import RecentActivities from './components/RecentActivities'
 import BusinessAlertsWidget from './components/BusinessAlertsWidget'
@@ -19,6 +26,7 @@ import SystemHealthWidget from './components/SystemHealthWidget'
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation()
+  const { widgetsList } = useThemeStore()
   const [selectedBranchId, setSelectedBranchId] = useState<number | undefined>(undefined)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -96,20 +104,34 @@ const DashboardPage: React.FC = () => {
     setIsRefreshing(false)
   }
 
+  // Active widgets visibility map
+  const activeWidgetMap = React.useMemo(() => {
+    const list = widgetsList && widgetsList.length > 0 ? widgetsList : DEFAULT_WIDGETS_LIST
+    const map = new Map<string, boolean>()
+    list.forEach((w) => map.set(w.id, w.visible))
+    return map
+  }, [widgetsList])
+
+  const isWidgetVisible = (widgetId: string) => {
+    return activeWidgetMap.get(widgetId) !== false
+  }
+
   const containerVariants = {
     initial: { opacity: 0 },
     animate: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.06,
+        staggerChildren: 0.04,
       },
     },
   }
 
   const itemVariants = {
     initial: { opacity: 0, y: 12 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.22 } },
   }
+
+  const hasAnyStatWidget = ['today_sales', 'today_orders', 'total_customers', 'total_products'].some((id) => isWidgetVisible(id))
 
   return (
     <motion.div
@@ -136,7 +158,7 @@ const DashboardPage: React.FC = () => {
           </div>
           <button 
             onClick={handleRefresh}
-            className="px-3 py-1 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors flex items-center gap-1"
+            className="px-3 py-1 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3 h-3" />
             {t('dashboard.retry')}
@@ -144,68 +166,121 @@ const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Primary Layout Grid */}
+      {/* 1. Business Alerts Feed Widget (Top Banner) */}
+      {isWidgetVisible('business_alerts') && (
+        <motion.div variants={itemVariants}>
+          <BusinessAlertsWidget alerts={alertsRes || []} isLoading={alertsLoading} />
+        </motion.div>
+      )}
+
+      {/* 2. Full Width PostgreSQL Enterprise KPI Cards */}
+      {hasAnyStatWidget && (
+        <motion.div variants={itemVariants} className="w-full">
+          <DashboardStats stats={statsRes} isLoading={statsLoading} />
+        </motion.div>
+      )}
+
+      {/* 3. Primary Responsive Enterprise Grid (Center Panel + Sidebar) */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         {/* Main Center Panel (3 columns on XL) */}
         <div className="xl:col-span-3 space-y-6">
-          {/* Business Alerts Feed Widget */}
-          <motion.div variants={itemVariants}>
-            <BusinessAlertsWidget alerts={alertsRes || []} isLoading={alertsLoading} />
-          </motion.div>
-
-          {/* 3 Rows of Real PostgreSQL Enterprise KPI Cards */}
-          <motion.div variants={itemVariants}>
-            <DashboardStats stats={statsRes} isLoading={statsLoading} />
-          </motion.div>
-
-          {/* Primary Analytics Charts */}
-          <motion.div variants={itemVariants}>
-            <DashboardCharts 
-              salesData={salesChartRes || []} 
-              chartsData={chartsRes} 
-              isLoading={chartsLoading} 
-            />
-          </motion.div>
+          {/* Primary Analytics & Category Sales Charts */}
+          {(isWidgetVisible('sales_overview') || isWidgetVisible('category_sales')) && (
+            <motion.div variants={itemVariants}>
+              <DashboardCharts 
+                salesData={salesChartRes || []} 
+                chartsData={chartsRes} 
+                isLoading={chartsLoading} 
+              />
+            </motion.div>
+          )}
 
           {/* Row 3: Top Selling, Recent Orders, Latest Customers */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow3 
-              topProducts={topProductsRes || []} 
-              recentOrders={panelsRes?.pending_orders || []}
-              latestCustomers={panelsRes?.latest_customers || []} 
-            />
-          </motion.div>
+          {isWidgetVisible('recent_orders') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow3 
+                topProducts={topProductsRes || []} 
+                recentOrders={panelsRes?.pending_orders || []}
+                latestCustomers={panelsRes?.latest_customers || []} 
+              />
+            </motion.div>
+          )}
 
           {/* Row 4: Inventory & Warehouse Summary */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow4 
-              lowStockList={lowStockRes || []} 
-              stats={statsRes} 
-            />
-          </motion.div>
+          {isWidgetVisible('low_stock') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow4 
+                lowStockList={lowStockRes || []} 
+                stats={statsRes} 
+              />
+            </motion.div>
+          )}
 
-          {/* Row 5: Financial Metrics & Margins */}
-          <motion.div variants={itemVariants}>
-            <DashboardRow5 stats={statsRes} />
-          </motion.div>
+          {/* Row 5: Financial Metrics & Profit Margins */}
+          {isWidgetVisible('financial_metrics') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow5 stats={statsRes} />
+            </motion.div>
+          )}
+
+          {/* Row 6: Active Campaigns & Coupon Usage */}
+          {isWidgetVisible('campaigns_promotions') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow6 />
+            </motion.div>
+          )}
+
+          {/* Row 7: Customer Insights & Demographics */}
+          {isWidgetVisible('customer_insights') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow7 />
+            </motion.div>
+          )}
+
+          {/* Row 8: Web Conversion Metrics & Visitor Devices */}
+          {isWidgetVisible('web_conversion') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow8 />
+            </motion.div>
+          )}
+
+          {/* Row 9: Mobile App Downloads & Active Users */}
+          {isWidgetVisible('mobile_app') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow9 />
+            </motion.div>
+          )}
+
+          {/* Row 10: Attendance, Top Performers & Departments */}
+          {isWidgetVisible('staff_performance') && (
+            <motion.div variants={itemVariants}>
+              <DashboardRow10 />
+            </motion.div>
+          )}
 
           {/* System Health Diagnostics Monitor */}
-          <motion.div variants={itemVariants}>
-            <SystemHealthWidget healthData={healthRes} isLoading={healthLoading} />
-          </motion.div>
+          {isWidgetVisible('system_health') && (
+            <motion.div variants={itemVariants}>
+              <SystemHealthWidget healthData={healthRes} isLoading={healthLoading} />
+            </motion.div>
+          )}
         </div>
 
         {/* Right Sidebar Widgets (Quick Actions & Activity Timeline) */}
         <div className="space-y-6">
-          <motion.div variants={itemVariants}>
-            <QuickActions />
-          </motion.div>
+          {isWidgetVisible('quick_actions') && (
+            <motion.div variants={itemVariants}>
+              <QuickActions />
+            </motion.div>
+          )}
 
-          <motion.div variants={itemVariants}>
-            <RecentActivities 
-              activityLog={panelsRes?.activity_log || []} 
-            />
-          </motion.div>
+          {isWidgetVisible('recent_activities') && (
+            <motion.div variants={itemVariants}>
+              <RecentActivities 
+                activityLog={panelsRes?.activity_log || []} 
+              />
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>

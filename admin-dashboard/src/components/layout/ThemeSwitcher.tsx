@@ -28,11 +28,15 @@ const ThemeSwitcher: React.FC = () => {
 
   const activeMode = modes.find((m) => m.id === themeMode) ?? modes[0]
 
+  const { navbar } = useThemeStore()
+  const customTextColor = navbar?.textColor
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent hover:border-border/30 transition-all duration-200"
+        style={{ color: customTextColor || undefined }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center opacity-90 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 border border-transparent hover:border-black/10 dark:hover:border-white/10 transition-all duration-200"
         title={t('common.theme', 'Theme')}
       >
         {activeMode.icon}

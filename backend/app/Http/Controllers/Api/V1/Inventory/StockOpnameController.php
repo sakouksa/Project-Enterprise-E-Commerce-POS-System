@@ -29,6 +29,7 @@ class StockOpnameController extends BaseApiController
             ->when($request->start_date ?? $request->created_start, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($request->end_date ?? $request->created_end, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->when($request->trash == 'true', fn($q) => $q->onlyTrashed())
+            ->orderBy('id', 'desc')
             ->paginate($request->integer('per_page', 15));
 
         return $this->paginatedResponse($opnames);
@@ -57,8 +58,9 @@ class StockOpnameController extends BaseApiController
                 'status'           => 'draft', // Starts as draft
             ]);
 
-            // Snap current system quantities from inventories table
+            // Snap current system quantities from inventories table for selected warehouse
             $inventories = Inventory::where('warehouse_id', $validated['warehouse_id'])->get();
+            $existingProductIds = $inventories->pluck('product_id')->toArray();
 
             foreach ($inventories as $inv) {
                 StockOpnameItem::create([
@@ -66,9 +68,23 @@ class StockOpnameController extends BaseApiController
                     'product_id'         => $inv->product_id,
                     'product_variant_id' => $inv->product_variant_id,
                     'system_quantity'    => $inv->quantity,
-                    'physical_quantity'  => null,
-                    'difference'         => null,
+                    'physical_quantity'  => $inv->quantity, // default physical qty to system qty
+                    'difference'         => 0,
                     'notes'              => 'Initial snapshot',
+                ]);
+            }
+
+            // Also snap products from products table that don't have inventory records in this warehouse yet
+            $allProducts = \App\Models\Product\Product::whereNotIn('id', $existingProductIds)->get();
+            foreach ($allProducts as $p) {
+                StockOpnameItem::create([
+                    'stock_opname_id'    => $op->id,
+                    'product_id'         => $p->id,
+                    'product_variant_id' => null,
+                    'system_quantity'    => 0,
+                    'physical_quantity'  => 0,
+                    'difference'         => 0,
+                    'notes'              => 'Initial snapshot (0 stock)',
                 ]);
             }
 
@@ -94,7 +110,7 @@ class StockOpnameController extends BaseApiController
     {
         $opname = StockOpname::findOrFail($id);
         if ($opname->status === 'done') {
-            return $this->errorResponse('Opname is already completed.');
+            return $this->successResponse($opname, 'Opname is already completed.');
         }
 
         $validated = $request->validate([

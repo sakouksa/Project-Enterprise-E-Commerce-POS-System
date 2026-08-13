@@ -195,6 +195,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('stock-opnames',    StockOpnameController::class);
 
         // ─── Suppliers & Purchases ─────────────────────────────────────────
+        Route::post('suppliers/bulk-delete',   [SupplierController::class, 'bulkDelete']);
         Route::apiResource('suppliers',        SupplierController::class);
         Route::post('suppliers/{id}/restore',  [SupplierController::class, 'restore']);
         Route::delete('suppliers/{id}/force',  [SupplierController::class, 'forceDelete']);
@@ -205,6 +206,7 @@ Route::prefix('v1')->group(function () {
         
         // Global Purchase Returns endpoints (used by frontend and API specs)
         Route::get('purchases/returns',        [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'index']);
+        Route::post('purchase-returns/bulk-delete', [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'bulkDelete']);
         Route::apiResource('purchase-returns',  \App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class);
         Route::post('purchase-returns/{id}/approve', [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'approve']);
         Route::post('purchase-returns/{id}/cancel',  [\App\Http\Controllers\Api\V1\Purchase\PurchaseReturnController::class, 'cancel']);
@@ -457,6 +459,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('shipping-zones', \App\Http\Controllers\Api\V1\Shipping\ShippingZoneController::class);
         Route::apiResource('shipping-rates', \App\Http\Controllers\Api\V1\Shipping\ShippingRateController::class);
         Route::apiResource('shipments', \App\Http\Controllers\Api\V1\Order\ShipmentController::class);
+        Route::post('countries/bulk-delete', [\App\Http\Controllers\Api\V1\Setting\CountryController::class, 'bulkDelete']);
+        Route::post('provinces/bulk-delete', [\App\Http\Controllers\Api\V1\Setting\ProvinceController::class, 'bulkDelete']);
+        Route::post('cities/bulk-delete', [\App\Http\Controllers\Api\V1\Setting\CityController::class, 'bulkDelete']);
         Route::apiResource('countries', \App\Http\Controllers\Api\V1\Setting\CountryController::class);
         Route::apiResource('provinces', \App\Http\Controllers\Api\V1\Setting\ProvinceController::class);
         Route::apiResource('cities', \App\Http\Controllers\Api\V1\Setting\CityController::class);
@@ -486,6 +491,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('product-prices', \App\Http\Controllers\Api\V1\Product\ProductPriceController::class);
         Route::apiResource('product-reviews', \App\Http\Controllers\Api\V1\Review\ProductReviewController::class);
         Route::apiResource('product-variant-values', \App\Http\Controllers\Api\V1\Product\ProductVariantValueController::class);
+        Route::post('product-variants/bulk-delete', [\App\Http\Controllers\Api\V1\Product\ProductVariantController::class, 'bulkDelete']);
         Route::apiResource('product-variants', \App\Http\Controllers\Api\V1\Product\ProductVariantController::class);
         Route::apiResource('purchase-items', \App\Http\Controllers\Api\V1\Purchase\PurchaseItemController::class);
         Route::apiResource('purchase-return-items', \App\Http\Controllers\Api\V1\Purchase\PurchaseReturnItemController::class);

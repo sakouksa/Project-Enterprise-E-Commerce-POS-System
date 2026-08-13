@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, CornerDownLeft, FileText, Package, Users, ShoppingCart, Tag } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 import api from '@/api/client'
 
 interface SearchItem {
@@ -131,18 +132,29 @@ const HeaderSearch: React.FC = () => {
     }
   }
 
+  const { navbar } = useThemeStore()
+  const customTextColor = navbar?.textColor
+
   return (
     <>
       {/* Search trigger box */}
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center justify-between w-48 md:w-64 px-3 py-1.5 bg-muted/40 hover:bg-muted/70 border border-border/40 hover:border-border rounded-xl text-xs text-muted-foreground transition-all duration-200"
+        style={{
+          color: customTextColor || undefined,
+          borderColor: customTextColor ? `${customTextColor}40` : undefined,
+          backgroundColor: customTextColor ? `${customTextColor}18` : undefined,
+        }}
+        className="flex items-center justify-between w-48 md:w-64 px-3 py-1.5 bg-muted/40 hover:bg-muted/70 border border-border/40 hover:border-border rounded-xl text-xs transition-all duration-200"
       >
         <div className="flex items-center gap-2">
-          <Search className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>{t('common.search_anything', 'Search anything...')}</span>
+          <Search className="w-3.5 h-3.5 opacity-80" />
+          <span className="opacity-90 font-medium">{t('common.search_anything', 'Search anything...')}</span>
         </div>
-        <kbd className="hidden md:inline-flex items-center gap-0.5 bg-muted px-1.5 py-0.5 border border-border/60 rounded font-mono text-[9px] font-bold text-muted-foreground">
+        <kbd
+          style={{ color: customTextColor || undefined, borderColor: customTextColor ? `${customTextColor}40` : undefined }}
+          className="hidden md:inline-flex items-center gap-0.5 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 border border-border/60 rounded font-mono text-[9px] font-bold"
+        >
           <span>⌘</span><span>K</span>
         </kbd>
       </button>

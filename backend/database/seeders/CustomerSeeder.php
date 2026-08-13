@@ -44,6 +44,7 @@ class CustomerSeeder extends Seeder
                 'phone' => "085290123" . str_pad($i, 3, '0', STR_PAD_LEFT),
                 'gender' => $genders[$i % 2],
                 'birth_date' => '1985-05-' . str_pad(($i % 28) + 1, 2, '0', STR_PAD_LEFT),
+                'photo' => "customers/customer-{$i}.jpg",
                 'loyalty_points' => rand(0, 500),
                 'tax_number' => '01.002.003.4-005.0' . str_pad($i, 2, '0', STR_PAD_LEFT), // NPWP format
                 'is_active' => true,

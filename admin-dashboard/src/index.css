@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --font-sans: 'Inter', 'Kantumruy Pro', sans-serif;
+    --font-sans: 'Kantumruy Pro', 'Inter', system-ui, -apple-system, sans-serif;
     --background:  0 0% 100%;
     --foreground:  222 47% 11%;
     --card:        0 0% 100%;
@@ -55,8 +55,12 @@
     @apply scroll-smooth;
   }
 
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
+  body, input, textarea, select, button {
+    font-family: 'Kantumruy Pro', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Kantumruy Pro', monospace;
   }
 
   /* Scrollbar styling */
@@ -103,24 +107,35 @@
 
   /* Sidebar item */
   .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-text text-sm font-medium
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sidebar-text text-sm font-medium
            transition-all duration-150 cursor-pointer select-none whitespace-nowrap;
   }
   .sidebar-item:hover { @apply bg-sidebar-hover text-white; }
-  .sidebar-item.active { @apply bg-sidebar-active text-white shadow-glow; }
+  .sidebar-item.active { @apply bg-primary text-primary-foreground shadow-lg font-bold shadow-primary/30 scale-[1.01]; }
 
   /* Form input base */
   .form-input {
-    @apply w-full px-3 py-2 text-sm bg-background border border-input rounded-lg
+    @apply w-full px-3 py-2 text-sm bg-background text-foreground border border-input rounded-lg
            placeholder:text-muted-foreground focus:outline-none focus:ring-2
-           focus:ring-primary/30 focus:border-primary transition-colors;
+           focus:ring-primary/30 focus:border-primary transition-colors
+           dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700;
   }
 
   /* General Form Fields */
   .input {
-    @apply w-full px-3 py-2 text-sm bg-background border border-input rounded-lg
+    @apply w-full px-3 py-2 text-sm bg-background text-foreground border border-input rounded-lg
            placeholder:text-muted-foreground focus:outline-none focus:ring-2
            focus:ring-primary/30 focus:border-primary transition-colors;
+  }
+  .form-select {
+    @apply px-3 py-2 text-sm bg-background text-foreground border border-input rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors
+           dark:[color-scheme:dark];
+    font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
+  }
+  .form-select option {
+    @apply bg-card text-foreground dark:bg-slate-900 dark:text-slate-100;
+    font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
   }
   .label {
     @apply block text-sm font-semibold text-foreground mb-1.5;
@@ -197,16 +212,38 @@
 .enterprise-drawer .ant-drawer-content {
   background-color: hsl(var(--card)) !important;
   color: hsl(var(--foreground)) !important;
+  font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
 }
 
 .enterprise-drawer .ant-drawer-header {
   background-color: hsl(var(--card)) !important;
   border-bottom: 1px solid hsl(var(--border)) !important;
+  font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
+}
+
+.enterprise-drawer .ant-drawer-body {
+  font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
 }
 
 .enterprise-drawer .ant-drawer-footer {
   background-color: hsl(var(--card)) !important;
   border-top: 1px solid hsl(var(--border)) !important;
+  font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
+}
+
+.enterprise-drawer .ant-drawer-title,
+.enterprise-drawer .ant-drawer-title * {
+  font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
+}
+
+/* Force Khmer font on ALL Ant Design components */
+.ant-drawer,
+.ant-drawer *,
+.ant-modal,
+.ant-modal *,
+.ant-select,
+.ant-select * {
+  font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
 }
 
 .dark .ant-input,
@@ -246,4 +283,18 @@
 
 .dark .ant-tabs-tab-active .ant-tabs-tab-btn {
   color: hsl(var(--primary)) !important;
+}
+
+/* Print Styles for A4 Vouchers */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
 }

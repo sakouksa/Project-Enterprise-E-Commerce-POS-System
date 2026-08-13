@@ -6,22 +6,56 @@
 
 class SoundSystem {
   private ctx: AudioContext | null = null
+  private isMuted: boolean = false
 
-  private getContext(): AudioContext {
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
-      this.ctx = new AudioCtx()
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.isMuted = localStorage.getItem('pos_sound_muted') === 'true'
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume()
+  }
+
+  public isMutedSound(): boolean {
+    return this.isMuted
+  }
+
+  public setMuted(muted: boolean): void {
+    this.isMuted = muted
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pos_sound_muted', String(muted))
     }
-    return this.ctx
+  }
+
+  public toggleMute(): boolean {
+    const newState = !this.isMuted
+    this.setMuted(newState)
+    return newState
+  }
+
+  public getContext(): AudioContext | null {
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+        if (!AudioCtx) return null
+        this.ctx = new AudioCtx()
+      }
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {
+          // Autoplay policy prevents audio before user gesture
+        })
+      }
+      return this.ctx
+    } catch (e) {
+      return null
+    }
   }
 
   // 1. Soft Tactile Click / Button Press
   playClick() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
+
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
 
@@ -37,15 +71,15 @@ class SoundSystem {
 
       osc.start()
       osc.stop(ctx.currentTime + 0.03)
-    } catch (e) {
-      console.warn('Audio Context error', e)
-    }
+    } catch (e) {}
   }
 
   // 2. Success Double Chime (Product Added / Operation Succeeded)
   playSuccess() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const notes = [523.25, 659.25, 783.99] // C5, E5, G5
@@ -70,8 +104,10 @@ class SoundSystem {
 
   // 3. Error Buzz (Out of stock / Validation error)
   playError() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const osc = ctx.createOscillator()
@@ -94,8 +130,10 @@ class SoundSystem {
 
   // 4. Warning Beep
   playWarning() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const osc = ctx.createOscillator()
@@ -118,8 +156,10 @@ class SoundSystem {
 
   // 5. Delete Item Swoosh
   playDelete() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const osc = ctx.createOscillator()
@@ -142,8 +182,10 @@ class SoundSystem {
 
   // 6. Checkout Celebration Cash Register Sweep (Complete & Pay)
   playCheckout() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const freqs = [523.25, 659.25, 783.99, 1046.5] // C5, E5, G5, C6
@@ -173,8 +215,10 @@ class SoundSystem {
 
   // 8. KHQR Scan / Generated Beep
   playQR() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const osc = ctx.createOscillator()
@@ -197,8 +241,10 @@ class SoundSystem {
 
   // 9. Barcode Scanner Laser Beep
   playBarcode() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const osc = ctx.createOscillator()
@@ -220,8 +266,10 @@ class SoundSystem {
 
   // 10. Notification Ping
   playNotification() {
+    if (this.isMuted) return
     try {
       const ctx = this.getContext()
+      if (!ctx || ctx.state === 'suspended') return
       const now = ctx.currentTime
 
       const osc = ctx.createOscillator()
@@ -243,3 +291,19 @@ class SoundSystem {
 }
 
 export const sound = new SoundSystem()
+
+// Automatic unlock on first user gesture
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    const ctx = sound.getContext()
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {})
+    }
+    window.removeEventListener('click', unlockAudio)
+    window.removeEventListener('keydown', unlockAudio)
+    window.removeEventListener('touchstart', unlockAudio)
+  }
+  window.addEventListener('click', unlockAudio, { once: true })
+  window.addEventListener('keydown', unlockAudio, { once: true })
+  window.addEventListener('touchstart', unlockAudio, { once: true })
+}

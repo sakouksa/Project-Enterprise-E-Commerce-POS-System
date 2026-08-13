@@ -19,12 +19,9 @@ class InventoryMovementController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $query = \App\Models\Inventory\InventoryMovement::with([
-            'product.category',
-            'product.brand',
-            'product.unit',
-            'variant',
-            'warehouse',
-            'user'
+            'product:id,name,sku',
+            'warehouse:id,name',
+            'user:id,name'
         ])
         ->when($request->product_id, fn($q, $productId) => $q->where('product_id', $productId))
         ->when($request->warehouse_id, fn($q, $warehouseId) => $q->where('warehouse_id', $warehouseId))

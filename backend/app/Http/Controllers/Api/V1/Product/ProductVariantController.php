@@ -61,4 +61,14 @@ class ProductVariantController extends BaseApiController
             'ProductVariant deleted successfully'
         );
     }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $ids = $request->validate(['ids' => 'required|array'])['ids'];
+        $count = $this->service->bulkDelete($ids);
+        return $this->successResponse(
+            null,
+            "{$count} variants deleted successfully"
+        );
+    }
 }

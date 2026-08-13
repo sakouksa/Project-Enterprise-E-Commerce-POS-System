@@ -11,8 +11,9 @@ export interface Toast {
 
 interface ToastState {
   toasts: Toast[]
-  addToast: (type: ToastType, message: string, duration?: number) => void
+  addToast: (type: ToastType, message: string, duration?: number) => string
   removeToast: (id: string) => void
+  clearToasts: () => void
 }
 
 export const useToastStore = create<ToastState>((set) => ({
@@ -26,9 +27,11 @@ export const useToastStore = create<ToastState>((set) => ({
       }
       return { toasts: [...state.toasts, { id, type, message, duration }] }
     })
+    return id
   },
   removeToast: (id) =>
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
     })),
+  clearToasts: () => set({ toasts: [] }),
 }))

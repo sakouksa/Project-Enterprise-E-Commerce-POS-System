@@ -8,7 +8,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 interface ProfileRepositoryInterface extends BaseRepositoryInterface
 {
-    public function getProfile(int $userId): User;
+    public  function getProfile(int $userId): User;
 
     public function updateProfile(int $userId, array $data): User;
 

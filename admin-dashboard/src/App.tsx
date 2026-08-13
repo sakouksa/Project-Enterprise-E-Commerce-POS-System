@@ -150,10 +150,8 @@ const PageFallback = () => (
 // ─── AppContent & App ─────────────────────────────────────────────────────────
 
 const AppContent: React.FC = () => {
-  const language = useThemeStore((s) => s.language)
-
   return (
-    <div key={language} className="h-full">
+    <div className="h-full">
       <NetworkStatusListener />
       <ToastContainer />
       <React.Suspense fallback={<PageFallback />}>

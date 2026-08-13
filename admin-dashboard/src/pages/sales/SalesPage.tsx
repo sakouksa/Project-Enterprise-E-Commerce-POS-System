@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   Search, Eye, RefreshCw, X, Receipt, CornerUpLeft, Loader2, Calendar,
   User, ShoppingBag, Info, Clipboard, LayoutGrid, Table as TableIcon,
@@ -18,6 +19,8 @@ import Breadcrumb from '@/components/common/Breadcrumb'
 import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import { SalesFilterDrawer } from './components/SalesFilterDrawer'
+import { SalesDetailDrawer } from './components/SalesDetailDrawer'
+import { ProcessRefundModal } from './components/ProcessRefundModal'
 
 interface SaleItem {
   id:                 number
@@ -55,6 +58,7 @@ interface Sale {
 }
 
 const SalesPage: React.FC = () => {
+  const { t } = useTranslation('sales')
   const qc    = useQueryClient()
   const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -129,12 +133,30 @@ const SalesPage: React.FC = () => {
     enabled: selectedSaleId !== null,
   })
 
+  const [refundModalSale, setRefundModalSale] = useState<Sale | null>(null)
+
   const refundMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/pos/sales/${id}/return`, { reason: 'Customer return' }),
+    mutationFn: (payload: { sale: Sale; reason: string; refund_method: string }) => {
+      const saleObj = payload.sale
+      const rawItems = saleObj?.items || (saleObj as any)?.sale_items || (saleObj as any)?.details || []
+      const itemsPayload = rawItems.map((i: any) => ({
+        sale_item_id: i.id,
+        product_id: i.product_id,
+        product_variant_id: i.product_variant_id ?? null,
+        quantity: Number(i.quantity || 1),
+      }))
+
+      return api.post(`/pos/sales/${saleObj.id}/return`, {
+        reason: payload.reason,
+        refund_method: payload.refund_method,
+        items: itemsPayload.length > 0 ? itemsPayload : undefined,
+      })
+    },
     onSuccess: () => {
       sound.playSuccess()
       qc.invalidateQueries({ queryKey: ['sales'] })
       toast.success('Sale order refunded successfully.')
+      setRefundModalSale(null)
       setSelectedSaleId(null)
     },
     onError: (err: any) => {
@@ -163,25 +185,25 @@ const SalesPage: React.FC = () => {
       case 'completed':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
-            <CheckCircle2 size={10} /> Completed
+            <CheckCircle2 size={10} /> {t('completed')}
           </span>
         )
       case 'refunded':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase">
-            <CornerUpLeft size={10} /> Refunded
+            <CornerUpLeft size={10} /> {t('refunded')}
           </span>
         )
       case 'cancelled':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 uppercase">
-            Cancelled
+            {t('cancelled')}
           </span>
         )
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase">
-            Pending
+            {t('pending')}
           </span>
         )
     }
@@ -189,55 +211,50 @@ const SalesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'POS System' }, { label: 'Sales Registry' }]} />
+      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'POS System' }, { label: t('salesOrders') }]} />
 
       <PageHeader
-        title="Sales Orders & Receipts"
-        description="Enterprise POS transaction history, receipts, and order audit trail"
+        title={t('salesOrdersAndReceipts')}
+        description={t('salesOrdersAndReceiptsDesc')}
       />
 
-      {/* ── 1. TOP 4 ULTRA-MODERN METRIC CARDS ─────────────────────────────────── */}
+      {/* ── 1. TOP 4 MODERN SLEEK METRIC CARDS ─────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* CARD 1: REVENUE VOLUME */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+          transition={{ duration: 0.3 }}
+          className="relative overflow-hidden rounded-[24px] bg-card border border-border/70 hover:border-emerald-500/40 p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-              <DollarSign size={14} className="text-emerald-500" />
-              Total Revenue
-            </span>
-            <div className="p-2.5 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <DollarSign className="w-5 h-5 text-emerald-500" />
+          {/* Header: Title + Icon (Left) and Badge (Right) */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
+                <DollarSign className="w-4 h-4 text-emerald-500" />
+              </div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                {t('totalRevenueCard')}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-2xl font-black text-foreground tracking-tight">${pageTotals.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">POS Completed Checkout Revenue</div>
-            </div>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-              Target 94.2%
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <TrendingUp size={10} /> +18.4%
             </span>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-emerald-500 h-full rounded-full w-[94%]" />
+
+          {/* Big Number */}
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight font-mono">
+              ${pageTotals.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('posCompletedRevenue')}
+            </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Today</div>
-              <div className="font-bold text-emerald-600">${(pageTotals.revenue * 0.35).toFixed(0)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">This Month</div>
-              <div className="font-bold text-foreground">${(pageTotals.revenue * 2.4).toFixed(0)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Growth</div>
-              <div className="font-bold text-emerald-600">+18.4%</div>
-            </div>
+
+          {/* Bottom Accent Line */}
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 w-full rounded-full" />
           </div>
         </motion.div>
 
@@ -245,43 +262,37 @@ const SalesPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-transparent border border-blue-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="relative overflow-hidden rounded-[24px] bg-card border border-border/70 hover:border-blue-500/40 p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-              <ShoppingCart size={14} className="text-blue-500" />
-              Completed Receipts
-            </span>
-            <div className="p-2.5 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <ShoppingCart className="w-5 h-5 text-blue-500" />
+          {/* Header: Title + Icon (Left) and Badge (Right) */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
+                <ShoppingCart className="w-4 h-4 text-blue-500" />
+              </div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                {t('completedReceipts')}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-2xl font-black text-foreground tracking-tight">{pageTotals.completed} Orders</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Successfully Processed</div>
-            </div>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
-              98.2% Success
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+              <CheckCircle2 size={10} /> 98.2%
             </span>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-blue-500 h-full rounded-full w-[98%]" />
+
+          {/* Big Number */}
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
+              <span className="font-mono">{pageTotals.completed}</span> <span className="text-sm font-bold text-muted-foreground">{t('orders')}</span>
+            </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('successfullyProcessed')}
+            </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">POS Terminal</div>
-              <div className="font-bold text-blue-600">{pageTotals.completed}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Cash Pay</div>
-              <div className="font-bold text-foreground">{Math.ceil(pageTotals.completed * 0.6)}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">QR Pay</div>
-              <div className="font-bold text-primary">{Math.floor(pageTotals.completed * 0.4)}</div>
-            </div>
+
+          {/* Bottom Accent Line */}
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 w-[98.2%] rounded-full" />
           </div>
         </motion.div>
 
@@ -289,45 +300,37 @@ const SalesPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-purple-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="relative overflow-hidden rounded-[24px] bg-card border border-border/70 hover:border-purple-500/40 p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-              <TrendingUp size={14} className="text-purple-500" />
-              Avg Ticket / Order
-            </span>
-            <div className="p-2.5 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <TrendingUp className="w-5 h-5 text-purple-500" />
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-2xl font-black text-foreground tracking-tight">
-                ${salesList.length > 0 ? (pageTotals.revenue / salesList.length).toFixed(2) : '0.00'}
+          {/* Header: Title + Icon (Left) and Badge (Right) */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-2xs">
+                <TrendingUp className="w-4 h-4 text-purple-500" />
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Average Receipt Value</div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                {t('avgTicketOrder')}
+              </span>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20">
-              VIP Avg $2.4k
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+              {t('avgTicketBadge', 'Avg Ticket')}
             </span>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-purple-500 h-full rounded-full w-[85%]" />
+
+          {/* Big Number */}
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight font-mono">
+              ${salesList.length > 0 ? (pageTotals.revenue / salesList.length).toFixed(2) : '0.00'}
+            </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('averageReceiptValue')}
+            </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Items/Sale</div>
-              <div className="font-bold text-purple-600">4.2 Items</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Discounts</div>
-              <div className="font-bold text-foreground">5.2%</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Max Basket</div>
-              <div className="font-bold text-emerald-600">$4.8k</div>
-            </div>
+
+          {/* Bottom Accent Line */}
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-[78%] rounded-full" />
           </div>
         </motion.div>
 
@@ -335,43 +338,37 @@ const SalesPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/30 bg-card shadow-xs hover:shadow-md transition-all relative overflow-hidden group"
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="relative overflow-hidden rounded-[24px] bg-card border border-border/70 hover:border-amber-500/40 p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-              <Receipt size={14} className="text-amber-500" />
-              Total Registry Volume
-            </span>
-            <div className="p-2.5 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <Receipt className="w-5 h-5 text-amber-500" />
+          {/* Header: Title + Icon (Left) and Badge (Right) */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-2xs">
+                <Receipt className="w-4 h-4 text-amber-500" />
+              </div>
+              <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                {t('totalRegistryVolume')}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-2xl font-black text-foreground tracking-tight">{pagination.total} Records</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">Audit Trail Invoice Logs</div>
-            </div>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-              Audit Verified
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+              <ShieldCheck size={10} /> {t('auditVerified', 'ត្រូវបានផ្ទៀងផ្ទាត់')}
             </span>
           </div>
-          <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-amber-500 h-full rounded-full w-[92%]" />
+
+          {/* Big Number */}
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
+              <span className="font-mono">{pagination.total}</span> <span className="text-sm font-bold text-muted-foreground">{t('records', 'កំណត់ត្រា')}</span>
+            </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('auditTrailInvoiceLogs')}
+            </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-[11px]">
-            <div>
-              <div className="text-muted-foreground">Completed</div>
-              <div className="font-bold text-emerald-600">{pagination.total}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Refunds</div>
-              <div className="font-bold text-amber-600">0</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Drafts</div>
-              <div className="font-bold text-muted-foreground">0</div>
-            </div>
+
+          {/* Bottom Accent Line */}
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber-500 to-orange-400 w-full rounded-full" />
           </div>
         </motion.div>
       </div>
@@ -392,7 +389,7 @@ const SalesPage: React.FC = () => {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Receipt size={14} /> Sales Orders ({pagination.total})
+          <Receipt size={14} /> {t('salesOrdersCount', 'បញ្ជាទិញ')} ({pagination.total})
         </button>
         <button
           onClick={() => {
@@ -408,7 +405,7 @@ const SalesPage: React.FC = () => {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <CornerUpLeft size={14} /> Sale Returns / Refunds
+          <CornerUpLeft size={14} /> {t('saleReturnsRefunds', 'ការត្រឡប់ / ការសងប្រាក់')}
         </button>
       </div>
 
@@ -419,7 +416,7 @@ const SalesPage: React.FC = () => {
             <SearchInput
               value={search}
               onChange={(val) => { setSearch(val); setPage(1); }}
-              placeholder="Search by invoice number or customer..."
+              placeholder={t('searchByInvoice')}
             />
 
             {/* Slide-out Modern Filter Drawer Trigger Button */}
@@ -432,7 +429,7 @@ const SalesPage: React.FC = () => {
               }`}
             >
               <Filter size={14} />
-              <span>Filters</span>
+              <span>{t('filters')}</span>
               {activeFiltersCount > 0 && (
                 <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-primary text-white">
                   {activeFiltersCount}
@@ -446,87 +443,122 @@ const SalesPage: React.FC = () => {
           <button
             onClick={() => qc.invalidateQueries({ queryKey: ['sales'] })}
             className="p-2 bg-card border border-border rounded-xl text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-2xs"
-            title="Refresh"
+            title={t('refresh')}
           >
             <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* ── 2. ULTRA-MODERN SALES ORDER CARDS GRID ─────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── 2. SALES ORDER CARDS GRID ─────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="p-5 rounded-[24px] bg-card border border-border/70 animate-pulse h-48" />
+            <div key={i} className="p-5 rounded-[24px] bg-card border border-border/70 animate-pulse h-56" />
           ))
         ) : salesList.length === 0 ? (
           <div className="col-span-full py-16 text-center bg-card border border-border rounded-[24px]">
             <Receipt className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-            <h3 className="font-bold text-foreground text-base">No sales orders found</h3>
-            <p className="text-xs text-muted-foreground mt-1">Try clearing filters or searching for another invoice</p>
+            <h3 className="font-bold text-foreground text-base">{t('noSalesOrdersFound')}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t('tryClearingFilters')}</p>
           </div>
         ) : (
-          salesList.map((sale) => (
-            <motion.div
-              key={sale.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-card border border-border/80 rounded-[24px] p-5 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group"
-            >
-              <div>
-                {/* Card Header: Invoice # and Status Badge */}
-                <div className="flex items-center justify-between pb-3.5 border-b border-border/60">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-2xl bg-primary/10 text-primary font-bold group-hover:scale-110 transition-transform">
-                      <Receipt size={18} />
+          salesList.map((sale) => {
+            const itemCount = Math.round(
+              sale.items?.reduce((acc, item) => acc + Number(item.quantity || 1), 0) || 1
+            )
+            const paymentMethodLabel = sale.payment_method ? sale.payment_method.toUpperCase() : 'CASH'
+
+            return (
+              <motion.div
+                key={sale.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border/80 rounded-[24px] p-5 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group relative overflow-hidden"
+              >
+                <div className="space-y-3.5">
+                  {/* Card Header: Invoice #, Date & Status Badge */}
+                  <div className="flex items-start justify-between gap-2 pb-3 border-b border-border/60">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2.5 rounded-2xl bg-primary/10 text-primary font-bold group-hover:scale-105 transition-transform shrink-0">
+                        <Receipt size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-mono font-black text-xs text-foreground block tracking-tight truncate">#{sale.invoice_number}</span>
+                        <span className="text-[10px] text-muted-foreground font-medium block truncate">
+                          {new Date(sale.created_at || sale.date).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
+                    <div className="shrink-0">
+                      {getStatusBadge(sale.status)}
+                    </div>
+                  </div>
+
+                  {/* Card Body: Customer, Cashier, Payment Method */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/40 gap-2">
+                      <span className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-semibold shrink-0">
+                        <User size={13} className="text-primary shrink-0" />
+                        <span>{t('customer')}:</span>
+                      </span>
+                      <span className="font-bold text-foreground truncate text-right">
+                        {sale.customer?.name || t('walkInCustomer')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between px-2 text-[11px] gap-2">
+                      <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
+                        <ShieldCheck size={13} className="shrink-0" />
+                        <span>{t('cashier')}:</span>
+                      </span>
+                      <span className="font-semibold text-foreground truncate text-right">
+                        {sale.cashier?.name || t('superAdmin')}
+                      </span>
+                    </div>
+
+                    {/* Payment Method Badge */}
+                    <div className="flex items-center justify-between px-2 pt-1 border-t border-border/40 text-[10px]">
+                      <span className="text-muted-foreground font-medium">{t('paymentMethod')}:</span>
+                      <span className="px-2 py-0.5 rounded-md font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        {paymentMethodLabel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Footer: Grand Total & View Invoice Action Button */}
+                <div className="pt-3.5 mt-3.5 border-t border-border/60 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
                     <div>
-                      <span className="font-mono font-black text-xs text-foreground block tracking-tight">#{sale.invoice_number}</span>
-                      <span className="text-[10px] text-muted-foreground font-medium">{new Date(sale.created_at || sale.date).toLocaleString()}</span>
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase block tracking-wider">{t('grandTotal')}</span>
+                      <span className="text-lg font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                        ${Number(sale.grand_total).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-muted-foreground font-mono block">
+                        {t('tax')}: ${Number(sale.tax_amount || 0).toFixed(2)}
+                      </span>
                     </div>
                   </div>
-                  {getStatusBadge(sale.status)}
-                </div>
 
-                {/* Card Body: Customer & Cashier */}
-                <div className="py-3.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-border/40">
-                    <span className="flex items-center gap-1.5 text-muted-foreground text-[11px]"><User size={13} /> Customer:</span>
-                    <span className="font-bold text-foreground">{sale.customer?.name || 'Walk-in Customer'}</span>
-                  </div>
-                  <div className="flex items-center justify-between px-2 text-[11px]">
-                    <span className="flex items-center gap-1.5 text-muted-foreground"><ShieldCheck size={13} /> Cashier:</span>
-                    <span className="font-semibold text-foreground">{sale.cashier?.name || 'Super Admin'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Footer: Grand Total & Invoice Details Button */}
-              <div className="pt-3.5 border-t border-border/60 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-muted-foreground font-semibold block uppercase">Grand Total</span>
-                    <span className="text-lg font-black text-primary tracking-tight">${Number(sale.grand_total).toFixed(2)}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Tax: ${Number(sale.tax_amount || 0).toFixed(2)}</span>
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className="text-[11px] text-muted-foreground font-bold">
+                      {itemCount} {t('items')}
+                    </span>
+                    <button
+                      onClick={() => setSelectedSaleId(sale.id)}
+                      className="px-3.5 py-2 bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs group-hover:shadow-sm"
+                    >
+                      <Eye size={13} />
+                      <span>{t('viewInvoice')}</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-muted-foreground font-bold">
-                    {sale.items?.length || 1} Item(s)
-                  </span>
-                  <button
-                    onClick={() => setSelectedSaleId(sale.id)}
-                    className="px-4 py-2 bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  >
-                    <Eye size={13} /> View Invoice
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))
+              </motion.div>
+            )
+          })
         )}
       </div>
 
@@ -566,117 +598,38 @@ const SalesPage: React.FC = () => {
         activeFiltersCount={activeFiltersCount}
       />
 
-      {/* Invoice Detail Modal */}
+      {/* Sale Detail Drawer — slides in from the right */}
       <AnimatePresence>
         {selectedSaleId !== null && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-[24px] w-full max-w-2xl overflow-hidden shadow-2xl space-y-0"
-            >
-              <div className="p-4 border-b border-border/60 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-primary" />
-                  <h3 className="font-bold text-base text-foreground">Sale Order Detail #{saleDetail?.invoice_number}</h3>
-                </div>
-                <button
-                  onClick={() => setSelectedSaleId(null)}
-                  className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {detailLoading ? (
-                <div className="p-12 text-center text-muted-foreground">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
-                  <span>Loading sale order invoice details...</span>
-                </div>
-              ) : (
-                <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-muted/20 rounded-2xl border border-border/60 text-xs">
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Invoice Number</span>
-                      <span className="font-mono font-bold text-primary">#{saleDetail?.invoice_number}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Date</span>
-                      <span className="font-semibold text-foreground">{saleDetail?.created_at ? new Date(saleDetail.created_at).toLocaleDateString() : ''}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Customer</span>
-                      <span className="font-bold text-foreground">{saleDetail?.customer?.name || 'Walk-in'}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px]">Status</span>
-                      <span>{saleDetail?.status ? getStatusBadge(saleDetail.status) : ''}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Purchased Items ({saleDetail?.items?.length || 0})</h4>
-                    <div className="border border-border/60 rounded-2xl overflow-hidden text-xs">
-                      <table className="w-full text-left">
-                        <thead className="bg-muted/40 text-[10px] font-bold text-muted-foreground uppercase border-b border-border/60">
-                          <tr>
-                            <th className="p-3">Item</th>
-                            <th className="p-3 text-center">Qty</th>
-                            <th className="p-3 text-right">Price</th>
-                            <th className="p-3 text-right">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/40">
-                          {saleDetail?.items?.map((item) => (
-                            <tr key={item.id}>
-                              <td className="p-3 font-semibold text-foreground">{item.product_name || item.product?.name}</td>
-                              <td className="p-3 text-center font-bold">{item.quantity}</td>
-                              <td className="p-3 text-right">${Number(item.unit_price).toFixed(2)}</td>
-                              <td className="p-3 text-right font-bold text-foreground">${Number(item.total || (item.quantity * item.unit_price)).toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-end border-t border-border/60 pt-4 text-xs">
-                    <div className="space-y-1">
-                      <span className="text-[11px] text-muted-foreground block">Cashier: <strong className="text-foreground">{saleDetail?.cashier?.name || 'Super Admin'}</strong></span>
-                      {saleDetail?.notes && <p className="text-[11px] text-muted-foreground italic">Note: {saleDetail.notes}</p>}
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className="text-muted-foreground text-xs">Subtotal: <strong className="text-foreground">${Number(saleDetail?.subtotal || 0).toFixed(2)}</strong></div>
-                      <div className="text-muted-foreground text-xs">Tax: <strong className="text-foreground">${Number(saleDetail?.tax_amount || 0).toFixed(2)}</strong></div>
-                      <div className="text-base font-black text-primary pt-1">Grand Total: ${Number(saleDetail?.grand_total || 0).toFixed(2)}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="p-4 border-t border-border/60 flex justify-end gap-2 bg-muted/10">
-                <button
-                  onClick={() => setSelectedSaleId(null)}
-                  className="px-4 py-2 text-xs font-semibold text-muted-foreground border border-border rounded-xl hover:bg-muted"
-                >
-                  Close
-                </button>
-                {saleDetail?.status !== 'refunded' && (
-                  <button
-                    onClick={() => saleDetail?.id && refundMutation.mutate(saleDetail.id)}
-                    disabled={refundMutation.isPending}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-500 rounded-xl hover:bg-rose-600 transition-colors flex items-center gap-1.5"
-                  >
-                    {refundMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CornerUpLeft className="w-3.5 h-3.5" />}
-                    <span>Process Return Refund</span>
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
+          <SalesDetailDrawer
+            sale={saleDetail || salesList.find(s => s.id === selectedSaleId)}
+            isLoading={detailLoading && !salesList.find(s => s.id === selectedSaleId)}
+            onClose={() => setSelectedSaleId(null)}
+            onRefund={() => {
+              const activeSale = saleDetail || salesList.find(s => s.id === selectedSaleId)
+              if (activeSale) setRefundModalSale(activeSale)
+            }}
+            isRefunding={refundMutation.isPending}
+          />
         )}
       </AnimatePresence>
+
+      {/* Process Return Refund Modal */}
+      <ProcessRefundModal
+        isOpen={refundModalSale !== null}
+        onClose={() => setRefundModalSale(null)}
+        sale={refundModalSale}
+        isPending={refundMutation.isPending}
+        onConfirm={(payload) => {
+          if (refundModalSale) {
+            refundMutation.mutate({
+              sale: refundModalSale,
+              reason: payload.reason,
+              refund_method: payload.refund_method,
+            })
+          }
+        }}
+      />
     </div>
   )
 }

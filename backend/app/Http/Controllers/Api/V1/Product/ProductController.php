@@ -31,7 +31,7 @@ class ProductController extends BaseApiController
                 'stock_level', 'price_min', 'price_max'
             ]),
             perPage: $request->integer('per_page', 10),
-            sort: $request->get('sort_by', $request->get('sort', 'created_at')),
+            sort: $request->get('sort_by', $request->get('sort', 'id')),
             order: $request->get('sort_order', $request->get('order', 'desc'))
         );
 
@@ -68,6 +68,7 @@ class ProductController extends BaseApiController
     public function store(StoreProductRequest $request): JsonResponse
     {
         $product = $this->productService->createProduct($request->validated());
+        $this->clearStatsCache();
 
         return $this->successResponse(new ProductResource($product), 'Product created successfully', 201);
     }
@@ -78,6 +79,7 @@ class ProductController extends BaseApiController
     public function update(UpdateProductRequest $request, int $id): JsonResponse
     {
         $product = $this->productService->updateProduct($id, $request->validated());
+        $this->clearStatsCache();
 
         return $this->successResponse(new ProductResource($product), 'Product updated successfully');
     }
@@ -89,6 +91,7 @@ class ProductController extends BaseApiController
     {
         try {
             $this->productService->deleteProduct($id);
+            $this->clearStatsCache();
             return $this->successResponse(null, 'Product deleted successfully');
         } catch (\Exception $e) {
             return response()->json([
@@ -105,6 +108,7 @@ class ProductController extends BaseApiController
     {
         try {
             $this->productService->restoreProduct($id);
+            $this->clearStatsCache();
             return $this->successResponse(null, 'Product restored successfully');
         } catch (\Exception $e) {
             return response()->json([
@@ -121,6 +125,7 @@ class ProductController extends BaseApiController
     {
         try {
             $this->productService->forceDeleteProduct($id);
+            $this->clearStatsCache();
             return $this->successResponse(null, 'Product permanently deleted successfully');
         } catch (\Exception $e) {
             return response()->json([
@@ -207,6 +212,7 @@ class ProductController extends BaseApiController
                 // Ignore or log
             }
         }
+        $this->clearStatsCache();
         return $this->successResponse(null, "{$count} products deleted successfully");
     }
 
@@ -222,89 +228,102 @@ class ProductController extends BaseApiController
                 // Ignore or log
             }
         }
+        $this->clearStatsCache();
         return $this->successResponse(null, "{$count} products restored successfully");
+    }
+
+    protected function clearStatsCache(): void
+    {
+        $companyId = auth()->user()?->company_id ?? 1;
+        \Illuminate\Support\Facades\Cache::forget("product_stats_{$companyId}");
     }
 
     public function stats(Request $request): JsonResponse
     {
         $companyId = auth()->user()?->company_id ?? 1;
 
-        $totalProducts = \App\Models\Product\Product::where('company_id', $companyId)->count();
-        $activeProducts = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'active')->count();
-        $inactiveProducts = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'inactive')->count();
-        $draftProducts = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'draft')->count();
-        $archivedProducts = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'archived')->count();
-        $featuredProducts = \App\Models\Product\Product::where('company_id', $companyId)->where('is_featured', true)->count();
-        $digitalProducts = \App\Models\Product\Product::where('company_id', $companyId)->where('is_digital', true)->count();
-        $productsWithVariants = \App\Models\Product\Product::where('company_id', $companyId)->where('has_variants', true)->count();
+        // Cache stats for 5 minutes to reduce DB load
+        $cacheKey = "product_stats_{$companyId}";
+        $stats = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($companyId) {
 
-        $categoriesCount = \App\Models\Product\Category::count();
-        $brandsCount = \App\Models\Product\Brand::count();
-        $attributesCount = \App\Models\Product\Attribute::count();
-        $variantsCount = \App\Models\Product\ProductVariant::count();
+            $totalProducts        = \App\Models\Product\Product::where('company_id', $companyId)->count();
+            $activeProducts       = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'active')->count();
+            $inactiveProducts     = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'inactive')->count();
+            $draftProducts        = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'draft')->count();
+            $archivedProducts     = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'archived')->count();
+            $featuredProducts     = \App\Models\Product\Product::where('company_id', $companyId)->where('is_featured', true)->count();
+            $digitalProducts      = \App\Models\Product\Product::where('company_id', $companyId)->where('is_digital', true)->count();
+            $productsWithVariants = \App\Models\Product\Product::where('company_id', $companyId)->where('has_variants', true)->count();
 
-        $outOfStock = \App\Models\Product\Product::where('company_id', $companyId)
-            ->where('track_inventory', true)
-            ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= 0')
-            ->count();
+            // ── Scoped by company_id ────────────────────────────────────
+            $categoriesCount = \App\Models\Product\Category::where('company_id', $companyId)->count();
+            $brandsCount     = \App\Models\Product\Brand::where('company_id', $companyId)->count();
+            $attributesCount = \App\Models\Product\Attribute::where('company_id', $companyId)->count();
+            $variantsCount   = \App\Models\Product\ProductVariant::whereHas('product', fn($q) => $q->where('company_id', $companyId))->count();
 
-        $lowStockProducts = \App\Models\Product\Product::where('company_id', $companyId)
-            ->where('track_inventory', true)
-            ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= products.low_stock_threshold')
-            ->count();
+            $outOfStock = \App\Models\Product\Product::where('company_id', $companyId)
+                ->where('track_inventory', true)
+                ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= 0')
+                ->count();
 
-        $costValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
-            ->selectRaw('COALESCE(SUM(cost_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
-            ->value('val') ?? 0);
+            $lowStockProducts = \App\Models\Product\Product::where('company_id', $companyId)
+                ->where('track_inventory', true)
+                ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) > 0')
+                ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= products.low_stock_threshold')
+                ->count();
 
-        $sellingValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
-            ->selectRaw('COALESCE(SUM(selling_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
-            ->value('val') ?? 0);
+            $costValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
+                ->selectRaw('COALESCE(SUM(cost_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
+                ->value('val') ?? 0);
 
-        $potentialProfit = max(0, $sellingValue - $costValue);
+            $sellingValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
+                ->selectRaw('COALESCE(SUM(selling_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
+                ->value('val') ?? 0);
 
-        $avgPrice = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('selling_price') ?? 0);
-        $averageRating = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('rating_avg') ?? 0);
-        $totalViews = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('view_count') ?? 0);
-        $totalSold = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('sold_count') ?? 0);
+            $potentialProfit = max(0, $sellingValue - $costValue);
+            $avgPrice        = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('selling_price') ?? 0);
+            $averageRating   = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('rating_avg') ?? 0);
+            $totalViews      = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('view_count') ?? 0);
+            $totalSold       = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('sold_count') ?? 0);
+            $todayNew        = \App\Models\Product\Product::where('company_id', $companyId)->whereDate('created_at', now()->today())->count();
+            $productsOnSale  = \App\Models\Product\Product::where('company_id', $companyId)->whereNotNull('compare_price')->count();
+            $recentlyUpdated = \App\Models\Product\Product::where('company_id', $companyId)->where('updated_at', '>=', now()->subDays(7))->count();
 
-        $todayNew = \App\Models\Product\Product::where('company_id', $companyId)->whereDate('created_at', now()->today())->count();
-        $productsOnSale = \App\Models\Product\Product::where('company_id', $companyId)->whereNotNull('compare_price')->count();
-        $productsWithDiscount = \App\Models\Product\Product::where('company_id', $companyId)->where('is_featured', true)->count();
-        $recentlyUpdated = \App\Models\Product\Product::where('company_id', $companyId)->where('updated_at', '>=', now()->subDays(7))->count();
+            return [
+                'total_products'         => $totalProducts,
+                'active_products'        => $activeProducts,
+                'inactive_products'      => $inactiveProducts,
+                'draft_products'         => $draftProducts,
+                'archived_products'      => $archivedProducts,
+                'out_of_stock'           => $outOfStock,
 
-        return $this->successResponse([
-            'total_products'         => $totalProducts,
-            'active_products'        => $activeProducts,
-            'inactive_products'      => $inactiveProducts,
-            'draft_products'         => $draftProducts,
-            'archived_products'      => $archivedProducts,
-            'out_of_stock'           => $outOfStock,
+                'categories'             => $categoriesCount,
+                'brands'                 => $brandsCount,
+                'attributes'             => $attributesCount,
+                'variants'               => $variantsCount,
 
-            'categories'             => $categoriesCount,
-            'brands'                 => $brandsCount,
-            'attributes'             => $attributesCount,
-            'variants'               => $variantsCount,
+                'cost_value'             => round($costValue, 2),
+                'selling_value'          => round($sellingValue, 2),
+                'potential_profit'       => round($potentialProfit, 2),
+                'inventory_value'        => round($sellingValue, 2),
+                'profit_value'           => round($potentialProfit, 2),
+                'average_price'          => round($avgPrice, 2),
 
-            'cost_value'             => round($costValue, 2),
-            'selling_value'          => round($sellingValue, 2),
-            'potential_profit'       => round($potentialProfit, 2),
-            'inventory_value'        => round($sellingValue, 2),
-            'profit_value'           => round($potentialProfit, 2),
-            'average_price'          => round($avgPrice, 2),
+                'best_selling'           => $totalSold,
+                'low_selling'            => 0,
+                'most_viewed'            => $totalViews,
+                'average_rating'         => round($averageRating, 2),
 
-            'best_selling'           => (int) $totalSold,
-            'low_selling'            => 0,
-            'most_viewed'            => (int) $totalViews,
-            'average_rating'         => round($averageRating, 2),
+                'today_new_products'     => $todayNew,
+                'low_stock'              => $lowStockProducts,
+                'low_stock_products'     => $lowStockProducts,
+                'products_on_sale'       => $productsOnSale,
+                'products_with_discount' => $productsOnSale,
+                'recently_updated'       => $recentlyUpdated,
+            ];
+        });
 
-            'today_new_products'     => $todayNew,
-            'low_stock'              => $lowStockProducts,
-            'low_stock_products'     => $lowStockProducts,
-            'products_on_sale'       => $productsOnSale,
-            'products_with_discount' => $productsWithDiscount,
-            'recently_updated'       => $recentlyUpdated,
-        ], 'Product statistics retrieved successfully');
+        return $this->successResponse($stats, 'Product statistics retrieved successfully');
     }
 
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse

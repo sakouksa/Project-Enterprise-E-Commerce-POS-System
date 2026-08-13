@@ -61,4 +61,17 @@ class CityController extends BaseApiController
             'City deleted successfully'
         );
     }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $ids = $request->validate(['ids' => 'required|array'])['ids'];
+        $count = 0;
+        foreach ($ids as $id) {
+            try {
+                $this->service->delete($id);
+                $count++;
+            } catch (\Exception $e) {}
+        }
+        return $this->successResponse(null, "{$count} cities deleted successfully");
+    }
 }

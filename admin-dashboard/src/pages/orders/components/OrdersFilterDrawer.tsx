@@ -1,5 +1,6 @@
 import React from 'react'
 import { Drawer } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { Filter, X, RotateCcw, Calendar, DollarSign, Truck, Shield, Layers } from 'lucide-react'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
@@ -46,31 +47,33 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
   onApply,
   activeFiltersCount,
 }) => {
+  const { t } = useTranslation('orders')
+
   const statusOptions = [
-    { value: '', label: 'All Order Statuses' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'processing', label: 'Processing' },
-    { value: 'shipped', label: 'Shipped' },
-    { value: 'delivered', label: 'Delivered' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'refunded', label: 'Refunded' },
+    { value: '', label: t('allOrderStatuses') },
+    { value: 'pending', label: t('pending') },
+    { value: 'confirmed', label: t('confirmed') },
+    { value: 'processing', label: t('processing') },
+    { value: 'shipped', label: t('shipped') },
+    { value: 'delivered', label: t('delivered') },
+    { value: 'completed', label: t('completed') },
+    { value: 'cancelled', label: t('cancelled') },
+    { value: 'refunded', label: t('refunded') },
   ]
 
   const paymentStatusOptions = [
-    { value: '', label: 'All Payment Statuses' },
-    { value: 'paid', label: 'Paid' },
-    { value: 'unpaid', label: 'Unpaid' },
-    { value: 'partial', label: 'Partial' },
-    { value: 'refunded', label: 'Refunded' },
+    { value: '', label: t('allPaymentStatuses') },
+    { value: 'paid', label: t('paid') },
+    { value: 'unpaid', label: t('unpaid') },
+    { value: 'partial', label: t('partial') },
+    { value: 'refunded', label: t('refunded') },
   ]
 
   const fulfillmentStatusOptions = [
-    { value: '', label: 'All Fulfillment Statuses' },
-    { value: 'fulfilled', label: 'Fulfilled' },
-    { value: 'unfulfilled', label: 'Unfulfilled' },
-    { value: 'partial', label: 'Partial' },
+    { value: '', label: t('allFulfillmentStatuses') },
+    { value: 'fulfilled', label: t('fulfilled') },
+    { value: 'unfulfilled', label: t('unfulfilled') },
+    { value: 'partial', label: t('partial') },
   ]
 
   return (
@@ -86,13 +89,13 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               <Filter className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-foreground leading-none">Filter Web E-Commerce Orders</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Refine online customer orders & fulfillment</p>
+              <h3 className="font-bold text-base text-foreground leading-none">{t('filterWebOrders')}</h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{t('refineOrdersFulfillment')}</p>
             </div>
           </div>
           {activeFiltersCount > 0 && (
             <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
-              {activeFiltersCount} Active
+              {activeFiltersCount} {t('active')}
             </span>
           )}
         </div>
@@ -110,10 +113,10 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
           <button
             type="button"
             onClick={onReset}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-muted-foreground border border-border bg-card rounded-xl hover:bg-muted transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-muted-foreground border border-border bg-card rounded-xl hover:bg-muted transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset All</span>
+            <span>{t('resetAll')}</span>
           </button>
           <button
             type="button"
@@ -121,48 +124,51 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               onApply()
               onClose()
             }}
-            className="flex-1 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-md cursor-pointer text-center"
+            className="flex-1 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-md cursor-pointer text-center"
           >
-            Apply Filters ({activeFiltersCount})
+            {t('applyFilters')} ({activeFiltersCount})
           </button>
         </div>
       }
       className="enterprise-drawer"
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* 1. Order Status */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block">Order Status</label>
+          <label className="text-xs font-bold text-foreground block">{t('orderStatus')}</label>
           <ModernSelect
             value={statusFilter || ''}
             onChange={(val) => setStatusFilter(String(val || '') || undefined)}
             options={statusOptions}
-            placeholder="All Order Statuses"
-            icon={<Layers className="w-4 h-4 text-primary" />}
+            placeholder={t('allOrderStatuses')}
+            icon={<Layers className="w-3.5 h-3.5 text-primary" />}
+            size="sm"
           />
         </div>
 
         {/* 2. Payment Status */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block">Payment Status</label>
+          <label className="text-xs font-bold text-foreground block">{t('paymentStatus')}</label>
           <ModernSelect
             value={paymentStatusFilter || ''}
             onChange={(val) => setPaymentStatusFilter(String(val || '') || undefined)}
             options={paymentStatusOptions}
-            placeholder="All Payment Statuses"
-            icon={<Shield className="w-4 h-4 text-emerald-500" />}
+            placeholder={t('allPaymentStatuses')}
+            icon={<Shield className="w-3.5 h-3.5 text-emerald-500" />}
+            size="sm"
           />
         </div>
 
         {/* 3. Fulfillment Status */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block">Fulfillment Status</label>
+          <label className="text-xs font-bold text-foreground block">{t('fulfillmentStatus')}</label>
           <ModernSelect
             value={fulfillmentStatusFilter || ''}
             onChange={(val) => setFulfillmentStatusFilter(String(val || '') || undefined)}
             options={fulfillmentStatusOptions}
-            placeholder="All Fulfillment Statuses"
-            icon={<Truck className="w-4 h-4 text-sky-500" />}
+            placeholder={t('allFulfillmentStatuses')}
+            icon={<Truck className="w-3.5 h-3.5 text-sky-500" />}
+            size="sm"
           />
         </div>
 
@@ -170,25 +176,25 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-foreground block flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Order Date Range</span>
+            <span>{t('orderDateRange')}</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <span className="text-[10px] text-muted-foreground block mb-1">From Date</span>
+              <span className="text-[10px] text-muted-foreground block mb-1">{t('fromDate')}</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full h-[42px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+                className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
               />
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground block mb-1">To Date</span>
+              <span className="text-[10px] text-muted-foreground block mb-1">{t('toDate')}</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full h-[42px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+                className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
               />
             </div>
           </div>
@@ -198,22 +204,22 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-foreground block flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Order Total Range ($)</span>
+            <span>{t('orderTotalRange')}</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
-              placeholder="Min $ (e.g. 10)"
+              placeholder={t('minPricePlaceholder', 'Min $ (e.g. 10)')}
               value={minTotal}
               onChange={(e) => setMinTotal(e.target.value)}
-              className="w-full h-[42px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+              className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
             />
             <input
               type="number"
-              placeholder="Max $ (e.g. 500)"
+              placeholder={t('maxPricePlaceholder', 'Max $ (e.g. 500)')}
               value={maxTotal}
               onChange={(e) => setMaxTotal(e.target.value)}
-              className="w-full h-[42px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+              className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
             />
           </div>
         </div>

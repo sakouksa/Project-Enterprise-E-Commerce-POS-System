@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Activity, Info, Package, Warehouse, User, Clock, ArrowUpRight, AlertCircle, RefreshCw, FileText } from 'lucide-react'
+import { X, Activity, AlertCircle, RefreshCw, Package } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import api from '@/api/client'
@@ -29,7 +29,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
   onClose,
   onOpenProductDetail
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
 
   const { data: detail, isLoading, isError, refetch } = useQuery({
     queryKey: ['stock-movement-detail', movementId],
@@ -41,6 +41,17 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
   const isPlus = qty > 0 || detail?.type === 'in' || detail?.type === 'transfer_in' || detail?.type === 'adjustment'
   const beforeQty = Number(detail?.quantity_before ?? 0)
   const afterQty = Number(detail?.quantity_after ?? 0)
+
+  const formatMovementTypeLabel = (type: string | undefined) => {
+    if (!type) return '—'
+    const lower = type.toLowerCase()
+    if (lower === 'opname') return t('opname', t('inventory.opname', t('inventory.tabOpname', 'Stock Opname')))
+    if (lower === 'in' || lower === 'stock_in') return t('stockIn', t('inventory.stockIn', 'Stock In'))
+    if (lower === 'out' || lower === 'stock_out') return t('stockOut', t('inventory.stockOut', 'Stock Out'))
+    if (lower.includes('transfer')) return t('transfer', t('inventory.transfer', 'Stock Transfer'))
+    if (lower === 'adjustment') return t('adjustment', t('inventory.adjustment', 'Stock Adjustment'))
+    return type
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden print:hidden flex justify-end">
@@ -69,7 +80,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                {t('inventory.movement_card', 'Stock Movement Card')}
+                {t('inventory.movement_card', 'Movement Card')}
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
                 REF: #{detail?.reference_number || `MOV-${movementId}`}
@@ -122,7 +133,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       isPlus ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
                     }`}>
-                      {detail.type || 'Movement'}
+                      {formatMovementTypeLabel(detail.type)}
                     </span>
                   </div>
                 </div>
@@ -131,21 +142,21 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
               {/* MOVEMENT QUANTITY SUMMARY */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  MOVEMENT QUANTITY & IMPACT
+                  {t('movementQuantityImpact', t('inventory.movementQuantityImpact', 'MOVEMENT QUANTITY & IMPACT'))}
                 </h4>
                 <div className="grid grid-cols-3 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/60 text-center">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">Before</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('before', t('inventory.before', 'Before'))}</span>
                     <span className="font-bold text-foreground text-sm">{beforeQty}</span>
                   </div>
                   <div className={`p-3 rounded-xl border text-center ${
                     isPlus ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400'
                   }`}>
-                    <span className="text-[10px] block font-bold uppercase tracking-wider mb-1">Quantity Change</span>
+                    <span className="text-[10px] block font-bold uppercase tracking-wider mb-1">{t('qtyChange', t('inventory.qtyChange', 'Quantity Change'))}</span>
                     <span className="font-extrabold text-base">{isPlus ? `+${Math.abs(qty)}` : `-${Math.abs(qty)}`}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/60 text-center">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">After</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('after', t('inventory.after', 'After'))}</span>
                     <span className="font-bold text-foreground text-sm">{afterQty}</span>
                   </div>
                 </div>
@@ -154,28 +165,28 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
               {/* GENERAL MOVEMENT DETAILS */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  GENERAL INFORMATION
+                  {t('generalInfo', t('common.generalInfo', 'GENERAL INFORMATION'))}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Warehouse Hub</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('colWarehouse', t('inventory.colWarehouse', 'Warehouse Hub'))}</span>
                     <span className="font-bold text-foreground">{detail.warehouse?.name || 'Main Warehouse'}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Movement Type</span>
-                    <span className="font-bold text-foreground uppercase">{detail.type || '—'}</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('movementType', t('inventory.movementType', 'Movement Type'))}</span>
+                    <span className="font-bold text-foreground uppercase">{formatMovementTypeLabel(detail.type)}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Reference Document</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('referenceDocument', t('inventory.referenceDocument', 'Reference Document'))}</span>
                     <span className="font-mono font-bold text-foreground">{detail.reference_type ? `${detail.reference_type} #${detail.reference_id || ''}` : '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Operator / User</span>
-                    <span className="font-bold text-foreground">{detail.user?.name || 'System Auto'}</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('operatorUser', t('inventory.operatorUser', 'Operator / User'))}</span>
+                    <span className="font-bold text-foreground">{detail.user?.name || t('systemAuto', t('inventory.systemAuto', 'System Auto'))}</span>
                   </div>
                   {detail.unit_cost && (
                     <div>
-                      <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Unit Cost Price</span>
+                      <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('unitCostPrice', t('inventory.unitCostPrice', 'Unit Cost Price'))}</span>
                       <span className="font-bold text-foreground">${Number(detail.unit_cost).toFixed(2)}</span>
                     </div>
                   )}
@@ -185,7 +196,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
               {/* REASON / NOTES */}
               <div className="space-y-2">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  REASON & REMARKS
+                  {t('reasonRemarks', t('inventory.reasonRemarks', 'REASON & REMARKS'))}
                 </h4>
                 <p className="text-xs text-foreground bg-muted/30 border border-border/60 rounded-xl p-3.5 italic">
                   "{detail.notes || detail.reason || 'No specific notes recorded for this movement.'}"
@@ -195,15 +206,15 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
               {/* TIMESTAMPS */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  SYSTEM METADATA
+                  {t('systemMetadata', t('common.systemMetadata', 'SYSTEM METADATA'))}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Logged Date & Time</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('loggedDateTime', t('inventory.loggedDateTime', 'Logged Date & Time'))}</span>
                     <span className="font-semibold text-foreground">{formatShortDate(detail.created_at)}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Record Updated</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('lastUpdated', t('common.lastUpdated', 'Record Updated'))}</span>
                     <span className="font-semibold text-foreground">{formatShortDate(detail.updated_at)}</span>
                   </div>
                 </div>
@@ -222,7 +233,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
                   className="flex items-center gap-1.5 py-2 px-3 rounded-xl border border-primary/30 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                 >
                   <Package size={14} />
-                  View Inventory Card
+                  {t('viewInventoryCard', t('inventory.viewInventoryCard', 'View Inventory Card'))}
                 </button>
               ) : <div />}
 
@@ -231,7 +242,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
                 onClick={onClose}
                 className="py-2 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                Close
+                {t('buttons.close', t('common.close', 'Close'))}
               </button>
             </div>
           </>

@@ -1,0 +1,175 @@
+import React from 'react'
+import { useTranslation } from 'react-i18next'
+import { Package, Eye, Sliders, ArrowLeftRight } from 'lucide-react'
+import TableWrapper from '@/components/shared/TableWrapper'
+import TableActionMenu from '@/components/shared/TableActionMenu'
+import Pagination from '@/components/shared/Pagination'
+import { getAbsoluteImageUrl } from '@/utils/image'
+
+interface InventoryStockLevelsTableProps {
+  data: any
+  isLoading: boolean
+  isFetching: boolean
+  pagination: any
+  perPage: number
+  setPage: (p: number) => void
+  setPerPage: (p: number) => void
+  onViewItem: (id: number) => void
+  onOpenQuickAdjustment?: (item: any) => void
+  onSort: (field: string) => void
+  renderSortIcon: (field: string) => React.ReactNode
+}
+
+export const InventoryStockLevelsTable: React.FC<InventoryStockLevelsTableProps> = ({
+  data,
+  isLoading,
+  isFetching,
+  pagination,
+  perPage,
+  setPage,
+  setPerPage,
+  onViewItem,
+  onSort,
+  renderSortIcon,
+}) => {
+  const { t } = useTranslation(['inventory', 'common'])
+  const items: any[] = data?.data ?? []
+
+  return (
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden print:hidden">
+      <TableWrapper isFetching={isFetching}>
+        <table className="w-full data-table">
+          <thead>
+            <tr className="bg-muted/30 border-b border-border">
+              <th onClick={() => onSort('sku')} className="text-left cursor-pointer hover:bg-muted py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colSku', 'SKU')} {renderSortIcon('sku')}
+              </th>
+              <th onClick={() => onSort('product_name')} className="text-left cursor-pointer hover:bg-muted py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colProductName', 'Product')} {renderSortIcon('product_name')}
+              </th>
+              <th onClick={() => onSort('warehouse_id')} className="text-left cursor-pointer hover:bg-muted py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colWarehouse', 'Warehouse')} {renderSortIcon('warehouse_id')}
+              </th>
+              <th onClick={() => onSort('quantity')} className="text-center cursor-pointer hover:bg-muted py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colTotalQty', 'Total Qty')} {renderSortIcon('quantity')}
+              </th>
+              <th className="text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colReserved', 'Reserved')}
+              </th>
+              <th onClick={() => onSort('available_quantity')} className="text-center cursor-pointer hover:bg-muted py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colAvailable', 'Available')} {renderSortIcon('available_quantity')}
+              </th>
+              <th className="text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                {t('colStatus', 'Status')}
+              </th>
+              <th className="sticky right-0 z-10 bg-background border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[80px]">
+                {t('common.actions', 'Actions')}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-12 rounded mx-auto" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-12 rounded mx-auto" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-12 rounded mx-auto" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-16 rounded mx-auto" /></td>
+                  <td className="p-4"><div className="skeleton h-4 w-8 rounded ml-auto" /></td>
+                </tr>
+              ))
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-16 text-center text-muted-foreground text-sm">
+                  <Package size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+                  <p>{t('noStockFound', 'No inventory records found matching your filters.')}</p>
+                </td>
+              </tr>
+            ) : (
+              items.map((item) => {
+                const qty = Number(item.quantity) || 0
+                const reserved = Number(item.reserved_quantity) || 0
+                const available = Number(item.available_quantity) || Math.max(0, qty - reserved)
+                const reorderPoint = Number(item.reorder_point || item.product?.reorder_point || 5)
+                const isOut = qty <= 0
+                const isLow = !isOut && qty <= reorderPoint
+
+                const imgSrc = item.product?.images?.[0]?.url || item.product?.image || item.image
+
+                return (
+                  <tr key={item.id} className="hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => onViewItem(item.id)}>
+                    <td className="py-3 px-4 font-mono font-bold text-xs text-primary whitespace-nowrap">
+                      {item.sku || item.product?.sku || '—'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg border border-border bg-muted/20 overflow-hidden shrink-0">
+                          {imgSrc ? (
+                            <img src={getAbsoluteImageUrl(imgSrc)} alt="prod" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
+                              <Package size={14} />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-bold text-foreground text-xs block leading-snug">
+                            {item.product?.name || item.name || 'Catalog Item'}
+                          </span>
+                          {item.variant?.name && (
+                            <span className="text-[10px] text-muted-foreground font-medium block">
+                              {item.variant.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
+                      {item.warehouse?.name || 'Main Warehouse'}
+                    </td>
+                    <td className="py-3 px-4 text-center font-bold text-xs text-foreground whitespace-nowrap">
+                      {qty}
+                    </td>
+                    <td className="py-3 px-4 text-center text-xs text-muted-foreground whitespace-nowrap">
+                      {reserved}
+                    </td>
+                    <td className="py-3 px-4 text-center font-extrabold text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      {available}
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        isOut
+                          ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                          : isLow
+                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                          : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                      }`}>
+                        {isOut ? t('outOfStock', 'Out of Stock') : isLow ? t('lowStock', 'Low Stock') : t('inStock', 'In Stock')}
+                      </span>
+                    </td>
+                    <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[80px]" onClick={(e) => e.stopPropagation()}>
+                      <TableActionMenu
+                        onView={() => onViewItem(item.id)}
+                      />
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </TableWrapper>
+      <Pagination
+        currentPage={pagination.current_page}
+        lastPage={pagination.last_page}
+        total={pagination.total}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={setPerPage}
+      />
+    </div>
+  )
+}

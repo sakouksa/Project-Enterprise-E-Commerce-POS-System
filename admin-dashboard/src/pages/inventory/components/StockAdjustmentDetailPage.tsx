@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Sliders, Info, Package, Warehouse, User, Clock, AlertCircle, RefreshCw, CheckCircle, Edit } from 'lucide-react'
+import { X, Sliders, AlertCircle, RefreshCw, Edit } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import api from '@/api/client'
@@ -29,7 +29,7 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
   onClose,
   onEdit
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
 
   const { data: detail, isLoading, isError, refetch } = useQuery({
     queryKey: ['stock-adjustment-detail', adjustmentId],
@@ -37,7 +37,7 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
     enabled: !!adjustmentId
   })
 
-  const isApproved = detail?.status === 'approved' || detail?.status === 'completed'
+  const isApproved = detail?.status === 'approved' || detail?.status === 'completed' || detail?.status === 'done'
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden print:hidden flex justify-end">
@@ -66,7 +66,7 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                {t('inventory.adjustment_card', 'Stock Adjustment Card')}
+                {t('inventory.adjustment_card', 'Adjustment Card')}
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
                 REF: #{detail?.reference_number || `ADJ-${adjustmentId}`}
@@ -115,13 +115,15 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
                 <div className="space-y-1 min-w-0 flex-1">
                   <h3 className="text-sm font-bold text-foreground truncate">{detail.reference_number || `ADJ-${adjustmentId}`}</h3>
                   <p className="text-xs text-muted-foreground truncate">
-                    Warehouse: {detail.warehouse?.name || 'Main Warehouse'}
+                    {t('warehouse', t('inventory.warehouse', 'Warehouse Hub'))}: {detail.warehouse?.name || 'Main Warehouse'}
                   </p>
                   <div>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       isApproved ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                     }`}>
-                      {detail.status || 'Draft'}
+                      {isApproved
+                        ? t('statusApproved', t('inventory.statusApproved', t('common.approved', 'Approved')))
+                        : t('statusDraft', t('inventory.statusDraft', t('common.draft', 'Draft')))}
                     </span>
                   </div>
                 </div>
@@ -130,23 +132,23 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
               {/* GENERAL INFORMATION */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  GENERAL INFORMATION
+                  {t('generalInfo', t('common.generalInfo', 'GENERAL INFORMATION'))}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Warehouse Location</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('colWarehouse', t('inventory.colWarehouse', 'Warehouse Location'))}</span>
                     <span className="font-bold text-foreground">{detail.warehouse?.name || 'Main Warehouse'}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Adjustment Type</span>
-                    <span className="font-bold text-foreground capitalize">{detail.type || 'addition'}</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('type', t('inventory.type', 'Adjustment Type'))}</span>
+                    <span className="font-bold text-foreground capitalize">{String(t(String(detail.type || 'addition'), String(detail.type || 'addition')))}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Reason</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('reason', t('inventory.reason', 'Reason'))}</span>
                     <span className="font-bold text-foreground">{detail.reason || 'Routine correction'}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Approved By / Operator</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('operatorUser', t('inventory.operatorUser', 'Approved By / Operator'))}</span>
                     <span className="font-bold text-foreground">{detail.user?.name || 'Super Admin'}</span>
                   </div>
                 </div>
@@ -155,14 +157,14 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
               {/* ADJUSTED ITEMS BREAKDOWN */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  ADJUSTED ITEMS LEDGER
+                  {t('adjustedItemsLedger', t('inventory.adjustedItemsLedger', 'ADJUSTED ITEMS LEDGER'))}
                 </h4>
                 <div className="border border-border/70 rounded-xl overflow-hidden bg-card">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-muted/40 border-b border-border/60 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        <th className="p-3">Product Item</th>
-                        <th className="p-3 text-right">Adjusted Qty</th>
+                        <th className="p-3">{t('colProductName', t('inventory.colProductName', 'Product Item'))}</th>
+                        <th className="p-3 text-right">{t('adjustedQty', t('inventory.adjustedQty', 'Adjusted Qty'))}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 font-medium">
@@ -196,7 +198,7 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
               {/* REASON / NOTES */}
               <div className="space-y-2">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  REASON & REMARKS
+                  {t('reasonRemarks', t('inventory.reasonRemarks', 'REASON & REMARKS'))}
                 </h4>
                 <p className="text-xs text-foreground bg-muted/30 border border-border/60 rounded-xl p-3.5 italic">
                   "{detail.notes || detail.reason || 'No specific remarks recorded.'}"
@@ -206,15 +208,15 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
               {/* TIMESTAMPS */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  SYSTEM METADATA
+                  {t('systemMetadata', t('common.systemMetadata', 'SYSTEM METADATA'))}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Record Created</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('recordCreated', t('common.recordCreated', 'Record Created'))}</span>
                     <span className="font-semibold text-foreground">{formatShortDate(detail.created_at)}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Last Updated</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('lastUpdated', t('common.lastUpdated', 'Last Updated'))}</span>
                     <span className="font-semibold text-foreground">{formatShortDate(detail.updated_at)}</span>
                   </div>
                 </div>
@@ -233,7 +235,7 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
                   className="flex items-center gap-1.5 py-2 px-3.5 rounded-xl border border-primary/30 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                 >
                   <Edit size={14} />
-                  Edit Adjustment
+                  {t('editAdjustment', t('inventory.editAdjustment', 'Edit Adjustment'))}
                 </button>
               ) : <div />}
 
@@ -242,7 +244,7 @@ export const StockAdjustmentDetailPage: React.FC<StockAdjustmentDetailPageProps>
                 onClick={onClose}
                 className="py-2 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                Close
+                {t('buttons.close', t('common.close', 'Close'))}
               </button>
             </div>
           </>

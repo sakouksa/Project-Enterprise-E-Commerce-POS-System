@@ -7,6 +7,7 @@ import {
   AlertCircle, CheckCircle2, Image as ImageIcon, Settings
 } from 'lucide-react'
 import api from '@/api/client'
+import { getAbsoluteImageUrl } from '@/utils/image'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useToast } from '@/hooks/useToast'
@@ -20,6 +21,8 @@ import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 
 interface Category {
   id: number
@@ -40,7 +43,7 @@ interface TreeCategory extends Category {
 }
 
 const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
-  const { t, i18n } = useTranslation()
+  const { t, i18n } = useTranslation(['products', 'common'])
   const qc = useQueryClient()
   const toast = useToast()
 
@@ -67,6 +70,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
   const [recycleBinMode, setRecycleBinMode] = useState(false)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [expandedNodes, setExpandedNodes] = useState<Record<number, boolean>>({})
 
   // CSV Import Modal
@@ -84,15 +88,15 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   // Sorting states
-  const [sortBy, setSortBy] = useState('sort_order')
-  const [sortOrderField, setSortOrderField] = useState<'asc' | 'desc'>('asc')
+  const [sortBy, setSortBy] = useState('id')
+  const [sortOrderField, setSortOrderField] = useState<'asc' | 'desc'>('desc')
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrderField(sortOrderField === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrderField('asc')
+      setSortOrderField('desc')
     }
     setPage(1)
   }
@@ -211,6 +215,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
       toast.success(t('toast.deleted'))
       setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error'))
@@ -251,7 +256,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     setIsActive(cat.is_active)
     setImageFile(null)
     if (cat.image) {
-      setImagePreview(cat.image.startsWith('http') ? cat.image : `${api.defaults.baseURL?.replace('/api/v1', '')}/storage/${cat.image}`)
+      setImagePreview(getAbsoluteImageUrl(cat.image))
     } else {
       setImagePreview(null)
     }
@@ -404,9 +409,12 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
               )}
               {node.image ? (
                 <img 
-                  src={node.image.startsWith('http') ? node.image : `${api.defaults.baseURL?.replace('/api/v1', '')}/storage/${node.image}`} 
+                  src={getAbsoluteImageUrl(node.image)} 
                   alt={node.name} 
                   className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
                 />
               ) : (
                 <Folder size={16} className="text-indigo-500 flex-shrink-0" />
@@ -423,20 +431,10 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
             </span>
           </td>
           <td className="text-right pr-4">
-            <div className="flex items-center justify-end gap-1.5">
-              <button
-                onClick={() => openEditModal(node)}
-                className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Edit2 size={14} />
-              </button>
-              <button
-                onClick={() => setDeleteTarget(node)}
-                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+            <TableActionMenu
+              onEdit={() => openEditModal(node)}
+              onDelete={() => setDeleteTarget(node)}
+            />
           </td>
         </tr>
       )
@@ -533,8 +531,8 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
               </>
             ) : (
               <button
-                onClick={() => bulkDeleteMutation.mutate(selectedRows)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500"
+                onClick={() => setBulkDeleteConfirmOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500 cursor-pointer"
               >
                 <Trash size={13} />
                 {t('products.deleteSelected')}
@@ -640,9 +638,12 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     <td className="font-medium text-foreground text-sm py-3 flex items-center gap-2">
                       {cat.image ? (
                         <img 
-                          src={cat.image.startsWith('http') ? cat.image : `${api.defaults.baseURL?.replace('/api/v1', '')}/storage/${cat.image}`} 
+                          src={getAbsoluteImageUrl(cat.image)} 
                           alt={cat.name} 
                           className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
                         />
                       ) : (
                         <Folder size={16} className="text-indigo-500 flex-shrink-0" />
@@ -741,7 +742,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      placeholder="Category Name"
+                      placeholder={t('forms.categoryName', 'Category Name')}
                       className="form-input"
                     />
                   </div>
@@ -907,13 +908,20 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       </AnimatePresence>
 
       {/* Unified Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        isOpen={!!deleteTarget}
-        title={t('products.tabCategories')}
-        itemName={deleteTarget?.name || ''}
-        isPending={deleteMutation.isPending || forceDeleteMutation.isPending}
-        onCancel={() => setDeleteTarget(null)}
-        onSoftDelete={() => {
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t('categories.deleteTitle', 'Delete Category')}
+        message={
+          <div>
+            <div>{t('categories.confirmDeleteCategoryMessage', 'Are you sure you want to delete category')}</div>
+            <div className="mt-1">
+              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
+            </div>
+          </div>
+        }
+        confirmText={t('categories.deleteTitle', 'Delete Category')}
+        cancelText={t('common.cancel', 'Cancel')}
+        onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {
               forceDeleteMutation.mutate(deleteTarget.id)
@@ -922,6 +930,24 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
             }
           }
         }}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleteMutation.isPending || forceDeleteMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('categories.bulkDeleteTitle', 'Delete Selected Categories')}
+        message={t('categories.confirmBulkDeleteMessage', {
+          count: selectedRows.length,
+          defaultValue: `Are you sure you want to delete ${selectedRows.length} selected categories? This action cannot be undone.`
+        }).replace('{{count}}', String(selectedRows.length))}
+        confirmText={t('products.deleteSelected', 'Delete Selected')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
+        variant="danger"
       />
     </div>
   )

@@ -27,7 +27,11 @@
   "createCoupon": "创建优惠券",
   "editCoupon": "编辑优惠券",
   "generateCode": "生成代码",
-  "marketing.campaigns": "Campaigns",
-  "marketing.coupons": "Coupons",
-  "marketing.referrals": "Referrals"
+  "activeCampaigns": "进行中活动",
+  "couponUsage": "优惠券使用率",
+  "marketing.activeCampaigns": "进行中活动",
+  "marketing.campaigns": "进行中活动",
+  "marketing.couponUsage": "优惠券使用率",
+  "marketing.coupons": "优惠券使用率",
+  "marketing.referrals": "推荐与联盟"
 }

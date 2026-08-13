@@ -27,7 +27,11 @@
   "createCoupon": "Tạo phiếu mới",
   "editCoupon": "Sửa phiếu",
   "generateCode": "Tạo mã",
-  "marketing.campaigns": "Campaigns",
-  "marketing.coupons": "Coupons",
-  "marketing.referrals": "Referrals"
+  "activeCampaigns": "Chiến dịch hoạt động",
+  "couponUsage": "Sử dụng phiếu giảm giá",
+  "marketing.activeCampaigns": "Chiến dịch hoạt động",
+  "marketing.campaigns": "Chiến dịch hoạt động",
+  "marketing.couponUsage": "Sử dụng phiếu giảm giá",
+  "marketing.coupons": "Sử dụng phiếu giảm giá",
+  "marketing.referrals": "Giới thiệu & Tiếp thị liên kết"
 }

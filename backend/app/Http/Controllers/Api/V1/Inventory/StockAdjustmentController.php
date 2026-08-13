@@ -29,7 +29,8 @@ class StockAdjustmentController extends BaseApiController
             ->when($request->warehouse_id, fn($q, $w) => $q->where('warehouse_id', $w))
             ->when($request->start_date ?? $request->created_start, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($request->end_date ?? $request->created_end, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->trash == 'true', fn($q) => $q->onlyTrashed());
+            ->when($request->trash == 'true', fn($q) => $q->onlyTrashed())
+            ->orderBy('id', 'desc');
 
         $adjustments = $query->paginate($request->integer('per_page', 10));
 
@@ -53,7 +54,7 @@ class StockAdjustmentController extends BaseApiController
     {
         $validated = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
-            'type'         => 'required|in:addition,subtraction,recount',
+            'type'         => 'required|in:addition,subtraction,recount,in,out,adjustment',
             'reason'       => 'nullable|string',
             'notes'        => 'nullable|string',
             'items'        => 'nullable|array',
@@ -64,11 +65,15 @@ class StockAdjustmentController extends BaseApiController
             'product_id'   => 'required_without:items|exists:products,id',
             'variant_id'   => 'nullable|exists:product_variants,id',
             'quantity'     => 'required_without:items|numeric|min:0.0001',
+            'auto_approve' => 'nullable|boolean',
+            'status'       => 'nullable|string',
         ]);
 
         $refNumber = 'ADJ-' . date('Ymd') . '-' . mt_rand(1000, 9999);
+        $shouldApprove = $request->has('auto_approve') ? $request->boolean('auto_approve') : true;
 
-        $adjustment = DB::transaction(function () use ($validated, $refNumber) {
+        $adjustment = DB::transaction(function () use ($validated, $refNumber, $shouldApprove) {
+            $status = $shouldApprove ? 'approved' : 'draft';
             $adj = StockAdjustment::create([
                 'company_id'       => 1,
                 'warehouse_id'     => $validated['warehouse_id'],
@@ -77,7 +82,9 @@ class StockAdjustmentController extends BaseApiController
                 'date'             => date('Y-m-d'),
                 'type'             => $validated['type'],
                 'reason'           => $validated['reason'] ?? $validated['notes'] ?? 'Manual Adjustment',
-                'status'           => 'draft', // Created as draft first
+                'status'           => $status,
+                'approved_by'      => $shouldApprove ? (Auth::id() ?? 1) : null,
+                'approved_at'      => $shouldApprove ? now() : null,
             ]);
 
             $items = [];
@@ -108,10 +115,10 @@ class StockAdjustmentController extends BaseApiController
                 $qtyBefore = $currentStock ? (float) $currentStock->quantity : 0.0;
                 $qtyAdjusted = $item['quantity'];
 
-                if ($validated['type'] === 'subtraction') {
-                    $qtyAfter = $qtyBefore - $qtyAdjusted;
+                if ($validated['type'] === 'subtraction' || $validated['type'] === 'out') {
+                    $qtyAfter = max(0, $qtyBefore - $qtyAdjusted);
                     $qtyAdjusted = -$qtyAdjusted;
-                } elseif ($validated['type'] === 'recount') {
+                } elseif ($validated['type'] === 'recount' || $validated['type'] === 'adjustment') {
                     $qtyAfter = $qtyAdjusted;
                     $qtyAdjusted = $qtyAfter - $qtyBefore;
                 } else {
@@ -127,12 +134,51 @@ class StockAdjustmentController extends BaseApiController
                     'quantity_after'      => $qtyAfter,
                     'notes'               => $validated['reason'] ?? null,
                 ]);
+
+                if ($shouldApprove) {
+                    // Update inventory table
+                    if ($currentStock) {
+                        $currentStock->update(['quantity' => $qtyAfter]);
+                    } else {
+                        Inventory::create([
+                            'company_id'         => 1,
+                            'warehouse_id'       => $validated['warehouse_id'],
+                            'product_id'         => $item['product_id'],
+                            'product_variant_id' => $item['variant_id'] ?? null,
+                            'quantity'           => $qtyAfter,
+                            'reserved_quantity'  => 0,
+                        ]);
+                    }
+
+                    // Record inventory movement log
+                    $movementType = match ($validated['type']) {
+                        'addition', 'in' => 'in',
+                        'subtraction', 'out' => 'out',
+                        default => 'adjustment',
+                    };
+
+                    InventoryMovement::create([
+                        'company_id'         => 1,
+                        'warehouse_id'       => $validated['warehouse_id'],
+                        'product_id'         => $item['product_id'],
+                        'product_variant_id' => $item['variant_id'] ?? null,
+                        'user_id'            => Auth::id() ?? 1,
+                        'reference_type'     => StockAdjustment::class,
+                        'reference_id'       => $adj->id,
+                        'type'               => $movementType,
+                        'quantity'           => $qtyAdjusted,
+                        'quantity_before'    => $qtyBefore,
+                        'quantity_after'     => $qtyAfter,
+                        'notes'              => $validated['reason'] ?? $validated['notes'] ?? 'Stock adjustment log',
+                    ]);
+                }
             }
 
             return $adj;
         });
 
-        return $this->successResponse(new StockAdjustmentResource($adjustment), 'Stock adjustment created as draft', 201);
+        $message = $shouldApprove ? 'Stock adjustment logged and approved successfully' : 'Stock adjustment created as draft';
+        return $this->successResponse(new StockAdjustmentResource($adjustment), $message, 201);
     }
 
     /**

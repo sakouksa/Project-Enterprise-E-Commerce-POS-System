@@ -25,7 +25,7 @@ interface InventoryDetailPageProps {
 }
 
 export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId, inventoryId, onClose }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
   const effectiveId = itemId ?? inventoryId
   const [activeSubTab, setActiveSubTab] = useState<'info' | 'movements'>('info')
 
@@ -82,10 +82,10 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                {t('inventory.item_card', 'Inventory Item Card')}
+                {t('inventory.item_card', 'Item Card')}
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
-                ID: #{effectiveId || '—'}
+                {t('common.id', 'ID')}: #{effectiveId || '—'}
               </p>
             </div>
           </div>
@@ -155,17 +155,17 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                     {isOutOfStock ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">
                         <AlertTriangle size={11} />
-                        Out of Stock
+                        {t('inventory.out_of_stock', 'Out of Stock')}
                       </span>
                     ) : isLowStock ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
                         <AlertTriangle size={11} />
-                        Low Stock Alert
+                        {t('inventory.lowStockAlert', 'Low Stock Alert')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                         <CheckCircle size={11} />
-                        In Stock & Healthy
+                        {t('inventory.inStockHealthy', 'In Stock & Healthy')}
                       </span>
                     )}
                   </div>
@@ -177,27 +177,27 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                   {/* GENERAL INFORMATION */}
                   <div className="space-y-3">
                     <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                      GENERAL INFORMATION
+                      {t('common.generalInfo', 'GENERAL INFORMATION')}
                     </h4>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Product SKU</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.colSku', 'Product SKU')}</span>
                         <span className="font-mono font-bold text-foreground">{detail.product?.sku || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Warehouse Location</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.colWarehouse', 'Warehouse Location')}</span>
                         <span className="font-bold text-foreground">{detail.warehouse?.name || 'Main Warehouse'}</span>
                       </div>
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Category</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.category', t('products.colCategory', 'Category'))}</span>
                         <span className="font-bold text-foreground">{detail.product?.category?.name || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Brand</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.brand', t('products.colBrand', 'Brand'))}</span>
                         <span className="font-bold text-foreground">{detail.product?.brand?.name || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Unit of Measure</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.unit', t('products.colUnitName', 'Unit of Measure'))}</span>
                         <span className="font-bold text-foreground">{detail.product?.unit?.name || 'Pcs'}</span>
                       </div>
                     </div>
@@ -206,23 +206,23 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                   {/* STOCK BALANCES & AVAILABILITY */}
                   <div className="space-y-3">
                     <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                      STOCK BALANCES & AVAILABILITY
+                      {t('inventory.stockBalances', 'STOCK BALANCES & AVAILABILITY')}
                     </h4>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                       <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                        <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">On Hand Quantity</span>
+                        <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('inventory.onHandQuantity', 'On Hand Quantity')}</span>
                         <span className="font-extrabold text-foreground text-base">{totalQty}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-bold uppercase tracking-wider mb-1">Reserved Quantity</span>
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-bold uppercase tracking-wider mb-1">{t('inventory.reserved_qty', 'Reserved Quantity')}</span>
                         <span className="font-extrabold text-amber-600 dark:text-amber-400 text-base">{reservedQty}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold uppercase tracking-wider mb-1">Available For Sale</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold uppercase tracking-wider mb-1">{t('inventory.availableForSale', 'Available For Sale')}</span>
                         <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-base">{availableQty}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                        <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">Reorder Point / Qty</span>
+                        <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('inventory.reorderPointQty', 'Reorder Point / Qty')}</span>
                         <span className="font-bold text-foreground text-sm">{reorderPoint} / {reorderQty}</span>
                       </div>
                     </div>
@@ -231,15 +231,15 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                   {/* SYSTEM METADATA */}
                   <div className="space-y-3">
                     <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                      SYSTEM METADATA
+                      {t('common.systemMetadata', 'SYSTEM METADATA')}
                     </h4>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Record Created</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('common.recordCreated', 'Record Created')}</span>
                         <span className="font-semibold text-foreground">{formatShortDate(detail.created_at)}</span>
                       </div>
                       <div>
-                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Last Updated</span>
+                        <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('common.lastUpdated', 'Last Updated')}</span>
                         <span className="font-semibold text-foreground">{formatShortDate(detail.updated_at)}</span>
                       </div>
                     </div>
@@ -248,7 +248,7 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
               ) : (
                 <div className="space-y-4">
                   <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                    STOCK HISTORY LEDGER
+                    {t('inventory.stockLedger', 'STOCK HISTORY LEDGER')}
                   </h4>
                   {loadingMovements ? (
                     <div className="flex justify-center py-8"><LoadingSpinner /></div>
@@ -257,22 +257,24 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                       {(movements ?? []).map((m: any) => {
                         const qtyNum = Number(m.quantity ?? 0)
                         const isPlus = qtyNum > 0 || m.type === 'in' || m.type === 'transfer_in' || m.type === 'adjustment'
+                        const rawType = String(m.type || 'Movement')
+                        const typeLabel = t(`inventory.type_${rawType.toLowerCase()}`, t(`inventory.${rawType.toLowerCase()}`, rawType))
                         return (
                           <div key={m.id} className="relative">
                             <span className={`absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full border-2 border-card
                                              ${isPlus ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                             <div className="space-y-1 bg-muted/20 border border-border/50 rounded-xl p-3">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="font-bold uppercase tracking-wider text-primary text-[10px]">{m.type || 'Movement'}</span>
+                                <span className="font-bold uppercase tracking-wider text-primary text-[10px]">{typeLabel}</span>
                                 <span className="text-muted-foreground font-mono text-[10px]">{formatShortDate(m.created_at)}</span>
                               </div>
                               <p className="text-xs text-foreground font-semibold">
                                 {qtyNum > 0 ? `+${qtyNum}` : `${qtyNum}`}
                                 <span className="text-muted-foreground font-normal ml-2 text-[11px]">
-                                  (Before: {m.quantity_before ?? 0} → After: {m.quantity_after ?? 0})
+                                  ({t('inventory.before', 'Before')}: {m.quantity_before ?? 0} → {t('inventory.after', 'After')}: {m.quantity_after ?? 0})
                                 </span>
                               </p>
-                              {m.notes && <p className="text-xs text-muted-foreground italic">"{m.notes}"</p>}
+                              {m.notes && <p className="text-xs text-muted-foreground italic">"{String(t(m.notes, m.notes))}"</p>}
                             </div>
                           </div>
                         )
@@ -295,7 +297,7 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
                 onClick={onClose}
                 className="py-2 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                Close
+                {t('buttons.close', 'Close')}
               </button>
             </div>
           </>

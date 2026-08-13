@@ -77,7 +77,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(1)}
           disabled={disabled || currentPage <= 1}
-          className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-40
+          className="p-1.5 rounded-lg border border-border hover:bg-muted text-foreground disabled:opacity-30
                      disabled:cursor-not-allowed transition-colors"
           aria-label={t('pagination.firstPage', 'First page')}
         >
@@ -88,7 +88,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={disabled || currentPage <= 1}
-          className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-40
+          className="p-1.5 rounded-lg border border-border hover:bg-muted text-foreground disabled:opacity-30
                      disabled:cursor-not-allowed transition-colors"
           aria-label={t('pagination.prevPage', 'Previous page')}
         >
@@ -110,7 +110,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed
                             ${p === currentPage
                               ? 'bg-primary text-primary-foreground shadow-sm'
-                              : 'hover:bg-muted text-muted-foreground'
+                              : 'hover:bg-muted text-foreground hover:text-primary'
                             }`}
               >
                 {p}
@@ -132,7 +132,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={disabled || currentPage >= lastPage || lastPage === 0}
-          className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-40
+          className="p-1.5 rounded-lg border border-border hover:bg-muted text-foreground disabled:opacity-30
                      disabled:cursor-not-allowed transition-colors"
           aria-label={t('pagination.nextPage', 'Next page')}
         >
@@ -143,7 +143,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(lastPage || 1)}
           disabled={disabled || currentPage >= lastPage || lastPage === 0}
-          className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-40
+          className="p-1.5 rounded-lg border border-border hover:bg-muted text-foreground disabled:opacity-30
                      disabled:cursor-not-allowed transition-colors"
           aria-label={t('pagination.lastPage', 'Last page')}
         >

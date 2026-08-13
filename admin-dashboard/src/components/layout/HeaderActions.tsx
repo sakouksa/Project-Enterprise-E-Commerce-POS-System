@@ -9,9 +9,13 @@ import ThemeSwitcher from './ThemeSwitcher'
 import NotificationDropdown from './NotificationDropdown'
 import ProfileDropdown from './ProfileDropdown'
 
+import { useThemeStore } from '@/stores/themeStore'
+
 const HeaderActions: React.FC = () => {
   const { t } = useTranslation()
   const { hasPermission } = useAuthStore()
+  const { navbar } = useThemeStore()
+  const customTextColor = navbar?.textColor
 
   return (
     <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
@@ -19,7 +23,8 @@ const HeaderActions: React.FC = () => {
       {hasPermission('sale.create') && (
         <Link
           to="/pos"
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all duration-200"
+          style={{ color: customTextColor || undefined }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center opacity-90 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 border border-transparent hover:border-black/10 dark:hover:border-white/10 transition-all duration-200"
           title={t('nav.posTerminal', 'POS Terminal')}
         >
           <Zap className="w-4.5 h-4.5" />

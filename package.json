@@ -1,0 +1,15 @@
+{
+  "name": "enterprise-pos-system",
+  "version": "1.0.0",
+  "description": "Enterprise E-Commerce + POS System",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && php artisan serve --port=8000",
+    "dev:admin": "cd admin-dashboard && npm run dev",
+    "dev:customer": "cd customer-website && npm run dev",
+    "dev": "npx concurrently -n \"BACKEND,ADMIN,CUSTOMER\" -c \"blue,green,magenta\" \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:customer\"",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  }
+}

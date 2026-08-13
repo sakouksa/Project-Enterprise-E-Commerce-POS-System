@@ -27,7 +27,11 @@
   "createCoupon": "បង្កើតប័ណ្ណថ្មី",
   "editCoupon": "កែប្រែប័ណ្ណ",
   "generateCode": "បង្កើតកូដ",
-  "marketing.campaigns": "Campaigns",
-  "marketing.coupons": "Coupons",
-  "marketing.referrals": "Referrals"
+  "activeCampaigns": "យុទ្ធនាការសកម្ម",
+  "couponUsage": "ការប្រើប្រាស់ប័ណ្ណបញ្ចុះតម្លៃ",
+  "marketing.activeCampaigns": "យុទ្ធនាការសកម្ម",
+  "marketing.campaigns": "យុទ្ធនាការសកម្ម",
+  "marketing.couponUsage": "ការប្រើប្រាស់ប័ណ្ណបញ្ចុះតម្លៃ",
+  "marketing.coupons": "ការប្រើប្រាស់ប័ណ្ណបញ្ចុះតម្លៃ",
+  "marketing.referrals": "ការណែនាំ & សមាជិក"
 }

@@ -16,6 +16,8 @@ import EmptyState from '@/components/shared/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 
@@ -30,7 +32,7 @@ interface Unit {
 }
 
 const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
-  const { t, i18n } = useTranslation()
+  const { t, i18n } = useTranslation(['products', 'common'])
   const qc = useQueryClient()
   const toast = useToast()
 
@@ -56,6 +58,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   const [deleteTarget, setDeleteTarget] = useState<Unit | null>(null)
   const [recycleBinMode, setRecycleBinMode] = useState(false)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
 
   // CSV Import Modal
   const [importOpen, setImportOpen] = useState(false)
@@ -69,7 +72,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   const [isActive, setIsActive] = useState(true)
 
   // Sorting states
-  const [sortBy, setSortBy] = useState('created_at')
+  const [sortBy, setSortBy] = useState('id')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   const handleSort = (field: string) => {
@@ -77,7 +80,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrder('asc')
+      setSortOrder('desc')
     }
     setPage(1)
   }
@@ -174,6 +177,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.deleted'))
       setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error'))
@@ -321,7 +325,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => bulkDeleteMutation.mutate(selectedRows)}
+              onClick={() => setBulkDeleteConfirmOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500 cursor-pointer"
             >
               <Trash size={13} />
@@ -430,22 +434,10 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                       </span>
                     </td>
                     <td className="text-right pr-4">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => openEditModal(unit)}
-                          className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          title={t('products.edit')}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(unit)}
-                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
-                          title={t('products.delete')}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      <TableActionMenu
+                        onEdit={() => openEditModal(unit)}
+                        onDelete={() => setDeleteTarget(unit)}
+                      />
                     </td>
                   </tr>
                 ))
@@ -495,7 +487,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    placeholder="e.g. Pieces, Kilograms"
+                    placeholder={t('forms.unitNamePlaceholder', 'e.g. Pieces, Kilograms')}
                     className="form-input"
                   />
                 </div>
@@ -508,7 +500,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                     value={symbol}
                     onChange={(e) => setSymbol(e.target.value)}
                     required
-                    placeholder="e.g. pcs, kg"
+                    placeholder={t('forms.unitSymbolPlaceholder', 'e.g. pcs, kg')}
                     className="form-input font-mono"
                   />
                 </div>
@@ -615,13 +607,20 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       </AnimatePresence>
 
       {/* Unified Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        isOpen={!!deleteTarget}
-        title={t('products.tabUnits')}
-        itemName={deleteTarget?.name || ''}
-        isPending={deleteMutation.isPending || forceDeleteMutation.isPending}
-        onCancel={() => setDeleteTarget(null)}
-        onSoftDelete={() => {
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t('units.deleteTitle', 'Delete Unit')}
+        message={
+          <div>
+            <div>{t('units.confirmDeleteUnitMessage', 'Are you sure you want to delete unit')}</div>
+            <div className="mt-1">
+              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
+            </div>
+          </div>
+        }
+        confirmText={t('units.deleteTitle', 'Delete Unit')}
+        cancelText={t('common.cancel', 'Cancel')}
+        onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {
               forceDeleteMutation.mutate(deleteTarget.id)
@@ -630,6 +629,24 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
             }
           }
         }}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleteMutation.isPending || forceDeleteMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('units.bulkDeleteTitle', 'Delete Selected Units')}
+        message={t('units.confirmBulkDeleteMessage', {
+          count: selectedRows.length,
+          defaultValue: `Are you sure you want to delete ${selectedRows.length} selected units? This action cannot be undone.`
+        }).replace('{{count}}', String(selectedRows.length))}
+        confirmText={t('products.deleteSelected', 'Delete Selected')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
+        variant="danger"
       />
     </div>
   )

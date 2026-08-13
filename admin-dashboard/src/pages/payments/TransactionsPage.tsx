@@ -17,6 +17,7 @@ import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import FormDrawer from '@/components/common/FormDrawer'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
@@ -390,15 +391,11 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
                       {t.reference_type ? `${t.reference_type} #${t.reference_id}` : '-'}
                     </td>
                     <td className="py-4 px-5 text-xs text-muted-foreground whitespace-nowrap">{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>
-                    <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEditDrawer(t)} className="p-1.5 hover:text-blue-500 rounded hover:bg-muted transition-colors">
-                          <Edit2 size={14} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(t)} className="p-1.5 hover:text-red-500 rounded hover:bg-muted transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                    <td className="py-4 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableActionMenu
+                        onEdit={() => openEditDrawer(t)}
+                        onDelete={() => setDeleteTarget(t)}
+                      />
                     </td>
                   </tr>
                 ))

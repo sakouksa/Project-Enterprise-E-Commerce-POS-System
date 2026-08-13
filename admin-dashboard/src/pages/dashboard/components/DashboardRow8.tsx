@@ -11,15 +11,15 @@ export const DashboardRow8: React.FC = () => {
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Globe2 className="w-4 h-4 text-blue-500" />
-          {t('website.traffic_conversion', 'Web Conversion Metrics')}
+          {t('dashboard.webConversionMetrics', 'Web Conversion Metrics')}
         </h4>
         <div className="space-y-4">
           <div>
-            <span className="text-[11px] text-muted-foreground font-semibold">Web Conversion Rate</span>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.webConversionRate', 'Web Conversion Rate')}</span>
             <h5 className="font-bold text-sm text-foreground mt-1">3.45%</h5>
           </div>
           <div className="border-t border-border/20 pt-3">
-            <span className="text-[11px] text-muted-foreground font-semibold">Bounce Rate</span>
+            <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.bounceRate', 'Bounce Rate')}</span>
             <h5 className="font-bold text-sm text-foreground mt-1">42.8%</h5>
           </div>
         </div>
@@ -28,13 +28,13 @@ export const DashboardRow8: React.FC = () => {
       {/* Top Visited Pages */}
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-3">
-          {t('website.top_pages', 'Top Viewed Pages')}
+          {t('dashboard.topViewedPages', 'Top Viewed Pages')}
         </h4>
         <div className="space-y-2.5">
           {[
-            { path: '/products/jbl-laptop-2', views: '2.5k views' },
-            { path: '/categories/laptops', views: '1.8k views' },
-            { path: '/special-promo-page', views: '950 views' },
+            { path: '/products/jbl-laptop-2', views: `2.5k ${t('dashboard.views', 'views')}` },
+            { path: '/categories/laptops', views: `1.8k ${t('dashboard.views', 'views')}` },
+            { path: '/special-promo-page', views: `950 ${t('dashboard.views', 'views')}` },
           ].map((page, idx) => (
             <div key={idx} className="flex justify-between items-center text-xs border-b border-border/20 pb-2 last:border-0 last:pb-0">
               <span className="text-muted-foreground font-semibold truncate max-w-[165px]">{page.path}</span>
@@ -47,24 +47,24 @@ export const DashboardRow8: React.FC = () => {
       {/* Device Breakdown */}
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4">
-          {t('website.devices', 'Visitor Devices')}
+          {t('dashboard.visitorDevices', 'Visitor Devices')}
         </h4>
         <div className="space-y-3">
           <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5 font-semibold">
-              <Smartphone className="w-3.5 h-3.5 text-blue-500" /> Mobile
+              <Smartphone className="w-3.5 h-3.5 text-blue-500" /> {t('dashboard.mobile', 'Mobile')}
             </span>
             <span className="font-bold text-foreground">65%</span>
           </div>
           <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5 font-semibold">
-              <Monitor className="w-3.5 h-3.5 text-emerald-500" /> Desktop
+              <Monitor className="w-3.5 h-3.5 text-emerald-500" /> {t('dashboard.desktop', 'Desktop')}
             </span>
             <span className="font-bold text-foreground">28%</span>
           </div>
           <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5 font-semibold">
-              <Tablet className="w-3.5 h-3.5 text-purple-500" /> Tablet
+              <Tablet className="w-3.5 h-3.5 text-purple-500" /> {t('dashboard.tablet', 'Tablet')}
             </span>
             <span className="font-bold text-foreground">7%</span>
           </div>

@@ -15,6 +15,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 
 interface Expense {
   id:          number
@@ -227,24 +228,11 @@ const ExpensesPage: React.FC = () => {
                       <td className="font-semibold text-sm text-foreground">
                         Rp {exp.amount.toLocaleString('id-ID')}
                       </td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => openEditModal(exp)}
-                            className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(exp)}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg
-                                       text-muted-foreground hover:text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                      <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <TableActionMenu
+                          onEdit={() => openEditModal(exp)}
+                          onDelete={() => setDeleteTarget(exp)}
+                        />
                       </td>
                     </tr>
                   ))

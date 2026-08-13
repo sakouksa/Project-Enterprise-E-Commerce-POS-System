@@ -114,7 +114,15 @@ class Product extends Model
 
     public function scopeSearch($query, string $search)
     {
-        return $query->where(function ($q) use ($search) {
+        $search = trim($search);
+        if ($search === '') {
+            return $query;
+        }
+
+        $terms = array_filter(explode(' ', $search));
+
+        return $query->where(function ($q) use ($search, $terms) {
+            // 1. Full phrase match across product fields, category, brand, and variants
             $q->where('name', 'like', "%{$search}%")
               ->orWhere('sku', 'like', "%{$search}%")
               ->orWhere('barcode', 'like', "%{$search}%")
@@ -125,7 +133,38 @@ class Product extends Model
               })
               ->orWhereHas('brand', function ($qb) use ($search) {
                   $qb->where('name', 'like', "%{$search}%");
+              })
+              ->orWhereHas('variants', function ($qv) use ($search) {
+                  $qv->where('name', 'like', "%{$search}%")
+                     ->orWhere('sku', 'like', "%{$search}%")
+                     ->orWhere('barcode', 'like', "%{$search}%");
               });
+
+            // 2. If search contains multiple words, match items containing all words across fields
+            if (count($terms) > 1) {
+                $q->orWhere(function ($subQ) use ($terms) {
+                    foreach ($terms as $term) {
+                        $subQ->where(function ($wordQ) use ($term) {
+                            $wordQ->where('name', 'like', "%{$term}%")
+                                  ->orWhere('sku', 'like', "%{$term}%")
+                                  ->orWhere('barcode', 'like', "%{$term}%")
+                                  ->orWhere('slug', 'like', "%{$term}%")
+                                  ->orWhere('description', 'like', "%{$term}%")
+                                  ->orWhereHas('category', function ($qc) use ($term) {
+                                      $qc->where('name', 'like', "%{$term}%");
+                                  })
+                                  ->orWhereHas('brand', function ($qb) use ($term) {
+                                      $qb->where('name', 'like', "%{$term}%");
+                                  })
+                                  ->orWhereHas('variants', function ($qv) use ($term) {
+                                      $qv->where('name', 'like', "%{$term}%")
+                                         ->orWhere('sku', 'like', "%{$term}%")
+                                         ->orWhere('barcode', 'like', "%{$term}%");
+                                  });
+                        });
+                    }
+                });
+            }
         });
     }
 

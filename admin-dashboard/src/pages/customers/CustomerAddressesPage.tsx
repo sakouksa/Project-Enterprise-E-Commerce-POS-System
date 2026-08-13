@@ -12,6 +12,8 @@ import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import TableActionMenu from '@/components/shared/TableActionMenu'
+import ModernSelect from '@/components/shared/ModernSelect'
 import { useTranslation } from 'react-i18next'
 
 interface CustomerAddress {
@@ -102,6 +104,8 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<AddressFormData>({
     defaultValues: {
@@ -119,6 +123,9 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
       is_default: false
     }
   })
+
+  const watchCustomerId = watch('customer_id')
+  const watchLabel = watch('label')
 
   // Queries
   const { data: customers } = useQuery({
@@ -261,32 +268,90 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
   }
 
   const handleExport = () => {
-    const headers = ['ID', 'Customer', 'Label', 'Receiver Name', 'Phone', 'Address', 'City', 'Province', 'Country', 'Postal Code', 'Latitude', 'Longitude', 'Default']
-    const rows = addresses.map(addr => [
-      addr.id,
-      addr.customer?.name || `Customer #${addr.customer_id}`,
-      addr.label,
-      `"${addr.name.replace(/"/g, '""')}"`,
-      `"${addr.phone.replace(/"/g, '""')}"`,
-      `"${addr.address.replace(/"/g, '""')}"`,
-      `"${addr.city.replace(/"/g, '""')}"`,
-      `"${addr.province.replace(/"/g, '""')}"`,
-      `"${addr.country.replace(/"/g, '""')}"`,
-      addr.postal_code,
-      addr.latitude || '',
-      addr.longitude || '',
-      addr.is_default ? 'Yes' : 'No'
-    ])
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `customer_addresses_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    toast.success(t('toast.exportSuccess'))
+    const infoId = toast.info(t('customers.toast.exportDownloading', 'Downloading customer address data...'))
+    setTimeout(() => {
+      if (infoId) toast.dismiss(infoId)
+
+      const titleText = t('customers.customerAddresses', 'Customer Addresses')
+      const headers = [
+        t('customers.id', 'ID'),
+        t('customers.customer', 'Customer'),
+        t('customers.addressLabel', 'Address Label'),
+        t('customers.receiverName', 'Recipient Name'),
+        t('customers.phone', 'Phone'),
+        t('customers.streetAddress', 'Address'),
+        t('customers.city', 'City'),
+        t('customers.province', 'Province'),
+        t('customers.country', 'Country'),
+        t('customers.postalCode', 'Postal Code'),
+        t('customers.latitude', 'Latitude'),
+        t('customers.longitude', 'Longitude'),
+        t('customers.defaultAddress', 'Default Address')
+      ]
+
+      let tbodyHtml = ''
+      addresses.forEach(addr => {
+        const customerName = addr.customer?.name || (addr.customer_id ? `Customer #${addr.customer_id}` : '—')
+        const labelKey = addr.label ? `label${addr.label.charAt(0).toUpperCase() + addr.label.slice(1).toLowerCase()}` : ''
+        const translatedLabel = labelKey ? t(`customers.${labelKey}`, addr.label) : (addr.label || '—')
+        const defaultText = addr.is_default ? t('common.yes', 'Yes') : t('common.no', 'No')
+
+        tbodyHtml += '<tr>' +
+          '<td class="ref-cell">' + addr.id + '</td>' +
+          '<td><b>' + customerName + '</b></td>' +
+          '<td class="text-center">' + translatedLabel + '</td>' +
+          '<td>' + (addr.name || '—') + '</td>' +
+          '<td>' + (addr.phone || '—') + '</td>' +
+          '<td>' + (addr.address || '—') + '</td>' +
+          '<td>' + (addr.city || '—') + '</td>' +
+          '<td>' + (addr.province || '—') + '</td>' +
+          '<td>' + (addr.country || '—') + '</td>' +
+          '<td class="text-center">' + (addr.postal_code || '—') + '</td>' +
+          '<td class="text-center">' + (addr.latitude ?? '—') + '</td>' +
+          '<td class="text-center">' + (addr.longitude ?? '—') + '</td>' +
+          '<td class="text-center">' + defaultText + '</td>' +
+          '</tr>'
+      })
+
+      const html = '<html>' +
+        '<head>' +
+        '<meta charset="utf-8" />' +
+        '<style>' +
+        '  table { border-collapse: collapse; width: 100%; font-family: "Segoe UI", Tahoma, Geneva, sans-serif; }' +
+        '  .title-cell { background-color: #0f172a; color: #ffffff; font-size: 16pt; font-weight: bold; text-align: center; padding: 15px; }' +
+        '  .subtitle-cell { background-color: #1e293b; color: #cbd5e1; font-size: 10pt; text-align: center; padding: 8px; font-style: italic; }' +
+        '  th { background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 10pt; border: 1px solid #cbd5e1; padding: 10px; text-transform: uppercase; }' +
+        '  td { border: 1px solid #e2e8f0; padding: 8px; font-size: 9.5pt; color: #334155; }' +
+        '  tr:nth-child(even) { background-color: #f8fafc; }' +
+        '  .text-center { text-align: center; }' +
+        '  .ref-cell { font-family: monospace; font-weight: bold; color: #1e40af; }' +
+        '</style>' +
+        '</head>' +
+        '<body>' +
+        '  <table>' +
+        '    <thead>' +
+        '      <tr><th colspan="13" class="title-cell">ENTERPRISE POS - ' + titleText + '</th></tr>' +
+        '      <tr><th colspan="13" class="subtitle-cell">Generated on: ' + new Date().toLocaleString() + ' | Total Records: ' + addresses.length + '</th></tr>' +
+        '      <tr>' +
+        headers.map(h => '<th>' + h + '</th>').join('') +
+        '      </tr>' +
+        '    </thead>' +
+        '    <tbody>' +
+        tbodyHtml +
+        '    </tbody>' +
+        '  </table>' +
+        '</body>' +
+        '</html>'
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+      const link = document.createElement("a")
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `customer_addresses_${new Date().toISOString().slice(0, 10)}.xls`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success(t('customers.toast.exportSuccessAddresses', 'Customer addresses exported successfully.'))
+    }, 800)
   }
 
   const handleResetFilters = () => {
@@ -355,27 +420,27 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
             </div>
 
             {/* Customer Filter */}
-            <select
+            <ModernSelect
               value={customerFilter}
-              onChange={e => { setCustomerFilter(e.target.value); setPage(1) }}
-              className="form-input w-48"
-            >
-              <option value="">{t('customers.title')}: {t('common.allStatus')}</option>
-              {customers?.map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={val => { setCustomerFilter(val); setPage(1); }}
+              options={[
+                { value: '', label: `${t('customers.title')}: ${t('common.allStatus')}` },
+                ...(customers ?? []).map((c: any) => ({ value: String(c.id), label: c.name }))
+              ]}
+              className="w-52"
+            />
 
             {/* Default/Secondary Filter */}
-            <select
+            <ModernSelect
               value={defaultFilter}
-              onChange={e => { setDefaultFilter(e.target.value); setPage(1) }}
-              className="form-input w-40"
-            >
-              <option value="all">{t('common.status')}: {t('common.allStatus')}</option>
-              <option value="default">{t('customers.defaultAddress')}</option>
-              <option value="secondary">Secondary</option>
-            </select>
+              onChange={val => { setDefaultFilter(val); setPage(1); }}
+              options={[
+                { value: 'all', label: `${t('common.status')}: ${t('common.allStatus')}` },
+                { value: 'default', label: t('customers.defaultAddress') },
+                { value: 'secondary', label: t('customers.secondaryAddress', 'Secondary Address') }
+              ]}
+              className="w-48"
+            />
 
             <button
               onClick={handleResetFilters}
@@ -406,17 +471,32 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                   <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
                     <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
-                    {Object.keys(visibleColumns).map(col => (
-                      <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                        <input
-                          type="checkbox"
-                          checked={visibleColumns[col as keyof typeof visibleColumns]}
-                          onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
-                          className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                        />
-                        <span>{col}</span>
-                      </label>
-                    ))}
+                    {Object.keys(visibleColumns).map(col => {
+                      const colLabels: Record<string, string> = {
+                        id: t('customers.id', 'ID'),
+                        customer: t('customers.title', 'Customer'),
+                        label: t('customers.addressLabel', 'Label'),
+                        recipient: t('customers.recipient', 'Recipient'),
+                        phone: t('common.phone', 'Phone'),
+                        address: t('customers.addresses', 'Address'),
+                        region: t('customers.region', 'Region'),
+                        postalCode: t('customers.postalCode', 'Postal Code'),
+                        coordinates: t('customers.coordinates', 'Coordinates'),
+                        status: t('common.status', 'Status'),
+                        actions: t('common.actions', 'Actions')
+                      }
+                      return (
+                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col as keyof typeof visibleColumns]}
+                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
+                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
+                          />
+                          <span>{colLabels[col] || col}</span>
+                        </label>
+                      )
+                    })}
                   </div>
                 </>
               )}
@@ -434,7 +514,7 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                 <tr>
                   {visibleColumns.id && (
                     <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      ID {renderSortIcon('id')}
+                      {t('customers.id', 'ID')} {renderSortIcon('id')}
                     </th>
                   )}
                   {visibleColumns.customer && (
@@ -459,7 +539,7 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                   )}
                   {visibleColumns.address && (
                     <th onClick={() => handleSort('address')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.address')} {renderSortIcon('address')}
+                      {t('customers.addresses')} {renderSortIcon('address')}
                     </th>
                   )}
                   {visibleColumns.region && (
@@ -474,7 +554,7 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                   )}
                   {visibleColumns.coordinates && (
                     <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      Coordinates (Lat, Lng)
+                      {t('customers.coordinates', 'Coordinates (Lat, Lng)')}
                     </th>
                   )}
                   {visibleColumns.status && (
@@ -553,20 +633,10 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                     )}
                     {visibleColumns.actions && (
                       <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => openEditModal(addr)}
-                            className="p-1.5 hover:bg-muted text-muted-foreground hover:text-blue-600 rounded-lg transition-colors"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(addr)}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        <TableActionMenu
+                          onEdit={() => openEditModal(addr)}
+                          onDelete={() => setDeleteTarget(addr)}
+                        />
                       </td>
                     )}
                   </tr>
@@ -595,194 +665,193 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-xl w-full max-w-lg overflow-hidden shadow-2xl my-8"
+              className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl my-auto flex flex-col max-h-[85vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingAddress ? t('customers.editAddress') : t('customers.addAddress')}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <h3 className="font-bold text-lg text-foreground">
+                  {editingAddress ? t('customers.editAddress', 'Edit Address') : t('customers.addAddress', 'Add Address')}
                 </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
+                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.title')} <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      {...register('customer_id', { required: t('customers.validation.customerRequired') })}
-                      className="form-input"
-                    >
-                      <option value="">-- Choose Customer --</option>
-                      {customers?.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    {errors.customer_id && <p className="text-red-500 text-xs mt-1">{errors.customer_id.message}</p>}
+              <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <ModernSelect
+                        label={`${t('customers.customer', 'Customer')} *`}
+                        value={watchCustomerId || ''}
+                        onChange={(val) => setValue('customer_id', val, { shouldValidate: true })}
+                        options={[
+                          { value: '', label: t('customers.selectCustomer', '-- Select Customer --') },
+                          ...(customers ?? []).map((c: any) => ({ value: String(c.id), label: c.name }))
+                        ]}
+                      />
+                      {errors.customer_id && <p className="text-rose-500 text-xs mt-1">{errors.customer_id.message}</p>}
+                    </div>
+                    <div>
+                      <ModernSelect
+                        label={`${t('customers.addressLabel', 'Address Label')} *`}
+                        value={watchLabel || 'Home'}
+                        onChange={(val) => setValue('label', val as any)}
+                        options={[
+                          { value: 'Home', label: t('customers.labelHome', 'Home') },
+                          { value: 'Office', label: t('customers.labelOffice', 'Office') },
+                          { value: 'Warehouse', label: t('customers.labelWarehouse', 'Warehouse') },
+                          { value: 'Other', label: t('customers.labelOther', 'Other') }
+                        ]}
+                      />
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.receiverName', 'Recipient Name')} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        {...register('name', { required: t('customers.validation.receiverNameRequired', 'Recipient name is required') })}
+                        placeholder={t('customers.receiverNamePlaceholder', 'e.g. Jane Doe')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.name && <p className="text-rose-500 text-xs mt-1">{errors.name.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.phone', 'Phone Number')} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        {...register('phone', { required: t('customers.validation.phoneRequired', 'Phone number is required') })}
+                        placeholder={t('customers.phonePlaceholder', 'e.g. +855 12 345 678')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.phone && <p className="text-rose-500 text-xs mt-1">{errors.phone.message}</p>}
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.addressLabel')} <span className="text-red-500">*</span>
+                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                      {t('customers.streetAddress', 'Street Address')} <span className="text-rose-500">*</span>
                     </label>
-                    <select
-                      {...register('label', { required: true })}
-                      className="form-input"
-                    >
-                      <option value="Home">Home</option>
-                      <option value="Office">Office</option>
-                      <option value="Warehouse">Warehouse</option>
-                      <option value="Other">Other</option>
-                    </select>
+                    <input
+                      {...register('address', { required: t('customers.validation.addressRequired', 'Street address is required') })}
+                      placeholder={t('customers.streetAddressPlaceholder', 'e.g. No. 123, St. 456')}
+                      className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                    />
+                    {errors.address && <p className="text-rose-500 text-xs mt-1">{errors.address.message}</p>}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.city', 'City')} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        {...register('city', { required: t('customers.validation.cityRequired', 'City is required') })}
+                        placeholder={t('customers.cityPlaceholder', 'e.g. Phnom Penh')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.city && <p className="text-rose-500 text-xs mt-1">{errors.city.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.province', 'Province')} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        {...register('province', { required: t('customers.validation.provinceRequired', 'Province is required') })}
+                        placeholder={t('customers.provincePlaceholder', 'e.g. Phnom Penh')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.province && <p className="text-rose-500 text-xs mt-1">{errors.province.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.country', 'Country')} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        {...register('country', { required: t('customers.validation.countryRequired', 'Country is required') })}
+                        placeholder={t('customers.countryPlaceholder', 'Cambodia')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.country && <p className="text-rose-500 text-xs mt-1">{errors.country.message}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.postalCode', 'Postal Code')} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        {...register('postal_code', { required: t('customers.validation.postalCodeRequired', 'Postal code is required') })}
+                        placeholder={t('customers.postalCodePlaceholder', '12000')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.postal_code && <p className="text-rose-500 text-xs mt-1">{errors.postal_code.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.latitude', 'Latitude')}
+                      </label>
+                      <input
+                        step="any"
+                        {...register('latitude', {
+                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.latitudeNumeric', 'Latitude must be numeric')
+                        })}
+                        placeholder={t('customers.latitudePlaceholder', '11.5564')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.latitude && <p className="text-rose-500 text-xs mt-1">{errors.latitude.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
+                        {t('customers.longitude', 'Longitude')}
+                      </label>
+                      <input
+                        step="any"
+                        {...register('longitude', {
+                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.longitudeNumeric', 'Longitude must be numeric')
+                        })}
+                        placeholder={t('customers.longitudePlaceholder', '104.9282')}
+                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                      />
+                      {errors.longitude && <p className="text-rose-500 text-xs mt-1">{errors.longitude.message}</p>}
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="isDefaultCheckbox"
+                        {...register('is_default')}
+                        className="rounded border-border text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                      <label htmlFor="isDefaultCheckbox" className="text-sm text-foreground font-semibold cursor-pointer select-none">
+                        {t('customers.setDefault', 'Set as Default Address')}
+                      </label>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.receiverName')} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('name', { required: t('customers.validation.receiverNameRequired') })}
-                      placeholder="e.g. Jane Doe"
-                      className="form-input"
-                    />
-                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('common.phone')} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('phone', { required: t('customers.validation.phoneRequired') })}
-                      placeholder="e.g. +855 12 345 678"
-                      className="form-input"
-                    />
-                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                    {t('customers.streetAddress')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    {...register('address', { required: t('customers.validation.addressRequired') })}
-                    placeholder="e.g. No. 123, St. 456"
-                    className="form-input"
-                  />
-                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.city')} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('city', { required: t('customers.validation.cityRequired') })}
-                      placeholder="Phnom Penh"
-                      className="form-input"
-                    />
-                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.province')} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('province', { required: t('customers.validation.provinceRequired') })}
-                      placeholder="Phnom Penh"
-                      className="form-input"
-                    />
-                    {errors.province && <p className="text-red-500 text-xs mt-1">{errors.province.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.country')} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('country', { required: t('customers.validation.countryRequired') })}
-                      placeholder="Cambodia"
-                      className="form-input"
-                    />
-                    {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country.message}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.postalCode')} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('postal_code', { required: t('customers.validation.postalCodeRequired') })}
-                      placeholder="12000"
-                      className="form-input"
-                    />
-                    {errors.postal_code && <p className="text-red-500 text-xs mt-1">{errors.postal_code.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.latitude')}
-                    </label>
-                    <input
-                      step="any"
-                      {...register('latitude', {
-                        validate: val => !val || !isNaN(Number(val)) || t('customers.validation.latitudeNumeric')
-                      })}
-                      placeholder="11.5564"
-                      className="form-input"
-                    />
-                    {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                      {t('customers.longitude')}
-                    </label>
-                    <input
-                      step="any"
-                      {...register('longitude', {
-                        validate: val => !val || !isNaN(Number(val)) || t('customers.validation.longitudeNumeric')
-                      })}
-                      placeholder="104.9282"
-                      className="form-input"
-                    />
-                    {errors.longitude && <p className="text-red-500 text-xs mt-1">{errors.longitude.message}</p>}
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="isDefaultCheckbox"
-                      {...register('is_default')}
-                      className="rounded border-border text-blue-600 focus:ring-blue-500 w-4 h-4"
-                    />
-                    <label htmlFor="isDefaultCheckbox" className="text-sm text-foreground font-semibold cursor-pointer select-none">
-                      {t('customers.setDefault')}
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+                {/* PINNED FOOTER (ALWAYS VISIBLE WITHOUT SCROLLING!) */}
+                <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-card shrink-0 z-10">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted border border-border rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-1.5"
+                    className="px-5 py-2 text-sm font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {(isSubmitting || createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {editingAddress ? t('common.save') : t('customers.addAddress')}
+                    {editingAddress ? t('customers.saveChanges', 'Save Changes') : t('customers.addAddress', 'Add Address')}
                   </button>
                 </div>
               </form>

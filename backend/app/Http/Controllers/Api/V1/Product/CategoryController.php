@@ -17,10 +17,10 @@ class CategoryController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
-        $allowedSorts = ['name', 'slug', 'description', 'is_active', 'created_at'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'created_at';
+        $allowedSorts = ['id', 'name', 'slug', 'description', 'is_active', 'created_at', 'sort_order'];
+        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
         $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
 
         $categories = Category::with('parent')
@@ -56,8 +56,9 @@ class CategoryController extends BaseApiController
             $data['slug'] = Str::slug($data['name']);
         }
 
-        if ($request->hasFile('image_file')) {
-            $path = $request->file('image_file')->store('categories', 'public');
+        $uploadedImage = $request->file('image_file') ?? $request->file('image');
+        if ($uploadedImage) {
+            $path = $uploadedImage->store('categories', 'public');
             $data['image'] = $path;
         }
 
@@ -78,11 +79,12 @@ class CategoryController extends BaseApiController
             $data['slug'] = Str::slug($data['name']);
         }
 
-        if ($request->hasFile('image_file')) {
+        $uploadedImage = $request->file('image_file') ?? $request->file('image');
+        if ($uploadedImage) {
             if ($category->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($category->image)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($category->image);
             }
-            $path = $request->file('image_file')->store('categories', 'public');
+            $path = $uploadedImage->store('categories', 'public');
             $data['image'] = $path;
         }
 

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             PromotionSeeder::class,
             LogSeeder::class,
             NotificationSeeder::class,
+            DatabaseImageSeeder::class,
         ]);
     }
 }

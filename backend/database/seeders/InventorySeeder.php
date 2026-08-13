@@ -12,6 +12,8 @@ class InventorySeeder extends Seeder
 {
     public function run(): void
     {
+        DB::statement('TRUNCATE TABLE stock_opname_items, stock_opnames, stock_transfer_items, stock_transfers, stock_adjustment_items, stock_adjustments, inventory_movements, inventories RESTART IDENTITY CASCADE;');
+
         $companyId = Company::value('id') ?? 1;
 
         // 1. Seed initial inventories for all 100 products

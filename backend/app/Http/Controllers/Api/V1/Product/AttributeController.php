@@ -16,13 +16,13 @@ class AttributeController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
-        $allowedSorts = ['name', 'type', 'is_active', 'created_at'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'created_at';
+        $allowedSorts = ['id', 'name', 'type', 'is_active', 'created_at'];
+        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
         $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
 
-        $attributes = Attribute::with('values')
+        $attributes = Attribute::with(['values' => fn($q) => $q->orderBy('sort_order')->orderBy('id')])
             ->when($request->status === 'deleted', function ($q) {
                 $q->onlyTrashed();
             })

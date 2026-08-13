@@ -1,5 +1,18 @@
-import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, Loader2, DollarSign, Package, User, Save, ArrowLeftRight, FileText, Info, Warehouse, Sliders } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  CheckCircle,
+  Clock,
+  Loader2,
+  Package,
+  Info,
+  Warehouse,
+  Sliders,
+  Minus,
+  RotateCcw,
+} from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
@@ -12,17 +25,19 @@ interface StockAdjustmentFormProps {
 }
 
 export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjustmentId, onClose }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
   const toast = useToast()
   const qc = useQueryClient()
   const isEdit = !!adjustmentId
 
   // Form States
   const [warehouseId, setWarehouseId] = useState('')
-  const [type, setType] = useState('addition')
+  const [type, setType] = useState<'addition' | 'subtraction' | 'recount'>('addition')
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
-  const [items, setItems] = useState<Array<{ product_id: string; variant_id: string; quantity: number; product?: any }>>([])
+  const [items, setItems] = useState<Array<{ product_id: string; variant_id: string; quantity: number; product?: any }>>([
+    { product_id: '', variant_id: '', quantity: 1 }
+  ])
 
   // Queries
   const { data: detail, isLoading: loadingDetail } = useQuery({
@@ -47,19 +62,30 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
   useEffect(() => {
     if (detail) {
       setWarehouseId(detail.warehouse?.id?.toString() || detail.warehouse_id?.toString() || '')
-      setType(detail.type || 'addition')
+      setType((detail.type as any) || 'addition')
       setReason(detail.reason || '')
       setNotes(detail.notes || '')
-      if (detail.items) {
+      if (detail.items && detail.items.length > 0) {
         setItems(detail.items.map((it: any) => ({
           product_id: it.product_id?.toString() || '',
           variant_id: it.product_variant_id?.toString() || '',
-          quantity: Math.abs(parseFloat(it.quantity_adjusted)) || 0,
+          quantity: Math.abs(parseFloat(it.quantity_adjusted)) || 1,
           product: it.product,
         })))
       }
     }
   }, [detail])
+
+  // Computed Values
+  const selectedWarehouseObj = useMemo(
+    () => warehouses?.find((w: any) => w.id.toString() === warehouseId),
+    [warehouses, warehouseId]
+  )
+
+  const totalAdjustedUnits = useMemo(
+    () => items.reduce((acc, curr) => acc + (parseInt(String(curr.quantity)) || 0), 0),
+    [items]
+  )
 
   // Mutations
   const saveMutation = useMutation({
@@ -71,10 +97,17 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-      toast.success(isEdit ? 'Stock adjustment updated' : 'Stock adjustment created as draft')
+      qc.invalidateQueries({ queryKey: ['inventory-levels'] })
+      toast.success(isEdit
+        ? t('inventory.transferUpdatedSuccess', 'Stock adjustment updated successfully')
+        : t('inventory.transferCreatedSuccess', 'Stock adjustment created successfully')
+      )
       onClose()
     },
-    onError: () => toast.error('Failed to save stock adjustment.')
+    onError: (err: any) => {
+      const errMsg = err?.response?.data?.message || err?.message || 'Unexpected server error.'
+      toast.error(`${t('inventory.transferSaveError', 'Failed to save adjustment')}: ${errMsg}`)
+    }
   })
 
   const approveMutation = useMutation({
@@ -82,10 +115,13 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['inventory-adjustments'] })
       qc.invalidateQueries({ queryKey: ['inventory-levels'] })
-      toast.success('Stock adjustment approved and stock levels recalculated')
+      toast.success(t('inventory.transferReceivedSuccess', 'Stock adjustment approved and stock levels recalculated'))
       onClose()
     },
-    onError: () => toast.error('Failed to approve stock adjustment.')
+    onError: (err: any) => {
+      const errMsg = err?.response?.data?.message || err?.message || 'Unexpected server error.'
+      toast.error(`${t('inventory.adjApproveError', 'Failed to approve stock adjustment')}: ${errMsg}`)
+    }
   })
 
   const handleAddItem = () => {
@@ -105,29 +141,29 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
     }))
   }
 
+  const handleStepQuantity = (index: number, delta: number) => {
+    setItems(prev => prev.map((item, i) => {
+      if (i === index) {
+        const current = parseInt(String(item.quantity)) || 1
+        const nextVal = Math.max(1, current + delta)
+        return { ...item, quantity: nextVal }
+      }
+      return item
+    }))
+  }
+
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     
     if (!warehouseId) {
-      toast.error('Please select a warehouse.')
+      toast.error(t('inventory.selectWarehouse', 'Please select a warehouse.'))
       return
     }
 
-    if (items.length === 0) {
-      toast.error('Please add at least one item.')
+    const validItems = items.filter(it => !!it.product_id && (parseInt(String(it.quantity)) || 0) > 0)
+    if (validItems.length === 0) {
+      toast.error(t('inventory.addAtLeastOneItemHint', 'Please add at least 1 item to proceed'))
       return
-    }
-
-    // Client-side validation to prevent empty/NaN values
-    for (let i = 0; i < items.length; i++) {
-      if (!items[i].product_id) {
-        toast.error(`Please select a product for item #${i + 1}.`)
-        return
-      }
-      if (!items[i].quantity || items[i].quantity <= 0) {
-        toast.error(`Quantity for item #${i + 1} must be greater than 0.`)
-        return
-      }
     }
 
     const payload = {
@@ -135,7 +171,7 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
       type,
       reason,
       notes,
-      items: items.map(it => ({
+      items: validItems.map(it => ({
         product_id: parseInt(it.product_id),
         variant_id: it.variant_id ? parseInt(it.variant_id) : null,
         quantity: parseFloat(it.quantity.toString()),
@@ -146,132 +182,166 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
   }
 
   if (isEdit && loadingDetail) {
-    return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto mb-2 text-primary" />Loading Details...</div>
+    return (
+      <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <Loader2 className="animate-spin mx-auto mb-3 text-primary" size={28} />
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading Details...</p>
+      </div>
+    )
   }
 
   const isApproved = detail?.status === 'approved'
 
   return (
     <div className="space-y-6">
-      {/* Top Header Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/80 p-5 rounded-2xl shadow-sm">
+      {/* Top Page Header Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <span>{isEdit ? t('inventory.view_adj', 'Stock Adjustment Details') : t('inventory.create_adj', 'New Stock Adjustment')}</span>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Sliders size={20} />
+            </div>
+            <span>
+              {isEdit
+                ? t('inventory.view_adj', 'Stock Adjustment Details')
+                : t('inventory.create_adj', 'Create New Stock Adjustment')}
+            </span>
             {isEdit && (
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-muted border border-border/80 text-muted-foreground font-semibold">
+              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700">
                 {detail?.reference_number || `ADJ-${adjustmentId}`}
               </span>
             )}
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('inventory.adj_desc', 'Adjust warehouse stock quantities with audit tracking.')}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {t('inventory.adj_desc', 'Adjust warehouse stock quantities with audit tracking.')}
+          </p>
         </div>
 
-        {/* Back Button on Right Side with Text */}
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all font-semibold text-xs shadow-2xs cursor-pointer self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-bold text-xs shadow-2xs cursor-pointer active:scale-95 shrink-0"
         >
           <ArrowLeft size={16} />
-          <span>Back to Adjustments</span>
+          <span>{t('inventory.backToAdjustments', 'Back to Stock Adjustments')}</span>
         </button>
       </div>
-
-      {/* Top Banner Card - Status Banner */}
-      {isEdit && (
-        <div className="bg-muted/30 border border-border/70 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
-          <div className="w-12 h-12 rounded-xl bg-card border border-border/80 flex items-center justify-center text-primary shadow-2xs shrink-0">
-            <Sliders size={22} />
-          </div>
-          <div className="space-y-1 min-w-0 flex-1">
-            <h3 className="text-sm font-bold text-foreground truncate">{detail?.reference_number || `ADJ-${adjustmentId}`}</h3>
-            <p className="text-xs text-muted-foreground truncate">
-              Warehouse Hub: {warehouses?.find((w: any) => w.id.toString() === warehouseId)?.name || 'Main Warehouse'}
-            </p>
-            <div>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                isApproved ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-              }`}>
-                {detail?.status || 'Draft'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Side: General Information Card */}
-          <div className="lg:col-span-1 bg-card border border-border/80 rounded-2xl p-6 space-y-5 shadow-sm h-fit">
-            <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+          {/* Left Side: General Information */}
+          <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5 h-fit">
+            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
               <Info size={16} className="text-primary" />
-              <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                GENERAL INFORMATION
+              <h3 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                {t('inventory.generalInfoCard', 'GENERAL INFORMATION')}
               </h3>
             </div>
 
             {isApproved ? (
               <div className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 gap-y-3.5">
-                  <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('products.warehouse', 'Warehouse Hub')}</span>
-                    <span className="font-bold text-foreground block">
-                      {warehouses?.find((w: any) => w.id.toString() === warehouseId)?.name || 'Unknown Warehouse'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.type', 'Adjustment Type')}</span>
-                    <span className="font-bold text-foreground block capitalize">{type}</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.reason', 'Reason')}</span>
-                    <span className="font-bold text-foreground block">{reason || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.notes', 'Notes')}</span>
-                    <span className="font-medium text-muted-foreground block italic">"{notes || '—'}"</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('inventory.approved_by', 'Approved By')}</span>
-                    <span className="font-bold text-foreground block">{detail?.user?.name || 'Super Admin'}</span>
-                  </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
+                    {t('inventory.warehouse', 'Warehouse Hub')}
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 block text-sm">
+                    {selectedWarehouseObj?.name || 'Unknown Warehouse'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
+                    {t('inventory.type', 'Adjustment Type')}
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 block capitalize">
+                    {type}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
+                    {t('inventory.reason', 'Reason')}
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 block">
+                    {reason || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
+                    {t('inventory.notes', 'Notes')}
+                  </span>
+                  <span className="font-medium text-slate-600 dark:text-slate-300 block italic bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                    "{notes || '—'}"
+                  </span>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-                    {t('products.warehouse', 'Warehouse Hub')} <span className="text-rose-500">*</span>
+                {/* Warehouse Select */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {t('inventory.warehouse', 'Warehouse Hub')} <span className="text-rose-500">*</span>
                   </label>
                   <ModernSelect
                     value={warehouseId}
                     onChange={(val) => setWarehouseId(String(val))}
                     options={[
-                      { value: '', label: 'Select Warehouse' },
+                      { value: '', label: t('inventory.selectWarehouse', 'Select Warehouse...') },
                       ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
                     ]}
-                    placeholder="Select Warehouse"
+                    placeholder={t('inventory.selectWarehouse', 'Select Warehouse...')}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
+
+                {/* Adjustment Type Selector Buttons */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                     {t('inventory.type', 'Adjustment Type')} <span className="text-rose-500">*</span>
                   </label>
-                  <ModernSelect
-                    value={type}
-                    onChange={(val) => setType(String(val))}
-                    options={[
-                      { value: 'addition', label: 'Addition (+)' },
-                      { value: 'subtraction', label: 'Subtraction (-)' },
-                      { value: 'recount', label: 'Recount (Set Qty)' },
-                    ]}
-                    placeholder="Select Type"
-                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setType('addition')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                        type === 'addition'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-2xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Plus size={14} />
+                      <span className="text-[10px]">{t('inventory.typeAddition', 'Addition (+)')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setType('subtraction')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                        type === 'subtraction'
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 shadow-2xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Minus size={14} />
+                      <span className="text-[10px]">{t('inventory.typeSubtraction', 'Subtraction (-)')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setType('recount')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                        type === 'recount'
+                          ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30 shadow-2xs'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                      }`}
+                    >
+                      <RotateCcw size={14} />
+                      <span className="text-[10px]">{t('inventory.typeRecount', 'Recount')}</span>
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
+
+                {/* Reason Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                     {t('inventory.reason', 'Reason')} <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -279,125 +349,165 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     required
-                    placeholder="e.g. Broken stock, discrepancy..."
-                    className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
+                    placeholder={t('inventory.reasonPlaceholder', 'e.g. Broken stock, discrepancy...')}
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('inventory.notes', 'Notes')}</label>
+
+                {/* Notes Textarea */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {t('inventory.notes', 'Notes')}
+                  </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={4}
-                    placeholder="Detailed explanation..."
-                    className="w-full p-3 rounded-xl border border-border bg-card text-foreground text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    placeholder={t('inventory.notesPlaceholder', 'Detailed explanation...')}
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none font-medium"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Right Side: Items Management Card */}
-          <div className="lg:col-span-2 bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-sm flex flex-col justify-between">
+          {/* Right Side: Adjustment Items Manager */}
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
                 <div className="flex items-center gap-2">
                   <Package size={16} className="text-primary" />
-                  <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">ADJUSTMENT ITEMS</h3>
+                  <h3 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                    {t('inventory.adjustmentItems', 'ADJUSTMENT ITEMS')}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-bold border border-primary/20">
+                    <span className="font-mono">{items.length}</span> {t('inventory.linesCount', 'items')}
+                  </span>
                 </div>
+
                 {!isApproved && (
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-primary rounded-xl flex items-center gap-1.5 shadow-2xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
                   >
                     <Plus size={14} />
-                    <span>Add Item</span>
+                    <span>{t('inventory.addItem', 'Add Item')}</span>
                   </button>
                 )}
               </div>
 
+              {/* Items Matrix Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-border/60 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                      <th className="py-3 px-4">{t('products.title', 'PRODUCT MANAGEMENT')}</th>
-                      <th className="py-3 px-4 w-36 text-right">{t('inventory.quantity', 'ADJUST QTY')}</th>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60">
+                      <th className="py-3 px-4">{t('inventory.colProductManagement', 'PRODUCT / SKU')}</th>
+                      <th className="py-3 px-4 w-44">{t('inventory.qty_adjusted', 'ADJUST QTY')}</th>
                       {!isApproved && <th className="py-3 px-4 w-12 text-center"></th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/40 text-xs text-foreground font-medium">
-                    {items.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3 px-4">
-                          {isApproved ? (
-                            <div className="space-y-0.5">
-                              <span className="font-bold text-xs text-foreground block">
-                                {item.product?.name || 'Unknown Product'}
-                              </span>
-                              {item.product?.sku && (
-                                <span className="text-[10px] text-muted-foreground font-mono block">
-                                  {item.product.sku}
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs font-semibold">
+                    {items.map((item, idx) => {
+                      const productObj = products?.find((p: any) => p.id.toString() === item.product_id) || item.product
+                      return (
+                        <tr key={idx} className="hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
+                          {/* Product Selector */}
+                          <td className="py-3.5 px-4">
+                            {isApproved ? (
+                              <div className="space-y-0.5">
+                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100 block">
+                                  {productObj?.name || 'Unknown Product'}
                                 </span>
-                              )}
-                            </div>
-                          ) : (
-                            <ModernSelect
-                              value={item.product_id}
-                              onChange={(val) => handleItemChange(idx, 'product_id', String(val))}
-                              options={[
-                                { value: '', label: 'Select Product' },
-                                ...(item.product && !(products ?? []).some((p: any) => p.id.toString() === item.product_id)
-                                  ? [{ value: item.product.id.toString(), label: `${item.product.name} (${item.product.sku})` }]
-                                  : []),
-                                ...(products ?? []).map((p: any) => ({
-                                  value: p.id.toString(),
-                                  label: p.name,
-                                  code: p.sku,
-                                })),
-                              ]}
-                              placeholder="Select Product"
-                            />
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          {isApproved ? (
-                            <span className="font-mono text-xs font-bold bg-muted/60 px-3 py-1 rounded-lg text-foreground border border-border/50 inline-block">
-                              {item.quantity}
-                            </span>
-                          ) : (
-                            <input
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10) || 0)}
-                              required
-                              min="1"
-                              step="1"
-                              className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs text-right focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all max-w-[120px] ml-auto block"
-                            />
-                          )}
-                        </td>
-                        {!isApproved && (
-                          <td className="py-3 px-4 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveItem(idx)}
-                              className="p-1.5 hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
-                              title="Remove Item"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                                {productObj?.sku && (
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono block">
+                                    {productObj.sku}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <ModernSelect
+                                value={item.product_id}
+                                onChange={(val) => handleItemChange(idx, 'product_id', String(val))}
+                                options={[
+                                  { value: '', label: t('inventory.selectProduct', t('products.selectProduct', 'Select Product...')) },
+                                  ...(item.product && !(products ?? []).some((p: any) => p.id.toString() === item.product_id)
+                                    ? [{ value: item.product.id.toString(), label: `${item.product.name} (${item.product.sku})` }]
+                                    : []),
+                                  ...(products ?? []).map((p: any) => ({
+                                    value: p.id.toString(),
+                                    label: p.name,
+                                    code: p.sku,
+                                  })),
+                                ]}
+                                placeholder={t('inventory.selectProduct', t('products.selectProduct', 'Select Product...'))}
+                              />
+                            )}
                           </td>
-                        )}
-                      </tr>
-                    ))}
+
+                          {/* Quantity Input & Stepper */}
+                          <td className="py-3.5 px-4">
+                            {isApproved ? (
+                              <span className="font-mono font-black text-sm text-slate-900 dark:text-slate-100">
+                                {item.quantity}
+                              </span>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStepQuantity(idx, -1)}
+                                  className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
+                                >
+                                  <Minus size={13} />
+                                </button>
+                                <input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value, 10) || 0)}
+                                  required
+                                  min="1"
+                                  step="1"
+                                  className="w-16 h-8 px-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg font-mono font-bold text-center text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleStepQuantity(idx, 1)}
+                                  className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
+                                >
+                                  <Plus size={13} />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Delete Item Action */}
+                          {!isApproved && (
+                            <td className="py-3.5 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(idx)}
+                                className="p-1.5 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-rose-500/20"
+                                title={t('common.delete', 'Remove Item')}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })}
+
                     {items.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="text-center py-12 text-xs text-muted-foreground">
-                          <div className="space-y-2">
-                            <Package size={32} className="mx-auto text-muted-foreground/40" />
-                            <p className="font-semibold">No items added to this adjustment yet.</p>
-                            <p className="text-[11px]">Click <span className="text-primary font-bold">Add Item</span> above to select products.</p>
+                        <td colSpan={isApproved ? 2 : 3} className="text-center py-12 text-slate-400 text-xs">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <Package size={36} className="text-slate-300 dark:text-slate-700" />
+                            <p className="font-semibold text-slate-600 dark:text-slate-300">
+                              {t('inventory.noAdjustmentItemsYet', 'No items added to this adjustment yet.')}
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              {t('inventory.clickAddItemToSelect', 'Click Add Item above to select products.')}
+                            </p>
                           </div>
                         </td>
                       </tr>
@@ -406,16 +516,26 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
                 </table>
               </div>
             </div>
+
+            {/* Bottom Summary Bar */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+              <span className="text-slate-500 dark:text-slate-400 font-bold">
+                {t('inventory.totalUnits', 'Total Units')}:
+              </span>
+              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                <span className="font-mono">{totalAdjustedUnits}</span> {t('inventory.units', t('products.units', 'units'))}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Clean Bottom Action Bar Container */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border/80 p-5 rounded-2xl shadow-sm">
-          <div className="text-xs text-muted-foreground font-medium">
+        {/* Floating Bottom Action Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             {items.length > 0 ? (
-              <span><span className="font-bold text-foreground">{items.length}</span> item(s) configured for stock adjustment</span>
+              <span>{t('inventory.configuredItemsForAdjustment', '{{count}} item(s) configured for stock adjustment', { count: items.length })}</span>
             ) : (
-              <span>Please add at least 1 item to proceed</span>
+              <span>{t('inventory.addAtLeastOneItemHint', 'Please add at least 1 item to proceed')}</span>
             )}
           </div>
 
@@ -423,19 +543,19 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-xs font-semibold text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors bg-card cursor-pointer"
+              className="px-5 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 cursor-pointer active:scale-95"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
 
             {!isApproved && (
               <button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="px-6 py-2.5 text-xs font-bold text-white bg-primary rounded-xl flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer"
+                className="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:opacity-90 rounded-xl flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
               >
-                {saveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                <span>Save Changes</span>
+                {saveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Clock size={15} />}
+                <span>{isEdit ? t('inventory.saveAdjustment', 'Save Changes') : t('inventory.saveAdjustment', 'Save Adjustment')}</span>
               </button>
             )}
 
@@ -444,10 +564,10 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
                 type="button"
                 onClick={() => approveMutation.mutate()}
                 disabled={approveMutation.isPending}
-                className="px-5 py-2.5 text-xs font-semibold text-white bg-emerald-600 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-emerald-500 active:scale-95 transition-all cursor-pointer"
+                className="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
               >
                 {approveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                <span>Approve Adjustment</span>
+                <span>{t('inventory.approveAdjustment', 'Approve Adjustment')}</span>
               </button>
             )}
           </div>
@@ -456,4 +576,5 @@ export const StockAdjustmentForm: React.FC<StockAdjustmentFormProps> = ({ adjust
     </div>
   )
 }
+
 export default StockAdjustmentForm

@@ -1,5 +1,6 @@
 import React from 'react'
 import { X, PlayCircle, Trash2, Clock, ShoppingCart, User } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { HeldCart } from '../types'
 
 interface POSHeldCartsModalProps {
@@ -17,6 +18,7 @@ export const POSHeldCartsModal: React.FC<POSHeldCartsModalProps> = ({
   onResumeCart,
   onDeleteHeldCart,
 }) => {
+  const { t } = useTranslation(['pos', 'common'])
   if (!isOpen) return null
 
   return (
@@ -30,8 +32,8 @@ export const POSHeldCartsModal: React.FC<POSHeldCartsModalProps> = ({
               <Clock size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-base text-foreground">Suspended / Held Orders</h3>
-              <p className="text-xs text-muted-foreground">{heldCarts.length} active held sessions</p>
+              <h3 className="font-bold text-base text-foreground">{t('suspendedOrders', 'Suspended / Held Orders')}</h3>
+              <p className="text-xs text-muted-foreground">{heldCarts.length} {t('activeHeldSessions', 'active held sessions')}</p>
             </div>
           </div>
           <button
@@ -47,7 +49,7 @@ export const POSHeldCartsModal: React.FC<POSHeldCartsModalProps> = ({
           {heldCarts.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground space-y-2">
               <ShoppingCart size={36} className="mx-auto opacity-20" />
-              <p className="text-xs">No suspended sales at the moment.</p>
+              <p className="text-xs">{t('noSuspendedSales', 'No suspended sales at the moment.')}</p>
             </div>
           ) : (
             heldCarts.map((h) => {
@@ -66,7 +68,7 @@ export const POSHeldCartsModal: React.FC<POSHeldCartsModalProps> = ({
 
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-foreground flex items-center gap-1.5">
-                      <User size={13} className="text-muted-foreground" /> {h.customer.name}
+                      <User size={13} className="text-muted-foreground" /> {h.customer?.name || 'Walk-in Customer'}
                     </span>
                     <span className="font-black text-foreground">${totalAmount.toFixed(2)}</span>
                   </div>
@@ -79,7 +81,7 @@ export const POSHeldCartsModal: React.FC<POSHeldCartsModalProps> = ({
                     <button
                       onClick={() => onDeleteHeldCart(h.id)}
                       className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 text-xs"
-                      title="Discard Order"
+                      title={t('discardOrder', 'Discard Order')}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -90,7 +92,7 @@ export const POSHeldCartsModal: React.FC<POSHeldCartsModalProps> = ({
                       }}
                       className="btn-primary text-xs py-1.5 px-3 rounded-xl flex items-center gap-1 font-bold"
                     >
-                      <PlayCircle size={14} /> Resume Cart
+                      <PlayCircle size={14} /> {t('resumeCart', 'Resume Cart')}
                     </button>
                   </div>
                 </div>

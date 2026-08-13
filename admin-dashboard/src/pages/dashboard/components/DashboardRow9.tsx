@@ -1,5 +1,5 @@
 import React from 'react'
-import { Smartphone, Download, Users, BellRing } from 'lucide-react'
+import { Download, Users, BellRing } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export const DashboardRow9: React.FC = () => {
@@ -11,10 +11,10 @@ export const DashboardRow9: React.FC = () => {
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-            {t('mobile.app_downloads', 'App Downloads')}
+            {t('dashboard.appDownloads', 'App Downloads')}
           </span>
           <h4 className="text-xl font-bold text-foreground mt-1">45,210</h4>
-          <span className="text-[9px] text-green-500 font-bold mt-1 block">↑ +15.2% download growth this week</span>
+          <span className="text-[9px] text-green-500 font-bold mt-1 block">↑ +15.2% {t('dashboard.downloadGrowthThisWeek', 'download growth this week')}</span>
         </div>
         <div className="p-3 bg-blue-500/10 rounded-2xl flex items-center justify-center">
           <Download className="w-6 h-6 text-blue-500" />
@@ -25,10 +25,10 @@ export const DashboardRow9: React.FC = () => {
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-            {t('mobile.active_users', 'App Active Users')}
+            {t('dashboard.appActiveUsers', 'App Active Users')}
           </span>
           <h4 className="text-xl font-bold text-foreground mt-1">12,450 DAU</h4>
-          <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">89,200 Monthly Active Users</p>
+          <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">89,200 {t('dashboard.monthlyActiveUsers', 'Monthly Active Users (MAU)')}</p>
         </div>
         <div className="p-3 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
           <Users className="w-6 h-6 text-emerald-500" />
@@ -39,10 +39,10 @@ export const DashboardRow9: React.FC = () => {
       <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-            {t('mobile.push_notifications', 'Push Notifications')}
+            {t('dashboard.pushNotifications', 'Push Notifications')}
           </span>
-          <h4 className="text-xl font-bold text-foreground mt-1">12 Campaigns</h4>
-          <span className="text-[9px] text-purple-500 font-bold mt-1 block">98.4% delivery success rate</span>
+          <h4 className="text-xl font-bold text-foreground mt-1">12 {t('dashboard.campaigns', 'Campaigns')}</h4>
+          <span className="text-[9px] text-purple-500 font-bold mt-1 block">98.4% {t('dashboard.deliverySuccessRate', 'delivery success rate')}</span>
         </div>
         <div className="p-3 bg-purple-500/10 rounded-2xl flex items-center justify-center">
           <BellRing className="w-6 h-6 text-purple-500" />

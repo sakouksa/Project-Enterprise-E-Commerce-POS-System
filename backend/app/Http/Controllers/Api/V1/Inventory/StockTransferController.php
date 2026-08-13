@@ -32,7 +32,8 @@ class StockTransferController extends BaseApiController
             })
             ->when($request->start_date ?? $request->created_start, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($request->end_date ?? $request->created_end, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->trash == 'true', fn($q) => $q->onlyTrashed());
+            ->when($request->trash == 'true', fn($q) => $q->onlyTrashed())
+            ->orderBy('id', 'desc');
 
         $transfers = $query->paginate($request->integer('per_page', 15));
 

@@ -5,6 +5,7 @@ import { ChevronDown, Check, Search, X, Loader2, AlertCircle, RefreshCw, User, P
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
 import { sound } from '@/utils/sound'
+import { getAbsoluteImageUrl } from '@/utils/image'
 
 export interface EnterpriseSelectOption {
   value: string | number
@@ -155,7 +156,7 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
           subtitle: item.code || item.sku || item.phone || item.email || item.description || item.department?.name,
           code: item.code || item.sku,
           badge: item.status || item.role || item.group?.name || item.type,
-          avatar: item.avatar || item.primary_image?.image || item.image,
+          avatar: getAbsoluteImageUrl(item.avatar || item.primary_image || item.image),
           raw: item,
         }))
         setAsyncOptions(mapped)

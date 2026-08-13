@@ -30,16 +30,19 @@ const translateProps = (props: any): any => {
       newProps[key] = translateString(newProps[key])
     }
   }
-  if (Array.isArray(newProps.items)) {
-    newProps.items = newProps.items.map((item: any) => {
-      if (item && typeof item === 'object') {
-        const newItem = { ...item }
-        if (typeof item.label === 'string') newItem.label = translateString(item.label)
-        if (typeof item.title === 'string') newItem.title = translateString(item.title)
-        return newItem
-      }
-      return item
-    })
+  const arrayProps = ['items', 'options']
+  for (const arrKey of arrayProps) {
+    if (Array.isArray(newProps[arrKey])) {
+      newProps[arrKey] = newProps[arrKey].map((item: any) => {
+        if (item && typeof item === 'object') {
+          const newItem = { ...item }
+          if (typeof item.label === 'string') newItem.label = translateString(item.label)
+          if (typeof item.title === 'string') newItem.title = translateString(item.title)
+          return newItem
+        }
+        return item
+      })
+    }
   }
   if (newProps.children !== undefined) {
     newProps.children = translateValue(newProps.children)

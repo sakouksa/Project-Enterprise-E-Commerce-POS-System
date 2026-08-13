@@ -50,21 +50,36 @@ const LanguageDropdown: React.FC = () => {
     setSearchQuery('')
   }
 
+  const { navbar } = useThemeStore()
+  const customTextColor = navbar?.textColor
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/50 border border-transparent hover:border-border/30 rounded-xl transition-all duration-200"
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setIsOpen(!isOpen)
+        }}
+        style={{ color: customTextColor || undefined }}
+        className="flex items-center gap-2 px-3 py-1.5 hover:bg-black/10 dark:hover:bg-white/10 border border-transparent hover:border-black/10 dark:hover:border-white/10 rounded-xl transition-all duration-200"
       >
         <img
           src={currentLang.flagUrl}
           alt={currentLang.name}
           className="w-5 h-3.5 object-cover rounded-sm shadow-sm border border-foreground/10 flex-shrink-0"
         />
-        <span className="text-xs font-bold text-foreground hidden md:inline-block">
+        <span
+          style={{ color: customTextColor || undefined }}
+          className="text-xs font-bold hidden md:inline-block"
+        >
           {currentLang.nativeName}
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          style={{ color: customTextColor || undefined }}
+          className={`w-3.5 h-3.5 opacity-80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       <AnimatePresence>
@@ -84,6 +99,9 @@ const LanguageDropdown: React.FC = () => {
                 placeholder={t('common.search_language', 'Search language...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.preventDefault()
+                }}
                 className="w-full pl-8 pr-3 py-1.5 bg-muted/40 hover:bg-muted/60 focus:bg-background border border-border/60 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded-xl text-xs outline-none transition-all placeholder:text-muted-foreground"
               />
             </div>
@@ -99,8 +117,13 @@ const LanguageDropdown: React.FC = () => {
                   const isSelected = lang.code === language
                   return (
                     <button
+                      type="button"
                       key={lang.code}
-                      onClick={() => handleSelect(lang.code)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleSelect(lang.code)
+                      }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 text-left
                         ${
                           isSelected

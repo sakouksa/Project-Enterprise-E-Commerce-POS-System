@@ -23,12 +23,60 @@ class SupplierController extends BaseApiController
             $query->where('is_active', $request->status === 'active');
         }
 
+        if ($request->filled('country')) {
+            $query->where('country', 'like', "%{$request->country}%");
+        }
+
+        if ($request->filled('province')) {
+            $query->where('province', 'like', "%{$request->province}%");
+        }
+
+        if ($request->filled('city')) {
+            $query->where('city', 'like', "%{$request->city}%");
+        }
+
+        if ($request->filled('created_date_start')) {
+            $query->whereDate('created_at', '>=', $request->created_date_start);
+        }
+        if ($request->filled('created_date_end')) {
+            $query->whereDate('created_at', '<=', $request->created_date_end);
+        }
+
+        if ($request->filled('updated_date_start')) {
+            $query->whereDate('updated_at', '>=', $request->updated_date_start);
+        }
+        if ($request->filled('updated_date_end')) {
+            $query->whereDate('updated_at', '<=', $request->updated_date_end);
+        }
+
+        if ($request->filled('min_orders')) {
+            $query->has('purchases', '>=', (int)$request->min_orders);
+        }
+        if ($request->filled('max_orders')) {
+            $query->has('purchases', '<=', (int)$request->max_orders);
+        }
+
+        if ($request->filled('payment_status')) {
+            $status = $request->payment_status;
+            $query->whereHas('purchases', function($q) use ($status) {
+                if ($status === 'paid') {
+                    $q->where('payment_status', 'paid');
+                } elseif ($status === 'partial') {
+                    $q->where('payment_status', 'partial');
+                } else {
+                    $q->whereIn('payment_status', ['unpaid', 'due', 'pending']);
+                }
+            });
+        }
+
         if ($request->search) {
             $search = $request->search;
             $query->where(function($sub) use ($search) {
                 $sub->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('city', 'like', "%{$search}%");
             });
         }
 
@@ -218,6 +266,20 @@ class SupplierController extends BaseApiController
                 'success' => false,
                 'message' => $e->getMessage()
             ], 400);
+        }
+    }
+
+    /**
+     * POST /api/v1/suppliers/bulk-delete
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array']);
+        try {
+            $count = Supplier::whereIn('id', $request->ids)->delete();
+            return $this->successResponse(['count' => $count], "{$count} suppliers deleted successfully");
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 }

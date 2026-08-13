@@ -17,10 +17,10 @@ class BrandController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
-        $allowedSorts = ['name', 'slug', 'description', 'is_active', 'created_at'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'created_at';
+        $allowedSorts = ['id', 'name', 'slug', 'description', 'is_active', 'created_at'];
+        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
         $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
 
         $brands = Brand::when($request->status === 'deleted', function ($q) {
@@ -55,8 +55,9 @@ class BrandController extends BaseApiController
             $data['slug'] = Str::slug($data['name']);
         }
 
-        if ($request->hasFile('logo_file')) {
-            $path = $request->file('logo_file')->store('brands', 'public');
+        $uploadedLogo = $request->file('logo_file') ?? $request->file('logo');
+        if ($uploadedLogo) {
+            $path = $uploadedLogo->store('brands', 'public');
             $data['logo'] = $path;
         }
 
@@ -77,11 +78,12 @@ class BrandController extends BaseApiController
             $data['slug'] = Str::slug($data['name']);
         }
 
-        if ($request->hasFile('logo_file')) {
+        $uploadedLogo = $request->file('logo_file') ?? $request->file('logo');
+        if ($uploadedLogo) {
             if ($brand->logo && \Illuminate\Support\Facades\Storage::disk('public')->exists($brand->logo)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($brand->logo);
             }
-            $path = $request->file('logo_file')->store('brands', 'public');
+            $path = $uploadedLogo->store('brands', 'public');
             $data['logo'] = $path;
         }
 

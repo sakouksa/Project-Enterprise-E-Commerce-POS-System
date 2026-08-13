@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 interface BreadcrumbItem {
   label: string
   path?: string
+  href?: string
 }
 
 interface BreadcrumbProps {
@@ -21,18 +22,23 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
         <Home size={12} />
         {t('nav.dashboard')}
       </Link>
-      {items.map((item, index) => (
-        <React.Fragment key={index}>
-          <ChevronRight size={12} className="opacity-60" />
-          {item.path ? (
-            <Link to={item.path} className="hover:text-foreground transition-colors">
-              {item.label}
-            </Link>
-          ) : (
-            <span className="text-foreground font-medium">{item.label}</span>
-          )}
-        </React.Fragment>
-      ))}
+      {items.map((item, index) => {
+        const linkTarget = item.path || item.href
+        return (
+          <React.Fragment key={index}>
+            <ChevronRight size={12} className="text-muted-foreground/50 flex-shrink-0" />
+            {linkTarget && index < items.length - 1 ? (
+              <Link to={linkTarget} className="hover:text-foreground transition-colors">
+                {item.label}
+              </Link>
+            ) : (
+              <span className={index === items.length - 1 ? 'text-foreground font-medium' : ''}>
+                {item.label}
+              </span>
+            )}
+          </React.Fragment>
+        )
+      })}
     </nav>
   )
 }

@@ -27,7 +27,11 @@
   "createCoupon": "Create Coupon",
   "editCoupon": "Edit Coupon",
   "generateCode": "Generate Code",
-  "marketing.campaigns": "Campaigns",
-  "marketing.coupons": "Coupons",
-  "marketing.referrals": "Referrals"
+  "activeCampaigns": "Active Campaigns",
+  "couponUsage": "Coupon Usage",
+  "marketing.activeCampaigns": "Active Campaigns",
+  "marketing.campaigns": "Active Campaigns",
+  "marketing.couponUsage": "Coupon Usage",
+  "marketing.coupons": "Coupon Usage",
+  "marketing.referrals": "Referrals & Affiliates"
 }

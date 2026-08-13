@@ -9,7 +9,7 @@ export const namespaces = [
   'inventory', 'customers', 'customer', 'suppliers', 'sales', 'purchases', 'purchase', 'employees', 'employee',
   'settings', 'setting', 'reports', 'report', 'auth', 'tables', 'table', 'forms', 'form', 'pagination', 'errors', 'empty',
   'confirm', 'deleteConfirm', 'finance', 'logs', 'marketing', 'mobile',
-  'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website'
+  'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website', 'pos', 'orders', 'order'
 ]
 
 // Expose runtime translation dictionaries for React.createElement interceptor
@@ -228,7 +228,8 @@ i18n
     interpolation: {
       escapeValue: false, // react already safes from xss
     },
-    parseMissingKeyHandler: (key: string) => {
+    parseMissingKeyHandler: (key: string, defaultValue?: string) => {
+      if (defaultValue && defaultValue !== key) return defaultValue
       if (!key) return key
       if (activeDict[key]) return activeDict[key]
       const parts = key.split('.')

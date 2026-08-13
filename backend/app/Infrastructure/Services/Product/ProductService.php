@@ -30,7 +30,7 @@ class ProductService
     {
         return $this->productRepository->findById(
             $id,
-            relations: ['category', 'brand', 'unit', 'tax', 'images', 'variants.variantValues.attribute', 'prices', 'inventories']
+            relations: ['category', 'brand', 'unit', 'tax', 'images', 'variants.inventories', 'variants.variantValues.attribute', 'prices', 'inventories']
         );
     }
 
@@ -66,7 +66,18 @@ class ProductService
             // Create variants
             foreach ($variants as $variantData) {
                 $variantData['sku'] = $variantData['sku'] ?? $this->generateSku($product->name . '-' . $variantData['name']);
+                $vStock = isset($variantData['stock']) && $variantData['stock'] !== '' ? (float) $variantData['stock'] : 10.0;
                 $variant = $product->variants()->create($variantData);
+
+                // Create default inventory for variant
+                \App\Models\Inventory\Inventory::create([
+                    'company_id'         => 1,
+                    'warehouse_id'       => 1,
+                    'product_id'         => $product->id,
+                    'product_variant_id' => $variant->id,
+                    'quantity'           => $vStock,
+                    'reserved_quantity'  => 0,
+                ]);
 
                 // Attach attribute values
                 if (!empty($variantData['attribute_values'])) {
@@ -79,18 +90,32 @@ class ProductService
                 }
             }
 
+            // Create default inventory for simple products if no variants provided
+            if (empty($variants)) {
+                $initialStock = isset($data['stock']) && $data['stock'] !== '' ? (float)$data['stock'] : (isset($data['quantity']) ? (float)$data['quantity'] : 100.0);
+                \App\Models\Inventory\Inventory::create([
+                    'company_id'         => $product->company_id ?? 1,
+                    'warehouse_id'       => 1,
+                    'product_id'         => $product->id,
+                    'product_variant_id' => null,
+                    'quantity'           => $initialStock,
+                    'reserved_quantity'  => 0,
+                ]);
+            }
+
             // Create prices
             foreach ($prices as $priceData) {
                 $product->prices()->create($priceData);
             }
 
-            return $product->load(['category', 'brand', 'unit', 'tax', 'images', 'variants', 'prices', 'inventories']);
+            return $product->load(['category', 'brand', 'unit', 'tax', 'images', 'variants.inventories', 'variants.variantValues.attribute', 'prices', 'inventories']);
         });
     }
 
     public function updateProduct(int $id, array $data): Product
     {
         return DB::transaction(function () use ($id, $data) {
+            $variants = $data['variants'] ?? null;
             $prices   = $data['prices'] ?? null;
             unset($data['variants'], $data['prices']);
 
@@ -138,6 +163,72 @@ class ProductService
 
             $product = $this->productRepository->update($id, $data);
 
+            // Sync variants if provided
+            if ($variants !== null) {
+                // Delete existing variant pivot values and force delete old variants
+                foreach ($product->variants()->withTrashed()->get() as $oldV) {
+                    $oldV->variantValues()->delete();
+                    $oldV->forceDelete();
+                }
+
+                if (\DB::getDriverName() === 'pgsql') {
+                    \DB::statement("SELECT setval('product_variants_id_seq', COALESCE((SELECT MAX(id) FROM product_variants), 0) + 1, false);");
+                }
+
+                foreach ($variants as $variantData) {
+                    $variantData['sku'] = $variantData['sku'] ?? $this->generateSku($product->name . '-' . ($variantData['name'] ?? 'variant'));
+                    $vSelling = isset($variantData['selling_price']) && $variantData['selling_price'] !== '' ? $variantData['selling_price'] : $product->selling_price;
+                    $vCost    = isset($variantData['cost_price']) && $variantData['cost_price'] !== '' ? $variantData['cost_price'] : $product->cost_price;
+                    $vStock   = isset($variantData['stock']) && $variantData['stock'] !== '' ? (float) $variantData['stock'] : 10.0;
+
+                    $variant = $product->variants()->create([
+                        'name'          => $variantData['name'] ?? ($product->name . ' - Variant'),
+                        'sku'           => $variantData['sku'],
+                        'barcode'       => $variantData['barcode'] ?? null,
+                        'cost_price'    => $vCost,
+                        'selling_price' => $vSelling,
+                        'compare_price' => $variantData['compare_price'] ?? null,
+                        'image'         => $variantData['image'] ?? null,
+                        'is_active'     => isset($variantData['is_active']) ? (bool)$variantData['is_active'] : true,
+                    ]);
+
+                    // Create default inventory for variant (default 10 units)
+                    \App\Models\Inventory\Inventory::create([
+                        'company_id'         => 1,
+                        'warehouse_id'       => 1,
+                        'product_id'         => $product->id,
+                        'product_variant_id' => $variant->id,
+                        'quantity'           => $vStock,
+                        'reserved_quantity'  => 0,
+                    ]);
+
+                    if (!empty($variantData['attribute_values'])) {
+                        foreach ($variantData['attribute_values'] as $attrValueId) {
+                            $variant->variantValues()->create([
+                                'attribute_value_id' => $attrValueId,
+                                'attribute_id'       => \App\Models\Product\AttributeValue::find($attrValueId)?->attribute_id,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Sync inventory for simple product if stock passed
+            if ((empty($variants) || $variants === null) && isset($data['stock']) && $data['stock'] !== '') {
+                \App\Models\Inventory\Inventory::updateOrCreate(
+                    [
+                        'company_id'         => $product->company_id ?? 1,
+                        'warehouse_id'       => 1,
+                        'product_id'         => $product->id,
+                        'product_variant_id' => null,
+                    ],
+                    [
+                        'quantity'          => (float) $data['stock'],
+                        'reserved_quantity' => 0,
+                    ]
+                );
+            }
+
             // Sync prices if provided
             if ($prices !== null) {
                 $product->prices()->delete();
@@ -146,7 +237,7 @@ class ProductService
                 }
             }
 
-            return $product->load(['category', 'brand', 'unit', 'tax', 'images', 'variants', 'prices', 'inventories']);
+            return $product->load(['category', 'brand', 'unit', 'tax', 'images', 'variants.inventories', 'variants.variantValues.attribute', 'prices', 'inventories']);
         });
     }
 

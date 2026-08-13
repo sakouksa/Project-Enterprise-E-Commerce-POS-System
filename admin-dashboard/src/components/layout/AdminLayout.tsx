@@ -9,7 +9,7 @@ import {
   Briefcase, FileText, History, ShieldAlert, BarChart2, Globe
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
-import { useThemeStore } from '@/stores/themeStore'
+import { useThemeStore, applyPrimaryCssVar } from '@/stores/themeStore'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
 import Header from './Header'
@@ -36,54 +36,69 @@ interface NavGroup {
   items: NavItem[]
 }
 
+// ─── Category Icon Color & Styling Map ───────────────────────────────────────
+
+const CATEGORY_STYLES: Record<string, { colorClass: string; bgClass: string; hexColor: string }> = {
+  dashboard:      { colorClass: 'text-sky-500',      bgClass: 'bg-sky-500/15 dark:bg-sky-500/25',      hexColor: '#0284c7' },
+  products:       { colorClass: 'text-indigo-500',   bgClass: 'bg-indigo-500/15 dark:bg-indigo-500/25', hexColor: '#6366f1' },
+  inventory:      { colorClass: 'text-emerald-500',  bgClass: 'bg-emerald-500/15 dark:bg-emerald-500/25', hexColor: '#10b981' },
+  sales:          { colorClass: 'text-amber-500',    bgClass: 'bg-amber-500/15 dark:bg-amber-500/25',   hexColor: '#f59e0b' },
+  customers:      { colorClass: 'text-pink-500',     bgClass: 'bg-pink-500/15 dark:bg-pink-500/25',     hexColor: '#ec4899' },
+  purchases:      { colorClass: 'text-purple-500',   bgClass: 'bg-purple-500/15 dark:bg-purple-500/25', hexColor: '#8b5cf6' },
+  employees:      { colorClass: 'text-teal-500',     bgClass: 'bg-teal-500/15 dark:bg-teal-500/25',     hexColor: '#14b8a6' },
+  finance:        { colorClass: 'text-green-500',    bgClass: 'bg-green-500/15 dark:bg-green-500/25',   hexColor: '#22c55e' },
+  cms:            { colorClass: 'text-blue-500',     bgClass: 'bg-blue-500/15 dark:bg-blue-500/25',     hexColor: '#3b82f6' },
+  marketing:      { colorClass: 'text-yellow-500',   bgClass: 'bg-yellow-500/15 dark:bg-yellow-500/25', hexColor: '#eab308' },
+  shipping:       { colorClass: 'text-orange-500',   bgClass: 'bg-orange-500/15 dark:bg-orange-500/25', hexColor: '#f97316' },
+  company:        { colorClass: 'text-cyan-500',     bgClass: 'bg-cyan-500/15 dark:bg-cyan-500/25',     hexColor: '#06b6d4' },
+  reports:        { colorClass: 'text-fuchsia-500',  bgClass: 'bg-fuchsia-500/15 dark:bg-fuchsia-500/25', hexColor: '#d946ef' },
+  administration: { colorClass: 'text-rose-500',     bgClass: 'bg-rose-500/15 dark:bg-rose-500/25',     hexColor: '#f43f5e' },
+  activity:       { colorClass: 'text-violet-500',   bgClass: 'bg-violet-500/15 dark:bg-violet-500/25', hexColor: '#7c3aed' },
+  notifications:  { colorClass: 'text-indigo-400',   bgClass: 'bg-indigo-400/15 dark:bg-indigo-400/25', hexColor: '#818cf8' },
+  settings:       { colorClass: 'text-blue-600',     bgClass: 'bg-blue-600/15 dark:bg-blue-600/25',     hexColor: '#2563eb' },
+}
+
 // ─── Navigation Structure ─────────────────────────────────────────────────────
 
 const NAV_GROUPS: NavGroup[] = [
-  // ── 1. Dashboard ─────────────────────────────────────────────────────────
   {
     groupKey: 'dashboard',
     groupLabelKey: '',
     items: [
-      { labelKey: 'Dashboard', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
+      { labelKey: 'Dashboard', icon: <LayoutDashboard size={17} />, path: '/dashboard' },
     ],
   },
-
-  // ── 2. Products ───────────────────────────────────────────────────────────
   {
     groupKey: 'products',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.productManagement',
-        icon: <Package size={18} />,
+        icon: <Package size={17} />,
         path: '/products',
         permission: 'product.view',
       },
     ],
   },
-
-  // ── 2b. Inventory ──────────────────────────────────────────────────────────
   {
     groupKey: 'inventory',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.inventoryManagement',
-        icon: <Warehouse size={18} />,
+        icon: <Warehouse size={17} />,
         path: '/inventory',
         permission: 'inventory.view',
       },
     ],
   },
-
-  // ── 3. Sales ──────────────────────────────────────────────────────────────
   {
     groupKey: 'sales',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.salesManagement',
-        icon: <ShoppingCart size={18} />,
+        icon: <ShoppingCart size={17} />,
         permission: 'sale.view',
         children: [
           { labelKey: 'nav.posTerminal',    path: '/pos', permission: 'sale.create' },
@@ -93,29 +108,25 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
-
-  // ── 4. Customers ──────────────────────────────────────────────────────────
   {
     groupKey: 'customers',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.customerManagement',
-        icon: <Users size={18} />,
+        icon: <Users size={17} />,
         path: '/customers',
         permission: 'customer.view',
       },
     ],
   },
-
-  // ── 5. Purchases ──────────────────────────────────────────────────────────
   {
     groupKey: 'purchases',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.purchaseManagement',
-        icon: <ShoppingBag size={18} />,
+        icon: <ShoppingBag size={17} />,
         permission: 'purchase.view',
         children: [
           { labelKey: 'nav.purchaseOrders', path: '/purchases', permission: 'purchase.view' },
@@ -125,140 +136,132 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
-
-  // ── 6. Employees ──────────────────────────────────────────────────────────
   {
     groupKey: 'employees',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.employeeManagement',
-        icon: <Briefcase size={18} />,
+        icon: <Briefcase size={17} />,
         path: '/employees',
         permission: 'employee.view',
       },
     ],
   },
-
-  // ── 7. Finance ────────────────────────────────────────────────────────────
   {
     groupKey: 'finance',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.financeManagement',
-        icon: <DollarSign size={18} />,
-        path: '/finance',
-        permission: 'expense.view',
+        icon: <DollarSign size={17} />,
+        permission: 'finance.view',
+        children: [
+          { labelKey: 'nav.expenses',         path: '/expenses', permission: 'expense.view' },
+          { labelKey: 'nav.paymentMethods',   path: '/payments/methods', permission: 'payment.view' },
+          { labelKey: 'nav.transactions',     path: '/payments/transactions', permission: 'payment.view' },
+        ],
       },
     ],
   },
-
-  // ── 8. Content Management ──────────────────────────────────────────────────
   {
     groupKey: 'cms',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.contentManagement',
-        icon: <FileText size={18} />,
+        icon: <FileText size={17} />,
         path: '/cms',
-        permission: 'page.view',
+        permission: 'cms.view',
       },
     ],
   },
-
-  // ── 9. Marketing ──────────────────────────────────────────────────────────
   {
     groupKey: 'marketing',
     groupLabelKey: '',
     items: [
       {
-        labelKey: 'nav.marketingManagement',
-        icon: <Zap size={18} />,
-        permission: 'promotion.view',
+        labelKey: 'nav.marketing',
+        icon: <Zap size={17} />,
+        permission: 'promotions.view',
         children: [
-          { labelKey: 'nav.coupons',         path: '/marketing/coupons', permission: 'coupon.view' },
-          { labelKey: 'nav.promotions',      path: '/marketing/promotions', permission: 'promotion.view' },
-          { labelKey: 'nav.flashSales',     path: '/marketing/flash-sales', permission: 'flash_sale.view' },
+          { labelKey: 'nav.promotions', path: '/marketing/promotions', permission: 'promotions.view' },
+          { labelKey: 'nav.coupons',    path: '/marketing/coupons', permission: 'coupons.view' },
+          { labelKey: 'nav.flashSales', path: '/marketing/flash-sales', permission: 'flash_sales.view' },
+          { labelKey: 'nav.banners',    path: '/marketing/banners', permission: 'banners.view' },
         ],
       },
     ],
   },
-
-  // ── 10. Shipping ──────────────────────────────────────────────────────────
   {
     groupKey: 'shipping',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.shippingManagement',
-        icon: <Truck size={18} />,
+        icon: <Truck size={17} />,
         path: '/shipping',
-        permission: 'shipping_method.view',
+        permission: 'shipping.view',
       },
     ],
   },
-
-  // ── 11. Company ───────────────────────────────────────────────────────────
   {
     groupKey: 'company',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.companyManagement',
-        icon: <Building2 size={18} />,
-        path: '/company',
+        icon: <Building2 size={17} />,
         permission: 'company.view',
+        children: [
+          { labelKey: 'nav.companyInfo', path: '/company', permission: 'company.view' },
+          { labelKey: 'nav.branches',    path: '/branches', permission: 'company.view' },
+          { labelKey: 'nav.stores',      path: '/stores', permission: 'company.view' },
+          { labelKey: 'nav.warehouses',  path: '/warehouses', permission: 'inventory.view' },
+        ],
       },
     ],
   },
-
-  // ── 12. Reports ───────────────────────────────────────────────────────────
   {
     groupKey: 'reports',
     groupLabelKey: '',
     items: [
       {
-        labelKey: 'nav.reportsManagement',
-        icon: <BarChart2 size={18} />,
+        labelKey: 'nav.reports',
+        icon: <BarChart3 size={17} />,
         permission: 'report.view',
         children: [
           { labelKey: 'nav.salesReport',     path: '/reports/sales', permission: 'report.view' },
-          { labelKey: 'nav.purchaseReports',  path: '/reports?tab=purchase', permission: 'report.view' },
+          { labelKey: 'nav.purchaseReport',  path: '/reports/purchase', permission: 'report.view' },
           { labelKey: 'nav.inventoryReport', path: '/reports/inventory', permission: 'report.view' },
-          { labelKey: 'nav.profitLoss',     path: '/reports/profit-loss', permission: 'report.view' },
+          { labelKey: 'nav.profitLossReport',path: '/reports/profit-loss', permission: 'report.view' },
         ],
       },
     ],
   },
-
-  // ── 13. Administration ────────────────────────────────────────────────────
   {
-    groupKey: 'security',
+    groupKey: 'administration',
     groupLabelKey: '',
     items: [
       {
-        labelKey: 'nav.administrationManagement',
-        icon: <User size={18} />,
+        labelKey: 'nav.administration',
+        icon: <ShieldAlert size={17} />,
         permission: 'user.view',
         children: [
-          { labelKey: 'nav.allUsers',       path: '/users', permission: 'user.view' },
-          { labelKey: 'nav.roles',           path: '/roles', permission: 'role.view' },
-          { labelKey: 'nav.permissions',     path: '/permissions', permission: 'permission.view' },
+          { labelKey: 'nav.users',       path: '/users', permission: 'user.view' },
+          { labelKey: 'nav.roles',       path: '/roles', permission: 'role.view' },
+          { labelKey: 'nav.permissions', path: '/permissions', permission: 'permission.view' },
         ],
       },
     ],
   },
-
-  // ── 14. System ────────────────────────────────────────────────────────────
   {
     groupKey: 'activity',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.systemManagement',
-        icon: <History size={18} />,
+        icon: <History size={17} />,
         permission: 'activity_log.view',
         children: [
           { labelKey: 'nav.recycleBin',      path: '/recycle-bin', permission: 'activity_log.view' },
@@ -267,15 +270,13 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
-
-  // ── 15. Notifications ─────────────────────────────────────────────────────
   {
     groupKey: 'notifications',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.notifications',
-        icon: <Bell size={18} />,
+        icon: <Bell size={17} />,
         permission: 'notification.view',
         children: [
           { labelKey: 'nav.allNotifications', path: '/notifications', permission: 'notification.view' },
@@ -285,16 +286,13 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
-
-
-  // ── 15. Settings ──────────────────────────────────────────────────────────
   {
     groupKey: 'settings',
     groupLabelKey: '',
     items: [
       {
         labelKey: 'nav.settingsManagement',
-        icon: <Settings size={18} />,
+        icon: <Settings size={17} />,
         path: '/settings',
         permission: 'setting.view',
       },
@@ -302,42 +300,83 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
-// ─── SidebarItem ─────────────────────────────────────────────────────────────
+// ─── SidebarItem Component with Micro-Animations & Curated Icon Colors ─────────
 
-const SidebarItem: React.FC<{ item: NavItem; collapsed: boolean }> = ({ item, collapsed }) => {
+const SidebarItem: React.FC<{ item: NavItem; groupKey: string; collapsed: boolean }> = ({ item, groupKey, collapsed }) => {
   const { t } = useTranslation()
   const { hasPermission } = useAuthStore()
-  const [open, setOpen] = useState(false)
   const location = useLocation()
+  const { sidebar: sidebarConfig } = useThemeStore()
+
+  const catStyle = CATEGORY_STYLES[groupKey] || { colorClass: 'text-primary', bgClass: 'bg-primary/15', hexColor: '#3b82f6' }
 
   // Filter children by permission
   const visibleChildren = item.children?.filter(child =>
     !child.permission || hasPermission(child.permission)
   )
 
-  const isGroupActive = visibleChildren?.some(c => location.pathname === c.path ||
-    (c.path.includes('?') && location.pathname === c.path.split('?')[0]))
+  const isGroupActive = visibleChildren?.some(c =>
+    location.pathname === c.path || (c.path.includes('?') && location.pathname === c.path.split('?')[0])
+  )
+  const isDirectActive = !item.children && location.pathname === item.path
 
-  // Auto-open when a child is active
+  const [open, setOpen] = useState(isGroupActive ?? false)
+
   useEffect(() => {
-    if (isGroupActive) setOpen(true)
-  }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (isGroupActive) {
+      setOpen(true)
+    }
+  }, [location.pathname, isGroupActive])
+
+  const paddingClass = sidebarConfig?.compact ? 'py-1.5 px-2' : 'py-2 px-2.5'
+  const roundedStyle = sidebarConfig?.roundedStyle || '0.75rem'
+
+  const customTextColor = sidebarConfig?.textColor
+  const customActiveBg = sidebarConfig?.activeBgColor || 'hsl(var(--primary))'
+  const customActiveText = sidebarConfig?.activeTextColor || '#ffffff'
 
   if (visibleChildren && visibleChildren.length > 0) {
     return (
-      <div>
-        <button
+      <div className="space-y-1">
+        <motion.button
+          type="button"
           onClick={() => setOpen(o => !o)}
-          className={`sidebar-item w-full justify-between ${isGroupActive ? 'text-white' : ''}`}
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          style={{
+            borderRadius: roundedStyle,
+            color: isGroupActive ? customActiveBg : (customTextColor || undefined),
+            backgroundColor: isGroupActive ? `${customActiveBg}18` : undefined,
+          }}
+          className={`group flex items-center w-full justify-between gap-3 text-xs font-bold transition-all duration-150 cursor-pointer select-none whitespace-nowrap ${paddingClass} ${
+            !isGroupActive ? 'hover:bg-foreground/10' : ''
+          } ${!customTextColor && !isGroupActive ? 'text-foreground' : ''}`}
         >
-          <div className="flex items-center gap-3">
-            <span className={isGroupActive ? 'text-blue-400' : ''}>{item.icon}</span>
-            {!collapsed && <span>{t(item.labelKey)}</span>}
+          <div className="flex items-center gap-2.5">
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              style={{
+                backgroundColor: isGroupActive ? customActiveBg : undefined,
+                color: isGroupActive ? customActiveText : undefined,
+              }}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 shadow-2xs ${
+                !isGroupActive ? `${catStyle.bgClass} ${catStyle.colorClass}` : ''
+              }`}
+            >
+              {item.icon}
+            </motion.div>
+            {!collapsed && <span className="font-bold tracking-wide">{t(item.labelKey)}</span>}
           </div>
           {!collapsed && (
-            <ChevronDown size={14} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={14}
+              style={{ color: isGroupActive ? customActiveBg : (customTextColor || undefined) }}
+              className={`transition-transform duration-200 shrink-0 opacity-70 group-hover:opacity-100 ${open ? 'rotate-180' : ''}`}
+            />
           )}
-        </button>
+        </motion.button>
 
         <AnimatePresence initial={false}>
           {open && !collapsed && (
@@ -345,23 +384,39 @@ const SidebarItem: React.FC<{ item: NavItem; collapsed: boolean }> = ({ item, co
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeInOut' }}
-              className="overflow-hidden ml-6 mt-0.5 space-y-0.5"
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              style={{ borderColor: isGroupActive ? `${customActiveBg}60` : `${catStyle.hexColor}40` }}
+              className="overflow-hidden ml-5 pl-2.5 border-l-2 space-y-1 my-1"
             >
               {visibleChildren.map((child) => (
                 <NavLink
                   key={child.path}
                   to={child.path}
+                  style={({ isActive }) => ({
+                    borderRadius: roundedStyle,
+                    backgroundColor: isActive ? customActiveBg : undefined,
+                    color: isActive ? customActiveText : (customTextColor || undefined),
+                  })}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap
-                     ${isActive
-                       ? 'text-blue-400 bg-blue-600/15 font-medium'
-                       : 'text-slate-400 hover:text-white hover:bg-white/5'
-                     }`
+                    `group flex items-center gap-2 px-2.5 py-1.5 text-[11px] font-bold transition-all whitespace-nowrap ${
+                      isActive
+                        ? 'shadow-xs scale-[1.01]'
+                        : `hover:bg-foreground/10 hover:translate-x-1 ${!customTextColor ? 'text-foreground' : ''}`
+                    }`
                   }
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60 flex-shrink-0" />
-                  {t(child.labelKey)}
+                  {({ isActive }) => (
+                    <>
+                      <motion.span
+                        whileHover={{ scale: 1.5 }}
+                        style={{ backgroundColor: isActive ? customActiveText : catStyle.hexColor }}
+                        className={`rounded-full shrink-0 transition-transform ${
+                          isActive ? 'w-2 h-2 shadow-xs' : 'w-1.5 h-1.5 opacity-70 group-hover:opacity-100'
+                        }`}
+                      />
+                      <span className="truncate">{t(child.labelKey)}</span>
+                    </>
+                  )}
                 </NavLink>
               ))}
             </motion.div>
@@ -375,19 +430,47 @@ const SidebarItem: React.FC<{ item: NavItem; collapsed: boolean }> = ({ item, co
     <NavLink
       to={item.path!}
       title={collapsed ? t(item.labelKey) : undefined}
-      className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
+      style={({ isActive }) => ({
+        borderRadius: roundedStyle,
+        backgroundColor: isActive ? customActiveBg : undefined,
+        color: isActive ? customActiveText : (customTextColor || undefined),
+      })}
+      className={({ isActive }) =>
+        `group flex items-center gap-2.5 text-xs font-bold transition-all duration-150 cursor-pointer select-none whitespace-nowrap ${paddingClass} ${
+          isActive
+            ? 'shadow-md font-bold scale-[1.01]'
+            : `hover:bg-foreground/10 hover:translate-x-1 ${!customTextColor ? 'text-foreground' : ''}`
+        }`
+      }
     >
-      <span>{item.icon}</span>
-      {!collapsed && <span>{t(item.labelKey)}</span>}
+      {({ isActive }) => (
+        <>
+          <motion.div
+            whileHover={{ scale: 1.15, rotate: 5 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+            style={{
+              backgroundColor: isActive ? customActiveText : undefined,
+              color: isActive ? customActiveBg : undefined,
+            }}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 shadow-2xs ${
+              !isActive ? `${catStyle.bgClass} ${catStyle.colorClass}` : ''
+            }`}
+          >
+            {item.icon}
+          </motion.div>
+          {!collapsed && <span className="font-bold tracking-wide">{t(item.labelKey)}</span>}
+        </>
+      )}
     </NavLink>
   )
 }
 
-// ─── SidebarGroup ─────────────────────────────────────────────────────────────
+// ─── SidebarGroup Component ───────────────────────────────────────────────────
 
 const SidebarGroup: React.FC<{ group: NavGroup; collapsed: boolean; hasPermission: (p: string) => boolean }> =
   ({ group, collapsed, hasPermission }) => {
     const { t } = useTranslation()
+    const { sidebar: sidebarConfig } = useThemeStore()
 
     const visibleItems = group.items.filter(item => {
       if (item.permission && !hasPermission(item.permission)) return false
@@ -407,26 +490,32 @@ const SidebarGroup: React.FC<{ group: NavGroup; collapsed: boolean; hasPermissio
     return (
       <div className="space-y-0.5">
         {!collapsed && group.groupLabelKey && (
-          <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500 select-none">
+          <p 
+            style={{ color: sidebarConfig?.textColor || undefined }}
+            className="px-3 pt-3.5 pb-1 text-[10px] font-extrabold uppercase tracking-widest opacity-60 select-none"
+          >
             {t(group.groupLabelKey)}
           </p>
         )}
         {collapsed && group.groupLabelKey && (
-          <div className="border-t border-white/5 my-2" />
+          <div 
+            style={{ borderColor: sidebarConfig?.borderColor || 'rgba(128, 128, 128, 0.15)' }}
+            className="border-t my-2" 
+          />
         )}
         {visibleItems.map(item => (
-          <SidebarItem key={item.labelKey} item={item} collapsed={collapsed} />
+          <SidebarItem key={item.labelKey} item={item} groupKey={group.groupKey} collapsed={collapsed} />
         ))}
       </div>
     )
   }
 
-// ─── AdminLayout ──────────────────────────────────────────────────────────────
+// ─── AdminLayout Component ────────────────────────────────────────────────────
 
 const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed]   = useState(false)
   const { user, darkMode, toggleDark, logout, hasPermission } = useAuthStore()
-  const { language, setLanguage } = useThemeStore()
+  const { language, setLanguage, primaryColor, sidebar: sidebarConfig } = useThemeStore()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -435,44 +524,80 @@ const AdminLayout: React.FC = () => {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
 
+  useEffect(() => {
+    if (primaryColor) {
+      applyPrimaryCssVar(primaryColor)
+    }
+  }, [primaryColor])
+
   const handleLogout = async () => {
     try { await api.post('/auth/logout') } catch {}
     logout()
     navigate('/login')
   }
 
-  const sidebarWidth = collapsed ? 'w-16' : 'w-64'
+  const isCollapsed = collapsed || sidebarConfig?.collapsed
+  const sidebarWidth = isCollapsed
+    ? '68px'
+    : sidebarConfig?.width
+    ? `${sidebarConfig.width}px`
+    : '256px'
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
 
       {/* ── Sidebar ────────────────────────────────────────────────────────── */}
       <aside
-        className={`hidden lg:flex flex-col ${sidebarWidth} transition-all duration-300 ease-in-out
-                    bg-[hsl(222,47%,11%)] border-r border-white/5 relative z-50 flex-shrink-0`}
+        style={{
+          width: sidebarWidth,
+          backgroundColor: sidebarConfig?.bgColor || '#0f172a',
+          borderColor: sidebarConfig?.borderColor || 'rgba(128, 128, 128, 0.15)',
+        }}
+        className="hidden lg:flex flex-col transition-all duration-300 ease-in-out border-r relative z-50 flex-shrink-0 shadow-sm"
       >
 
-        {/* Logo */}
-        <div className="flex items-center h-16 px-4 border-b border-white/5 flex-shrink-0">
+        {/* Logo Header with Spring Glow */}
+        <div 
+          style={{ borderColor: sidebarConfig?.borderColor || 'rgba(128, 128, 128, 0.15)' }}
+          className="flex items-center h-16 px-4 border-b flex-shrink-0"
+        >
           {!collapsed ? (
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center flex-shrink-0">
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="flex items-center gap-2.5 cursor-pointer"
+              onClick={() => navigate('/dashboard')}
+            >
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md">
                 <Store size={16} className="text-white" />
               </div>
               <div className="overflow-hidden">
-                <p className="text-white text-xs font-semibold uppercase tracking-wider leading-none">Enterprise POS</p>
-                <span className="text-[10px] text-slate-400 font-medium">{t('common.management_system', 'Management System')}</span>
+                <p 
+                  style={{ color: sidebarConfig?.textColor || undefined }}
+                  className="text-xs font-black uppercase tracking-wider leading-none"
+                >
+                  Enterprise POS
+                </p>
+                <span 
+                  style={{ color: sidebarConfig?.textColor || undefined }}
+                  className="text-[10px] opacity-70 font-bold block mt-0.5"
+                >
+                  {t('common.management_system', 'Management System')}
+                </span>
               </div>
-            </div>
+            </motion.div>
           ) : (
-            <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
+            <motion.div 
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center mx-auto shadow-md cursor-pointer"
+              onClick={() => navigate('/dashboard')}
+            >
               <Store size={16} className="text-white" />
-            </div>
+            </motion.div>
           )}
         </div>
 
         {/* Nav groups */}
-        <nav className="flex-1 overflow-y-auto no-scrollbar py-3 px-2">
+        <nav className="flex-1 overflow-y-auto no-scrollbar py-3 px-2 space-y-1">
           {NAV_GROUPS.map(group => (
             <SidebarGroup
               key={group.groupKey}
@@ -483,44 +608,67 @@ const AdminLayout: React.FC = () => {
           ))}
         </nav>
 
-        {/* User card */}
+        {/* User Card with Micro-Spring Animation */}
         {!collapsed && (
-          <div className="p-3 border-t border-white/5">
-            <div 
+          <div 
+            style={{ borderColor: sidebarConfig?.borderColor || 'rgba(128, 128, 128, 0.15)' }}
+            className="p-3 border-t"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.02, x: 2 }}
               onClick={() => navigate('/profile')}
-              className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+              className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-foreground/10 transition-colors cursor-pointer group shadow-2xs"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xs ring-2 ring-primary/20">
                 {user?.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-white text-xs font-semibold">{user?.name?.[0] ?? 'U'}</span>
+                  <span className="text-white text-xs font-bold">{user?.name?.[0] ?? 'U'}</span>
                 )}
               </div>
               <div className="flex-1 overflow-hidden min-w-0">
-                <p className="text-white text-sm font-medium truncate">{user?.name}</p>
-                <p className="text-slate-400 text-xs truncate">{user?.roles?.[0]?.replace('_', ' ')}</p>
+                <p 
+                  style={{ color: sidebarConfig?.textColor || undefined }}
+                  className="text-xs font-extrabold truncate"
+                >
+                  {user?.name || 'Super Admin'}
+                </p>
+                <p 
+                  style={{ color: sidebarConfig?.textColor || undefined }}
+                  className="text-[10px] opacity-70 truncate capitalize font-semibold"
+                >
+                  {user?.roles?.[0]?.replace('_', ' ') || 'super admin'}
+                </p>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-slate-400 hover:text-red-400 transition-colors"
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.2, rotate: 15 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleLogout()
+                }}
+                style={{ color: sidebarConfig?.textColor || undefined }}
+                className="opacity-70 hover:opacity-100 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-500/10"
                 title={t('auth.logout', 'Logout')}
               >
-                <LogOut size={14} />
-              </button>
-            </div>
+                <LogOut size={15} />
+              </motion.button>
+            </motion.div>
           </div>
         )}
 
         {/* Collapse toggle */}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.9 }}
           onClick={() => setCollapsed(c => !c)}
           className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border rounded-full
                      flex items-center justify-center text-muted-foreground hover:text-foreground
-                     shadow-sm transition-colors z-30"
+                     shadow-md transition-colors z-30 cursor-pointer"
         >
           {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-        </button>
+        </motion.button>
       </aside>
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}

@@ -258,4 +258,17 @@ class PurchaseReturnService
             return (bool)$return->delete();
         });
     }
+
+    public function bulkDelete(array $ids): int
+    {
+        return DB::transaction(function () use ($ids) {
+            $count = 0;
+            foreach ($ids as $id) {
+                if ($this->delete($id)) {
+                    $count++;
+                }
+            }
+            return $count;
+        });
+    }
 }

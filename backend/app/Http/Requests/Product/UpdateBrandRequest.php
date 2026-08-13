@@ -20,7 +20,8 @@ class UpdateBrandRequest extends FormRequest
             'name'        => 'sometimes|required|string|max:100',
             'slug'        => "sometimes|required|string|max:100|unique:brands,slug,{$id}",
             'description' => 'nullable|string',
-            'logo'        => 'nullable|string|max:255',
+            'logo'        => 'nullable',
+            'logo_file'   => 'nullable|image|max:10240',
             'is_active'   => 'sometimes|boolean',
         ];
     }

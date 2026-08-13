@@ -23,7 +23,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
         string $order = 'desc'
     ): LengthAwarePaginator {
         $query = $this->model
-            ->with(['category:id,name', 'brand:id,name', 'primaryImage', 'images', 'unit:id,name,symbol', 'tax:id,name,rate', 'inventories', 'variants'])
+            ->with(['category:id,name', 'brand:id,name', 'primaryImage', 'images', 'unit:id,name,symbol', 'tax:id,name,rate,type', 'inventories', 'variants.inventories', 'variants.attributeValues.attribute'])
             ->withSum('inventories as stock', 'quantity')
             ->when($filters['search'] ?? null, fn($q, $v) => $q->search($v))
             ->when($filters['category_id'] ?? null, function ($q, $v) {
@@ -58,10 +58,15 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             ->when($filters['created_start'] ?? $filters['start_date'] ?? $filters['created_from'] ?? $filters['date_from'] ?? null, fn($q, $v) => $q->whereDate('created_at', '>=', $v))
             ->when($filters['created_end'] ?? $filters['end_date'] ?? $filters['created_to'] ?? $filters['date_to'] ?? null, fn($q, $v) => $q->whereDate('created_at', '<=', $v))
             ->when($filters['updated_start'] ?? null, fn($q, $v) => $q->whereDate('updated_at', '>=', $v))
-            ->when($filters['updated_end'] ?? null, fn($q, $v) => $q->whereDate('updated_at', '<=', $v));
+            ->when($filters['updated_end'] ?? null, fn($q, $v) => $q->whereDate('updated_at', '<=', $v))
+            ->when($filters['price_min'] ?? null, fn($q, $v) => $q->where('selling_price', '>=', (float) $v))
+            ->when($filters['price_max'] ?? null, fn($q, $v) => $q->where('selling_price', '<=', (float) $v))
+            ->when($filters['warehouse_id'] ?? null, function ($q, $v) {
+                $q->whereHas('inventories', fn($iq) => $iq->where('warehouse_id', $v));
+            });
 
-        $allowedSorts = ['name', 'sku', 'selling_price', 'created_at', 'sold_count', 'rating_avg', 'status', 'category_id', 'stock'];
-        $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
+        $allowedSorts = ['id', 'name', 'sku', 'selling_price', 'cost_price', 'created_at', 'sold_count', 'rating_avg', 'status', 'category_id', 'stock'];
+        $sort = in_array($sort, $allowedSorts) ? $sort : 'id';
 
         return $query->orderBy($sort, $order === 'asc' ? 'asc' : 'desc')
                      ->paginate($perPage);

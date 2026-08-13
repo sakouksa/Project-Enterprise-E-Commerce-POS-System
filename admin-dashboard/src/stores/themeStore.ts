@@ -130,16 +130,54 @@ interface ThemeState {
   resetAll: () => void
 }
 
-const defaultWidgets: WidgetConfig[] = [
-  { id: 'today_sales', visible: true, size: 'medium', order: 0 },
-  { id: 'today_orders', visible: true, size: 'medium', order: 1 },
-  { id: 'total_customers', visible: true, size: 'medium', order: 2 },
-  { id: 'total_products', visible: true, size: 'medium', order: 3 },
-  { id: 'sales_overview', visible: true, size: 'large', order: 4 },
-  { id: 'category_sales', visible: true, size: 'medium', order: 5 },
-  { id: 'recent_orders', visible: true, size: 'large', order: 6 },
-  { id: 'low_stock', visible: true, size: 'large', order: 7 },
-]
+import { DEFAULT_WIDGETS_LIST } from '@/config/dashboardWidgets'
+
+const defaultWidgets: WidgetConfig[] = DEFAULT_WIDGETS_LIST
+
+
+export function applyPrimaryCssVar(color: string) {
+  if (!color) return
+  let c = color.replace('#', '')
+  if (c.length === 3) c = c.split('').map(x => x + x).join('')
+  if (c.length !== 6) return
+  const r = parseInt(c.substring(0, 2), 16) / 255
+  const g = parseInt(c.substring(2, 4), 16) / 255
+  const b = parseInt(c.substring(4, 6), 16) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0, s = 0
+  const l = (max + min) / 2
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break
+      case g: h = (b - r) / d + 2; break
+      case b: h = (r - g) / d + 4; break
+    }
+    h /= 6
+  }
+  const hDeg = Math.round(h * 360)
+  const sPct = Math.round(s * 100)
+  const lPct = Math.round(l * 100)
+  document.documentElement.style.setProperty('--primary', `${hDeg} ${sPct}% ${lPct}%`)
+  document.documentElement.style.setProperty('--ring', `${hDeg} ${sPct}% ${lPct}%`)
+}
+
+export function applyLayoutCssVars(layout: Partial<LayoutConfig>) {
+  if (!layout) return
+  if (layout.cardRadius) document.documentElement.style.setProperty('--card-radius', layout.cardRadius)
+  if (layout.tableRadius) document.documentElement.style.setProperty('--table-radius', layout.tableRadius)
+  if (layout.buttonRadius) document.documentElement.style.setProperty('--button-radius', layout.buttonRadius)
+  if (layout.inputRadius) document.documentElement.style.setProperty('--input-radius', layout.inputRadius)
+  if (layout.padding) document.documentElement.style.setProperty('--container-padding', layout.padding)
+}
+
+export function applyTableCssVars(table: Partial<TableConfig>) {
+  if (!table) return
+  const densityPadding = table.density === 'compact' ? '0.375rem 0.625rem' : table.density === 'spacious' ? '1rem 1.25rem' : '0.625rem 0.875rem'
+  document.documentElement.style.setProperty('--table-density-padding', densityPadding)
+}
 
 export const useThemeStore = create<ThemeState>()(
   persist(
@@ -159,7 +197,7 @@ export const useThemeStore = create<ThemeState>()(
       sidebar: {
         bgColor: '#0f172a',
         textColor: '#94a3b8',
-        activeBgColor: '#2563eb',
+        activeBgColor: '#3b82f6',
         activeTextColor: '#ffffff',
         hoverBgColor: '#1e293b',
         hoverTextColor: '#ffffff',
@@ -251,59 +289,78 @@ export const useThemeStore = create<ThemeState>()(
         }
         document.documentElement.classList.toggle('dark', isDark)
       },
-      updatePrimaryColor: (color) => set({ primaryColor: color }),
+      updatePrimaryColor: (color) => {
+        applyPrimaryCssVar(color)
+        set((s) => ({
+          primaryColor: color,
+          sidebar: { ...s.sidebar, activeBgColor: color },
+          button: { ...s.button, primaryColor: color },
+        }))
+      },
       updateFont: (config) => set((s) => ({ font: { ...s.font, ...config } })),
       updateSidebar: (config) => set((s) => ({ sidebar: { ...s.sidebar, ...config } })),
       updateNavbar: (config) => set((s) => ({ navbar: { ...s.navbar, ...config } })),
-      updateLayout: (config) => set((s) => ({ layout: { ...s.layout, ...config } })),
+      updateLayout: (config) =>
+        set((s) => {
+          const next = { ...s.layout, ...config }
+          applyLayoutCssVars(next)
+          return { layout: next }
+        }),
       updateCard: (config) => set((s) => ({ card: { ...s.card, ...config } })),
       updateButton: (config) => set((s) => ({ button: { ...s.button, ...config } })),
-      updateTable: (config) => set((s) => ({ table: { ...s.table, ...config } })),
+      updateTable: (config) =>
+        set((s) => {
+          const next = { ...s.table, ...config }
+          applyTableCssVars(next)
+          return { table: next }
+        }),
       updateForm: (config) => set((s) => ({ form: { ...s.form, ...config } })),
       updateIcon: (config) => set((s) => ({ icon: { ...s.icon, ...config } })),
       updateWidgetsList: (widgets) => set({ widgetsList: widgets }),
 
-      resetAll: () => set({
-        themeMode: 'light',
-        primaryColor: '#3b82f6',
-        font: {
-          family: 'Default',
-          size: '14px',
-          weight: '400',
-          lineHeight: '1.5',
-          letterSpacing: '0px',
-        },
-        sidebar: {
-          bgColor: '#0f172a',
-          textColor: '#94a3b8',
-          activeBgColor: '#2563eb',
-          activeTextColor: '#ffffff',
-          hoverBgColor: '#1e293b',
-          hoverTextColor: '#ffffff',
-          borderColor: '#1e293b',
-          width: 256,
-          compact: false,
-          collapsed: false,
-          roundedStyle: '0.5rem',
-        },
-        navbar: {
-          bgColor: '#ffffff',
-          textColor: '#0f172a',
-          borderColor: '#e2e8f0',
-          shadow: 'sm',
-          transparency: 1,
-          height: 64,
-        },
-        layout: {
-          contentWidth: 'full',
-          padding: '1.5rem',
-          cardRadius: '0.75rem',
-          tableRadius: '0.5rem',
-          buttonRadius: '0.5rem',
-          inputRadius: '0.5rem',
-          modalRadius: '0.75rem',
-          drawerRadius: '0.75rem',
-        },
+      resetAll: () => {
+        applyPrimaryCssVar('#3b82f6')
+        set({
+          themeMode: 'light',
+          primaryColor: '#3b82f6',
+          font: {
+            family: 'Default',
+            size: '14px',
+            weight: '400',
+            lineHeight: '1.5',
+            letterSpacing: '0px',
+          },
+          sidebar: {
+            bgColor: '#0f172a',
+            textColor: '#94a3b8',
+            activeBgColor: '#3b82f6',
+            activeTextColor: '#ffffff',
+            hoverBgColor: '#1e293b',
+            hoverTextColor: '#ffffff',
+            borderColor: '#1e293b',
+            width: 256,
+            compact: false,
+            collapsed: false,
+            roundedStyle: '0.5rem',
+          },
+          navbar: {
+            bgColor: '#ffffff',
+            textColor: '#0f172a',
+            borderColor: '#e2e8f0',
+            shadow: 'sm',
+            transparency: 1,
+            height: 64,
+          },
+          layout: {
+            contentWidth: 'full',
+            padding: '1.5rem',
+            cardRadius: '0.75rem',
+            tableRadius: '0.5rem',
+            buttonRadius: '0.5rem',
+            inputRadius: '0.5rem',
+            modalRadius: '0.75rem',
+            drawerRadius: '0.75rem',
+          },
         card: {
           bgColor: '#ffffff',
           borderColor: '#e2e8f0',
@@ -342,9 +399,10 @@ export const useThemeStore = create<ThemeState>()(
           color: '#64748b',
         },
         widgetsList: defaultWidgets,
-      }),
-    }),
-    {
+      })
+    },
+  }),
+  {
       name: 'enterprise-pos-customizer',
       storage: createJSONStorage(() => localStorage),
     }

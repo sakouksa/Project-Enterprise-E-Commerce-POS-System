@@ -26,7 +26,7 @@ class Sale extends Model
         'customer_id', 'user_id', 'invoice_number', 'date',
         'status', 'subtotal', 'tax_amount', 'discount_amount',
         'grand_total', 'paid_amount', 'change_amount',
-        'currency_code', 'payment_method_id', 'notes',
+        'currency_code', 'payment_method_id', 'payment_method', 'payment_details', 'notes',
     ];
 
     protected $casts = [
@@ -37,6 +37,7 @@ class Sale extends Model
         'grand_total'     => 'decimal:2',
         'paid_amount'     => 'decimal:2',
         'change_amount'   => 'decimal:2',
+        'payment_details' => 'array',
     ];
 
     public function company(): BelongsTo      { return $this->belongsTo(Company::class); }

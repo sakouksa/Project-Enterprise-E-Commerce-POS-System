@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { X, UserPlus, Phone, Mail, MapPin, Users, Award } from 'lucide-react'
+import { X, UserPlus, Phone, Mail, MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Customer } from '../types'
 
 interface POSCustomerModalProps {
@@ -13,14 +14,15 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
   onClose,
   onAddCustomer,
 }) => {
-  if (!isOpen) return null
-
+  const { t } = useTranslation(['pos', 'common'])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [group, setGroup] = useState('Retail Member')
   const [address, setAddress] = useState('')
   const [creditLimit, setCreditLimit] = useState('500')
+
+  if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +34,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
       phone: phone.trim() || undefined,
       email: email.trim() || undefined,
       group,
-      loyalty_points: 10, // Initial bonus points
+      loyalty_points: 10,
       address: address.trim() || undefined,
       credit_limit: parseFloat(creditLimit) || 500,
     }
@@ -52,8 +54,8 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
               <UserPlus size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-base text-foreground">Create New Customer</h3>
-              <p className="text-xs text-muted-foreground">Register customer for POS loyalty & invoicing</p>
+              <h3 className="font-bold text-base text-foreground">{t('createNewCustomer', 'Create New Customer')}</h3>
+              <p className="text-xs text-muted-foreground">{t('registerCustomerDesc', 'Register customer for POS loyalty & invoicing')}</p>
             </div>
           </div>
           <button
@@ -66,7 +68,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="font-bold text-foreground block mb-1">Customer Full Name *</label>
+            <label className="font-bold text-foreground block mb-1">{t('customerFullName', 'Customer Full Name *')}</label>
             <input
               type="text"
               required
@@ -79,7 +81,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="font-bold text-foreground block mb-1">Phone Number</label>
+              <label className="font-bold text-foreground block mb-1">{t('phoneNumber', 'Phone Number')}</label>
               <div className="relative">
                 <Phone size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -93,7 +95,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-foreground block mb-1">Email Address</label>
+              <label className="font-bold text-foreground block mb-1">{t('emailAddress', 'Email Address')}</label>
               <div className="relative">
                 <Mail size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -109,19 +111,19 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="font-bold text-foreground block mb-1">Customer Group</label>
+              <label className="font-bold text-foreground block mb-1">{t('customerGroup', 'Customer Group')}</label>
               <select
                 value={group}
                 onChange={(e) => setGroup(e.target.value)}
                 className="form-input text-xs cursor-pointer"
               >
-                <option value="Retail Member">Retail Member</option>
-                <option value="VIP Member">VIP Tier (10% Off)</option>
-                <option value="Wholesale Client">Wholesale Client</option>
+                <option value="Retail Member">{t('retailMember', 'Retail Member')}</option>
+                <option value="VIP Member">{t('vipTier', 'VIP Tier (10% Off)')}</option>
+                <option value="Wholesale Client">{t('wholesaleClient', 'Wholesale Client')}</option>
               </select>
             </div>
             <div>
-              <label className="font-bold text-foreground block mb-1">Credit Limit ($)</label>
+              <label className="font-bold text-foreground block mb-1">{t('creditLimit', 'Credit Limit ($)')}</label>
               <input
                 type="number"
                 min="0"
@@ -135,7 +137,7 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
           </div>
 
           <div>
-            <label className="font-bold text-foreground block mb-1">Billing / Delivery Address</label>
+            <label className="font-bold text-foreground block mb-1">{t('address', 'Billing / Delivery Address')}</label>
             <div className="relative">
               <MapPin size={14} className="absolute left-2.5 top-2 text-muted-foreground" />
               <textarea
@@ -154,13 +156,13 @@ export const POSCustomerModal: React.FC<POSCustomerModalProps> = ({
               onClick={onClose}
               className="btn-secondary py-2.5 flex-1"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
             <button
               type="submit"
               className="btn-primary py-2.5 flex-1 font-bold"
             >
-              Save Customer
+              {t('saveAndSelectCustomer', 'Save & Select Customer')}
             </button>
           </div>
         </form>

@@ -27,7 +27,11 @@
   "createCoupon": "สร้างคูปองใหม่",
   "editCoupon": "แก้ไขคูปอง",
   "generateCode": "สร้างรหัส",
-  "marketing.campaigns": "Campaigns",
-  "marketing.coupons": "Coupons",
-  "marketing.referrals": "Referrals"
+  "activeCampaigns": "แคมเปญที่ใช้งานอยู่",
+  "couponUsage": "การใช้คูปองส่วนลด",
+  "marketing.activeCampaigns": "แคมเปญที่ใช้งานอยู่",
+  "marketing.campaigns": "แคมเปญที่ใช้งานอยู่",
+  "marketing.couponUsage": "การใช้คูปองส่วนลด",
+  "marketing.coupons": "การใช้คูปองส่วนลด",
+  "marketing.referrals": "การแนะนำและพันธมิตร"
 }

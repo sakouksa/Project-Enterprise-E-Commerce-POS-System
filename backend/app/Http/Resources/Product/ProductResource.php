@@ -60,7 +60,8 @@ class ProductResource extends JsonResource
             'tax' => $this->whenLoaded('tax', fn() => [
                 'id'   => $this->tax?->id,
                 'name' => $this->tax?->name,
-                'rate' => $this->tax?->rate,
+                'rate' => (float) ($this->tax?->rate ?? 10),
+                'type' => $this->tax?->type ?? 'percentage',
             ]),
             'images'           => $this->whenLoaded('images', fn() => $this->images->map(fn($img) => [
                 'id'         => $img->id,
@@ -94,7 +95,18 @@ class ProductResource extends JsonResource
                 'body' => $r->body,
                 'created_at' => $r->created_at?->toIso8601String(),
             ])),
-            'stock' => isset($this->stock) ? (float) $this->stock : $this->whenLoaded('inventories', fn() => (float) $this->inventories->sum('quantity')),
+            'stock' => ($this->has_variants && $this->relationLoaded('variants') && $this->variants->count() > 0)
+                ? (float) $this->variants->sum(function($v) {
+                    if ($v->relationLoaded('inventories') && $v->inventories->count() > 0) {
+                        return (float) $v->inventories->sum('quantity');
+                    }
+                    return (float) ($v->stock ?? 0);
+                }) + (($this->relationLoaded('inventories') && $this->inventories->whereNull('product_variant_id')->count() > 0)
+                    ? (float) $this->inventories->whereNull('product_variant_id')->sum('quantity')
+                    : 0)
+                : (($this->relationLoaded('inventories') && $this->inventories->count() > 0)
+                    ? (float) $this->inventories->sum('quantity')
+                    : (float) ($this->stock ?? 0)),
             'prices'   => $this->whenLoaded('prices', fn() => $this->prices->map(fn($p) => [
                 'id'            => $p->id,
                 'price_type'    => $p->price_type,

@@ -33,6 +33,7 @@ export interface ProductPayload {
   width?:               number | null
   height?:              number | null
   has_variants?:        boolean
+  variants?:            any[]
   track_inventory?:     boolean
   low_stock_threshold?: number
   status:               string
@@ -78,6 +79,10 @@ export const productService = {
     }).then(r => r.data)
   },
 
+  /** POST /product-images */
+  createImage: (data: { product_id: number; image: string; alt_text?: string; is_primary?: boolean; sort_order?: number }) =>
+    api.post('/product-images', data).then(r => r.data),
+
   /** DELETE /products/:productId/images/:imageId */
   deleteImage: (productId: number, imageId: number) =>
     api.delete(`/products/${productId}/images/${imageId}`).then(r => r.data),
@@ -95,12 +100,22 @@ export const productService = {
   /** POST /product-variants */
   createVariant: (payload: {
     product_id: number; name: string; sku?: string
-    cost_price?: number; selling_price: number; is_active?: boolean
+    cost_price?: number; selling_price: number; is_active?: boolean; attribute_values?: number[]
   }) => api.post('/product-variants', payload).then(r => r.data.data),
+
+  /** PUT /product-variants/:id */
+  updateVariant: (variantId: number, payload: {
+    name?: string; sku?: string; cost_price?: number; selling_price?: number
+    compare_price?: number; barcode?: string; is_active?: boolean; attribute_values?: number[]
+  }) => api.put(`/product-variants/${variantId}`, payload).then(r => r.data.data),
 
   /** DELETE /product-variants/:id */
   deleteVariant: (variantId: number) =>
     api.delete(`/product-variants/${variantId}`).then(r => r.data),
+
+  /** POST /product-variants/bulk-delete */
+  bulkDeleteVariants: (ids: number[]) =>
+    api.post('/product-variants/bulk-delete', { ids }).then(r => r.data),
 
   // ── Tiered Prices ─────────────────────────────────────────────────────────────
 

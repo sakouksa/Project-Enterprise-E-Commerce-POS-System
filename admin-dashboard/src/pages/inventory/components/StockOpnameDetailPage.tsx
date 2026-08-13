@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, CheckCircle2, Info, Package, Warehouse, User, Clock, AlertCircle, RefreshCw, Edit, AlertTriangle } from 'lucide-react'
+import { X, CheckCircle2, AlertCircle, RefreshCw, Edit } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import api from '@/api/client'
@@ -29,7 +29,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
   onClose,
   onEdit
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
 
   const { data: detail, isLoading, isError, refetch } = useQuery({
     queryKey: ['stock-opname-detail', opnameId],
@@ -38,7 +38,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
   })
 
   const status = detail?.status || 'draft'
-  const isCompleted = status === 'completed'
+  const isCompleted = status === 'done' || status === 'completed' || status === 'approved'
 
   // Calculations
   const totalItemsCount = detail?.items?.length || detail?.checked_items || 0
@@ -72,7 +72,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                {t('inventory.opname_card', 'Stock Opname Audit Card')}
+                {t('inventory.opname_card', 'Opname Card')}
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
                 REF: #{detail?.reference_number || `OPN-${opnameId}`}
@@ -121,13 +121,15 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
                 <div className="space-y-1 min-w-0 flex-1">
                   <h3 className="text-sm font-bold text-foreground truncate">{detail.reference_number || `OPN-${opnameId}`}</h3>
                   <p className="text-xs text-muted-foreground truncate">
-                    Warehouse Hub: {detail.warehouse?.name || 'Main Warehouse'}
+                    {t('warehouse', t('inventory.warehouse', 'Warehouse Hub'))}: {detail.warehouse?.name || 'Main Warehouse'}
                   </p>
                   <div>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       isCompleted ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                     }`}>
-                      {status}
+                      {isCompleted
+                        ? t('statusDone', t('inventory.statusDone', t('common.completed', 'Completed')))
+                        : t('statusDraft', t('inventory.statusDraft', t('common.draft', 'Draft')))}
                     </span>
                   </div>
                 </div>
@@ -136,15 +138,19 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
               {/* AUDIT SUMMARY STATS */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  AUDIT ACCURACY & SUMMARY
+                  {t('auditAccuracySummary', t('inventory.auditAccuracySummary', 'AUDIT ACCURACY & SUMMARY'))}
                 </h4>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20 text-center">
-                    <span className="text-[10px] text-purple-600 dark:text-purple-400 block font-bold uppercase tracking-wider mb-1">Accuracy Rate</span>
+                    <span className="text-[10px] text-purple-600 dark:text-purple-400 block font-bold uppercase tracking-wider mb-1">
+                      {t('accuracyRate', t('inventory.accuracyRate', 'Accuracy Rate'))}
+                    </span>
                     <span className="font-extrabold text-purple-600 dark:text-purple-400 text-lg">{accuracyRate}%</span>
                   </div>
                   <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 text-center">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">Matched / Total</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">
+                      {t('matchedTotal', t('inventory.matchedTotal', 'Matched / Total'))}
+                    </span>
                     <span className="font-extrabold text-foreground text-lg">{matchedCount} / {totalItemsCount}</span>
                   </div>
                 </div>
@@ -153,24 +159,36 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
               {/* GENERAL INFORMATION */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  GENERAL INFORMATION
+                  {t('generalInfoCard', t('inventory.generalInfoCard', t('common.generalInfo', 'GENERAL INFORMATION')))}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Warehouse Hub</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">
+                      {t('warehouse', t('inventory.warehouse', 'Warehouse Hub'))}
+                    </span>
                     <span className="font-bold text-foreground">{detail.warehouse?.name || 'Main Warehouse'}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Audit Date</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">
+                      {t('colCreatedAt', t('inventory.colCreatedAt', 'Audit Date'))}
+                    </span>
                     <span className="font-bold text-foreground">{formatShortDate(detail.opname_date || detail.created_at)}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Auditor / User</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">
+                      {t('auditor', t('inventory.auditor', 'Auditor / User'))}
+                    </span>
                     <span className="font-bold text-foreground">{detail.user?.name || 'Super Admin'}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Status</span>
-                    <span className="font-bold text-foreground uppercase">{status}</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">
+                      {t('colStatus', t('inventory.colStatus', 'Status'))}
+                    </span>
+                    <span className="font-bold text-foreground uppercase">
+                      {isCompleted
+                        ? t('statusDone', t('inventory.statusDone', t('common.completed', 'Completed')))
+                        : t('statusDraft', t('inventory.statusDraft', t('common.draft', 'Draft')))}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -178,16 +196,16 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
               {/* AUDIT VARIANCE ITEMS TABLE */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  VARIANCE AUDIT LEDGER
+                  {t('varianceAuditLedger', t('inventory.varianceAuditLedger', 'VARIANCE AUDIT LEDGER'))}
                 </h4>
                 <div className="border border-border/70 rounded-xl overflow-hidden bg-card">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-muted/40 border-b border-border/60 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        <th className="p-3">Product Item</th>
-                        <th className="p-3 text-right">System Qty</th>
-                        <th className="p-3 text-right">Physical Qty</th>
-                        <th className="p-3 text-right">Diff</th>
+                        <th className="p-3">{t('colProductManagement', t('inventory.colProductManagement', 'Product Item'))}</th>
+                        <th className="p-3 text-right">{t('system_qty', t('inventory.system_qty', 'System Qty'))}</th>
+                        <th className="p-3 text-right">{t('physical_qty', t('inventory.physical_qty', 'Physical Qty'))}</th>
+                        <th className="p-3 text-right">{t('diff', t('inventory.diff', 'Diff'))}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 font-medium">
@@ -212,7 +230,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
                       {(detail.items ?? []).length === 0 && (
                         <tr>
                           <td colSpan={4} className="p-6 text-center text-muted-foreground">
-                            No items audited in this opname snapshot.
+                            {t('noOpnameRecordsYet', t('inventory.noOpnameRecordsYet', 'No items audited in this opname snapshot.'))}
                           </td>
                         </tr>
                       )}
@@ -224,7 +242,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
               {/* REASON / NOTES */}
               <div className="space-y-2">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  REASON & REMARKS
+                  {t('reasonRemarks', t('inventory.reasonRemarks', 'REASON & REMARKS'))}
                 </h4>
                 <p className="text-xs text-foreground bg-muted/30 border border-border/60 rounded-xl p-3.5 italic">
                   "{detail.notes || 'No remarks recorded for this audit count.'}"
@@ -234,15 +252,15 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
               {/* TIMESTAMPS */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  SYSTEM METADATA
+                  {t('systemMetadata', t('common.systemMetadata', 'SYSTEM METADATA'))}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Audit Snapshot Created</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('recordCreated', t('common.recordCreated', 'Audit Snapshot Created'))}</span>
                     <span className="font-semibold text-foreground">{formatShortDate(detail.created_at)}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">Last Updated</span>
+                    <span className="text-[11px] text-muted-foreground block font-medium mb-0.5">{t('lastUpdated', t('common.lastUpdated', 'Last Updated'))}</span>
                     <span className="font-semibold text-foreground">{formatShortDate(detail.updated_at)}</span>
                   </div>
                 </div>
@@ -261,7 +279,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
                   className="flex items-center gap-1.5 py-2 px-3.5 rounded-xl border border-primary/30 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                 >
                   <Edit size={14} />
-                  Continue Audit Count
+                  <span>{t('continueAuditCount', t('inventory.continueAuditCount', 'Continue Audit Count'))}</span>
                 </button>
               ) : <div />}
 
@@ -270,7 +288,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
                 onClick={onClose}
                 className="py-2 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                Close
+                {t('buttons.close', t('common.close', 'Close'))}
               </button>
             </div>
           </>

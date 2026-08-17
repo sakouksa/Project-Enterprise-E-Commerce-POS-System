@@ -60,7 +60,6 @@ class StockOpnameController extends BaseApiController
 
             // Snap current system quantities from inventories table for selected warehouse
             $inventories = Inventory::where('warehouse_id', $validated['warehouse_id'])->get();
-            $existingProductIds = $inventories->pluck('product_id')->toArray();
 
             foreach ($inventories as $inv) {
                 StockOpnameItem::create([
@@ -71,20 +70,6 @@ class StockOpnameController extends BaseApiController
                     'physical_quantity'  => $inv->quantity, // default physical qty to system qty
                     'difference'         => 0,
                     'notes'              => 'Initial snapshot',
-                ]);
-            }
-
-            // Also snap products from products table that don't have inventory records in this warehouse yet
-            $allProducts = \App\Models\Product\Product::whereNotIn('id', $existingProductIds)->get();
-            foreach ($allProducts as $p) {
-                StockOpnameItem::create([
-                    'stock_opname_id'    => $op->id,
-                    'product_id'         => $p->id,
-                    'product_variant_id' => null,
-                    'system_quantity'    => 0,
-                    'physical_quantity'  => 0,
-                    'difference'         => 0,
-                    'notes'              => 'Initial snapshot (0 stock)',
                 ]);
             }
 

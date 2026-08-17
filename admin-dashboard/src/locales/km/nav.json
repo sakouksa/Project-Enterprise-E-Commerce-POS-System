@@ -81,5 +81,13 @@
   "nav.allNotifications": "ការជូនដំណឹងទាំងអស់",
   "nav.notificationTemplates": "ទំរង់ការជូនដំណឹង",
   "nav.notificationSettings": "ការកំណត់ការជូនដំណឹង",
-  "nav.notifications": "ការជូនដំណឹង"
+  "nav.notifications": "ការជូនដំណឹង",
+  "securityManagement": "សុវត្ថិភាពប្រព័ន្ធ",
+  "securityOverview": "ទិដ្ឋភាពទូទៅ",
+  "connectedDevices": "ឧបករណ៍ដែលបានភ្ជាប់",
+  "securitySettings": "គោលការណ៍សុវត្ថិភាព",
+  "nav.securityManagement": "សុវត្ថិភាពប្រព័ន្ធ",
+  "nav.securityOverview": "ទិដ្ឋភាពទូទៅ",
+  "nav.connectedDevices": "ឧបករណ៍ដែលបានភ្ជាប់",
+  "nav.securitySettings": "គោលការណ៍សុវត្ថិភាព"
 }

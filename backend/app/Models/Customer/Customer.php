@@ -49,6 +49,11 @@ class Customer extends Model
         return $this->addresses()->where('is_default', true);
     }
 
+    public function sales(): HasMany
+    {
+        return $this->hasMany(\App\Models\Sales\Sale::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

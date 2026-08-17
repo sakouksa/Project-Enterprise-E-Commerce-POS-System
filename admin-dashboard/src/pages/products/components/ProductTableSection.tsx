@@ -1,4 +1,6 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
@@ -37,6 +39,9 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
   onForceDelete,
   formatCurrency,
 }) => {
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['products', 'common'])
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       setSelectedRows(products.map(p => p.id))
@@ -66,21 +71,21 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                     className="checkbox h-4 w-4"
                   />
                 </th>
-                {visibleColumns.image && <th className="w-12">Image</th>}
-                {visibleColumns.name && <th>Product Name</th>}
-                {visibleColumns.sku && <th>SKU</th>}
-                {visibleColumns.category && <th>Category</th>}
-                {visibleColumns.price && <th>Price</th>}
-                {visibleColumns.stock && <th>Stock</th>}
-                {visibleColumns.status && <th>Status</th>}
-                <th className="text-right">Actions</th>
+                {visibleColumns.image && <th className="w-12">{t('colPhoto', 'Image')}</th>}
+                {visibleColumns.name && <th>{t('colName', 'Product Name')}</th>}
+                {visibleColumns.sku && <th>{t('sku', 'SKU')}</th>}
+                {visibleColumns.category && <th>{t('colCategory', 'Category')}</th>}
+                {visibleColumns.price && <th>{t('colPrice', 'Price')}</th>}
+                {visibleColumns.stock && <th>{t('colStock', 'Stock')}</th>}
+                {visibleColumns.status && <th>{t('colStatus', 'Status')}</th>}
+                <th className="text-right">{t('colActions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <LoadingSkeleton cols={9} />
               ) : products.length === 0 ? (
-                <EmptyState cols={9} message="No product items found matching query." />
+                <EmptyState cols={9} message={t('common:noData', 'No product items found matching query.')} />
               ) : (
                 products.map((p) => {
                   const isSelected = selectedRows.includes(p.id)
@@ -98,11 +103,29 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                       {visibleColumns.image && (
                         <td>
                           <div className="w-10 h-10 rounded-xl bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
-                            {p.primary_image?.image ? (
-                              <img src={getAbsoluteImageUrl(p.primary_image.image)} alt={p.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[10px] font-bold text-muted-foreground">{p.name[0]?.toUpperCase()}</span>
-                            )}
+                            {(() => {
+                              const imgUrl = getAbsoluteImageUrl(p.primary_image || (p.images && p.images[0]) || (p as any).image)
+                              return imgUrl ? (
+                                <img
+                                  src={imgUrl}
+                                  alt={p.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none'
+                                    const parent = e.currentTarget.parentElement
+                                    if (parent && !parent.querySelector('.fallback-initial')) {
+                                      const span = document.createElement('span')
+                                      span.className = 'fallback-initial text-[10px] font-bold text-muted-foreground'
+                                      span.innerText = p.name[0]?.toUpperCase() || 'P'
+                                      parent.appendChild(span)
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-muted-foreground">{p.name[0]?.toUpperCase()}</span>
+                              )
+                            })()}
                           </div>
                         </td>
                       )}
@@ -140,10 +163,10 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                       )}
                       {visibleColumns.status && (
                         <td>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                             p.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                           }`}>
-                            {p.status}
+                            {p.status === 'active' ? t('common.active', 'សកម្ម') : t('common.inactive', 'អសកម្ម')}
                           </span>
                         </td>
                       )}

@@ -25,12 +25,12 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
   const netMargin = sales > 0 ? ((grossProfit - expenses) / sales) * 100 : 0
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {/* Cash Flow Summary */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Wallet className="w-4 h-4 text-blue-500" />
-          {t('finance.cash_flow', 'Net Cash Flow')}
+          {t('dashboard.netCashFlow', 'Net Cash Flow')}
         </h4>
         <div className="space-y-4">
           <div>
@@ -49,10 +49,10 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
       </div>
 
       {/* Account Receivables & Payables */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <DollarSign className="w-4 h-4 text-emerald-500" />
-          {t('finance.receivables_payables', 'Receivables & Payables')}
+          {t('dashboard.receivablesPayables', 'Receivables & Payables')}
         </h4>
         <div className="space-y-4">
           <div>
@@ -67,7 +67,7 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
       </div>
 
       {/* Net Profit Margin */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs md:col-span-2 lg:col-span-1">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Percent className="w-4 h-4 text-purple-500" />
           {t('dashboard.profitTrend', 'Profit Margin Trend')}
@@ -82,7 +82,7 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
             <div className="flex items-center gap-2 mt-1">
               <span className="font-bold text-sm text-foreground">{netMargin.toFixed(1)}%</span>
               <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                {netMargin >= 0 ? 'Positive' : 'Deficit'}
+                {netMargin >= 0 ? t('dashboard.positive', 'Positive') : t('dashboard.deficit', 'Deficit')}
               </span>
             </div>
           </div>

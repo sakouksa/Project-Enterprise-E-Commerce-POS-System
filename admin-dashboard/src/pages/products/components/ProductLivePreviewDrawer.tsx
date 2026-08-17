@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, X, Star, ShoppingBag, ShieldCheck, Check, Truck } from 'lucide-react'
+import { Eye, X, ShieldCheck, Truck, Package } from 'lucide-react'
 import { getAbsoluteImageUrl } from '@/utils/image'
 
 interface ProductLivePreviewDrawerProps {
@@ -27,20 +27,26 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
 
-  // Collect all display images
+  // Collect all display images (no fake/hardcoded Unsplash fallback)
   const allImages: string[] = []
   if (createImagePreviews && createImagePreviews.length > 0) {
-    createImagePreviews.forEach(p => allImages.push(p.url))
+    createImagePreviews.forEach(p => {
+      if (p?.url) allImages.push(p.url)
+    })
   }
   if (productDetail?.images && productDetail.images.length > 0) {
-    productDetail.images.forEach((img: any) => allImages.push(getAbsoluteImageUrl(img.url || img.image)))
+    productDetail.images.forEach((img: any) => {
+      const u = getAbsoluteImageUrl(img.url || img.image)
+      if (u && !allImages.includes(u)) allImages.push(u)
+    })
   }
-  if (allImages.length === 0) {
-    allImages.push('https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80')
+  if (form?.image && typeof form.image === 'string' && form.image.trim()) {
+    const u = getAbsoluteImageUrl(form.image)
+    if (u && !allImages.includes(u)) allImages.unshift(u)
   }
 
-  const categoryName = categories?.find(c => String(c.id) === String(form.category_id))?.name || productDetail?.category?.name || 'Category'
-  const brandName = brands?.find(b => String(b.id) === String(form.brand_id))?.name || productDetail?.brand?.name || 'Brand'
+  const categoryName = categories?.find(c => String(c.id) === String(form.category_id))?.name || productDetail?.category?.name || t('products.generalCategory', 'General')
+  const brandName = brands?.find(b => String(b.id) === String(form.brand_id))?.name || productDetail?.brand?.name || t('products.generalBrand', 'Brand')
   const variants: any[] = productDetail?.variants || []
 
   return (
@@ -55,7 +61,7 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
             className="bg-card w-full max-w-md border-l border-border h-full flex flex-col justify-between shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/70 backdrop-blur-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/80 backdrop-blur-md">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
                   <Eye size={18} />
@@ -69,6 +75,7 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
                 type="button"
                 onClick={onClose}
                 className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title={t('common.close', 'Close')}
               >
                 <X size={18} />
               </button>
@@ -78,34 +85,55 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
             <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
               {/* Product Hero Image */}
               <div className="space-y-3">
-                <div className="rounded-2xl overflow-hidden border border-border bg-muted/20 aspect-square relative shadow-xs">
-                  <img
-                    src={allImages[selectedImageIndex] || allImages[0]}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  {form.is_featured && (
-                    <span className="absolute top-3 left-3 bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-md shadow-sm">
-                      FEATURED
-                    </span>
-                  )}
-                </div>
+                {allImages.length > 0 ? (
+                  <>
+                    <div className="rounded-2xl overflow-hidden border border-border bg-muted/20 aspect-square relative shadow-xs">
+                      <img
+                        src={allImages[selectedImageIndex] || allImages[0]}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      {form.is_featured && (
+                        <span className="absolute top-3 left-3 bg-amber-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm tracking-wide">
+                          {t('products.featuredBadge', 'FEATURED')}
+                        </span>
+                      )}
+                    </div>
 
-                {/* Thumbnails */}
-                {allImages.length > 1 && (
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {allImages.map((src, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedImageIndex(idx)}
-                        className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
-                          selectedImageIndex === idx ? 'border-primary shadow-xs' : 'border-border opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        <img src={src} alt="thumb" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
+                    {/* Thumbnails */}
+                    {allImages.length > 1 && (
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                        {allImages.map((src, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSelectedImageIndex(idx)}
+                            className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                              selectedImageIndex === idx ? 'border-primary shadow-xs' : 'border-border opacity-60 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={src} alt="thumb" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-2xl overflow-hidden border border-dashed border-border/80 bg-muted/15 aspect-square relative shadow-xs flex flex-col items-center justify-center p-6 text-center">
+                    <div className="p-3.5 rounded-2xl bg-muted/50 border border-border/80 text-muted-foreground/60 mb-2.5">
+                      <Package size={38} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-xs font-bold text-foreground">
+                      {t('products.noImagePreview', 'មិនទាន់មានរូបភាពទំនិញ')}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground mt-1 max-w-[240px] leading-relaxed">
+                      {t('products.uploadImageHint', 'សូមបញ្ចូលរូបភាពទំនិញក្នុងផ្ទាំង "ព័ត៌មានទូទៅ & រូបភាព"')}
+                    </span>
+                    {form.is_featured && (
+                      <span className="absolute top-3 left-3 bg-amber-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm tracking-wide">
+                        {t('products.featuredBadge', 'FEATURED')}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -113,12 +141,12 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
               {/* Product Meta & Title */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                  <span className="text-primary">{brandName}</span>
+                  <span className="text-primary font-bold">{brandName}</span>
                   <span>·</span>
                   <span>{categoryName}</span>
                 </div>
                 <h2 className="text-base font-bold text-foreground leading-snug">
-                  {form.name || 'Product Title'}
+                  {form.name || t('products.productTitlePlaceholder', 'Product Title')}
                 </h2>
                 <div className="flex items-center gap-3">
                   <span className="text-xl font-extrabold text-primary font-mono">
@@ -142,7 +170,9 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
               {/* Variants Selector */}
               {variants.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-border/60">
-                  <span className="font-bold text-foreground text-xs block">Available Options:</span>
+                  <span className="font-bold text-foreground text-xs block">
+                    {t('products.availableOptions', 'Available Options:')}
+                  </span>
                   <div className="flex flex-wrap gap-2">
                     {variants.map((v: any) => {
                       const isSelected = selectedVariantId === v.id
@@ -158,7 +188,7 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
                           }`}
                         >
                           <span>{v.name}</span>
-                          <span className="ml-1 opacity-80">(${Number(v.selling_price || 0).toFixed(2)})</span>
+                          <span className="ml-1 opacity-80 font-mono">(${Number(v.selling_price || 0).toFixed(2)})</span>
                         </button>
                       )
                     })}
@@ -167,14 +197,14 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
               )}
 
               {/* Value Badges */}
-              <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-2 text-[11px] text-muted-foreground">
+              <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-2.5 text-[11px] text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck size={15} className="text-primary shrink-0" />
-                  <span>100% Genuine Enterprise Certified Product</span>
+                  <ShieldCheck size={16} className="text-primary shrink-0" />
+                  <span>{t('products.certifiedQuality', '100% Genuine Enterprise Certified Product')}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Truck size={15} className="text-primary shrink-0" />
-                  <span>Instant POS & Fast Warehouse Dispatch</span>
+                  <Truck size={16} className="text-primary shrink-0" />
+                  <span>{t('products.fastDispatch', 'Instant POS & Fast Warehouse Dispatch')}</span>
                 </div>
               </div>
             </div>
@@ -186,7 +216,7 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
                 onClick={onClose}
                 className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer text-center"
               >
-                {t('common.close', 'Close Preview')}
+                {t('products.closePreview', 'Close Preview')}
               </button>
             </div>
           </motion.div>
@@ -195,3 +225,5 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
     </AnimatePresence>
   )
 }
+
+export default ProductLivePreviewDrawer

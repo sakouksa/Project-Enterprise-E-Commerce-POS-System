@@ -17,22 +17,37 @@ class SupplierController extends BaseApiController
     {
         $query = Supplier::with('contacts');
 
-        if ($request->status === 'deleted') {
-            $query->onlyTrashed();
-        } elseif ($request->status && $request->status !== 'all') {
-            $query->where('is_active', $request->status === 'active');
+        // Status / is_active filter (supports '1'/'0', 'active'/'inactive', true/false, 'deleted')
+        $status = $request->get('status', $request->get('is_active'));
+        if ($status !== null && $status !== '' && $status !== 'all') {
+            if ($status === 'deleted' || $status === 'trashed') {
+                $query->onlyTrashed();
+            } elseif ($status === '1' || $status === 1 || $status === 'active' || $status === true || $status === 'true') {
+                $query->where('is_active', true);
+            } elseif ($status === '0' || $status === 0 || $status === 'inactive' || $status === false || $status === 'false') {
+                $query->where('is_active', false);
+            }
         }
 
         if ($request->filled('country')) {
-            $query->where('country', 'like', "%{$request->country}%");
+            $country = $request->country;
+            $query->where(function($q) use ($country) {
+                $q->where('country', 'like', "%{$country}%")
+                  ->orWhere('address', 'like', "%{$country}%");
+            });
+        }
+
+        if ($request->filled('city')) {
+            $city = $request->city;
+            $query->where(function($q) use ($city) {
+                $q->where('city', 'like', "%{$city}%")
+                  ->orWhere('province', 'like', "%{$city}%")
+                  ->orWhere('address', 'like', "%{$city}%");
+            });
         }
 
         if ($request->filled('province')) {
             $query->where('province', 'like', "%{$request->province}%");
-        }
-
-        if ($request->filled('city')) {
-            $query->where('city', 'like', "%{$request->city}%");
         }
 
         if ($request->filled('created_date_start')) {
@@ -112,7 +127,7 @@ class SupplierController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'company_id'          => 'required|exists:companies,id',
+            'company_id'          => 'nullable|exists:companies,id',
             'name'                => 'required|string|max:100',
             'code'                => 'required|string|unique:suppliers,code',
             'email'               => 'nullable|email|max:100',
@@ -136,6 +151,10 @@ class SupplierController extends BaseApiController
             'contacts.*.phone'      => 'nullable|string|max:50',
             'contacts.*.is_primary' => 'sometimes|boolean',
         ]);
+
+        if (empty($data['company_id'])) {
+            $data['company_id'] = $request->user()?->company_id ?? 1;
+        }
 
         $supplier = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $request) {
             $contacts = $data['contacts'] ?? [];

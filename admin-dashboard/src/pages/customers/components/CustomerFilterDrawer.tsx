@@ -1,6 +1,8 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, RotateCcw } from 'lucide-react'
+import ModernSelect from '@/components/shared/ModernSelect'
+import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
+import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface CustomerFilterDrawerProps {
   isOpen: boolean
@@ -15,108 +17,75 @@ interface CustomerFilterDrawerProps {
   onReset: () => void
 }
 
+const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    {children}
+  </div>
+)
+
 export const CustomerFilterDrawer: React.FC<CustomerFilterDrawerProps> = ({
-  isOpen,
-  onClose,
-  statusFilter,
-  setStatusFilter,
-  groupIdFilter,
-  setGroupIdFilter,
-  genderFilter,
-  setGenderFilter,
+  isOpen, onClose,
+  statusFilter, setStatusFilter,
+  groupIdFilter, setGroupIdFilter,
+  genderFilter, setGenderFilter,
   groups = [],
   onReset,
 }) => {
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['customers', 'common'])
+
+  const activeCount = [statusFilter !== 'all' ? statusFilter : '', groupIdFilter, genderFilter].filter(Boolean).length
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40" onClick={onClose} />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-border bg-card">
-              <div className="flex items-center gap-2">
-                <Filter size={16} className="text-primary" />
-                <h3 className="font-bold text-base text-foreground">Filter Customers</h3>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+    <FilterDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      onReset={onReset}
+      title={t('filterCustomers', t('customers.filterCustomers', 'Filter Customers'))}
+      activeCount={activeCount}
+      applyLabel={t('applyFilters', t('customers.applyFilters', 'Apply Filters'))}
+      resetLabel={t('resetFilters', t('customers.resetFilters', 'Reset Filters'))}
+    >
+      <FL label={t('accountStatus', t('customers.accountStatus', 'Account Status'))}>
+        <ModernSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: 'all', label: t('allStatuses', t('customers.allStatuses', 'All Statuses')) },
+            { value: 'active', label: t('activeAccounts', t('customers.activeAccounts', 'Active Accounts')) },
+            { value: 'inactive', label: t('inactiveAccounts', t('customers.inactiveAccounts', 'Inactive Accounts')) },
+          ]}
+          placeholder={t('allStatuses', t('customers.allStatuses', 'All Statuses'))}
+        />
+      </FL>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-card">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Account Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active Accounts</option>
-                  <option value="inactive">Inactive Accounts</option>
-                </select>
-              </div>
+      <FL label={t('customerGroup', t('customers.customerGroup', 'Customer Group'))}>
+        <ModernSelect
+          value={groupIdFilter}
+          onChange={setGroupIdFilter}
+          options={[
+            { value: '', label: t('allGroups', t('customers.allGroups', 'All Groups')) },
+            ...groups.map((g: any) => ({ value: String(g.id), label: g.name }))
+          ]}
+          placeholder={t('allGroups', t('customers.allGroups', 'All Groups'))}
+        />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Customer Group</label>
-                <select
-                  value={groupIdFilter}
-                  onChange={(e) => setGroupIdFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">All Groups</option>
-                  {groups.map((g: any) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Gender</label>
-                <select
-                  value={genderFilter}
-                  onChange={(e) => setGenderFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">All Genders</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={onReset}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl border border-border transition-colors"
-              >
-                <RotateCcw size={13} />
-                <span>Reset Filters</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      <FL label={t('gender', t('customers.gender', 'Gender'))}>
+        <ModernSelect
+          value={genderFilter}
+          onChange={setGenderFilter}
+          options={[
+            { value: '', label: t('allGenders', t('customers.allGenders', 'All Genders')) },
+            { value: 'male', label: t('genderMale', t('customers.genderMale', 'Male')) },
+            { value: 'female', label: t('genderFemale', t('customers.genderFemale', 'Female')) },
+            { value: 'other', label: t('genderOther', t('customers.genderOther', 'Other')) },
+          ]}
+          placeholder={t('allGenders', t('customers.allGenders', 'All Genders'))}
+        />
+      </FL>
+    </FilterDrawerShell>
   )
 }
 

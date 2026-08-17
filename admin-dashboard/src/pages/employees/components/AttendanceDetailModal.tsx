@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Clock, MapPin, Smartphone, ShieldCheck, User, Calendar, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { EmployeeAvatar } from './EmployeeAvatar'
 
 interface AttendanceDetailModalProps {
   attendance: any | null
@@ -29,13 +30,12 @@ const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({ attendanc
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm overflow-hidden border border-primary/20">
-                {emp?.photo ? (
-                  <img src={emp.photo} alt={emp.name} className="w-full h-full object-cover" />
-                ) : (
-                  emp?.name ? emp.name.substring(0, 2).toUpperCase() : 'EMP'
-                )}
-              </div>
+              <EmployeeAvatar
+                photo={emp?.photo}
+                name={emp?.name}
+                id={emp?.id ?? attendance.employee_id}
+                size="lg"
+              />
               <div>
                 <h3 className="font-bold text-base text-foreground">{emp?.name ?? 'Employee'}</h3>
                 <p className="text-xs text-muted-foreground font-mono">{emp?.employee_number ?? '#EMP-001'}</p>

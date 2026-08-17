@@ -30,7 +30,12 @@ class ProductService
     {
         return $this->productRepository->findById(
             $id,
-            relations: ['category', 'brand', 'unit', 'tax', 'images', 'variants.inventories', 'variants.variantValues.attribute', 'prices', 'inventories']
+            relations: [
+                'category', 'brand', 'unit', 'tax', 'images',
+                'variants.inventories.warehouse', 'variants.attributeValues.attribute',
+                'variants.variantValues.attribute', 'variants.variantValues.attributeValue',
+                'prices', 'inventories.warehouse'
+            ]
         );
     }
 

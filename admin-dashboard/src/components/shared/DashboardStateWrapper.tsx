@@ -1,5 +1,7 @@
 import React from 'react'
-import { AlertTriangle, WifiOff, Inbox, ShieldAlert, RefreshCw } from 'lucide-react'
+import { WifiOff, Inbox, ShieldAlert } from 'lucide-react'
+import CustomErrorMessage from '@/components/ui/CustomErrorMessage'
+import { useTranslation } from 'react-i18next'
 
 interface DashboardStateWrapperProps {
   isLoading?: boolean
@@ -22,15 +24,21 @@ const DashboardStateWrapper: React.FC<DashboardStateWrapperProps> = ({
   onRetry,
   children,
   loadingHeight = 'h-48',
-  emptyMessage = 'No data available.',
+  emptyMessage,
 }) => {
+  const { t } = useTranslation()
+
   // 1. Permission Check
   if (!hasPermission) {
     return (
-      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 text-center`}>
-        <ShieldAlert size={28} className="text-amber-500 mb-2" />
-        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Access Denied</h4>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">You do not have permission to view this widget.</p>
+      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-center`}>
+        <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mb-3 shadow-xs">
+          <ShieldAlert size={26} />
+        </div>
+        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{t('errors.forbidden', 'Access Denied')}</h4>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+          {t('errors.403', 'You do not have permission to view this widget or perform this operation.')}
+        </p>
       </div>
     )
   }
@@ -38,13 +46,13 @@ const DashboardStateWrapper: React.FC<DashboardStateWrapperProps> = ({
   // 2. Loading State
   if (isLoading) {
     return (
-      <div className={`w-full ${loadingHeight} animate-pulse bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col justify-between`}>
-        <div className="h-4 bg-slate-200 dark:bg-slate-700/60 rounded w-1/3" />
-        <div className="space-y-2 my-auto">
-          <div className="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-5/6" />
-          <div className="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-2/3" />
+      <div className={`w-full ${loadingHeight} animate-pulse bg-slate-100 dark:bg-slate-800/40 rounded-2xl p-5 flex flex-col justify-between border border-slate-200/50 dark:border-slate-800/50`}>
+        <div className="h-4 bg-slate-200 dark:bg-slate-700/60 rounded-md w-1/3" />
+        <div className="space-y-2.5 my-auto">
+          <div className="h-3.5 bg-slate-200 dark:bg-slate-700/60 rounded-md w-5/6" />
+          <div className="h-3 bg-slate-200 dark:bg-slate-700/60 rounded-md w-2/3" />
         </div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-700/60 rounded w-1/4" />
+        <div className="h-4 bg-slate-200 dark:bg-slate-700/60 rounded-md w-1/4" />
       </div>
     )
   }
@@ -53,38 +61,40 @@ const DashboardStateWrapper: React.FC<DashboardStateWrapperProps> = ({
   const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
   if (isOffline) {
     return (
-      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 text-center`}>
-        <WifiOff size={28} className="text-slate-400 mb-2" />
-        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Internet Connection</h4>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Please check your network connection.</p>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="mt-3 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
-          >
-            <RefreshCw size={12} /> Retry
-          </button>
-        )}
+      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 text-center`}>
+        <CustomErrorMessage
+          variant="card"
+          severity="warning"
+          code="OFFLINE"
+          title={t('errors.networkErrorTitle', 'No Internet Connection')}
+          message={t('errors.networkErrorDesc', 'Please check your network connection and try again.')}
+          onRetry={onRetry}
+          icon={<WifiOff className="w-5 h-5 text-amber-500" />}
+          className="w-full max-w-md"
+        />
       </div>
     )
   }
 
   // 4. Server Error State
   if (isError) {
-    const errorMsg = error?.response?.data?.message || error?.message || 'Server Error'
+    const errorMsg = error?.response?.data?.message || error?.message || t('errors.serverErrorDesc', 'Unable to load data from server.')
+    const statusCode = error?.response?.status || 500
+    const details = error?.response?.data?.errors || error?.response?.data
+
     return (
-      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/50 dark:border-red-900/30 text-center`}>
-        <AlertTriangle size={28} className="text-red-500 mb-2" />
-        <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">Unable to load data</h4>
-        <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1 max-w-xs">{errorMsg}</p>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="mt-3 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
-          >
-            <RefreshCw size={12} /> Retry
-          </button>
-        )}
+      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-4 text-center`}>
+        <CustomErrorMessage
+          variant="card"
+          severity="error"
+          code={statusCode}
+          title={t('errors.serverErrorTitle', 'Unable to Load Data')}
+          message={errorMsg}
+          details={details}
+          onRetry={onRetry}
+          copyable={true}
+          className="w-full max-w-lg"
+        />
       </div>
     )
   }
@@ -92,9 +102,13 @@ const DashboardStateWrapper: React.FC<DashboardStateWrapperProps> = ({
   // 5. Empty State
   if (isEmpty) {
     return (
-      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/80 dark:border-slate-800/80 text-center`}>
-        <Inbox size={28} className="text-slate-400 mb-2" />
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{emptyMessage}</p>
+      <div className={`w-full ${loadingHeight} flex flex-col items-center justify-center p-6 bg-slate-50/70 dark:bg-slate-900/30 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 text-center`}>
+        <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mb-2.5 shadow-2xs">
+          <Inbox size={24} />
+        </div>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          {emptyMessage || t('common.noData', 'No data available.')}
+        </p>
       </div>
     )
   }

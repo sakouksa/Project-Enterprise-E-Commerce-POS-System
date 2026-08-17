@@ -10,6 +10,8 @@ use App\Models\Sales\SaleReturnItem;
 use App\Models\Product\Product;
 use App\Models\Inventory\Inventory;
 use App\Models\Inventory\InventoryMovement;
+use App\Services\POS\VoiceSearchService;
+use App\Services\POS\VisionSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -56,8 +58,9 @@ class POSController extends BaseApiController
     // ─── GET /api/v1/pos/product-search ──────────────────────────────────────
     public function productSearch(Request $request): JsonResponse
     {
-        $query   = $request->get('q', $request->get('search', ''));
+        $query       = $request->get('q', $request->get('search', ''));
         $warehouseId = $request->get('warehouse_id');
+        $categoryId  = $request->get('category_id');
 
         $products = Product::with([
             'primaryImage',
@@ -66,17 +69,190 @@ class POSController extends BaseApiController
             'brand:id,name',
             'tax:id,name,rate,type',
             'variants:id,product_id,name,sku,barcode,selling_price,cost_price,image',
+            'variants.inventories',
             'inventories',
         ])
         ->where('status', 'active')
         ->when(trim($query) !== '', function ($q) use ($query) {
             $q->search($query);
         })
+        ->when($categoryId && $categoryId !== 'all', function ($q) use ($categoryId) {
+            $q->where('category_id', $categoryId);
+        })
         ->withSum('inventories as stock', 'quantity')
-        ->limit(30)
+        ->limit(100)
         ->get();
 
         return $this->successResponse($products);
+    }
+
+    // ─── GET /api/v1/pos/products/barcode/{code} ─────────────────────────────
+    public function barcodeLookup(Request $request, string $code): JsonResponse
+    {
+        $cleanCode = trim($code);
+        if ($cleanCode === '') {
+            return $this->errorResponse('Barcode code is required', null, 422);
+        }
+
+        $user = $request->user();
+        $companyId = $user?->company_id ?? $request->integer('company_id', 1);
+        $warehouseId = $request->integer('warehouse_id') ?: null;
+
+        $query = Product::with([
+            'primaryImage',
+            'images:id,product_id,image,is_primary',
+            'category:id,name',
+            'brand:id,name',
+            'tax:id,name,rate,type',
+            'variants:id,product_id,name,sku,barcode,selling_price,cost_price,image',
+            'variants.inventories',
+            'inventories',
+        ])
+        ->where('status', 'active');
+
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+
+        if ($warehouseId) {
+            $query->whereHas('inventories', fn($iq) => $iq->where('warehouse_id', $warehouseId));
+        }
+
+        $matchingProducts = (clone $query)->where(function ($q) use ($cleanCode) {
+            $q->where('barcode', $cleanCode)
+              ->orWhere('sku', $cleanCode)
+              ->orWhereHas('variants', fn($v) => $v->where('barcode', $cleanCode)->orWhere('sku', $cleanCode));
+        })
+        ->withSum('inventories as stock', 'quantity')
+        ->get();
+
+        if ($matchingProducts->isEmpty()) {
+            // Check without warehouse restriction or partial match
+            $fallback = Product::with([
+                'primaryImage',
+                'category:id,name',
+                'brand:id,name',
+                'tax:id,name,rate,type',
+                'variants',
+                'inventories',
+            ])
+            ->where('status', 'active')
+            ->where('company_id', $companyId)
+            ->where(function ($q) use ($cleanCode) {
+                $q->where('barcode', $cleanCode)
+                  ->orWhere('sku', $cleanCode)
+                  ->orWhere('barcode', 'LIKE', "%{$cleanCode}%")
+                  ->orWhere('sku', 'LIKE', "%{$cleanCode}%")
+                  ->orWhereHas('variants', fn($v) => 
+                      $v->where('barcode', $cleanCode)
+                        ->orWhere('sku', $cleanCode)
+                        ->orWhere('barcode', 'LIKE', "%{$cleanCode}%")
+                        ->orWhere('sku', 'LIKE', "%{$cleanCode}%")
+                  );
+            })
+            ->withSum('inventories as stock', 'quantity')
+            ->get();
+
+            if ($fallback->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Barcode not found in your inventory.',
+                    'code'    => $cleanCode,
+                ], 404);
+            }
+            $matchingProducts = $fallback;
+        }
+
+        if ($matchingProducts->count() > 1) {
+            return response()->json([
+                'success'  => true,
+                'multiple' => true,
+                'message'  => 'Multiple products match this barcode.',
+                'products' => $matchingProducts,
+                'total'    => $matchingProducts->count(),
+            ]);
+        }
+
+        $product = $matchingProducts->first();
+        return response()->json([
+            'success'  => true,
+            'multiple' => false,
+            'product'  => $product,
+            'products' => [$product],
+            'total'    => 1,
+        ]);
+    }
+
+    // ─── POST /api/v1/pos/voice-search ───────────────────────────────────────
+    public function voiceSearch(Request $request, VoiceSearchService $voiceService): JsonResponse
+    {
+        $request->validate([
+            'transcript'   => 'required|string|max:500',
+            'language'     => 'nullable|string|in:km,en,zh,th,vi,auto',
+            'warehouse_id' => 'nullable|integer',
+            'branch_id'    => 'nullable|integer',
+            'company_id'   => 'nullable|integer',
+        ]);
+
+        $user = $request->user();
+        $context = [
+            'company_id'   => $user?->company_id ?? $request->integer('company_id', 1),
+            'warehouse_id' => $request->integer('warehouse_id') ?: null,
+            'branch_id'    => $request->integer('branch_id') ?: null,
+        ];
+
+        $lang = $request->get('language');
+        if ($lang === 'auto') {
+            $lang = null;
+        }
+
+        $result = $voiceService->search(
+            transcript: $request->input('transcript'),
+            requestedLang: $lang,
+            user: $user,
+            context: $context
+        );
+
+        return response()->json($result);
+    }
+
+    // ─── POST /api/v1/pos/vision-search ──────────────────────────────────────
+    public function visionSearch(Request $request, VisionSearchService $visionService): JsonResponse
+    {
+        $request->validate([
+            'image'           => 'nullable|string',
+            'ocr_hint'        => 'nullable|string|max:255',
+            'visual_category' => 'nullable|string|max:100',
+            'category_hint'   => 'nullable|string|max:100',
+            'language'        => 'nullable|string|in:km,en,zh,th,vi,auto',
+            'warehouse_id'    => 'nullable|integer',
+            'branch_id'       => 'nullable|integer',
+            'company_id'      => 'nullable|integer',
+        ]);
+
+        $user = $request->user();
+        $context = [
+            'company_id'   => $user?->company_id ?? $request->integer('company_id', 1),
+            'warehouse_id' => $request->integer('warehouse_id') ?: null,
+            'branch_id'    => $request->integer('branch_id') ?: null,
+        ];
+
+        $lang = $request->get('language', 'km');
+        if ($lang === 'auto') {
+            $lang = 'km';
+        }
+
+        $visualCat = $request->input('visual_category') ?? $request->input('category_hint');
+
+        $result = $visionService->search(
+            imageFrame: $request->input('image'),
+            ocrHint: $request->input('ocr_hint'),
+            language: $lang,
+            context: $context,
+            visualCategory: $visualCat
+        );
+
+        return response()->json($result);
     }
 
     // ─── POST /api/v1/pos/apply-coupon ───────────────────────────────────────
@@ -179,6 +355,37 @@ class POSController extends BaseApiController
                 // Ignore if not PostgreSQL or sequence unavailable
             }
 
+            // ─── 1. STRICT STOCK AVAILABILITY CHECK ───────────────────────────
+            foreach ($data['items'] as $item) {
+                $product   = $productsMap[$item['product_id']] ?? null;
+                if (!$product) continue;
+
+                $variantId = $item['product_variant_id'] ?? null;
+                $qty       = (float) $item['quantity'];
+
+                // Only validate if inventory tracking is active
+                if ($product->track_inventory) {
+                    $invQuery = Inventory::where('product_id', $product->id)
+                        ->when($variantId, fn($q) => $q->where('product_variant_id', $variantId));
+
+                    if ($warehouseId) {
+                        $invQuery->where('warehouse_id', $warehouseId);
+                    }
+
+                    $availableStock = (float) ($invQuery->sum('quantity') ?? 0);
+
+                    if ($availableStock <= 0 || $availableStock < $qty) {
+                        abort(response()->json([
+                            'success' => false,
+                            'message' => "ទំនិញ '{$product->name}' អស់ពីស្តុកហើយ (ស្តុកនៅសល់: {$availableStock}, ចំនួនចង់ទិញ: {$qty})។ មិនអាចលក់បានឡើយ!",
+                            'errors'  => [
+                                'stock' => ["Product '{$product->name}' has insufficient stock. Available: {$availableStock}, Requested: {$qty}"]
+                            ]
+                        ], 422));
+                    }
+                }
+            }
+
             // Create the sale record
             $sale = Sale::create([
                 'company_id'      => $companyId,
@@ -238,27 +445,18 @@ class POSController extends BaseApiController
                     'total'              => round($lineTotal, 2),
                 ]);
 
-                // ── Decrease inventory stock ───────────────────────────────
+                // ── Decrease inventory stock with pessimistic lockForUpdate ─
                 $inventory = Inventory::where('warehouse_id', $warehouseId)
                     ->where('product_id', $product->id)
                     ->when($variantId, fn($q) => $q->where('product_variant_id', $variantId))
+                    ->lockForUpdate()
                     ->first();
 
-                $qtyBefore = $inventory ? (float) $inventory->quantity : 100.0;
-                $qtyAfter  = max(0.0, $qtyBefore - $qty);
+                $qtyBefore = $inventory ? (float) $inventory->quantity : 0;
+                $qtyAfter  = max(0, $qtyBefore - $qty);
 
                 if ($inventory) {
                     $inventory->decrement('quantity', $qty);
-                } else {
-                    // Initialize warehouse inventory with default initial stock (100) minus sold quantity
-                    Inventory::create([
-                        'company_id'         => $companyId,
-                        'warehouse_id'       => $warehouseId,
-                        'product_id'         => $product->id,
-                        'product_variant_id' => $variantId,
-                        'quantity'           => $qtyAfter,
-                        'reserved_quantity'  => 0,
-                    ]);
                 }
 
                 // ── Create inventory movement audit record ─────────────
@@ -280,6 +478,29 @@ class POSController extends BaseApiController
 
                 // ── Increment product sold_count ───────────────────────────
                 $product->increment('sold_count', (int) $qty);
+            }
+
+            // ── Record POS Sale Audit Log ──────────────────────────────────
+            if (class_exists(\App\Models\Log\AuditLog::class)) {
+                \App\Models\Log\AuditLog::create([
+                    'company_id'     => $companyId,
+                    'user_id'        => $authUser?->id,
+                    'action'         => 'POS_SALE_CREATED',
+                    'module'         => 'POS',
+                    'entity'         => 'Sale',
+                    'entity_id'      => $sale->id,
+                    'new_values'     => [
+                        'invoice_number'  => $invoiceNumber,
+                        'grand_total'     => $sale->grand_total,
+                        'paid_amount'     => $sale->paid_amount,
+                        'payment_method'  => $sale->payment_method,
+                        'item_count'      => count($data['items']),
+                    ],
+                    'ip_address'     => $request->ip(),
+                    'user_agent'     => $request->userAgent(),
+                    'status'         => 'success',
+                    'description'    => "POS Sale created: {$invoiceNumber} for \${$sale->grand_total}",
+                ]);
             }
 
             return $sale;
@@ -404,8 +625,31 @@ class POSController extends BaseApiController
                 'refund_amount' => $totalRefund,
             ]);
 
-            // Mark original sale as refunded if all items returned
+            // Mark original sale as refunded
             $sale->update(['status' => 'refunded']);
+
+            // ── Record Return Audit Log ───────────────────────────────────
+            if (class_exists(\App\Models\Log\AuditLog::class)) {
+                \App\Models\Log\AuditLog::create([
+                    'company_id'     => $sale->company_id,
+                    'user_id'        => $authUser?->id,
+                    'action'         => 'POS_SALE_REFUNDED',
+                    'module'         => 'POS',
+                    'entity'         => 'SaleReturn',
+                    'entity_id'      => $saleReturn->id,
+                    'new_values'     => [
+                        'sale_id'          => $sale->id,
+                        'invoice_number'   => $sale->invoice_number,
+                        'reference_number' => $refNumber,
+                        'refund_amount'    => $totalRefund,
+                        'refund_method'    => $saleReturn->refund_method,
+                    ],
+                    'ip_address'     => request()->ip(),
+                    'user_agent'     => request()->userAgent(),
+                    'status'         => 'success',
+                    'description'    => "POS Refund processed for {$sale->invoice_number} amount \${$totalRefund}",
+                ]);
+            }
 
             return $saleReturn;
         });

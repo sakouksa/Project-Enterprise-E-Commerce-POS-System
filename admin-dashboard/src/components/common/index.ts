@@ -17,4 +17,7 @@ export { default as ConfirmModal } from './ConfirmModal'
 export type { ConfirmVariant, ConfirmModalProps } from './ConfirmModal'
 export { default as TableActionMenu } from '../shared/TableActionMenu'
 export type { TableActionItem } from '../shared/TableActionMenu'
-
+export { default as FormHeader } from './FormHeader'
+export type { FormHeaderProps } from './FormHeader'
+export { default as FormFooter } from './FormFooter'
+export type { FormFooterProps } from './FormFooter'

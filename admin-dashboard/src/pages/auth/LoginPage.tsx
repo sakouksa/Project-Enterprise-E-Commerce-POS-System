@@ -20,6 +20,7 @@ import {
   Headphones,
   FileText,
   Shield,
+  ShieldCheck,
   ArrowRight,
   Sparkles,
   TrendingUp,
@@ -426,13 +427,6 @@ const LoginPage: React.FC = () => {
     }
   }
 
-  // Quick fill helper for demo environment
-  const fillDemoAccount = (usernameVal: string) => {
-    setValue('username', usernameVal, { shouldValidate: true })
-    setValue('password', 'password', { shouldValidate: true })
-    setServerError(null)
-  }
-
   return (
     <div className="min-h-screen w-full flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative overflow-x-hidden font-sans selection:bg-blue-500 selection:text-white transition-colors duration-300">
       
@@ -569,9 +563,9 @@ const LoginPage: React.FC = () => {
                     className="absolute right-0 mt-2 w-44 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-40"
                   >
                     {[
-                      { id: 'light', label: 'Light Mode', icon: <Sun className="w-4 h-4 text-amber-500" /> },
-                      { id: 'dark', label: 'Dark Mode', icon: <Moon className="w-4 h-4 text-blue-400" /> },
-                      { id: 'system', label: 'System Default', icon: <Monitor className="w-4 h-4 text-slate-400" /> },
+                      { id: 'light', label: t('auth.theme.light', 'Light Mode'), icon: <Sun className="w-4 h-4 text-amber-500" /> },
+                      { id: 'dark', label: t('auth.theme.dark', 'Dark Mode'), icon: <Moon className="w-4 h-4 text-blue-400" /> },
+                      { id: 'system', label: t('auth.theme.system', 'System Default'), icon: <Monitor className="w-4 h-4 text-slate-400" /> },
                     ].map((mode) => {
                       const isSel = themeMode === mode.id
                       return (
@@ -604,8 +598,8 @@ const LoginPage: React.FC = () => {
       <main className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8 flex-1 flex items-center justify-center">
         <div className="w-full flex flex-col lg:flex-row items-center justify-between gap-8 xl:gap-16 my-auto">
 
-          {/* ─── LEFT HERO SECTION (45% Desktop, Responsive Tablet & Mobile) ── */}
-          <div className="w-full lg:w-[45%] xl:w-[48%] flex flex-col justify-center py-4 lg:py-6">
+          {/* ─── LEFT HERO SECTION (Desktop Only: hidden on mobile/tablet to keep login clean) ── */}
+          <div className="hidden lg:flex w-full lg:w-[45%] xl:w-[48%] flex-col justify-center py-4 lg:py-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -615,7 +609,7 @@ const LoginPage: React.FC = () => {
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5 animate-spin-slow shrink-0" />
-                <span>Next-Gen Enterprise Commerce Platform</span>
+                <span>{t('auth.badge', 'Next-Gen Enterprise Commerce Platform')}</span>
               </div>
 
               {/* Main Headline */}
@@ -707,15 +701,15 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* ─── RIGHT LOGIN CARD SECTION ───────────────────────────────────── */}
-          <div className="w-full lg:w-[55%] xl:w-[50%] flex items-center justify-center">
+          <div className="w-full lg:w-[52%] xl:w-[48%] flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
-              className="w-full max-w-md sm:max-w-lg lg:max-w-xl mx-auto"
+              className="w-full max-w-md sm:max-w-[470px] mx-auto"
             >
-              {/* Rounded 32px Simple Glass Card Container */}
-              <div className="relative rounded-3xl sm:rounded-[32px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200 dark:border-slate-800/90 shadow-2xl shadow-slate-500/5 p-6 sm:p-9 lg:p-10 overflow-hidden">
+              {/* Rounded 32px Premium Glass Card Container */}
+              <div className="relative rounded-3xl sm:rounded-[32px] bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-500/10 p-7 sm:p-10 lg:p-11 overflow-hidden">
                 
                 {/* Progress Bar during loading */}
                 {isSubmitting && (
@@ -730,12 +724,12 @@ const LoginPage: React.FC = () => {
                 )}
 
                 {/* Header inside Login Card */}
-                <div className="text-center mb-6 sm:mb-8 flex flex-col items-center">
-                  <CompanyLogoBadge size="lg" className="mb-3 sm:mb-4" />
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <div className="text-center mb-7 sm:mb-8 flex flex-col items-center">
+                  <CompanyLogoBadge size="lg" className="mb-3.5 sm:mb-4" />
+                  <h2 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
                     {t('auth.loginTitle')}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-medium">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-medium">
                     {t('auth.loginSubtitle')}
                   </p>
                 </div>
@@ -771,30 +765,35 @@ const LoginPage: React.FC = () => {
                 </AnimatePresence>
 
                 {/* ─── LOGIN FORM ────────────────────────────────────────── */}
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5" onKeyDown={handleKeyDown}>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6" onKeyDown={handleKeyDown}>
                   
                   {/* Identifier Input */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       {t('auth.identifierLabel')}
                     </label>
-                    <input
-                      {...usernameRegisterProps}
-                      ref={(e) => {
-                        registerUsernameRef(e)
-                        usernameInputRef.current = e
-                      }}
-                      type="text"
-                      autoComplete="username"
-                      placeholder={t('auth.identifierPlaceholder')}
-                      className={`w-full px-4 py-3 bg-slate-100/80 dark:bg-slate-950/70 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
-                                 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500
-                                 focus:bg-white dark:focus:bg-slate-950 transition-all shadow-inner ${
-                                   errors.username
-                                     ? 'border-rose-500 bg-rose-500/5'
-                                     : 'border-slate-300 dark:border-slate-800'
-                                 }`}
-                    />
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400 pointer-events-none">
+                        <UserCheck className="w-4 h-4" />
+                      </div>
+                      <input
+                        {...usernameRegisterProps}
+                        ref={(e) => {
+                          registerUsernameRef(e)
+                          usernameInputRef.current = e
+                        }}
+                        type="text"
+                        autoComplete="username"
+                        placeholder={t('auth.identifierPlaceholder')}
+                        className={`w-full pl-14 pr-4 py-3.5 bg-slate-50/90 dark:bg-slate-950/70 border rounded-2xl text-slate-900 dark:text-white text-xs sm:text-sm
+                                   placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500
+                                   focus:bg-white dark:focus:bg-slate-950 transition-all ${
+                                     errors.username
+                                       ? 'border-rose-500 bg-rose-500/5'
+                                       : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                   }`}
+                      />
+                    </div>
                     {errors.username && (
                       <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
                         <Info className="w-3.5 h-3.5 shrink-0" />
@@ -809,7 +808,7 @@ const LoginPage: React.FC = () => {
 
                   {/* Password Input */}
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                         {t('auth.password')}
                       </label>
@@ -828,23 +827,26 @@ const LoginPage: React.FC = () => {
                     </div>
 
                     <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 pointer-events-none">
+                        <Lock className="w-4 h-4" />
+                      </div>
                       <input
                         {...register('password')}
                         type={showPassword ? 'text' : 'password'}
                         autoComplete="current-password"
                         placeholder={t('auth.passwordPlaceholder')}
-                        className={`w-full px-4 py-3 pr-11 bg-slate-100/80 dark:bg-slate-950/70 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
-                                   placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500
-                                   focus:bg-white dark:focus:bg-slate-950 transition-all shadow-inner ${
+                        className={`w-full pl-14 pr-11 py-3.5 bg-slate-50/90 dark:bg-slate-950/70 border rounded-2xl text-slate-900 dark:text-white text-xs sm:text-sm
+                                   placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500
+                                   focus:bg-white dark:focus:bg-slate-950 transition-all ${
                                      errors.password
                                        ? 'border-rose-500 bg-rose-500/5'
-                                       : 'border-slate-300 dark:border-slate-800'
+                                       : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                                    }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-1"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                         tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -864,7 +866,7 @@ const LoginPage: React.FC = () => {
                   </div>
 
                   {/* Remember Me & Forgot Password Line */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 pb-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
                     <label className="flex items-center gap-2 cursor-pointer select-none group">
                       <input
                         {...register('remember')}
@@ -892,11 +894,11 @@ const LoginPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || isSuccessState}
-                    className={`w-full py-3.5 sm:py-4 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-lg transition-all duration-200
-                              flex items-center justify-center gap-2 relative overflow-hidden group ${
+                    className={`w-full py-4 px-6 rounded-2xl font-bold text-xs sm:text-sm text-white shadow-xl shadow-blue-500/20 transition-all duration-200
+                              flex items-center justify-center gap-2 relative overflow-hidden group cursor-pointer ${
                                 isSuccessState
                                   ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
-                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] shadow-blue-500/25'
+                                  : 'bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] shadow-blue-500/25'
                               } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     {isSuccessState ? (
@@ -922,28 +924,10 @@ const LoginPage: React.FC = () => {
                   </button>
                 </form>
 
-                {/* Simple Demo Credentials */}
-                <div className="mt-6 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 text-center">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-2">
-                    {t('auth.demoAccountInfo')}:
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fillDemoAccount('admin')}
-                      className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
-                    >
-                      Admin: <span className="text-blue-600 dark:text-blue-400 font-semibold">admin</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillDemoAccount('admin@enterprise-pos.com')}
-                      className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
-                    >
-                      Email: <span className="text-indigo-600 dark:text-indigo-400 font-semibold">admin@enterprise-pos.com</span>
-                    </button>
-                  </div>
+                {/* ─── Trust & Security Badge at Bottom of Card ──────────── */}
+                <div className="mt-7 pt-5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-2 text-center text-[11px] sm:text-xs text-slate-400 dark:text-slate-500">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="font-medium">{t('auth.securityNote')}</span>
                 </div>
 
               </div>

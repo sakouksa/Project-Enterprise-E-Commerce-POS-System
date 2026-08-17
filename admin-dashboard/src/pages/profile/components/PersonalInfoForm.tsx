@@ -2,13 +2,13 @@ import React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save } from 'lucide-react'
+import { Save, User, Mail, Phone, Calendar, MapPin, Building, Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { UserProfile } from '@/services/profileService'
 
 const personalInfoSchema = z.object({
-  name: z.string().min(2, 'profile.personal_tab.name_required').max(100),
-  email: z.string().email('profile.personal_tab.email_invalid'),
+  name: z.string().min(2, 'personal_tab.name_required').max(100),
+  email: z.string().email('personal_tab.email_invalid'),
   phone: z.string().nullable().optional(),
   gender: z.string().nullable().optional(),
   date_of_birth: z.string().nullable().optional(),
@@ -31,7 +31,7 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
   onSave,
   isSaving,
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation('profile')
   const {
     register,
     handleSubmit,
@@ -52,175 +52,174 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
   })
 
   return (
-    <form onSubmit={handleSubmit(onSave)} className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm space-y-6">
-      <h3 className="text-lg font-bold text-foreground pb-4 border-b border-border/40">
-        {t('profile.personal_information', 'Personal Information')}
-      </h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Full Name */}
+    <form onSubmit={handleSubmit(onSave)} className="bg-card border border-border/80 rounded-3xl p-6 sm:p-7 shadow-2xs space-y-6">
+      <div className="flex items-center justify-between pb-4 border-b border-border/50">
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.full_name', 'Full Name')} <span className="text-red-500">*</span>
+          <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
+            <User size={18} className="text-primary" />
+            <span>{t('personal_tab.title', 'Personal Information')}</span>
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t('personal_tab.subtitle', 'Update your personal details such as full name, email, phone number, and location address.')}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        {/* Full Name */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <User size={13} className="text-primary" />
+            <span>{t('personal_tab.full_name', 'Full Name')}</span>
+            <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             {...register('name')}
-            className={`w-full px-4 py-2.5 rounded-xl border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
+            placeholder={t('personal_tab.name_placeholder', 'Enter your full name')}
+            className={`w-full px-4 py-2.5 rounded-2xl border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60 ${
               errors.name ? 'border-red-500 focus:ring-red-500/20' : 'border-border'
             }`}
           />
           {errors.name && (
-            <p className="text-xs text-red-500 mt-1">{t(errors.name.message || '')}</p>
+            <p className="text-[11px] text-red-500 font-bold mt-1">{t(errors.name.message || '')}</p>
           )}
         </div>
 
         {/* Email */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.email', 'Email Address')} <span className="text-red-500">*</span>
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Mail size={13} className="text-primary" />
+            <span>{t('personal_tab.email', 'Email Address')}</span>
+            <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
             {...register('email')}
-            className={`w-full px-4 py-2.5 rounded-xl border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
+            placeholder={t('personal_tab.email_placeholder', 'e.g. superadmin@enterprise-pos.com')}
+            className={`w-full px-4 py-2.5 rounded-2xl border bg-background text-foreground text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60 ${
               errors.email ? 'border-red-500 focus:ring-red-500/20' : 'border-border'
             }`}
           />
           {errors.email && (
-            <p className="text-xs text-red-500 mt-1">{t(errors.email.message || '')}</p>
+            <p className="text-[11px] text-red-500 font-bold mt-1">{t(errors.email.message || '')}</p>
           )}
         </div>
 
         {/* Phone */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.phone', 'Phone Number')}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Phone size={13} className="text-primary" />
+            <span>{t('personal_tab.phone', 'Phone Number')}</span>
           </label>
           <input
             type="text"
             {...register('phone')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder={t('personal_tab.phone_placeholder', 'e.g. +855 12 345 678')}
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         {/* Gender */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.gender', 'Gender')}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <User size={13} className="text-primary" />
+            <span>{t('personal_tab.gender', 'Gender')}</span>
           </label>
           <select
             {...register('gender')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
           >
-            <option value="">{t('profile.personal_tab.select_gender', 'Select Gender')}</option>
-            <option value="male">{t('profile.personal_tab.male', 'Male')}</option>
-            <option value="female">{t('profile.personal_tab.female', 'Female')}</option>
-            <option value="other">{t('profile.personal_tab.other', 'Other')}</option>
+            <option value="">{t('personal_tab.select_gender', 'Select Gender')}</option>
+            <option value="male">{t('personal_tab.male', 'Male')}</option>
+            <option value="female">{t('personal_tab.female', 'Female')}</option>
+            <option value="other">{t('personal_tab.other', 'Other')}</option>
           </select>
         </div>
 
         {/* Date of Birth */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.dob', 'Date of Birth')}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Calendar size={13} className="text-primary" />
+            <span>{t('personal_tab.dob', 'Date of Birth')}</span>
           </label>
           <input
             type="date"
             {...register('date_of_birth')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
 
         {/* Country */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.country', 'Country')}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Globe size={13} className="text-primary" />
+            <span>{t('personal_tab.country', 'Country')}</span>
           </label>
           <input
             type="text"
             {...register('country')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder={t('personal_tab.country_placeholder', 'Enter country (e.g. Cambodia)')}
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         {/* Province */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.province', 'Province / State')}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin size={13} className="text-primary" />
+            <span>{t('personal_tab.province', 'Province / State')}</span>
           </label>
           <input
             type="text"
             {...register('province')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder={t('personal_tab.province_placeholder', 'Province / State (e.g. Phnom Penh)')}
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         {/* City */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.city', 'City')}
+        <div className="space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Building size={13} className="text-primary" />
+            <span>{t('personal_tab.city', 'City / District')}</span>
           </label>
           <input
             type="text"
             {...register('city')}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder={t('personal_tab.city_placeholder', 'City / District (e.g. Doun Penh)')}
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         {/* Address (Full-width) */}
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.address', 'Street Address')}
+        <div className="md:col-span-2 space-y-1.5">
+          <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin size={13} className="text-primary" />
+            <span>{t('personal_tab.address', 'Street Address')}</span>
           </label>
           <textarea
             {...register('address')}
             rows={3}
-            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-          />
-        </div>
-
-        {/* Read-only Company Info */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.company', 'Company Association')}
-          </label>
-          <input
-            type="text"
-            value={profile.company?.name ?? 'N/A'}
-            disabled
-            className="w-full px-4 py-2.5 rounded-xl border border-border/50 bg-muted/65 text-muted-foreground text-sm cursor-not-allowed"
-          />
-        </div>
-
-        {/* Read-only Branch Info */}
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            {t('profile.personal_tab.branch', 'Assigned Branch')}
-          </label>
-          <input
-            type="text"
-            value={profile.branch?.name ?? 'N/A'}
-            disabled
-            className="w-full px-4 py-2.5 rounded-xl border border-border/50 bg-muted/65 text-muted-foreground text-sm cursor-not-allowed"
+            placeholder={t('personal_tab.address_placeholder', 'Enter street address, building, or location details...')}
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
 
-      <div className="flex justify-end pt-4 border-t border-border/40">
+      {/* Save Button */}
+      <div className="pt-4 border-t border-border/50 flex justify-end">
         <button
           type="submit"
           disabled={isSaving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-sm font-semibold transition-colors duration-200 shadow-sm disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold rounded-2xl text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
         >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Save size={16} />
-          )}
-          {t('profile.personal_tab.save_changes', 'Save Changes')}
+          <Save size={15} />
+          <span>{isSaving ? t('personal_tab.saving', 'Saving...') : t('personal_tab.save_changes', 'Save Changes')}</span>
         </button>
       </div>
     </form>
   )
 }
+
+export default PersonalInfoForm

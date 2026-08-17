@@ -6,34 +6,34 @@ export const DashboardRow6: React.FC = () => {
   const { t } = useTranslation()
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {/* Campaigns & Promotions */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Megaphone className="w-4 h-4 text-blue-500" />
-          {t('marketing.activeCampaigns', 'Active Campaigns')}
+          {t('dashboard.activeCampaigns', 'Active Campaigns')}
         </h4>
         <div className="space-y-3">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-semibold text-foreground">Summer Hot Promo</span>
+            <span className="font-semibold text-foreground">{t('dashboard.summerHotPromo', 'Summer Hot Promo')}</span>
             <span className="px-2 py-0.5 bg-green-500/10 text-green-500 rounded-full font-bold">
-              {t('common.active', 'Active')}
+              {t('dashboard.active', 'Active')}
             </span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="font-semibold text-foreground">Flash Sale 7.7</span>
+            <span className="font-semibold text-foreground">{t('dashboard.flashSalePromo', 'Flash Sale 7.7')}</span>
             <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded-full font-bold">
-              {t('common.scheduled', 'Scheduled')}
+              {t('dashboard.scheduled', 'Scheduled')}
             </span>
           </div>
         </div>
       </div>
 
       {/* Coupons & Discounts */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Tag className="w-4 h-4 text-emerald-500" />
-          {t('marketing.couponUsage', 'Coupon Usage')}
+          {t('dashboard.couponUsage', 'Coupon Usage')}
         </h4>
         <div className="space-y-3">
           <div className="flex justify-between items-center text-xs">
@@ -48,10 +48,10 @@ export const DashboardRow6: React.FC = () => {
       </div>
 
       {/* Referral & Affiliate */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs md:col-span-2 lg:col-span-1">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Share2 className="w-4 h-4 text-purple-500" />
-          {t('marketing.referrals', 'Referrals & Affiliates')}
+          {t('dashboard.referralsAffiliates', 'Referrals & Affiliates')}
         </h4>
         <div className="space-y-3">
           <div className="flex justify-between items-center text-xs">

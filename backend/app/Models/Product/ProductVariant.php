@@ -27,6 +27,19 @@ class ProductVariant extends Model
         'is_active'     => 'boolean',
     ];
 
+    protected $appends = ['stock'];
+
+    public function getStockAttribute(): float
+    {
+        if (array_key_exists('stock', $this->attributes) && $this->attributes['stock'] !== null) {
+            return (float) $this->attributes['stock'];
+        }
+        if ($this->relationLoaded('inventories')) {
+            return (float) $this->inventories->sum('quantity');
+        }
+        return 0.0;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

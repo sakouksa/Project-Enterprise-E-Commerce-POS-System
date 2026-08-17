@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, Users, Loader2,
-  ChevronUp, ChevronDown, Download, ToggleLeft, ToggleRight, Settings
+  ChevronUp, ChevronDown, Download, Award, Building2, Percent,
+  Check, Sparkles, FileText, Info
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -14,7 +15,10 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import ModernSelect from '@/components/shared/ModernSelect'
+import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import ResetButton from '@/components/shared/ResetButton'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface CustomerGroup {
   id: number
@@ -38,11 +42,12 @@ interface GroupFormData {
 
 interface CustomerGroupsPageProps {
   isTab?: boolean
-  setActions?: (actions: { onExport: () => void; onAdd: () => void }) => void
+  onRegisterActions?: (actions: { openAdd: () => void; exportData: () => void }) => void
 }
 
-const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, setActions }) => {
-  const { t } = useTranslation()
+const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, onRegisterActions }) => {
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['customers', 'common'])
   const toast = useToast()
   const qc = useQueryClient()
 
@@ -100,6 +105,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
 
   const formIsActive = watch('is_active')
   const watchCompanyId = watch('company_id')
+  const watchDiscount = watch('discount_percent')
 
   // Queries
   const { data: companies } = useQuery({
@@ -292,7 +298,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      toast.success(t('customers.toast.exportSuccessGroups', 'Customer groups list exported successfully.'))
+      toast.success(t('customers.toast.exportSuccessGroups', 'នាំចេញបញ្ជីក្រុមអតិថិជនបានជោគជ័យ!'))
     }, 800)
   }
 
@@ -304,13 +310,13 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
   }
 
   useEffect(() => {
-    if (setActions) {
-      setActions({
-        onExport: handleExport,
-        onAdd: openCreateModal
+    if (onRegisterActions) {
+      onRegisterActions({
+        openAdd: openCreateModal,
+        exportData: handleExport,
       })
     }
-  }, [setActions, groups])
+  }, [onRegisterActions, groups])
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null
@@ -322,7 +328,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
       {!isTab && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{t('customers.customerGroups')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('customers.customerGroups', 'ក្រុមអតិថិជន')}</h1>
             <p className="text-muted-foreground text-sm">
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
@@ -330,17 +336,17 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
           <div className="flex gap-2">
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in cursor-pointer"
             >
               <Download size={15} />
-              {t('common.export')}
+              {t('common.export', 'នាំចេញ')}
             </button>
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in cursor-pointer"
             >
               <Plus size={16} />
-              {t('common.add')}
+              {t('customers.addGroup', 'បន្ថែមក្រុម')}
             </button>
           </div>
         </div>
@@ -350,12 +356,12 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <div className="relative flex-1 min-w-56 max-w-md">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                placeholder={t('customers.searchGroups')}
-                className="form-input pl-9"
+                placeholder={t('customers.searchGroups', 'ស្វែងរកក្រុម...')}
+                className="form-input pl-9 pr-3 w-full h-9 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
             
@@ -364,68 +370,36 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
               value={statusFilter}
               onChange={val => { setStatusFilter(val); setPage(1); }}
               options={[
-                { value: 'all', label: `${t('common.status')}: ${t('common.active')} / ${t('common.inactive')}` },
-                { value: 'active', label: t('common.active') },
-                { value: 'inactive', label: t('common.inactive') },
-                { value: 'deleted', label: t('common.archived') }
+                { value: 'all', label: `${t('common.status', 'ស្ថានភាព')}: ${t('common.active', 'សកម្ម')} / ${t('common.inactive', 'អសកម្ម')}` },
+                { value: 'active', label: t('common.active', 'សកម្ម') },
+                { value: 'inactive', label: t('common.inactive', 'អសកម្ម') },
+                { value: 'deleted', label: t('common.archived', 'ទុកក្នុងប័ណ្ណសារ') }
               ]}
               className="w-52"
             />
 
-            <button
-              onClick={handleResetFilters}
-              className="btn-secondary px-3 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              {t('common.reset')}
-            </button>
+            <ResetButton onClick={handleResetFilters} />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-groups'] })}
-              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
-              title={t('common.refresh')}
+              className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
+              title={t('common.refresh', 'ផ្ទុកឡើងវិញ')}
             >
               <RefreshCw size={14} />
             </button>
-            <div className="relative">
-              <button
-                onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
-                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm cursor-pointer select-none"
-                title={t('products.toggleColumns', 'Columns')}
-              >
-                <Settings size={14} />
-              </button>
-              {columnDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
-                    <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
-                    {Object.keys(visibleColumns).map(col => {
-                      const colLabels: Record<string, string> = {
-                        id: t('customers.id', 'ID'),
-                        name: t('customers.name', 'Group Name'),
-                        description: t('customers.description', 'Description'),
-                        discount: t('customers.discount', 'Discount'),
-                        status: t('common.status', 'Status'),
-                        actions: t('common.actions', 'Actions')
-                      }
-                      return (
-                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                          <input
-                            type="checkbox"
-                            checked={visibleColumns[col as keyof typeof visibleColumns]}
-                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
-                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                          />
-                          <span>{colLabels[col] || col}</span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'id', label: t('customers.id', 'ID') },
+                { key: 'name', label: t('customers.groupName', 'ឈ្មោះក្រុម') },
+                { key: 'description', label: t('customers.description', 'ការពិពណ៌នា') },
+                { key: 'discount', label: t('customers.discount', 'ការបញ្ចុះតម្លៃ') },
+                { key: 'status', label: t('common.status', 'ស្ថានភាព') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={(cols: Record<string, boolean>) => setVisibleColumns(cols as any)}
+            />
           </div>
         </div>
       </div>
@@ -443,26 +417,26 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                   )}
                   {visibleColumns.name && (
                     <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.name')} {renderSortIcon('name')}
+                      {t('customers.groupName', 'ឈ្មោះក្រុម')} {renderSortIcon('name')}
                     </th>
                   )}
                   {visibleColumns.description && (
                     <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.description')} {renderSortIcon('description')}
+                      {t('common.description', 'ការពិពណ៌នា')} {renderSortIcon('description')}
                     </th>
                   )}
                   {visibleColumns.discount && (
                     <th onClick={() => handleSort('discount_percent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.discount')} {renderSortIcon('discount_percent')}
+                      {t('customers.discount', 'ការបញ្ចុះតម្លៃ')} {renderSortIcon('discount_percent')}
                     </th>
                   )}
                   {visibleColumns.status && (
                     <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.status')} {renderSortIcon('is_active')}
+                      {t('common.status', 'ស្ថានភាព')} {renderSortIcon('is_active')}
                     </th>
                   )}
                   {visibleColumns.actions && (
-                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions')}</th>
+                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions', 'សកម្មភាព')}</th>
                   )}
                 </tr>
               </thead>
@@ -489,14 +463,14 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                         </td>
                       )}
                       {visibleColumns.discount && (
-                        <td className="p-4 text-sm font-medium text-blue-600 dark:text-blue-400">
+                        <td className="p-4 text-sm font-medium text-primary">
                           {Number(group.discount_percent)}%
                         </td>
                       )}
                       {visibleColumns.status && (
                         <td className="p-4 text-sm">
                           <span className={group.is_active ? 'badge-success text-xs font-semibold' : 'badge-muted text-xs'}>
-                            {group.is_active ? t('common.active') : t('common.inactive')}
+                            {group.is_active ? t('common.active', 'សកម្ម') : t('common.inactive', 'អសកម្ម')}
                           </span>
                         </td>
                       )}
@@ -515,7 +489,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                   <tr>
                     <td colSpan={6} className="py-16 text-center">
                       <Users size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                      <p className="text-muted-foreground">{t('common.noData')}</p>
+                      <p className="text-muted-foreground">{t('common.noData', 'គ្មានទិន្នន័យ')}</p>
                     </td>
                   </tr>
                 )}
@@ -530,111 +504,181 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
         {modalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card w-full max-w-md border border-border rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[85vh]"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="bg-card w-full max-w-lg border border-border/80 rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                <h3 className="font-bold text-lg text-foreground">
-                  {editingGroup ? t('customers.editGroup', 'Edit Group') : t('customers.addGroup', 'Add Group')}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground cursor-pointer">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border/80 bg-muted/20 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <Award size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
+                      {editingGroup
+                        ? t('customers.editGroupTitle', t('customers.editGroup', 'កែសម្រួលក្រុមអតិថិជន'))
+                        : t('customers.addGroupTitle', t('customers.addGroup', 'បន្ថែមក្រុមអតិថិជន'))}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {t('customers.groupModalSubtitle', 'កំណត់ព័ត៌មានក្រុម និងអត្រាភាគរយបញ្ចុះតម្លៃសម្រាប់អតិថិជន')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                >
                   <X size={18} />
                 </button>
               </div>
 
+              {/* Modal Body */}
               <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
                 <div className="p-6 space-y-4 overflow-y-auto flex-1">
                   {/* Company Select */}
                   <div>
-                    <ModernSelect
-                      label={`${t('customers.company', 'Company')} *`}
-                      value={watchCompanyId || ''}
-                      onChange={(val) => setValue('company_id', val, { shouldValidate: true })}
-                      options={[
-                        { value: '', label: t('customers.selectCompany', '-- Select Company --') },
-                        ...(companies ?? []).map((c: any) => ({ value: String(c.id), label: c.name }))
-                      ]}
-                    />
-                    {errors.company_id && <p className="text-rose-500 text-xs mt-1">{errors.company_id.message}</p>}
+                    <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                      {t('customers.company', 'ក្រុមហ៊ុន / សាខាប្រតិបត្តិការ')} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                        <Building2 size={15} />
+                      </div>
+                      <select
+                        {...register('company_id', { required: t('customers.validation.companyRequired', 'សូមជ្រើសរើសក្រុមហ៊ុន') })}
+                        className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                      >
+                        <option value="">{t('customers.selectCompany', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
+                        {(companies ?? []).map((c: any) => (
+                          <option key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {errors.company_id && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.company_id.message}</p>}
                   </div>
 
-                  {/* Group Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                      {t('customers.groupName', 'Group Name')} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      {...register('name', { required: t('customers.validation.nameRequired', 'Group name is required') })}
-                      placeholder={t('customers.groupNamePlaceholder', 'e.g. VIP Customers')}
-                      className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                    />
-                    {errors.name && <p className="text-rose-500 text-xs mt-1">{errors.name.message}</p>}
+                  {/* Group Name & Discount Percent Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.groupName', 'ឈ្មោះក្រុម')} <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Award size={15} />
+                        </div>
+                        <input
+                          {...register('name', { required: t('customers.validation.nameRequired', 'តម្រូវឱ្យបញ្ចូលឈ្មោះក្រុម') })}
+                          placeholder={t('customers.groupNamePlaceholder', 'ឧ. អតិថិជន VIP / ដៃគូលក់ដុំ')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                        />
+                      </div>
+                      {errors.name && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.name.message}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.discountPercent', 'អត្រាបញ្ចុះតម្លៃ (%)')} <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Percent size={15} />
+                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register('discount_percent', {
+                            required: t('customers.validation.discountNumeric', 'តម្រូវឱ្យបញ្ចូលអត្រាបញ្ចុះតម្លៃ'),
+                            valueAsNumber: true,
+                            min: { value: 0, message: t('customers.validation.discountMin', 'អត្រាត្រូវតែធំជាង ឬស្មើ 0') },
+                            max: { value: 100, message: t('customers.validation.discountMax', 'អត្រាមិនអាចលើសពី 100% បានឡើយ') }
+                          })}
+                          placeholder="0.00"
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
+                        />
+                      </div>
+                      {errors.discount_percent && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.discount_percent.message}</p>}
+                    </div>
                   </div>
 
-                  {/* Discount Percentage */}
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                      {t('customers.discountPercent', 'Discount Percent (%)')} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      {...register('discount_percent', {
-                        required: t('customers.validation.discountNumeric', 'Discount percent is required'),
-                        valueAsNumber: true,
-                        min: { value: 0, message: t('customers.validation.discountMin', 'Discount must be positive') },
-                        max: { value: 100, message: t('customers.validation.discountMax', 'Discount cannot exceed 100%') }
-                      })}
-                      placeholder="0.00"
-                      className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                    />
-                    {errors.discount_percent && <p className="text-rose-500 text-xs mt-1">{errors.discount_percent.message}</p>}
+                  {/* Group Benefits Information Preview Card */}
+                  <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex items-start gap-2.5">
+                    <Sparkles size={16} className="text-primary shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-primary block">
+                        {t('customers.groupBenefits', 'អត្ថប្រយោជន៍សមាជិកភាព')}
+                      </span>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {Number(watchDiscount || 0) > 0
+                          ? t('customers.discountPreviewNotice', 'អតិថិជនក្នុងក្រុមនេះនឹងទទួលបានការបញ្ចុះតម្លៃ {{discount}}% ស្វ័យប្រវត្តិនៅលើ POS & ការលក់។', { discount: watchDiscount })
+                          : t('customers.groupStandardNotice', 'អតិថិជនក្នុងក្រុមទូទៅ នឹងទទួលបានតម្លៃលក់ស្តង់ដារ និងអាចសន្ំពិន្ទុភក្តីភាពបានធម្មតា។')}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Description */}
                   <div>
-                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                      {t('customers.description', 'Description')}
+                    <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                      {t('customers.description', 'ការពិពណ៌នា & កំណត់ចំណាំ')}
                     </label>
                     <textarea
                       {...register('description')}
-                      placeholder={t('customers.groupDescriptionPlaceholder', 'Description of the group...')}
+                      placeholder={t('customers.groupDescriptionPlaceholder', 'កំណត់ចំណាំបន្ថែម ឬលក្ខខណ្ឌកំណត់សម្រាប់ក្រុមអតិថិជននេះ...')}
                       rows={3}
-                      className="form-input w-full border border-border rounded-xl p-3 bg-background text-foreground text-xs resize-none dark:[color-scheme:dark]"
+                      className="form-input w-full p-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium leading-relaxed"
                     />
                   </div>
 
-                  {/* Active Status toggle */}
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs font-semibold text-foreground uppercase">{t('customers.activeStatus', 'Active Status')}</span>
-                    <button
-                      type="button"
-                      onClick={() => setValue('is_active', !formIsActive)}
-                      className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      {formIsActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} className="text-muted-foreground" />}
-                    </button>
+                  {/* Active Status Switch Card */}
+                  <div className="p-3.5 bg-muted/15 border border-border/80 rounded-xl flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label htmlFor="groupActiveToggle" className="text-xs sm:text-[13px] font-bold text-foreground cursor-pointer select-none">
+                        {t('customers.activeGroupStatus', 'ស្ថានភាពក្រុមសកម្ម')}
+                      </label>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t('customers.activeGroupHelp', 'អនុញ្ញាតឱ្យប្រើប្រាស់ក្រុមនេះសម្រាប់ការលក់ និងអតិថិជន')}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      id="groupActiveToggle"
+                      checked={formIsActive}
+                      onChange={(e) => setValue('is_active', e.target.checked)}
+                      className="form-checkbox h-4.5 w-4.5 text-primary rounded border-border focus:ring-primary cursor-pointer"
+                    />
                   </div>
                 </div>
 
-                {/* PINNED FOOTER */}
-                <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-card shrink-0 z-10">
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-border/80 bg-muted/20 shrink-0">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
+                    className="h-9 px-4 text-xs sm:text-[13px] font-bold border border-border/80 bg-card rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-xs active:scale-95"
                   >
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel', 'បោះបង់')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="px-5 py-2 text-sm font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                    className="h-9 px-5 text-xs sm:text-[13px] bg-primary text-primary-foreground rounded-lg font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
                   >
-                    {(isSubmitting || createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {editingGroup ? t('customers.saveChanges', 'Save Changes') : t('customers.addGroup', 'Add Group')}
+                    {(isSubmitting || createMutation.isPending || updateMutation.isPending) ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} />
+                    )}
+                    <span>
+                      {editingGroup
+                        ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
+                        : t('customers.saveGroup', 'រក្សាទុកក្រុម')}
+                    </span>
                   </button>
                 </div>
               </form>
@@ -645,9 +689,10 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('confirm.deleteTitle', { item: t('customers.customerGroups') })}
-        message={t('confirm.deleteMessage', { item: t('customers.customerGroups'), name: deleteTarget?.name })}
-        confirmText={t('confirm.confirmDelete')}
+        title="customers.deleteGroupTitle"
+        itemName={deleteTarget?.name}
+        confirmText="common.confirmDelete"
+        cancelText="common.cancel"
         loading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}

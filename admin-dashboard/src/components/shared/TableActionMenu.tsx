@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MoreVertical, Edit2, Trash2, Eye } from 'lucide-react'
+import { MoreVertical, Edit2, Trash2, Eye, Printer } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export interface TableActionItem {
@@ -18,9 +18,11 @@ interface TableActionMenuProps {
   onEdit?: () => void
   onDelete?: () => void
   onView?: () => void
+  onPrint?: () => void
   editLabel?: string
   deleteLabel?: string
   viewLabel?: string
+  printLabel?: string
   align?: 'right' | 'left'
   className?: string
   triggerSize?: number
@@ -31,14 +33,16 @@ const TableActionMenu: React.FC<TableActionMenuProps> = ({
   onEdit,
   onDelete,
   onView,
+  onPrint,
   editLabel,
   deleteLabel,
   viewLabel,
+  printLabel,
   align = 'right',
   className = '',
   triggerSize = 16,
 }) => {
-  const { t } = useTranslation(['common', 'buttons', 'inventory'])
+  const { t } = useTranslation(['common', 'buttons', 'inventory', 'purchases'])
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -51,6 +55,15 @@ const TableActionMenu: React.FC<TableActionMenuProps> = ({
     const valCommon = t('common.view', '')
     if (valCommon && valCommon !== 'common.view' && valCommon !== 'view') return valCommon
     return 'View'
+  }
+
+  const getPrintText = () => {
+    if (printLabel) return printLabel
+    const val = t('print', '')
+    if (val && val !== 'print' && val !== 'common.print') return val
+    const valCommon = t('common.print', '')
+    if (valCommon && valCommon !== 'common.print' && valCommon !== 'print') return valCommon
+    return 'Print'
   }
 
   const getEditText = () => {
@@ -74,6 +87,7 @@ const TableActionMenu: React.FC<TableActionMenuProps> = ({
   const resolvedEditLabel = getEditText()
   const resolvedDeleteLabel = getDeleteText()
   const resolvedViewLabel = getViewText()
+  const resolvedPrintLabel = getPrintText()
 
   const updatePosition = () => {
     if (!buttonRef.current) return
@@ -142,9 +156,20 @@ const TableActionMenu: React.FC<TableActionMenuProps> = ({
     })
   }
 
-  if (onEdit && !finalItems.some(i => i.label === resolvedEditLabel)) {
+  if (onPrint && !finalItems.some(i => i.label === resolvedPrintLabel)) {
     const viewIdx = finalItems.findIndex(i => i.label === resolvedViewLabel)
     const insertIdx = viewIdx >= 0 ? viewIdx + 1 : 0
+    finalItems.splice(insertIdx, 0, {
+      label: resolvedPrintLabel,
+      icon: Printer,
+      onClick: onPrint,
+      variant: 'default',
+    })
+  }
+
+  if (onEdit && !finalItems.some(i => i.label === resolvedEditLabel)) {
+    const lastNonDangerIdx = finalItems.findLastIndex(i => i.variant !== 'danger')
+    const insertIdx = lastNonDangerIdx >= 0 ? lastNonDangerIdx + 1 : 0
     finalItems.splice(insertIdx, 0, {
       label: resolvedEditLabel,
       icon: Edit2,

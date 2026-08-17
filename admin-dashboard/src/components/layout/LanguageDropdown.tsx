@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Search, Check } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 import { useTranslation } from 'react-i18next'
+import { sound } from '@/utils/sound'
 
 interface Language {
   code: 'en' | 'km' | 'th' | 'vi' | 'zh'
@@ -12,11 +13,11 @@ interface Language {
 }
 
 const LANGUAGES: Language[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flagUrl: 'https://flagcdn.com/w40/us.png' },
   { code: 'km', name: 'Khmer', nativeName: 'ភាសាខ្មែរ', flagUrl: 'https://flagcdn.com/w40/kh.png' },
+  { code: 'en', name: 'English', nativeName: 'English', flagUrl: 'https://flagcdn.com/w40/us.png' },
+  { code: 'zh', name: 'Chinese', nativeName: '中文', flagUrl: 'https://flagcdn.com/w40/cn.png' },
   { code: 'th', name: 'Thai', nativeName: 'ไทย', flagUrl: 'https://flagcdn.com/w40/th.png' },
   { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flagUrl: 'https://flagcdn.com/w40/vn.png' },
-  { code: 'zh', name: 'Chinese', nativeName: '中文', flagUrl: 'https://flagcdn.com/w40/cn.png' },
 ]
 
 const LanguageDropdown: React.FC = () => {
@@ -46,6 +47,7 @@ const LanguageDropdown: React.FC = () => {
 
   const handleSelect = (code: typeof LANGUAGES[0]['code']) => {
     setLanguage(code)
+    sound.playSuccess()
     setIsOpen(false)
     setSearchQuery('')
   }

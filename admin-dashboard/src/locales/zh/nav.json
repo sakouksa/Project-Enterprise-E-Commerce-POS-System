@@ -81,5 +81,13 @@
   "nav.allNotifications": "所有通知",
   "nav.notificationTemplates": "通知模板",
   "nav.notificationSettings": "通知设置",
-  "nav.notifications": "通知"
+  "nav.notifications": "通知",
+  "securityManagement": "系统安全",
+  "securityOverview": "安全概览",
+  "connectedDevices": "已连接设备",
+  "securitySettings": "安全策略",
+  "nav.securityManagement": "系统安全",
+  "nav.securityOverview": "安全概览",
+  "nav.connectedDevices": "已连接设备",
+  "nav.securitySettings": "安全策略"
 }

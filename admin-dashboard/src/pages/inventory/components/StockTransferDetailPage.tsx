@@ -60,7 +60,7 @@ export const StockTransferDetailPage: React.FC<StockTransferDetailPageProps> = (
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+    <div className="fixed inset-0 z-50 overflow-hidden flex justify-end print:static print:inset-auto print:overflow-visible print:block print:w-full print:bg-white print:p-0 print:m-0">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}

@@ -3,16 +3,19 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence } from 'framer-motion'
 import {
-  Package, Plus, Search, Filter, RefreshCw, Download, Upload, Settings, Trash2
+  Package, Plus, Search, Filter, RefreshCw, Download, Upload, Settings, Trash2, X,
+  FolderTree, Sparkles, Scale, SlidersHorizontal, Receipt
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
+import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 import CategoriesPage from '@/modules/categories/pages/CategoriesPage'
 import BrandsPage from '@/pages/brands/BrandsPage'
@@ -25,9 +28,11 @@ import { ProductFilterDrawer } from './components/ProductFilterDrawer'
 import { ProductDetailDrawer } from './components/ProductDetailDrawer'
 import { ProductImportModal } from './components/ProductImportModal'
 import { ProductTableSection } from './components/ProductTableSection'
+import { ColumnSettingsPopover } from '@/components/shared/ColumnSettingsPopover'
 import type { Product } from './types/productsPage.types'
 
 const ProductsPage: React.FC = () => {
+  const { language } = useThemeStore()
   const { t, i18n } = useTranslation(['products', 'common'])
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -78,7 +83,6 @@ const ProductsPage: React.FC = () => {
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<Product | null>(null)
-  const [showColSettings, setShowColSettings] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number | null; force: boolean; name?: string }>({
     open: false,
     id: null,
@@ -255,10 +259,10 @@ const ProductsPage: React.FC = () => {
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Package className="h-6 w-6 text-primary" />
-            <span>Product Catalog & Inventory Management</span>
+            <span>{t('heroTitle', 'Product Catalog & Inventory Management')}</span>
           </h1>
           <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            Manage your entire product catalog, SKUs, categories, brands, variants, pricing, and live inventory levels.
+            {t('heroSubtitle', 'Manage your entire product catalog, SKUs, categories, brands, variants, pricing, and live inventory levels.')}
           </p>
         </div>
 
@@ -270,14 +274,14 @@ const ProductsPage: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
               >
                 <Upload size={15} />
-                <span>Import CSV</span>
+                <span>{t('importCSV', 'Import CSV')}</span>
               </button>
               <button
                 onClick={handleExport}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
               >
                 <Download size={15} />
-                <span>Export CSV</span>
+                <span>{t('exportCSV', 'Export CSV')}</span>
               </button>
             </>
           )}
@@ -286,35 +290,41 @@ const ProductsPage: React.FC = () => {
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
           >
             <Plus size={16} />
-            <span>Add {activeWorkspaceTab.replace(/s$/, '')}</span>
+            <span>
+              {activeWorkspaceTab === 'products'
+                ? t('addProduct', 'Add product')
+                : activeWorkspaceTab === 'categories'
+                ? t('addCategory', 'Add Category')
+                : activeWorkspaceTab === 'brands'
+                ? t('addBrand', 'Add Brand')
+                : activeWorkspaceTab === 'units'
+                ? t('addUnit', 'Add Unit')
+                : activeWorkspaceTab === 'attributes'
+                ? t('addAttribute', 'Add Attribute')
+                : t('addTaxRule', 'Add Tax Rate')}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Workspace Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-1 overflow-x-auto no-scrollbar print:hidden">
-        {[
-          { id: 'products', label: 'All Products' },
-          { id: 'categories', label: 'Categories' },
-          { id: 'brands', label: 'Brands' },
-          { id: 'units', label: 'Units' },
-          { id: 'attributes', label: 'Attributes' },
-          { id: 'taxes', label: 'Tax Rates' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveWorkspaceTab(tab.id)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-              activeWorkspaceTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* KPI Overview Cards */}
+      <ProductStatsCards analytics={analytics} formatCurrency={formatCurrency} />
 
+      {/* Workspace Tabs Navigation */}
+      <WorkspaceTabs
+        tabs={[
+          { id: 'products', label: t('tabProducts', 'All Products'), icon: Package },
+          { id: 'categories', label: t('tabCategories', 'Categories'), icon: FolderTree },
+          { id: 'brands', label: t('tabBrands', 'Brands'), icon: Sparkles },
+          { id: 'units', label: t('tabUnits', 'Units'), icon: Scale },
+          { id: 'attributes', label: t('tabAttributes', 'Attributes'), icon: SlidersHorizontal },
+          { id: 'taxes', label: t('tabTaxes', 'Tax Rates'), icon: Receipt },
+        ]}
+        activeTab={activeWorkspaceTab}
+        onChange={setActiveWorkspaceTab}
+      />
+
+      {/* Active Tab View */}
       {activeWorkspaceTab === 'categories' ? (
         <CategoriesPage isTab triggerAdd={categoryAddTrigger} />
       ) : activeWorkspaceTab === 'brands' ? (
@@ -327,83 +337,82 @@ const ProductsPage: React.FC = () => {
         <TaxesPage isTab triggerAdd={taxAddTrigger} />
       ) : (
         <>
-          {/* KPI Cards */}
-          <ProductStatsCards analytics={analytics} formatCurrency={formatCurrency} />
-
           {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
+              <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="Search product name, SKU, or barcode..."
-                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
+                  placeholder={t('searchPlaceholder', 'Search product name, SKU, or barcode...')}
+                  className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
                 />
+                {search && (
+                  <button
+                    onClick={() => { setSearch(''); setPage(1); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               <button
+                type="button"
                 onClick={() => setFilterDrawerOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-xs"
+                className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
+                  (statusFilter || categoryFilter || brandFilter || stockLevelFilter || priceMinFilter || priceMaxFilter)
+                    ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
+                    : 'border-border bg-card hover:bg-muted/80 text-foreground'
+                }`}
               >
-                <Filter size={14} />
-                <span>Filter</span>
+                <Filter size={15} className={(statusFilter || categoryFilter || brandFilter || stockLevelFilter || priceMinFilter || priceMaxFilter) ? 'text-primary' : 'text-muted-foreground'} />
+                <span>{t('filter', 'Filter')}</span>
+                {(statusFilter || categoryFilter || brandFilter || stockLevelFilter || priceMinFilter || priceMaxFilter) && (
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                )}
               </button>
 
               <ResetButton onClick={resetAllFilters} />
 
               {selectedRows.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => setBulkDeleteConfirmOpen(true)}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-semibold bg-rose-500/10 text-rose-600 rounded-xl border border-rose-500/20 hover:bg-rose-500/20"
+                  className="inline-flex items-center gap-1.5 h-10 px-3.5 text-xs sm:text-sm font-semibold bg-rose-500/10 text-rose-600 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 active:scale-[0.98] transition-all cursor-pointer shrink-0"
                 >
-                  <Trash2 size={13} />
-                  <span>Delete Selected ({selectedRows.length})</span>
+                  <Trash2 size={14} />
+                  <span>{t('common:delete', 'Delete')} ({selectedRows.length})</span>
                 </button>
               )}
             </div>
 
             <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
               <button
+                type="button"
                 onClick={() => qc.invalidateQueries({ queryKey: ['products'] })}
-                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-                title="Refresh"
+                className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+                title={t('refresh', 'Refresh')}
               >
-                <RefreshCw size={14} />
+                <RefreshCw size={15} />
               </button>
 
-              <div className="relative">
-                <button
-                  onClick={() => setShowColSettings(!showColSettings)}
-                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-                  title="Column Settings"
-                >
-                  <Settings size={14} />
-                </button>
-                <AnimatePresence>
-                  {showColSettings && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowColSettings(false)} />
-                      <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
-                        <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">Toggle Columns</p>
-                        {Object.keys(visibleColumns).map((col) => (
-                          <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns[col]}
-                              onChange={(e) => setVisibleColumns((prev) => ({ ...prev, [col]: e.target.checked }))}
-                              className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                            />
-                            <span>{col}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
+              <ColumnSettingsPopover
+                columns={[
+                  { key: 'image', label: t('products.colPhoto', 'Image') },
+                  { key: 'name', label: t('products.colName', 'Product Name') },
+                  { key: 'sku', label: t('products.sku', 'SKU') },
+                  { key: 'category', label: t('products.colCategory', 'Category') },
+                  { key: 'price', label: t('products.colPrice', 'Price') },
+                  { key: 'stock', label: t('products.colStock', 'Stock') },
+                  { key: 'status', label: t('products.colStatus', 'Status') },
+                ]}
+                visibleColumns={visibleColumns}
+                onChange={setVisibleColumns}
+              />
             </div>
           </div>
 
@@ -438,7 +447,7 @@ const ProductsPage: React.FC = () => {
             selectedRows={selectedRows}
             setSelectedRows={setSelectedRows}
             onView={(p) => setViewProduct(p)}
-            onEdit={(p) => navigate(`/products/edit/${p.id}`)}
+            onEdit={(p) => navigate(`/products/${p.id}/edit`)}
             onDelete={(p) => setDeleteConfirm({ open: true, id: p.id, force: false, name: p.name })}
             onRestore={() => {}}
             onForceDelete={() => {}}
@@ -458,7 +467,7 @@ const ProductsPage: React.FC = () => {
           <ProductDetailDrawer
             product={viewProduct}
             onClose={() => setViewProduct(null)}
-            onEdit={(p) => navigate(`/products/edit/${p.id}`)}
+            onEdit={(p) => navigate(`/products/${p.id}/edit`)}
             formatCurrency={formatCurrency}
           />
 
@@ -475,8 +484,11 @@ const ProductsPage: React.FC = () => {
           {/* Delete Dialog */}
           <ConfirmDialog
             open={deleteConfirm.open}
-            title="Delete Product"
-            message={`Are you sure you want to delete product "${deleteConfirm.name}"?`}
+            title="products.deleteProduct"
+            itemName={deleteConfirm.name}
+            confirmText="common.confirmDelete"
+            cancelText="common.cancel"
+            loading={deleteMutation.isPending}
             onConfirm={() => deleteConfirm.id && deleteMutation.mutate(deleteConfirm.id)}
             onCancel={() => setDeleteConfirm({ open: false, id: null, force: false })}
           />
@@ -484,8 +496,14 @@ const ProductsPage: React.FC = () => {
           {/* Bulk Delete Dialog */}
           <ConfirmDialog
             open={bulkDeleteConfirmOpen}
-            title="Bulk Delete Products"
-            message={`Are you sure you want to delete ${selectedRows.length} selected products?`}
+            title="products.bulkDeleteTitle"
+            message={t('products.confirmBulkDeleteMessage', {
+              count: selectedRows.length,
+              defaultValue: `តើអ្នកប្រាកដជាចង់លុបទិន្នន័យទំនិញទាំង ${selectedRows.length} ដែលបានជ្រើសរើសនេះមែនទេ?`
+            }).replace('{{count}}', String(selectedRows.length))}
+            confirmText="common.confirmDelete"
+            cancelText="common.cancel"
+            loading={bulkDeleteMutation.isPending}
             onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
             onCancel={() => setBulkDeleteConfirmOpen(false)}
           />

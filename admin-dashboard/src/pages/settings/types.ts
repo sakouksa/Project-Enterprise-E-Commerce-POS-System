@@ -94,12 +94,32 @@ export const THEME_TEMPLATES: ThemeTemplate[] = [
   },
 ]
 
+export interface PanelTemplate {
+  id: string
+  nameKey: string
+  defaultName: string
+  descKey: string
+  defaultDesc: string
+  badgeKey?: string
+  defaultBadge?: string
+  sidebarBg: string
+  sidebarText: string
+  activeBg: string
+  activeText: string
+  navbarBg: string
+  navbarText: string
+  navbarBorder: string
+}
+
 export const panelTemplates: PanelTemplate[] = [
   {
     id: 'midnight',
     nameKey: 'tplPanelMidnight',
+    defaultName: 'Enterprise Midnight Pro',
     descKey: 'tplPanelMidnightDesc',
-    sidebarBg: '#0f172a',
+    defaultDesc: 'រចនាបថ Midnight Slate ងងឹតស៊ីវិល័យ រំលេចប៊ូតុង Coral Pink Neon របារខាងលើថ្លាប្រណីត',
+    defaultBadge: 'Enterprise Dark',
+    sidebarBg: '#0b1329',
     sidebarText: '#94a3b8',
     activeBg: '#ec4899',
     activeText: '#ffffff',
@@ -108,27 +128,78 @@ export const panelTemplates: PanelTemplate[] = [
     navbarBorder: '#e2e8f0',
   },
   {
-    id: 'minimalist',
-    nameKey: 'tplPanelMinimalist',
-    descKey: 'tplPanelMinimalistDesc',
-    sidebarBg: '#ffffff',
-    sidebarText: '#334155',
-    activeBg: '#3b82f6',
-    activeText: '#ffffff',
-    navbarBg: '#ffffff',
-    navbarText: '#0f172a',
-    navbarBorder: '#f1f5f9',
-  },
-  {
     id: 'sapphire',
     nameKey: 'tplPanelSapphire',
+    defaultName: 'Royal Sapphire Executive',
     descKey: 'tplPanelSapphireDesc',
-    sidebarBg: '#0f172a',
-    sidebarText: '#94a3b8',
+    defaultDesc: 'រចនាបថ Deep Navy សាជីវកម្មលំដាប់ខ្ពស់ រំលេចប៊ូតុង Royal Blue ស្រស់ច្បាស់ទាន់សម័យ',
+    defaultBadge: 'Corporate Pro',
+    sidebarBg: '#0a192f',
+    sidebarText: '#93c5fd',
     activeBg: '#2563eb',
     activeText: '#ffffff',
     navbarBg: '#ffffff',
     navbarText: '#0f172a',
     navbarBorder: '#e2e8f0',
+  },
+  {
+    id: 'emerald',
+    nameKey: 'tplPanelEmerald',
+    defaultName: 'Emerald Aurora Green',
+    descKey: 'tplPanelEmeraldDesc',
+    defaultDesc: 'រចនាបថ Velvet Forest បៃតងចាស់ រំលេចប៊ូតុង Aurora Mint ស្រស់ត្រជាក់ភ្នែក',
+    defaultBadge: 'Fresh Nature',
+    sidebarBg: '#042219',
+    sidebarText: '#a7f3d0',
+    activeBg: '#10b981',
+    activeText: '#ffffff',
+    navbarBg: '#ffffff',
+    navbarText: '#0f172a',
+    navbarBorder: '#e2e8f0',
+  },
+  {
+    id: 'amethyst',
+    nameKey: 'tplPanelAmethyst',
+    defaultName: 'Imperial Amethyst VIP',
+    descKey: 'tplPanelAmethystDesc',
+    defaultDesc: 'រចនាបថ Luxury Midnight Violet រំលេចប៊ូតុង VIP Purple Glow សម្រាប់អាជីវកម្មប្រណីត',
+    defaultBadge: 'Luxury VIP',
+    sidebarBg: '#130924',
+    sidebarText: '#d8b4fe',
+    activeBg: '#8b5cf6',
+    activeText: '#ffffff',
+    navbarBg: '#ffffff',
+    navbarText: '#0f172a',
+    navbarBorder: '#e2e8f0',
+  },
+  {
+    id: 'obsidian',
+    nameKey: 'tplPanelObsidian',
+    defaultName: 'Cyberpunk Obsidian Gold',
+    descKey: 'tplPanelObsidianDesc',
+    defaultDesc: 'រចនាបថ Dark Carbon ខ្មៅដិត រំលេចប៊ូតុង Sunset Amber Gold របារខាងលើ Titanium Dark',
+    defaultBadge: 'Full Dark Gold',
+    sidebarBg: '#09090b',
+    sidebarText: '#a1a1aa',
+    activeBg: '#f59e0b',
+    activeText: '#ffffff',
+    navbarBg: '#141417',
+    navbarText: '#f4f4f5',
+    navbarBorder: '#27272a',
+  },
+  {
+    id: 'minimalist',
+    nameKey: 'tplPanelMinimalist',
+    defaultName: 'Pure Minimalist Snow',
+    descKey: 'tplPanelMinimalistDesc',
+    defaultDesc: 'រចនាបថ Snow White សសុទ្ធស្អាតទន់ភ្លន់ រំលេចប៊ូតុង Electric Indigo របារខាងលើទំនើប',
+    defaultBadge: 'Minimalist Light',
+    sidebarBg: '#ffffff',
+    sidebarText: '#334155',
+    activeBg: '#4f46e5',
+    activeText: '#ffffff',
+    navbarBg: '#ffffff',
+    navbarText: '#0f172a',
+    navbarBorder: '#f1f5f9',
   },
 ]

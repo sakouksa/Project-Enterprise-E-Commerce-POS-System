@@ -1,5 +1,5 @@
 import React from 'react'
-import { Package, Warehouse } from 'lucide-react'
+import { Package, Warehouse, ArrowRight, CheckCircle2, Truck, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 const formatPrintDate = (dateStr: string | null | undefined): string => {
@@ -31,7 +31,7 @@ interface StockTransferPrintVoucherProps {
 }
 
 export const StockTransferPrintVoucher: React.FC<StockTransferPrintVoucherProps> = ({ detail }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['inventory', 'common'])
 
   if (!detail) return null
 
@@ -41,210 +41,204 @@ export const StockTransferPrintVoucher: React.FC<StockTransferPrintVoucherProps>
   const totalReceivedQty = items.reduce((acc: number, it: any) => acc + Number(it.quantity_received || 0), 0)
 
   const rawStatus = (detail.status || 'draft').toLowerCase()
-  const statusKey = `inventory.status_${rawStatus}`
-  const statusLabel = String(t(statusKey, rawStatus.replace('_', ' ').toUpperCase()))
+  const statusLabel = rawStatus === 'in_transit' || rawStatus === 'shipped' 
+    ? 'IN TRANSIT' 
+    : rawStatus === 'received' || rawStatus === 'completed' 
+    ? 'COMPLETED' 
+    : rawStatus === 'cancelled' 
+    ? 'CANCELLED' 
+    : 'DRAFT'
 
-  const refNumber = detail.reference_number || `TR-${detail.id || '20260808-0001'}`
+  const refNumber = detail.reference_number || `TRF-${detail.id || '20260808-0001'}`
 
   return (
-    <div className="hidden print:block print:w-full print:bg-white print:text-black font-sans text-xs p-2 leading-tight select-none">
+    <div className="hidden print:block print:w-full print:bg-white print:text-black font-sans text-xs p-1 leading-normal select-none print:m-0">
       
-      {/* Top Header Section */}
-      <div className="flex justify-between items-start pb-3 border-b border-gray-300 gap-4">
+      {/* ─── Top Header Section ─────────────────────────────────────────── */}
+      <div className="flex justify-between items-start pb-3 border-b-2 border-gray-900 gap-4">
         
-        {/* Left: Company Branding */}
+        {/* Left: Company Identity */}
         <div className="flex items-start gap-3">
-          <div className="w-11 h-11 bg-black rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs">
-            <Package size={24} className="text-white" />
+          <div className="w-10 h-10 rounded-lg border-2 border-gray-900 flex items-center justify-center text-gray-900 shrink-0">
+            <Package size={22} className="stroke-[2.5]" />
           </div>
           <div className="space-y-0.5 text-xs text-gray-800">
-            <h1 className="font-extrabold text-sm text-gray-900 tracking-tight leading-none">ENTERPRISE POS</h1>
-            <p className="font-bold text-[10px] uppercase text-gray-500 tracking-wider">Management System</p>
-            <div className="pt-1 text-[10px] space-y-0.5 text-gray-600 font-medium">
-              <p>📍 Phnom Penh, Cambodia</p>
-              <p>📞 +855 12 345 678</p>
-              <p>✉️ info@enterprisepos.com</p>
+            <h1 className="font-black text-sm tracking-tight text-gray-900 uppercase leading-none">ENTERPRISE POS</h1>
+            <p className="font-bold text-[10px] text-gray-600 uppercase tracking-wider">Multi-Branch Inventory & POS System</p>
+            <div className="pt-0.5 text-[9.5px] space-y-0.5 text-gray-600">
+              <p>📍 Phnom Penh, Cambodia • 📞 +855 12 345 678</p>
+              <p>✉️ support@enterprisepos.com • 🌐 www.enterprisepos.com</p>
             </div>
           </div>
         </div>
 
-        {/* Center: Voucher Title */}
-        <div className="text-center space-y-0.5 self-center">
-          <h2 className="font-extrabold text-sm text-gray-900">
-            {t('inventory.printTransferTitle', 'STOCK TRANSFER')}
+        {/* Center: Official Title */}
+        <div className="text-center space-y-1 self-center">
+          <span className="inline-block px-3 py-0.5 rounded-full border border-gray-800 text-[10px] font-black tracking-widest uppercase">
+            Official Document
+          </span>
+          <h2 className="font-black text-base text-gray-900 tracking-tight leading-none uppercase">
+            STOCK TRANSFER VOUCHER
           </h2>
-          <h3 className="font-black text-xs text-gray-700 tracking-wider uppercase">
-            {t('inventory.transfer_card', 'STOCK TRANSFER')}
+          <p className="font-bold text-[11px] text-gray-700">ប័ណ្ណផ្ទេរស្តុកទំនិញ</p>
+        </div>
+
+        {/* Right: Reference & Verification Code */}
+        <div className="text-right space-y-1 min-w-[180px]">
+          <div className="inline-block bg-gray-50 border border-gray-400 rounded-lg px-2.5 py-1 text-right">
+            <p className="text-[10px] font-bold text-gray-500 uppercase">Transfer Number</p>
+            <p className="font-mono font-black text-xs text-gray-900">{refNumber}</p>
+          </div>
+          <div className="text-[9.5px] space-y-0.5 text-gray-700 font-medium pt-0.5">
+            <p><span className="font-bold">Date :</span> {formatPrintDate(detail.created_at || detail.date)}</p>
+            <p><span className="font-bold">Status :</span> <span className="font-black uppercase">{statusLabel}</span></p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ─── Route: From Warehouse ➔ To Warehouse ───────────────────────── */}
+      <div className="mt-3 border border-gray-400 rounded-xl p-3 bg-gray-50/50 grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-xs">
+        {/* Source Warehouse */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-gray-600">
+            <Warehouse size={13} />
+            <span className="font-bold text-[10px] uppercase tracking-wider">Source Warehouse (ឃ្លាំងដើម / ផ្ញើចេញ)</span>
+          </div>
+          <p className="font-black text-sm text-gray-900">{detail.from_warehouse?.name || detail.fromWarehouse?.name || 'Main Warehouse 1'}</p>
+          <p className="text-[10px] text-gray-600">Location: {detail.from_warehouse?.address || detail.from_warehouse?.location || 'Phnom Penh'}</p>
+          <p className="text-[10px] text-gray-600">Contact: {detail.from_warehouse?.phone || '+855 12 222 333'}</p>
+        </div>
+
+        {/* Transfer Indicator */}
+        <div className="flex flex-col items-center justify-center px-2">
+          <div className="w-8 h-8 rounded-full border border-gray-400 bg-white flex items-center justify-center text-gray-900 font-bold">
+            ➔
+          </div>
+        </div>
+
+        {/* Destination Warehouse */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-gray-600">
+            <Warehouse size={13} />
+            <span className="font-bold text-[10px] uppercase tracking-wider">Destination Warehouse (ឃ្លាំងគោលដៅ / ទទួល)</span>
+          </div>
+          <p className="font-black text-sm text-gray-900">{detail.to_warehouse?.name || detail.toWarehouse?.name || 'Branch Warehouse 2'}</p>
+          <p className="text-[10px] text-gray-600">Location: {detail.to_warehouse?.address || detail.to_warehouse?.location || 'Phnom Penh'}</p>
+          <p className="text-[10px] text-gray-600">Contact: {detail.to_warehouse?.phone || '+855 12 111 222'}</p>
+        </div>
+      </div>
+
+      {/* ─── Metadata Info Summary ──────────────────────────────────────── */}
+      <div className="mt-2.5 border border-gray-300 rounded-xl p-2.5 bg-white grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+        <div className="space-y-1">
+          <div className="grid grid-cols-[120px_1fr] items-center">
+            <span className="font-bold text-gray-700">Transfer Date :</span>
+            <span className="font-medium">{formatPrintDate(detail.created_at || detail.date)}</span>
+          </div>
+          <div className="grid grid-cols-[120px_1fr] items-center">
+            <span className="font-bold text-gray-700">Expected Arrival :</span>
+            <span className="font-medium">{formatPrintDate(detail.expected_arrival || detail.created_at)}</span>
+          </div>
+          <div className="grid grid-cols-[120px_1fr] items-center">
+            <span className="font-bold text-gray-700">Transfer Reason :</span>
+            <span className="font-medium">{detail.reason || 'Restock / Branch replenishment'}</span>
+          </div>
+          <div className="grid grid-cols-[120px_1fr] items-start">
+            <span className="font-bold text-gray-700">Notes / Remarks :</span>
+            <span className="font-medium">{detail.notes || 'Routine inter-warehouse inventory movement'}</span>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="grid grid-cols-[110px_1fr] items-center">
+            <span className="font-bold text-gray-700">Priority Level :</span>
+            <span className="font-bold uppercase text-[10px]">{detail.priority || 'Normal'}</span>
+          </div>
+          <div className="grid grid-cols-[110px_1fr] items-center">
+            <span className="font-bold text-gray-700">Created By :</span>
+            <span className="font-medium">{detail.user?.name || 'Super Admin'}</span>
+          </div>
+          <div className="grid grid-cols-[110px_1fr] items-center">
+            <span className="font-bold text-gray-700">Approved By :</span>
+            <span className="font-medium">{detail.approved_by || 'Manager'}</span>
+          </div>
+          <div className="grid grid-cols-[110px_1fr] items-center">
+            <span className="font-bold text-gray-700">Dispatched By :</span>
+            <span className="font-medium">{detail.shipped_by || detail.user?.name || 'Super Admin'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Items Detail Table ─────────────────────────────────────────── */}
+      <div className="mt-3 space-y-1">
+        <div className="flex items-center justify-between">
+          <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
+            Transferred Items (មុខទំនិញផ្ទេរ)
           </h3>
+          <span className="text-[10px] font-bold text-gray-600">Total Items: {totalItemsCount}</span>
         </div>
-
-        {/* Right: Meta & QR / Barcode */}
-        <div className="text-right space-y-1 min-w-[190px]">
-          <div className="flex justify-end">
-            <svg className="w-12 h-12" viewBox="0 0 100 100" fill="currentColor">
-              <rect width="100" height="100" fill="white" />
-              <path d="M10 10h30v30H10zM15 15v20h20V15zM20 20h10v10H20zM60 10h30v30H60zM65 15v20h20V15zM70 20h10v10H70zM10 60h30v30H10zM15 65v20h20V65zM20 70h10v10H20zM45 10h10v10H45zM45 30h10v10H45zM45 50h10v10H45zM45 70h10v10H45zM45 85h10v10H45zM60 50h10v10H60zM75 50h15v10H75zM60 70h15v10H60zM80 70h10v20H80zM60 85h15v10H60z" fill="#000" />
-            </svg>
-          </div>
-          <div className="text-[10px] space-y-0.5 text-gray-800 font-medium">
-            <p><span className="font-bold">{t('inventory.transferNo', 'Transfer No')} :</span> <span className="font-mono font-bold">{refNumber}</span></p>
-            <p><span className="font-bold">{t('common.date', 'Date')} :</span> {formatPrintDate(detail.created_at || detail.date)}</p>
-            <p><span className="font-bold">{t('common.page', 'Page')} :</span> 1 / 1</p>
-          </div>
-          {/* Barcode Graphic */}
-          <div className="pt-0.5 flex flex-col items-end">
-            <div className="flex items-center gap-[1px] h-5">
-              {[2,1,3,1,2,1,4,1,2,3,1,2,1,3,2,1,4,1,2,1,3,1,2,1,3,2,1,2].map((w, i) => (
-                <div key={i} className="bg-black h-full" style={{ width: `${w}px` }} />
-              ))}
-            </div>
-            <p className="text-[8px] font-mono tracking-widest text-gray-600 mt-0.5">*{refNumber}*</p>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Warehouse Transfer Route Box */}
-      <div className="mt-3 border border-gray-300 rounded-xl p-3 bg-white grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-xs">
-        {/* From Warehouse */}
-        <div className="space-y-1.5">
-          <h4 className="font-bold text-gray-900 text-[11px]">{t('inventory.fromWarehouse', 'From Warehouse')}</h4>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl border border-gray-300 bg-gray-50 flex items-center justify-center text-gray-800 shrink-0">
-              <Warehouse size={18} />
-            </div>
-            <div className="space-y-0.5 min-w-0">
-              <p className="font-bold text-gray-900 text-xs">{detail.from_warehouse?.name || 'Warehouse 2'}</p>
-              <p className="text-[10px] text-gray-600">{t('inventory.location', 'Location')} : {detail.from_warehouse?.address || detail.from_warehouse?.location || 'Phnom Penh'}</p>
-              <p className="text-[10px] text-gray-600">{t('inventory.phone', 'Phone')} : {detail.from_warehouse?.phone || '+855 12 222 333'}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Center Arrow */}
-        <div className="flex flex-col items-center px-3">
-          <div className="text-gray-900 font-bold text-xl leading-none">➔</div>
-        </div>
-
-        {/* To Warehouse */}
-        <div className="space-y-1.5">
-          <h4 className="font-bold text-gray-900 text-[11px]">{t('inventory.toWarehouse', 'To Warehouse')}</h4>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl border border-gray-300 bg-gray-50 flex items-center justify-center text-gray-800 shrink-0">
-              <Warehouse size={18} />
-            </div>
-            <div className="space-y-0.5 min-w-0">
-              <p className="font-bold text-gray-900 text-xs">{detail.to_warehouse?.name || 'Warehouse 1'}</p>
-              <p className="text-[10px] text-gray-600">{t('inventory.location', 'Location')} : {detail.to_warehouse?.address || detail.to_warehouse?.location || 'Phnom Penh'}</p>
-              <p className="text-[10px] text-gray-600">{t('inventory.phone', 'Phone')} : {detail.to_warehouse?.phone || '+855 12 111 222'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Metadata Info Box */}
-      <div className="mt-3 border border-gray-300 rounded-xl p-3 bg-white grid grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
-        <div className="space-y-1">
-          <div className="grid grid-cols-[110px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.transferDate', 'Transfer Date')}</span>
-            <span>: {formatPrintDate(detail.created_at || detail.date)}</span>
-          </div>
-          <div className="grid grid-cols-[110px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.expectedArrival', 'Expected Arrival')}</span>
-            <span>: {formatPrintDate(detail.expected_arrival || detail.created_at)}</span>
-          </div>
-          <div className="grid grid-cols-[110px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.reason', 'Reason')}</span>
-            <span>: {detail.reason || 'Replenishment'}</span>
-          </div>
-          <div className="grid grid-cols-[110px_1fr] items-start">
-            <span className="font-bold text-gray-900">{t('inventory.notes', 'Notes')}</span>
-            <span>: {detail.notes || t('inventory.noNotesAttached', 'Restock items for sales')}</span>
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <div className="grid grid-cols-[100px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('common.status', 'Status')}</span>
-            <div className="flex items-center gap-1">
-              <span>:</span>
-              <span className="bg-blue-700 text-white font-extrabold text-[9px] uppercase px-2 py-0.5 rounded-md tracking-wider">
-                {statusLabel}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-[100px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.priority', 'Priority')}</span>
-            <span>: {detail.priority || 'Normal'}</span>
-          </div>
-          <div className="grid grid-cols-[100px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.operatorUser', 'Created By')}</span>
-            <span>: {detail.user?.name || 'Super Admin'}</span>
-          </div>
-          <div className="grid grid-cols-[100px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.approvedBy', 'Approved By')}</span>
-            <span>: {detail.approved_by || 'Manager'}</span>
-          </div>
-          <div className="grid grid-cols-[100px_1fr] items-center">
-            <span className="font-bold text-gray-900">{t('inventory.shippedBy', 'Shipped By')}</span>
-            <span>: {detail.shipped_by || detail.user?.name || 'Super Admin'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Items Section */}
-      <div className="mt-3 space-y-1.5">
-        <h3 className="font-extrabold text-xs text-gray-900">{t('inventory.items', 'Items')}</h3>
-        <div className="border border-gray-300 rounded-lg overflow-hidden">
-          <table className="w-full text-left border-collapse text-[11px]">
+        <div className="border border-gray-400 rounded-lg overflow-hidden">
+          <table className="w-full text-left border-collapse text-[10.5px]">
             <thead>
-              <tr className="bg-gray-100 border-b border-gray-300 font-bold text-gray-900 text-center">
-                <th className="p-1.5 border-r border-gray-300 w-8">{t('common.no', 'No.')}</th>
-                <th className="p-1.5 border-r border-gray-300 text-left">{t('inventory.colProductName', 'Product Item')}</th>
-                <th className="p-1.5 border-r border-gray-300">{t('common.sku', 'SKU')}</th>
-                <th className="p-1.5 border-r border-gray-300">{t('inventory.serialNumber', 'IMEI / Serial')}</th>
-                <th className="p-1.5 border-r border-gray-300">
-                  {t('inventory.sentQty', 'Sent Qty')}
-                </th>
-                <th className="p-1.5 border-r border-gray-300">
-                  {t('inventory.recQty', 'Received Qty')}
-                </th>
-                <th className="p-1.5 border-r border-gray-300 w-14">{t('common.unit', 'Unit')}</th>
-                <th className="p-1.5 w-14">{t('common.note', 'Note')}</th>
+              <tr className="bg-gray-100 border-b border-gray-400 font-bold text-gray-900 text-center">
+                <th className="p-1.5 border-r border-gray-300 w-8">#</th>
+                <th className="p-1.5 border-r border-gray-300 text-left">Product Item & Variant</th>
+                <th className="p-1.5 border-r border-gray-300 w-28">SKU / Code</th>
+                <th className="p-1.5 border-r border-gray-300 w-24">Sent Qty</th>
+                <th className="p-1.5 border-r border-gray-300 w-24">Recv Qty</th>
+                <th className="p-1.5 border-r border-gray-300 w-16">Unit</th>
+                <th className="p-1.5 text-left">Remarks</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-300 font-medium text-gray-800">
               {items.map((item: any, idx: number) => (
                 <tr key={item.id || idx}>
-                  <td className="p-1.5 text-center border-r border-gray-300">{idx + 1}</td>
-                  <td className="p-1.5 border-r border-gray-300 font-semibold">{item.product?.name || `Product #${item.product_id}`}</td>
-                  <td className="p-1.5 text-center border-r border-gray-300 font-mono text-[10px]">
-                    {item.product?.sku || 'SKU-IPH-001'}
-                    {item.variant ? `<br/>${item.variant.sku}` : ''}
+                  <td className="p-1.5 text-center border-r border-gray-300 font-bold">{idx + 1}</td>
+                  <td className="p-1.5 border-r border-gray-300 font-bold text-gray-900">
+                    {item.product?.name || `Product #${item.product_id}`}
+                    {item.variant?.name && (
+                      <span className="block text-[9.5px] font-normal text-gray-600">Variant: {item.variant.name}</span>
+                    )}
                   </td>
-                  <td className="p-1.5 text-center border-r border-gray-300 text-[10px]">{item.serial_number || '-'}</td>
-                  <td className="p-1.5 text-center border-r border-gray-300 font-bold">{item.quantity_sent || item.quantity_requested || item.quantity || 0}</td>
-                  <td className="p-1.5 text-center border-r border-gray-300 font-bold">{item.quantity_received || 0}</td>
-                  <td className="p-1.5 text-center border-r border-gray-300 uppercase text-[10px]">{item.product?.unit?.code || 'PCS'}</td>
-                  <td className="p-1.5 text-center text-[10px]">{item.notes || '-'}</td>
+                  <td className="p-1.5 text-center border-r border-gray-300 font-mono text-[10px]">
+                    {item.product?.sku || item.sku || '—'}
+                  </td>
+                  <td className="p-1.5 text-center border-r border-gray-300 font-black text-gray-900">
+                    {item.quantity_sent || item.quantity_requested || item.quantity || 0}
+                  </td>
+                  <td className="p-1.5 text-center border-r border-gray-300 font-black text-gray-900">
+                    {item.quantity_received || 0}
+                  </td>
+                  <td className="p-1.5 text-center border-r border-gray-300 uppercase text-[10px]">
+                    {item.product?.unit?.code || item.product?.unit || 'PCS'}
+                  </td>
+                  <td className="p-1.5 text-[10px] text-gray-600">
+                    {item.notes || '—'}
+                  </td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-4 text-center text-gray-500 italic">{t('inventory.noItemsInTransfer', 'No items listed in this transfer.')}</td>
+                  <td colSpan={7} className="p-4 text-center text-gray-500 italic">
+                    No items listed in this transfer document.
+                  </td>
                 </tr>
               )}
             </tbody>
-            <tfoot className="bg-gray-100 border-t border-gray-300 font-bold text-xs text-gray-900">
+            <tfoot className="bg-gray-100 border-t-2 border-gray-400 font-black text-xs text-gray-900">
               <tr>
-                <td colSpan={3} className="p-2 border-r border-gray-300">
-                  {t('inventory.totalItemsCount', 'Total Items: {{count}}', { count: totalItemsCount })}
+                <td colSpan={3} className="p-2 border-r border-gray-300 text-left">
+                  SUMMARY TOTALS:
                 </td>
-                <td colSpan={3} className="p-2 text-center border-r border-gray-300">
-                  {t('inventory.totalSentQty', 'Total Sent Qty: {{count}}', { count: totalSentQty })}
+                <td className="p-2 text-center border-r border-gray-300">
+                  {totalSentQty}
                 </td>
-                <td colSpan={2} className="p-2 text-center">
-                  {t('inventory.totalReceivedQty', 'Total Received Qty: {{count}}', { count: totalReceivedQty })}
+                <td className="p-2 text-center border-r border-gray-300">
+                  {totalReceivedQty}
+                </td>
+                <td colSpan={2} className="p-2 text-right text-[10px] text-gray-700 font-bold">
+                  SKUs Count: {totalItemsCount}
                 </td>
               </tr>
             </tfoot>
@@ -252,97 +246,110 @@ export const StockTransferPrintVoucher: React.FC<StockTransferPrintVoucherProps>
         </div>
       </div>
 
-      {/* Activity Log Section */}
-      <div className="mt-3 space-y-1.5">
-        <h3 className="font-extrabold text-xs text-gray-900">{t('inventory.activity', 'Activity Log')}</h3>
-        <div className="border border-gray-300 rounded-lg overflow-hidden">
-          <table className="w-full text-left border-collapse text-[11px]">
+      {/* ─── Workflow Audit Trail ───────────────────────────────────────── */}
+      <div className="mt-3 space-y-1">
+        <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
+          Transfer Lifecycle & Audit Trail (ប្រវត្តិប្រតិបត្តិការ)
+        </h3>
+        <div className="border border-gray-400 rounded-lg overflow-hidden">
+          <table className="w-full text-left border-collapse text-[10px]">
             <thead>
               <tr className="bg-gray-100 border-b border-gray-300 font-bold text-gray-900">
-                <th className="p-1.5 border-r border-gray-300 text-center w-8">{t('common.no', 'No.')}</th>
-                <th className="p-1.5 border-r border-gray-300">{t('inventory.dateTime', 'Date / Time')}</th>
-                <th className="p-1.5 border-r border-gray-300">{t('inventory.by', 'By')}</th>
-                <th className="p-1.5 border-r border-gray-300">{t('inventory.action', 'Action')}</th>
-                <th className="p-1.5">{t('common.note', 'Note')}</th>
+                <th className="p-1.5 border-r border-gray-300 text-center w-8">#</th>
+                <th className="p-1.5 border-r border-gray-300 w-36">Date & Time</th>
+                <th className="p-1.5 border-r border-gray-300 w-36">Performed By</th>
+                <th className="p-1.5 border-r border-gray-300 w-28">Status Action</th>
+                <th className="p-1.5">Action Notes / Remarks</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-300 font-medium text-gray-800">
               <tr>
-                <td className="p-1.5 text-center border-r border-gray-300">1</td>
-                <td className="p-1.5 border-r border-gray-300">{formatPrintDateTime(detail.created_at)}</td>
-                <td className="p-1.5 border-r border-gray-300">{detail.user?.name || 'Super Admin'}</td>
-                <td className="p-1.5 border-r border-gray-300 font-bold">{t('inventory.actionCreated', 'Created')}</td>
-                <td className="p-1.5">{t('inventory.noteCreated', 'Stock transfer created')}</td>
+                <td className="p-1.5 text-center border-r border-gray-300 font-bold">1</td>
+                <td className="p-1.5 border-r border-gray-300 font-mono">{formatPrintDateTime(detail.created_at)}</td>
+                <td className="p-1.5 border-r border-gray-300 font-bold">{detail.user?.name || 'Super Admin'}</td>
+                <td className="p-1.5 border-r border-gray-300 font-bold uppercase text-blue-700">Created</td>
+                <td className="p-1.5">Stock transfer draft created and submitted for verification</td>
               </tr>
               {detail.approved_at && (
                 <tr>
-                  <td className="p-1.5 text-center border-r border-gray-300">2</td>
-                  <td className="p-1.5 border-r border-gray-300">{formatPrintDateTime(detail.approved_at)}</td>
-                  <td className="p-1.5 border-r border-gray-300">{detail.approved_by || 'Manager'}</td>
-                  <td className="p-1.5 border-r border-gray-300 font-bold">{t('inventory.actionApproved', 'Approved')}</td>
-                  <td className="p-1.5">{t('inventory.noteApproved', 'Approved by Manager')}</td>
+                  <td className="p-1.5 text-center border-r border-gray-300 font-bold">2</td>
+                  <td className="p-1.5 border-r border-gray-300 font-mono">{formatPrintDateTime(detail.approved_at)}</td>
+                  <td className="p-1.5 border-r border-gray-300 font-bold">{detail.approved_by || 'Manager'}</td>
+                  <td className="p-1.5 border-r border-gray-300 font-bold uppercase text-emerald-700">Approved</td>
+                  <td className="p-1.5">Transfer request verified and approved for shipment</td>
                 </tr>
               )}
               {detail.shipped_at && (
                 <tr>
-                  <td className="p-1.5 text-center border-r border-gray-300">3</td>
-                  <td className="p-1.5 border-r border-gray-300">{formatPrintDateTime(detail.shipped_at)}</td>
-                  <td className="p-1.5 border-r border-gray-300">{detail.shipped_by || detail.user?.name || 'Super Admin'}</td>
-                  <td className="p-1.5 border-r border-gray-300 font-bold">{t('inventory.actionShipped', 'Shipped')}</td>
-                  <td className="p-1.5">{t('inventory.noteShipped', 'Items shipped from warehouse')}</td>
+                  <td className="p-1.5 text-center border-r border-gray-300 font-bold">3</td>
+                  <td className="p-1.5 border-r border-gray-300 font-mono">{formatPrintDateTime(detail.shipped_at)}</td>
+                  <td className="p-1.5 border-r border-gray-300 font-bold">{detail.shipped_by || detail.user?.name || 'Super Admin'}</td>
+                  <td className="p-1.5 border-r border-gray-300 font-bold uppercase text-amber-700">Dispatched</td>
+                  <td className="p-1.5">Items dispatched from source warehouse and in-transit</td>
                 </tr>
               )}
               <tr>
-                <td className="p-1.5 text-center border-r border-gray-300">4</td>
-                <td className="p-1.5 border-r border-gray-300">{detail.received_at ? formatPrintDateTime(detail.received_at) : '-'}</td>
-                <td className="p-1.5 border-r border-gray-300">{detail.received_by || '-'}</td>
-                <td className="p-1.5 border-r border-gray-300 font-bold">{t('inventory.actionReceived', 'Received')}</td>
-                <td className="p-1.5">{detail.received_at ? t('inventory.actionReceived', 'Received') : t('inventory.notePending', 'Pending')}</td>
+                <td className="p-1.5 text-center border-r border-gray-300 font-bold">4</td>
+                <td className="p-1.5 border-r border-gray-300 font-mono">{detail.received_at ? formatPrintDateTime(detail.received_at) : '—'}</td>
+                <td className="p-1.5 border-r border-gray-300 font-bold">{detail.received_by || '—'}</td>
+                <td className="p-1.5 border-r border-gray-300 font-bold uppercase">
+                  {detail.received_at ? <span className="text-emerald-700">Received</span> : <span className="text-gray-500">Pending</span>}
+                </td>
+                <td className="p-1.5">{detail.received_at ? 'All stock items checked and received into destination warehouse' : 'Awaiting physical delivery and recipient confirmation'}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Signatures Box */}
-      <div className="mt-3 border border-gray-300 rounded-xl p-3 bg-white grid grid-cols-3 divide-x divide-gray-300 text-xs">
-        {/* Created By */}
-        <div className="px-2 text-center space-y-6">
-          <h4 className="font-bold text-gray-900 text-[11px]">{t('inventory.signatureCreatedBy', 'Created By')}</h4>
-          <div className="space-y-0.5">
+      {/* ─── Signatures Block ────────────────────────────────────────────── */}
+      <div className="mt-4 border border-gray-400 rounded-xl p-3 bg-white grid grid-cols-3 divide-x divide-gray-300 text-xs">
+        {/* Sender / Prepared By */}
+        <div className="px-3 text-center space-y-7">
+          <h4 className="font-bold text-gray-900 text-[10.5px] uppercase tracking-wider">
+            Prepared By (អ្នករៀបចំ / ផ្ញើ)
+          </h4>
+          <div className="space-y-1">
             <div className="w-4/5 border-b border-gray-400 mx-auto mb-1" />
-            <p className="font-bold text-gray-900">{detail.user?.name || 'Super Admin'}</p>
-            <p className="text-[10px] text-gray-600">{formatPrintDateTime(detail.created_at)}</p>
+            <p className="font-bold text-gray-900 text-xs">{detail.user?.name || 'Super Admin'}</p>
+            <p className="text-[9.5px] text-gray-600 font-mono">{formatPrintDateTime(detail.created_at)}</p>
           </div>
         </div>
 
         {/* Approved By */}
-        <div className="px-2 text-center space-y-6">
-          <h4 className="font-bold text-gray-900 text-[11px]">{t('inventory.signatureApprovedBy', 'Approved By')}</h4>
-          <div className="space-y-0.5">
+        <div className="px-3 text-center space-y-7">
+          <h4 className="font-bold text-gray-900 text-[10.5px] uppercase tracking-wider">
+            Authorized By (អ្នកអនុម័ត)
+          </h4>
+          <div className="space-y-1">
             <div className="w-4/5 border-b border-gray-400 mx-auto mb-1" />
-            <p className="font-bold text-gray-900">{detail.approved_by || 'Manager'}</p>
-            <p className="text-[10px] text-gray-600">{detail.approved_at ? formatPrintDateTime(detail.approved_at) : 'Date: _____________'}</p>
+            <p className="font-bold text-gray-900 text-xs">{detail.approved_by || 'Warehouse Manager'}</p>
+            <p className="text-[9.5px] text-gray-600 font-mono">{detail.approved_at ? formatPrintDateTime(detail.approved_at) : 'Date: _______________'}</p>
           </div>
         </div>
 
         {/* Received By */}
-        <div className="px-2 text-center space-y-6">
-          <h4 className="font-bold text-gray-900 text-[11px]">{t('inventory.signatureReceivedBy', 'Received By')}</h4>
-          <div className="space-y-0.5">
+        <div className="px-3 text-center space-y-7">
+          <h4 className="font-bold text-gray-900 text-[10.5px] uppercase tracking-wider">
+            Received By (អ្នកទទួល)
+          </h4>
+          <div className="space-y-1">
             <div className="w-4/5 border-b border-gray-400 mx-auto mb-1" />
-            <p className="font-bold text-gray-900">{detail.received_by || t('common.signature', '(Signature)')}</p>
-            <p className="text-[10px] text-gray-600">{detail.received_at ? formatPrintDateTime(detail.received_at) : 'Date: _____________'}</p>
+            <p className="font-bold text-gray-900 text-xs">{detail.received_by || '(Signature & Full Name)'}</p>
+            <p className="text-[9.5px] text-gray-600 font-mono">{detail.received_at ? formatPrintDateTime(detail.received_at) : 'Date: _______________'}</p>
           </div>
         </div>
       </div>
 
-      {/* Footer Thank You Message */}
-      <div className="mt-3 text-center text-xs space-y-0.5 font-medium text-gray-700">
-        <p className="font-bold text-gray-900">{t('common.thankYouMessage', 'Thank you for using our system!')}</p>
+      {/* ─── Footer ─────────────────────────────────────────────────────── */}
+      <div className="mt-3 flex justify-between items-center text-[9px] text-gray-500 border-t border-gray-300 pt-1.5 font-medium">
+        <span>System Generated Stock Transfer Voucher • Enterprise POS System</span>
+        <span>Printed on: {formatPrintDateTime(new Date().toISOString())}</span>
+        <span>Page 1 / 1</span>
       </div>
 
     </div>
   )
 }
+
 export default StockTransferPrintVoucher

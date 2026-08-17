@@ -35,20 +35,20 @@ export const ProductMediaSection: React.FC<ProductMediaSectionProps> = ({
   const { t } = useTranslation(['products', 'common'])
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
+    <div className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs space-y-4">
       {/* Section Header */}
-      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-border/70">
+      <div className="flex items-center justify-between pb-3 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400">
-            <ImageIcon size={18} />
+          <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+            <ImageIcon size={16} />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-foreground">{t('products.mediaGallery', 'Product Media & Gallery')}</h3>
-            <p className="text-[11px] text-muted-foreground">{t('products.mediaGallerySub', 'Upload high-resolution product photos')}</p>
+            <h3 className="font-bold text-xs sm:text-sm text-foreground">{t('mediaGallery', 'Product Media Gallery')}</h3>
+            <p className="text-[11px] text-muted-foreground">{t('mediaGallerySub', 'Upload product images, set catalog thumbnail or sort order.')}</p>
           </div>
         </div>
-        <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
-          {createImagePreviews.length + (productDetail?.images?.length || 0)} {t('products.imagesSelected', 'images')}
+        <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
+          {createImagePreviews.length + (productDetail?.images?.length || 0)} {t('imagesSelected', 'images selected')}
         </span>
       </div>
 
@@ -58,16 +58,18 @@ export const ProductMediaSection: React.FC<ProductMediaSectionProps> = ({
         onDragOver={handleCreateDrag}
         onDragLeave={handleCreateDrag}
         onDrop={handleCreateDrop}
-        className={`group flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-7 px-4 text-center cursor-pointer transition-all ${
+        className={`group flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-6 px-4 text-center cursor-pointer transition-all ${
           createDragActive
             ? 'border-primary bg-primary/10 scale-[1.005]'
             : 'border-border/80 bg-muted/10 hover:border-primary/60 hover:bg-primary/5'
         }`}
       >
-        <Upload className="text-muted-foreground/60 group-hover:text-primary transition-colors" size={24} />
+        <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform">
+          <Upload size={20} />
+        </div>
         <div>
-          <p className="text-xs font-semibold text-foreground">
-            {t('products.dragDropText', 'Drag & drop product images here, or click to browse')}
+          <p className="text-xs font-bold text-foreground">
+            {t('dragDropText', 'Drag & drop product images here or click to browse')}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG, WEBP · Up to 10MB per image</p>
         </div>
@@ -86,13 +88,13 @@ export const ProductMediaSection: React.FC<ProductMediaSectionProps> = ({
 
       {/* Server Uploaded Photos Grid (In Edit Mode) */}
       {isEdit && productDetail?.images && productDetail.images.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border/60 space-y-2">
-          <span className="text-xs font-semibold text-muted-foreground block">{t('products.uploadedImages', 'Uploaded Photos:')}</span>
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        <div className="mt-4 pt-4 border-t border-border/60 space-y-2.5">
+          <span className="text-xs font-bold text-muted-foreground block">{t('uploadedImages', 'Uploaded Photos:')}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {productDetail.images.map((img: any) => (
               <div
                 key={img.id}
-                className="group relative rounded-xl overflow-hidden border border-border/60 bg-muted/10 shadow-xs hover:shadow-md transition-all aspect-square"
+                className="group relative rounded-xl overflow-hidden border border-border bg-muted/20 shadow-xs hover:shadow-md transition-all aspect-square"
               >
                 <img
                   src={getAbsoluteImageUrl(img.url || img.image)}
@@ -100,30 +102,30 @@ export const ProductMediaSection: React.FC<ProductMediaSectionProps> = ({
                   alt="catalog"
                 />
                 {img.is_primary && (
-                  <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold shadow-xs">
-                    <Star size={9} fill="currentColor" />
-                    {t('products.primaryImage', 'Primary')}
+                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-primary/95 text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-bold shadow-md z-10 backdrop-blur-xs">
+                    <Star size={10} fill="currentColor" />
+                    {t('primaryImage', 'Primary')}
                   </span>
                 )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 p-2">
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 p-2 z-20">
                   {!img.is_primary && onUpdateImagePrimary && (
                     <button
                       type="button"
                       onClick={() => onUpdateImagePrimary(img.id)}
-                      className="p-1.5 bg-white text-primary hover:bg-primary hover:text-primary-foreground rounded-lg shadow transition-all cursor-pointer"
-                      title={t('products.setPrimary', 'Set as Primary')}
+                      className="p-2 bg-white/90 text-primary hover:bg-primary hover:text-white rounded-xl shadow transition-all cursor-pointer"
+                      title={t('setPrimary', 'Set as Primary')}
                     >
-                      <Star size={13} />
+                      <Star size={14} />
                     </button>
                   )}
                   {onDeleteImage && (
                     <button
                       type="button"
                       onClick={() => onDeleteImage(img.id)}
-                      className="p-1.5 bg-white text-red-600 hover:bg-red-600 hover:text-white rounded-lg shadow transition-all cursor-pointer"
-                      title={t('common.delete', 'Delete')}
+                      className="p-2 bg-white/90 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl shadow transition-all cursor-pointer"
+                      title={t('delete', 'Delete')}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>
@@ -135,33 +137,34 @@ export const ProductMediaSection: React.FC<ProductMediaSectionProps> = ({
 
       {/* New Image Previews Grid */}
       {createImagePreviews.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border/60">
           {createImagePreviews.map((img) => (
-            <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted/20 aspect-square">
+            <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted/20 aspect-square shadow-xs hover:shadow-md transition-all">
               <img src={img.url} alt="Preview" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+              {img.isPrimary && (
+                <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-primary/95 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 backdrop-blur-xs">
+                  <Star size={10} fill="currentColor" />
+                  {t('primaryImage', 'Primary')}
+                </span>
+              )}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 z-20">
                 <button
                   type="button"
                   onClick={() => handleSetPrimaryCreateImage(img.id)}
-                  className={`p-1.5 rounded-lg text-xs font-semibold ${img.isPrimary ? 'bg-amber-500 text-white' : 'bg-white/80 text-foreground hover:bg-white'}`}
-                  title={t('products.setPrimary', 'Set as Primary')}
+                  className={`p-2 rounded-xl text-xs font-semibold shadow cursor-pointer ${img.isPrimary ? 'bg-primary text-primary-foreground' : 'bg-white/90 text-foreground hover:bg-white'}`}
+                  title={t('setPrimary', 'Set as Primary')}
                 >
-                  <Star size={13} className={img.isPrimary ? 'fill-white' : ''} />
+                  <Star size={14} className={img.isPrimary ? 'fill-current' : ''} />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleRemoveCreateImage(img.id)}
-                  className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 cursor-pointer"
-                  title={t('common.delete', 'Delete')}
+                  className="p-2 rounded-xl bg-white/90 text-rose-600 hover:bg-rose-600 hover:text-white shadow cursor-pointer"
+                  title={t('delete', 'Delete')}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </button>
               </div>
-              {img.isPrimary && (
-                <span className="absolute top-1.5 left-1.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
-                  {t('products.primaryImage', 'Primary')}
-                </span>
-              )}
             </div>
           ))}
         </div>

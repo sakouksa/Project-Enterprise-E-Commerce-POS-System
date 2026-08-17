@@ -24,19 +24,24 @@ const Pagination: React.FC<PaginationProps> = ({
 }) => {
   const { t } = useTranslation()
   const disabled = isLoading
-  const from = total === 0 ? 0 : (currentPage - 1) * perPage + 1
-  const to = Math.min(currentPage * perPage, total)
+  const safeCurrentPage = Math.max(1, Number(currentPage) || 1)
+  const safeLastPage = Math.max(1, Number(lastPage) || 1)
+  const safeTotal = Math.max(0, Number(total) || 0)
+  const safePerPage = Math.max(1, Number(perPage) || 20)
+
+  const from = safeTotal === 0 ? 0 : (safeCurrentPage - 1) * safePerPage + 1
+  const to = Math.min(safeCurrentPage * safePerPage, safeTotal)
 
   // Build visible page numbers (max 5, centred around current)
   const buildPages = () => {
-    if (lastPage <= 7) return Array.from({ length: lastPage }, (_, i) => i + 1)
+    if (safeLastPage <= 7) return Array.from({ length: safeLastPage }, (_, i) => i + 1)
     const pages: (number | '...')[] = []
-    if (currentPage <= 4) {
-      pages.push(1, 2, 3, 4, 5, '...', lastPage)
-    } else if (currentPage >= lastPage - 3) {
-      pages.push(1, '...', lastPage - 4, lastPage - 3, lastPage - 2, lastPage - 1, lastPage)
+    if (safeCurrentPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', safeLastPage)
+    } else if (safeCurrentPage >= safeLastPage - 3) {
+      pages.push(1, '...', safeLastPage - 4, safeLastPage - 3, safeLastPage - 2, safeLastPage - 1, safeLastPage)
     } else {
-      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', lastPage)
+      pages.push(1, '...', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, '...', safeLastPage)
     }
     return pages
   }

@@ -3,25 +3,29 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-interface BreadcrumbItem {
+export interface BreadcrumbItem {
   label: string
   path?: string
   href?: string
 }
 
-interface BreadcrumbProps {
+export interface BreadcrumbProps {
   items: BreadcrumbItem[]
+  className?: string
+  showHome?: boolean
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className = '', showHome = true }) => {
   const { t } = useTranslation()
 
   return (
-    <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4">
-      <Link to="/dashboard" className="hover:text-foreground flex items-center gap-1 transition-colors">
-        <Home size={12} />
-        {t('nav.dashboard')}
-      </Link>
+    <nav className={`flex items-center gap-1.5 text-xs text-muted-foreground ${className}`}>
+      {showHome && (
+        <Link to="/dashboard" className="hover:text-foreground flex items-center gap-1 transition-colors">
+          <Home size={12} />
+          {t('nav.dashboard', 'ទំព័រដើម')}
+        </Link>
+      )}
       {items.map((item, index) => {
         const linkTarget = item.path || item.href
         return (

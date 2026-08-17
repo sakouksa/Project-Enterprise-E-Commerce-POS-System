@@ -138,7 +138,7 @@ const DashboardPage: React.FC = () => {
       variants={containerVariants}
       initial="initial"
       animate="animate"
-      className="space-y-6 max-w-[1700px] mx-auto p-2 sm:p-4"
+      className="space-y-4 sm:space-y-6 max-w-full 2xl:max-w-[1800px] mx-auto p-1.5 sm:p-4 md:p-6 min-w-0"
     >
       {/* Dashboard Top Header */}
       <motion.div variants={itemVariants}>
@@ -151,17 +151,17 @@ const DashboardPage: React.FC = () => {
 
       {/* Error state banner */}
       {statsError && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between text-rose-700 dark:text-rose-400 text-xs font-bold">
+        <div className="p-3.5 sm:p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-rose-700 dark:text-rose-400 text-xs font-bold shadow-2xs">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{t('dashboard.errorLoading')}</span>
           </div>
           <button 
             onClick={handleRefresh}
-            className="px-3 py-1 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors flex items-center gap-1 cursor-pointer"
+            className="px-3.5 py-1.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-2xs"
           >
-            <RefreshCw className="w-3 h-3" />
-            {t('dashboard.retry')}
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{t('dashboard.retry')}</span>
           </button>
         </div>
       )}
@@ -173,7 +173,7 @@ const DashboardPage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* 2. Full Width PostgreSQL Enterprise KPI Cards */}
+      {/* 2. Full Width Enterprise KPI Cards */}
       {hasAnyStatWidget && (
         <motion.div variants={itemVariants} className="w-full">
           <DashboardStats stats={statsRes} isLoading={statsLoading} />
@@ -181,9 +181,9 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* 3. Primary Responsive Enterprise Grid (Center Panel + Sidebar) */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-        {/* Main Center Panel (3 columns on XL) */}
-        <div className="xl:col-span-3 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 items-start">
+        {/* Main Center Panel (2 cols on LG, 3 cols on XL) */}
+        <div className="lg:col-span-2 xl:col-span-3 space-y-4 sm:space-y-6 min-w-0">
           {/* Primary Analytics & Category Sales Charts */}
           {(isWidgetVisible('sales_overview') || isWidgetVisible('category_sales')) && (
             <motion.div variants={itemVariants}>
@@ -261,13 +261,17 @@ const DashboardPage: React.FC = () => {
           {/* System Health Diagnostics Monitor */}
           {isWidgetVisible('system_health') && (
             <motion.div variants={itemVariants}>
-              <SystemHealthWidget healthData={healthRes} isLoading={healthLoading} />
+              <SystemHealthWidget 
+                healthData={healthRes} 
+                isLoading={healthLoading} 
+                onRefresh={refetchHealth}
+              />
             </motion.div>
           )}
         </div>
 
         {/* Right Sidebar Widgets (Quick Actions & Activity Timeline) */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 min-w-0">
           {isWidgetVisible('quick_actions') && (
             <motion.div variants={itemVariants}>
               <QuickActions />

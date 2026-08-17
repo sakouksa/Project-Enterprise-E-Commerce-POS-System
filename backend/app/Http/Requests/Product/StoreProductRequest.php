@@ -36,6 +36,8 @@ class StoreProductRequest extends FormRequest
             'status'              => 'required|string|in:active,inactive,draft,archived',
             'is_featured'         => 'boolean',
             'is_digital'          => 'boolean',
+            'stock'               => 'nullable|numeric|min:0',
+            'quantity'            => 'nullable|numeric|min:0',
             'meta_title'          => 'nullable|string|max:255',
             'meta_description'    => 'nullable|string',
             'meta_keywords'       => 'nullable|string',
@@ -45,6 +47,7 @@ class StoreProductRequest extends FormRequest
             'variants.*.barcode'  => 'nullable|string|max:100',
             'variants.*.cost_price' => 'nullable|numeric|min:0',
             'variants.*.selling_price' => 'nullable|numeric|min:0',
+            'variants.*.stock'    => 'nullable|numeric|min:0',
             'variants.*.image'    => 'nullable|string',
             'variants.*.attribute_values' => 'nullable|array',
         ];

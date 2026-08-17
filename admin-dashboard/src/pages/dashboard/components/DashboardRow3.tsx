@@ -23,9 +23,9 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {/* Top Selling Products */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
           <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
             <Package className="w-4.5 h-4.5 text-blue-500" />
@@ -52,7 +52,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
                   {formatCurrency(p.total_revenue || p.price || 0)}
                 </span>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {p.value || p.total_qty || 0} {t('common.sold', 'sold')}
+                  {p.value || p.total_qty || 0} {t('dashboard.sold', 'sold')}
                 </p>
               </div>
             </div>
@@ -64,7 +64,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
       </div>
 
       {/* Latest Orders */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
           <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
             <Clock className="w-4.5 h-4.5 text-emerald-500" />
@@ -72,7 +72,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
           </h3>
           <button 
             onClick={() => navigate('/orders')}
-            className="text-[11px] text-primary hover:underline font-bold flex items-center gap-0.5"
+            className="text-[11px] text-primary hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
           >
             {t('dashboard.viewAll')} <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
@@ -81,10 +81,10 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="text-muted-foreground font-bold border-b border-border/40">
-                <th className="pb-2">ID</th>
-                <th className="pb-2">{t('common.customer', 'Customer')}</th>
-                <th className="pb-2 text-right">{t('common.total', 'Total')}</th>
-                <th className="pb-2 text-right">{t('common.status', 'Status')}</th>
+                <th className="pb-2">{t('dashboard.id', 'ID')}</th>
+                <th className="pb-2">{t('dashboard.customer', 'Customer')}</th>
+                <th className="pb-2 text-right">{t('dashboard.total', 'Total')}</th>
+                <th className="pb-2 text-right">{t('dashboard.status', 'Status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
@@ -92,7 +92,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
                 <tr key={order.id} className="hover:bg-muted/30 transition-colors">
                   <td className="py-2.5 font-bold text-primary">#{order.order_number || order.id}</td>
                   <td className="py-2.5 text-muted-foreground font-semibold truncate max-w-[80px]">
-                    {order.customer_name || 'Walk-in'}
+                    {order.customer_name || t('dashboard.walkInCustomer', 'Walk-in')}
                   </td>
                   <td className="py-2.5 text-right font-bold text-foreground">
                     {formatCurrency(order.grand_total)}
@@ -115,7 +115,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
       </div>
 
       {/* Latest Registered Customers */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40">
           <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
             <Users className="w-4.5 h-4.5 text-purple-500" />

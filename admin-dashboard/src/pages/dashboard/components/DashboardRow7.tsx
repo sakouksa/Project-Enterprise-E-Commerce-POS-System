@@ -6,9 +6,9 @@ export const DashboardRow7: React.FC = () => {
   const { t } = useTranslation()
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {/* Customer Growth & Retention */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Users className="w-4 h-4 text-blue-500" />
           {t('dashboard.growthRetention', 'Growth & Retention')}
@@ -27,14 +27,14 @@ export const DashboardRow7: React.FC = () => {
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.retentionRate', 'Customer Retention Rate')}</span>
             <div className="flex items-center justify-between mt-1">
               <span className="font-bold text-sm text-foreground">78.5%</span>
-              <span className="text-[10px] text-green-500 font-bold">{t('common.stable', 'Stable')}</span>
+              <span className="text-[10px] text-green-500 font-bold">{t('dashboard.stable', 'Stable')}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Customer Type Breakdown */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Smile className="w-4 h-4 text-emerald-500" />
           {t('dashboard.customerTypes', 'Customer Types')}
@@ -52,20 +52,20 @@ export const DashboardRow7: React.FC = () => {
       </div>
 
       {/* Top Customer Locations */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs md:col-span-2 lg:col-span-1">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <MapPin className="w-4 h-4 text-purple-500" />
           {t('dashboard.topLocations', 'Top Locations')}
         </h4>
         <div className="space-y-2">
           {[
-            { city: t('cities.phnomPenh', 'Phnom Penh'), count: 184 },
-            { city: t('cities.siemReap', 'Siem Reap'), count: 92 },
-            { city: t('cities.sihanoukville', 'Sihanoukville'), count: 48 },
+            { city: t('dashboard.phnomPenh', 'Phnom Penh'), count: 184 },
+            { city: t('dashboard.siemReap', 'Siem Reap'), count: 92 },
+            { city: t('dashboard.sihanoukville', 'Sihanoukville'), count: 48 },
           ].map((loc, idx) => (
             <div key={idx} className="flex justify-between items-center text-xs py-0.5">
               <span className="text-muted-foreground font-medium">{loc.city}</span>
-              <span className="font-bold text-foreground">{loc.count} {t('common.active', 'Active')}</span>
+              <span className="font-bold text-foreground">{loc.count} {t('dashboard.active', 'Active')}</span>
             </div>
           ))}
         </div>

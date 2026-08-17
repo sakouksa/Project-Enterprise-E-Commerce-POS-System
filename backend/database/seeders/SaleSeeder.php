@@ -282,6 +282,28 @@ class SaleSeeder extends Seeder
         DB::table('sale_returns')->insert($saleReturns);
         DB::table('sale_return_items')->insert($saleReturnItems);
 
+        // Update Customers' total_spent, order_count, loyalty_points based on completed sales
+        $customerSalesStats = DB::table('sales')
+            ->where('status', 'completed')
+            ->whereNotNull('customer_id')
+            ->groupBy('customer_id')
+            ->select(
+                'customer_id',
+                DB::raw('COUNT(*) as order_count'),
+                DB::raw('SUM(grand_total) as total_spent')
+            )
+            ->get();
+
+        foreach ($customerSalesStats as $stat) {
+            $spent = (float) $stat->total_spent;
+            $points = round($spent, 2);
+            DB::table('customers')->where('id', $stat->customer_id)->update([
+                'total_spent'    => $spent,
+                'order_count'    => (int) $stat->order_count,
+                'loyalty_points' => $points,
+            ]);
+        }
+
         // 7. Cash Registers & Register Transactions (10 registers)
         $cashRegisters = [];
         $crTransactions = [];

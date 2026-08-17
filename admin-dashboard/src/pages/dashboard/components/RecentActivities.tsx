@@ -13,7 +13,7 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({ activityLog,
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm space-y-3 animate-pulse">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3 animate-pulse">
         <div className="h-4 w-32 bg-muted rounded" />
         <div className="h-24 bg-muted rounded-xl" />
       </div>
@@ -23,13 +23,13 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({ activityLog,
   const logs = activityLog && activityLog.length > 0 ? activityLog : []
 
   return (
-    <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
-      <h3 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2">
+    <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
+      <h3 className="font-extrabold text-sm sm:text-base text-foreground mb-4 flex items-center gap-2">
         <Activity className="w-4 h-4 text-primary" />
-        {t('dashboard.activityTimeline')}
+        <span>{t('dashboard.activityTimeline')}</span>
       </h3>
 
-      <div className="relative border-l border-border/60 ml-2.5 pl-5 space-y-4">
+      <div className="relative border-l border-border/60 ml-2.5 pl-4 sm:pl-5 space-y-4">
         {logs.map((act: any, idx: number) => (
           <motion.div
             key={act.id || idx}
@@ -39,19 +39,19 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({ activityLog,
             className="relative"
           >
             {/* Timeline Dot */}
-            <span className="absolute -left-[27px] top-1 w-2.5 h-2.5 rounded-full bg-primary/80 ring-4 ring-card" />
+            <span className="absolute -left-[23px] sm:-left-[27px] top-1 w-2.5 h-2.5 rounded-full bg-primary/80 ring-4 ring-card" />
 
             {/* Content */}
             <div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs font-bold text-foreground leading-none">{act.description || 'System Event'}</span>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-0.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-bold text-foreground leading-snug truncate">{act.description || t('dashboard.systemEvent', 'System Event')}</span>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-0.5 shrink-0 font-mono">
                   <Clock className="w-2.5 h-2.5" />
-                  {act.created_at ? new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                  {act.created_at ? new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : t('dashboard.justNow', 'Just now')}
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                {t('common.by', 'By')}: <span className="font-semibold text-foreground">{act.causer_name || 'System User'}</span>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                {t('dashboard.by', 'By')}: <span className="font-semibold text-foreground">{act.causer_name || t('dashboard.systemUser', 'System User')}</span>
               </p>
             </div>
           </motion.div>

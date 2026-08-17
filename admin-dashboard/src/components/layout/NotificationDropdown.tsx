@@ -33,7 +33,7 @@ const NotificationDropdown: React.FC = () => {
     fetchUnreadCount()
     const interval = setInterval(() => {
       fetchUnreadCount()
-    }, 15000) // Poll every 15 seconds
+    }, 30000) // Poll every 30 seconds
     return () => clearInterval(interval)
   }, [fetchUnreadCount])
 

@@ -1,8 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Sliders, X } from 'lucide-react'
-import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { FilterDrawerShell } from '@/components/shared/FilterDrawerShell'
+import ModernSelect from '@/components/shared/ModernSelect'
 
 interface SuppliersFilterDrawerProps {
   isOpen: boolean
@@ -20,6 +19,15 @@ interface SuppliersFilterDrawerProps {
   setPage: (page: number) => void
 }
 
+const FieldLabel: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="space-y-1.5">
+    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+      {label}
+    </label>
+    {children}
+  </div>
+)
+
 export const SuppliersFilterDrawer: React.FC<SuppliersFilterDrawerProps> = ({
   isOpen,
   onClose,
@@ -29,132 +37,94 @@ export const SuppliersFilterDrawer: React.FC<SuppliersFilterDrawerProps> = ({
   setCountryFilter,
   cityFilter,
   setCityFilter,
-  users,
+  users = [],
   createdByFilter,
   setCreatedByFilter,
   onReset,
   setPage,
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['suppliers', 'common'])
+
+  const activeCount = [
+    statusFilter,
+    countryFilter,
+    cityFilter,
+    createdByFilter,
+  ].filter(Boolean).length
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden print:hidden">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
-          />
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="w-screen max-w-md bg-card border-l border-border shadow-2xl flex flex-col justify-between"
-            >
-              <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <Sliders className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-bold text-foreground">
-                    {t('suppliers.advancedFilters', 'Advanced Supplier Filters')}
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+    <FilterDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      onReset={onReset}
+      title={t('suppliers.advancedFilters', 'Advanced Supplier Filters')}
+      activeCount={activeCount}
+      applyLabel={t('common.applyFilters', 'Apply Filters')}
+      resetLabel={t('common.reset', 'Reset')}
+    >
+      {/* Status Filter */}
+      <FieldLabel label={t('suppliers.status', 'Supplier Status')}>
+        <ModernSelect
+          value={statusFilter}
+          onChange={(val) => {
+            setStatusFilter(String(val))
+            setPage(1)
+          }}
+          options={[
+            { value: '', label: t('suppliers.allStatuses', 'All Statuses') },
+            { value: '1', label: t('suppliers.active', 'Active') },
+            { value: '0', label: t('suppliers.inactive', 'Inactive') },
+          ]}
+          placeholder={t('suppliers.allStatuses', 'All Statuses')}
+        />
+      </FieldLabel>
 
-              <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
-                {/* Status */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {t('suppliers.status', 'Status')}
-                  </label>
-                  <ModernSelect
-                    value={statusFilter}
-                    onChange={(val) => { setStatusFilter(String(val)); setPage(1); }}
-                    options={[
-                      { value: '', label: t('common.allStatus', 'All Statuses') },
-                      { value: '1', label: t('common.active', 'Active') },
-                      { value: '0', label: t('common.inactive', 'Inactive') },
-                    ]}
-                    placeholder={t('common.allStatus', 'All Statuses')}
-                  />
-                </div>
+      {/* Country Filter */}
+      <FieldLabel label={t('suppliers.country', 'Country')}>
+        <input
+          type="text"
+          value={countryFilter}
+          onChange={(e) => {
+            setCountryFilter(e.target.value)
+            setPage(1)
+          }}
+          placeholder={t('suppliers.countryPlaceholder', 'e.g. Cambodia, China, Thailand, Vietnam...')}
+          className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+        />
+      </FieldLabel>
 
-                {/* Country */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {t('suppliers.country', 'Country')}
-                  </label>
-                  <input
-                    type="text"
-                    value={countryFilter}
-                    onChange={e => { setCountryFilter(e.target.value); setPage(1); }}
-                    placeholder="e.g. Cambodia, China, USA..."
-                    className="form-input text-xs w-full"
-                  />
-                </div>
+      {/* City / Province Filter */}
+      <FieldLabel label={t('suppliers.city', 'City / Province')}>
+        <input
+          type="text"
+          value={cityFilter}
+          onChange={(e) => {
+            setCityFilter(e.target.value)
+            setPage(1)
+          }}
+          placeholder={t('suppliers.cityPlaceholder', 'e.g. Phnom Penh, Bangkok, Shanghai, Hanoi...')}
+          className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+        />
+      </FieldLabel>
 
-                {/* City */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {t('suppliers.city', 'City / Province')}
-                  </label>
-                  <input
-                    type="text"
-                    value={cityFilter}
-                    onChange={e => { setCityFilter(e.target.value); setPage(1); }}
-                    placeholder="e.g. Phnom Penh, Shanghai..."
-                    className="form-input text-xs w-full"
-                  />
-                </div>
-
-                {/* Created By User */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {t('suppliers.createdBy', 'Created By')}
-                  </label>
-                  <ModernSelect
-                    value={createdByFilter}
-                    onChange={(val) => { setCreatedByFilter(String(val)); setPage(1); }}
-                    options={[
-                      { value: '', label: 'All Users' },
-                      ...(users ?? []).map((u: any) => ({ value: String(u.id), label: u.name })),
-                    ]}
-                    placeholder="All Users"
-                  />
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={onReset}
-                  className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted cursor-pointer"
-                >
-                  {t('common.reset', 'Reset')}
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:opacity-90 cursor-pointer"
-                >
-                  {t('common.apply', 'Apply')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      )}
-    </AnimatePresence>
+      {/* Created By User */}
+      <FieldLabel label={t('suppliers.createdBy', 'Created By')}>
+        <ModernSelect
+          value={createdByFilter}
+          onChange={(val) => {
+            setCreatedByFilter(String(val))
+            setPage(1)
+          }}
+          options={[
+            { value: '', label: t('suppliers.allUsers', 'All Users') },
+            ...(users ?? []).map((u: any) => ({
+              value: String(u.id),
+              label: u.name,
+            })),
+          ]}
+          placeholder={t('suppliers.allUsers', 'All Users')}
+        />
+      </FieldLabel>
+    </FilterDrawerShell>
   )
 }

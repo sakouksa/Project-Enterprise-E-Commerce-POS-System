@@ -2,12 +2,14 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
-  Sparkles, SlidersHorizontal, Plus, Trash2, Edit2, Eye, RefreshCw, Check,
-  ChevronLeft, ChevronRight, CheckCircle2, Box, Palette
+  Sparkles, SlidersHorizontal, Plus, Trash2, Check,
+  Tag, Palette
 } from 'lucide-react'
 import { SIZE_PRESET_MAP } from '../utils/productPresets'
-import { COLOR_MAP, getVariantColorHex, getDynamicColorMatchedImage } from '../utils/colorResolver'
+import { COLOR_MAP, getVariantColorHex } from '../utils/colorResolver'
 import type { CustomColorItem } from '../types/productForm.types'
+import Pagination from '@/components/shared/Pagination'
+import TableActionMenu from '@/components/shared/TableActionMenu'
 
 interface ProductVariantsSectionProps {
   productId: number | null
@@ -24,7 +26,7 @@ interface ProductVariantsSectionProps {
   customInputSize: string
   setCustomInputSize: (val: string) => void
   userAddedSizes: string[]
-  handleAddUserCustomSize: (e: React.FormEvent) => void
+  handleAddUserCustomSize: (e?: React.SyntheticEvent) => void
   customSelectedColors: string[]
   setCustomSelectedColors: React.Dispatch<React.SetStateAction<string[]>>
   customInputColor: string
@@ -32,7 +34,7 @@ interface ProductVariantsSectionProps {
   customColorHex: string
   setCustomColorHex: (val: string) => void
   userAddedColors: CustomColorItem[]
-  handleAddUserCustomColor: (e: React.FormEvent) => void
+  handleAddUserCustomColor: (e?: React.SyntheticEvent) => void
   isGeneratingVariants: boolean
   matrixProgress: { current: number; total: number } | null
   handleGenerateMatrix: () => void
@@ -51,13 +53,9 @@ interface ProductVariantsSectionProps {
 }
 
 export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
-  productId,
   form,
   setField,
   productDetail,
-  selectedPresetMode,
-  setSelectedPresetMode,
-  customSizeCategory,
   activeCategoryKey,
   handleSwitchSizeCategory,
   customSelectedSizes,
@@ -90,7 +88,7 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
   onOpenBulkDeleteVariants,
   onQuickToggleVariantStatus,
 }) => {
-  const { t } = useTranslation(['products', 'common'])
+  const { t } = useTranslation(['products', 'common', 'pagination'])
   const variants: any[] = productDetail?.variants || []
 
   // Pagination calculation
@@ -103,17 +101,21 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
   return (
     <div className="space-y-6">
       {/* Variants Enable Toggle Card */}
-      <div className="bg-card border border-border rounded-2xl p-5 shadow-xs flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400">
-            <SlidersHorizontal size={20} />
+      <div className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <SlidersHorizontal size={16} />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-foreground">{t('products.enableVariants', 'Multi-Dimensional Variants')}</h3>
-            <p className="text-xs text-muted-foreground">{t('products.enableVariantsSub', 'Generate color, storage, size, or material matrix for this product')}</p>
+            <h3 className="font-bold text-xs sm:text-sm text-foreground">
+              {t('products.enableVariants', 'Multi-Dimensional Variants')}
+            </h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {t('products.enableVariantsSub', 'Generate color, storage, size, or material matrix for this product')}
+            </p>
           </div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
+        <label className="relative inline-flex items-center cursor-pointer select-none">
           <input
             type="checkbox"
             checked={form.has_variants}
@@ -126,24 +128,29 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
 
       {form.has_variants && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-5"
         >
           {/* Preset Builder Card */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/70">
+          <div className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs space-y-4">
+            {/* Header & Category Presets Bar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-border/60">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-foreground">{t('products.smartPresetBuilder', 'Smart Variant Matrix Generator')}</h4>
-                  <p className="text-[11px] text-muted-foreground">{t('products.smartPresetSub', 'Select sizes/specs and colors to auto-calculate SKU and pricing')}</p>
+                  <h4 className="font-bold text-xs sm:text-sm text-foreground">
+                    {t('products.smartPresetBuilder', 'Smart Variant Matrix Generator')}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('products.smartPresetSub', 'Select sizes/specs and colors to auto-calculate SKU and pricing')}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 flex-wrap">
                 {Object.entries(SIZE_PRESET_MAP).map(([key, config]) => {
                   const IconComp = config.icon
                   const isActive = activeCategoryKey === key
@@ -152,10 +159,10 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                       key={key}
                       type="button"
                       onClick={() => handleSwitchSizeCategory(key)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         isActive
                           ? 'bg-primary text-primary-foreground shadow-xs'
-                          : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground'
+                          : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60'
                       }`}
                     >
                       <IconComp size={13} />
@@ -167,9 +174,15 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
             </div>
 
             {/* Spec & Size Options */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-foreground block">{t('products.selectSpecsOrSizes', '1. Select Sizes / Specifications:')}</span>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Tag size={15} className="text-primary" />
+                <span className="text-xs font-bold text-foreground">
+                  {t('products.selectSpecsOrSizes', '1. Select Sizes / Specifications:')}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
                 {activePresetObj.options.map(opt => {
                   const isSelected = customSelectedSizes.includes(opt.code)
                   return (
@@ -181,15 +194,15 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                           isSelected ? prev.filter(s => s !== opt.code) : [...prev, opt.code]
                         )
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-primary/15 text-primary border border-primary/30 shadow-2xs'
-                          : 'bg-muted/30 hover:bg-muted text-muted-foreground border border-border'
+                          ? 'bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/30'
+                          : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
                       }`}
                     >
                       {isSelected && <Check size={12} />}
                       <span>{opt.code}</span>
-                      <span className="text-[10px] font-normal opacity-70">({opt.badge})</span>
+                      {opt.badge && <span className="text-[10px] font-normal opacity-80">({opt.badge})</span>}
                     </button>
                   )
                 })}
@@ -205,10 +218,10 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                           isSelected ? prev.filter(x => x !== s) : [...prev, s]
                         )
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-primary/15 text-primary border border-primary/30 shadow-2xs'
-                          : 'bg-muted/30 hover:bg-muted text-muted-foreground border border-border'
+                          ? 'bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/30'
+                          : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
                       }`}
                     >
                       {isSelected && <Check size={12} />}
@@ -218,28 +231,43 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                 })}
               </div>
 
-              {/* Custom Size Adder */}
-              <form onSubmit={handleAddUserCustomSize} className="flex items-center gap-2 pt-1 max-w-sm">
+              {/* Custom Size Adder Input */}
+              <div className="flex items-center gap-2 max-w-sm pt-0.5">
                 <input
                   type="text"
                   value={customInputSize}
                   onChange={e => setCustomInputSize(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleAddUserCustomSize(e)
+                    }
+                  }}
                   placeholder={t('products.addCustomSizePlaceholder', '+ Add custom size (e.g. 2TB, XXL)...')}
-                  className="form-input text-xs w-full"
+                  className="w-full h-9 px-3 bg-background border border-border/80 rounded-lg text-xs sm:text-[13px] font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
                 />
                 <button
-                  type="submit"
-                  className="px-3 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold cursor-pointer"
+                  type="button"
+                  onClick={handleAddUserCustomSize}
+                  className="h-9 px-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer shrink-0 shadow-xs transition-colors active:scale-95"
+                  title={t('common.add', 'Add')}
                 >
                   <Plus size={14} />
                 </button>
-              </form>
+              </div>
             </div>
 
             {/* Colors Selection */}
-            <div className="space-y-2 pt-2 border-t border-border/60">
-              <span className="text-xs font-bold text-foreground block">{t('products.selectColors', '2. Select Colors & Swatches:')}</span>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-2.5 pt-2.5 border-t border-border/60">
+              <div className="flex items-center gap-2">
+                <Palette size={15} className="text-primary" />
+                <span className="text-xs font-bold text-foreground">
+                  {t('products.selectColors', '2. Select Colors & Swatches:')}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
                 {[
                   'Black', 'White', 'Silver', 'Space Gray', 'Natural Titanium',
                   'Midnight', 'Starlight', 'Red', 'Blue', 'Gold', 'Green', 'Purple', 'Pink'
@@ -255,13 +283,13 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                           isSelected ? prev.filter(x => x !== c) : [...prev, c]
                         )
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-primary/15 text-primary border border-primary/30 shadow-2xs'
-                          : 'bg-muted/30 hover:bg-muted text-muted-foreground border border-border'
+                          ? 'bg-primary/15 text-primary border border-primary/40 shadow-xs'
+                          : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
                       }`}
                     >
-                      <span className="w-3 h-3 rounded-full border border-black/20" style={{ backgroundColor: hex }} />
+                      <span className="w-3 h-3 rounded-full border border-black/20 shadow-2xs shrink-0" style={{ backgroundColor: hex }} />
                       <span>{c}</span>
                     </button>
                   )
@@ -278,13 +306,13 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                           isSelected ? prev.filter(x => x !== c.key) : [...prev, c.key]
                         )
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-primary/15 text-primary border border-primary/30 shadow-2xs'
-                          : 'bg-muted/30 hover:bg-muted text-muted-foreground border border-border'
+                          ? 'bg-primary/15 text-primary border border-primary/40 shadow-xs'
+                          : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
                       }`}
                     >
-                      <span className="w-3 h-3 rounded-full border border-black/20" style={{ backgroundColor: c.hex }} />
+                      <span className="w-3 h-3 rounded-full border border-black/20 shadow-2xs shrink-0" style={{ backgroundColor: c.hex }} />
                       <span>{c.name}</span>
                     </button>
                   )
@@ -292,41 +320,50 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
               </div>
 
               {/* Custom Color Adder */}
-              <form onSubmit={handleAddUserCustomColor} className="flex items-center gap-2 pt-1 max-w-md">
+              <div className="flex items-center gap-2 max-w-md pt-0.5">
                 <input
                   type="color"
                   value={customColorHex}
                   onChange={e => setCustomColorHex(e.target.value)}
-                  className="w-8 h-8 rounded-lg cursor-pointer border border-border"
-                  title="Pick Color"
+                  className="w-9 h-9 p-0.5 rounded-lg cursor-pointer border border-border/80 bg-background shrink-0"
+                  title="Pick Color Hex"
                 />
                 <input
                   type="text"
                   value={customInputColor}
                   onChange={e => setCustomInputColor(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleAddUserCustomColor(e)
+                    }
+                  }}
                   placeholder={t('products.addCustomColorPlaceholder', '+ Add custom color (e.g. Cobalt Blue)...')}
-                  className="form-input text-xs flex-1"
+                  className="w-full h-9 px-3 bg-background border border-border/80 rounded-lg text-xs sm:text-[13px] font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
                 />
                 <button
-                  type="submit"
-                  className="px-3 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-xs font-bold cursor-pointer"
+                  type="button"
+                  onClick={handleAddUserCustomColor}
+                  className="h-9 px-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer shrink-0 shadow-xs transition-colors active:scale-95"
+                  title={t('common.add', 'Add')}
                 >
                   <Plus size={14} />
                 </button>
-              </form>
+              </div>
             </div>
 
-            {/* Matrix Generation Action */}
-            <div className="pt-3 border-t border-border/60 flex items-center justify-between">
+            {/* Matrix Generation Action Bar */}
+            <div className="pt-3 border-t border-border/60 flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-muted-foreground">
-                {customSelectedSizes.length} sizes × {customSelectedColors.length} colors = <strong>{customSelectedSizes.length * customSelectedColors.length} variants</strong>
+                {customSelectedSizes.length} sizes × {customSelectedColors.length} colors = <strong className="text-foreground">{customSelectedSizes.length * customSelectedColors.length} variants</strong>
               </span>
 
               <button
                 type="button"
                 onClick={handleGenerateMatrix}
                 disabled={isGeneratingVariants || customSelectedSizes.length === 0 || customSelectedColors.length === 0}
-                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-md flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
               >
                 <Sparkles size={14} />
                 <span>{isGeneratingVariants ? t('products.generating', 'Generating...') : t('products.generateMatrix', 'Generate Matrix')}</span>
@@ -336,7 +373,7 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
             {matrixProgress && (
               <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl space-y-1.5">
                 <div className="flex justify-between text-xs font-bold text-primary">
-                  <span>Generating Variant Matrix...</span>
+                  <span>{isGeneratingVariants ? t('products.generating', 'Generating...') : t('products.generateMatrix', 'Generate Matrix')}</span>
                   <span>{matrixProgress.current} / {matrixProgress.total}</span>
                 </div>
                 <div className="w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
@@ -352,12 +389,14 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
           {/* Generated Variants Table */}
           {variants.length > 0 && (
             <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h4 className="font-bold text-sm text-foreground">
                     {t('products.existingVariants', 'Existing Product Variants')} ({variants.length})
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">{t('products.variantsTableSub', 'Individual SKU codes, barcodes, price overrides and POS status')}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t('products.variantsTableSub', 'Individual SKU codes, barcodes, price overrides and POS status')}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -365,7 +404,7 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                     <button
                       type="button"
                       onClick={onOpenBulkDeleteVariants}
-                      className="px-3 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                     >
                       <Trash2 size={13} />
                       <span>{t('common.delete', 'Delete')} ({selectedVariantIds.length})</span>
@@ -374,7 +413,7 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                   <button
                     type="button"
                     onClick={onOpenClearAllVariants}
-                    className="px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 rounded-xl font-semibold cursor-pointer"
+                    className="px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-500/10 rounded-xl font-semibold cursor-pointer transition-colors"
                   >
                     {t('products.clearAllVariants', 'Clear All')}
                   </button>
@@ -382,11 +421,11 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto border border-border/80 rounded-xl">
+              <div className="overflow-x-auto border border-border rounded-2xl overflow-hidden">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-muted/40 text-muted-foreground font-semibold uppercase text-[10px] tracking-wider border-b border-border/80">
+                  <thead className="bg-muted/40 text-muted-foreground font-semibold uppercase text-[10px] tracking-wider border-b border-border">
                     <tr>
-                      <th className="p-3 w-10 text-center">
+                      <th className="p-3.5 w-10 text-center">
                         <input
                           type="checkbox"
                           checked={selectedVariantIds.length === variants.length && variants.length > 0}
@@ -394,16 +433,16 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                             if (e.target.checked) setSelectedVariantIds(variants.map(v => v.id))
                             else setSelectedVariantIds([])
                           }}
-                          className="w-3.5 h-3.5 rounded text-primary focus:ring-primary/30 cursor-pointer"
+                          className="w-4 h-4 rounded text-primary focus:ring-primary/30 cursor-pointer"
                         />
                       </th>
-                      <th className="p-3">{t('products.variant', 'Variant')}</th>
-                      <th className="p-3 font-mono">{t('products.sku', 'SKU')}</th>
-                      <th className="p-3">{t('products.sellingPrice', 'Price')}</th>
-                      <th className="p-3">{t('products.costPrice', 'Cost')}</th>
-                      <th className="p-3">{t('products.stock', 'Stock')}</th>
-                      <th className="p-3 text-center">{t('products.status', 'Status')}</th>
-                      <th className="p-3 text-right">{t('common.actions', 'Actions')}</th>
+                      <th className="p-3.5">{t('products.variant', 'Variant')}</th>
+                      <th className="p-3.5 font-mono">{t('products.sku', 'SKU')}</th>
+                      <th className="p-3.5">{t('products.colPrice', 'Selling Price')}</th>
+                      <th className="p-3.5">{t('products.colCostPrice', 'Cost Price')}</th>
+                      <th className="p-3.5">{t('products.colStock', 'Stock')}</th>
+                      <th className="p-3.5 text-center">{t('products.colStatus', 'Status')}</th>
+                      <th className="p-3.5 text-right">{t('common.actions', 'Actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -412,7 +451,7 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                       const isSelected = selectedVariantIds.includes(v.id)
                       return (
                         <tr key={v.id} className="hover:bg-muted/20 transition-colors">
-                          <td className="p-3 text-center">
+                          <td className="p-3.5 text-center">
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -420,58 +459,39 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                                 if (e.target.checked) setSelectedVariantIds(prev => [...prev, v.id])
                                 else setSelectedVariantIds(prev => prev.filter(x => x !== v.id))
                               }}
-                              className="w-3.5 h-3.5 rounded text-primary focus:ring-primary/30 cursor-pointer"
+                              className="w-4 h-4 rounded text-primary focus:ring-primary/30 cursor-pointer"
                             />
                           </td>
-                          <td className="p-3 font-medium text-foreground flex items-center gap-2">
+                          <td className="p-3.5 font-medium text-foreground flex items-center gap-2">
                             {hex && (
                               <span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: hex }} />
                             )}
-                            <span className="truncate max-w-[200px]">{v.name}</span>
+                            <span className="truncate max-w-[200px] font-semibold">{v.name}</span>
                           </td>
-                          <td className="p-3 font-mono text-muted-foreground">{v.sku || '—'}</td>
-                          <td className="p-3 font-bold text-primary">${Number(v.selling_price || 0).toFixed(2)}</td>
-                          <td className="p-3 font-mono text-muted-foreground">${Number(v.cost_price || 0).toFixed(2)}</td>
-                          <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">{v.stock ?? 0}</td>
-                          <td className="p-3 text-center">
+                          <td className="p-3.5 font-mono text-muted-foreground">{v.sku || '—'}</td>
+                          <td className="p-3.5 font-bold text-primary font-mono">${Number(v.selling_price || 0).toFixed(2)}</td>
+                          <td className="p-3.5 font-mono text-muted-foreground">${Number(v.cost_price || 0).toFixed(2)}</td>
+                          <td className="p-3.5 font-bold text-emerald-600 dark:text-emerald-400 font-mono">{v.stock ?? 0}</td>
+                          <td className="p-3.5 text-center">
                             <button
                               type="button"
                               onClick={() => onQuickToggleVariantStatus(v)}
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
                                 v.is_active
                                   ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20'
                                   : 'bg-muted text-muted-foreground border border-border hover:bg-muted/80'
                               }`}
                             >
-                              {v.is_active ? t('products.active', 'Active') : t('products.inactive', 'Inactive')}
+                              {v.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                             </button>
                           </td>
-                          <td className="p-3 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                type="button"
-                                onClick={() => onOpenViewVariant(v)}
-                                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                                title={t('common.view', 'View')}
-                              >
-                                <Eye size={13} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onOpenEditVariant(v)}
-                                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                                title={t('common.edit', 'Edit')}
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onOpenDeleteVariant({ id: v.id, name: v.name })}
-                                className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 cursor-pointer"
-                                title={t('common.delete', 'Delete')}
-                              >
-                                <Trash2 size={13} />
-                              </button>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end">
+                              <TableActionMenu
+                                onView={() => onOpenViewVariant(v)}
+                                onEdit={() => onOpenEditVariant(v)}
+                                onDelete={() => onOpenDeleteVariant({ id: v.id, name: v.name })}
+                              />
                             </div>
                           </td>
                         </tr>
@@ -479,34 +499,20 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                     })}
                   </tbody>
                 </table>
-              </div>
 
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xs text-muted-foreground">
-                    Page {variantPage} of {totalPages}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={variantPage <= 1}
-                      onClick={() => setVariantPage(variantPage - 1)}
-                      className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-40 cursor-pointer"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={variantPage >= totalPages}
-                      onClick={() => setVariantPage(variantPage + 1)}
-                      className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-40 cursor-pointer"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
+                {/* Global Pagination Component */}
+                {totalVariants > 0 && (
+                  <Pagination
+                    currentPage={variantPage}
+                    lastPage={totalPages}
+                    total={totalVariants}
+                    perPage={variantPageSize}
+                    onPageChange={setVariantPage}
+                    onPerPageChange={setVariantPageSize}
+                    perPageOptions={[5, 10, 15, 20, 50]}
+                  />
+                )}
+              </div>
             </div>
           )}
         </motion.div>
@@ -514,3 +520,5 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
     </div>
   )
 }
+
+export default ProductVariantsSection

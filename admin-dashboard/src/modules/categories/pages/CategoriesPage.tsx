@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Plus, X, Folder, ToggleLeft, ToggleRight, Loader2, Edit2, Trash2, 
+  Plus, X, Folder, FolderTree, ToggleLeft, ToggleRight, Loader2, Edit2, Trash2, 
   ChevronUp, ChevronDown, ChevronRight, Download, Upload, Trash, RefreshCw, 
-  AlertCircle, CheckCircle2, Image as ImageIcon, Settings
+  AlertCircle, CheckCircle2, Image as ImageIcon, Settings, Package, Eye,
+  Smartphone, Laptop, Monitor, Watch, Keyboard, Headphones, Camera, Zap, 
+  Footprints, Shirt, ExternalLink, Sparkles, Link, Check, Save
 } from 'lucide-react'
 import api from '@/api/client'
 import { getAbsoluteImageUrl } from '@/utils/image'
@@ -18,11 +21,11 @@ import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import EmptyState from '@/components/shared/EmptyState'
 import { useTranslation } from 'react-i18next'
-import { useThemeStore } from '@/stores/themeStore'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
-import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import { useThemeStore } from '@/stores/themeStore'
+import { ColumnSettingsPopover } from '@/components/shared/ColumnSettingsPopover'
 
 interface Category {
   id: number
@@ -35,6 +38,7 @@ interface Category {
   sort_order: number
   is_active: boolean
   parent?: Category | null
+  products_count?: number
   deleted_at?: string | null
 }
 
@@ -42,17 +46,70 @@ interface TreeCategory extends Category {
   children?: TreeCategory[]
 }
 
+const CATEGORY_NAMES_LOCALE: Record<string, Record<string, string>> = {
+  Smartphones: { km: 'ទូរស័ព្ទស្មាតហ្វូន', zh: '智能手机', th: 'สมาร์ทโฟน', vi: 'Điện thoại thông minh', en: 'Smartphones' },
+  Laptops: { km: 'កុំព្យូទ័រយួរដៃ', zh: '笔记本电脑', th: 'แล็ปท็อป', vi: 'Máy tính xách tay', en: 'Laptops' },
+  Monitors: { km: 'អេក្រង់កុំព្យូទ័រ', zh: '显示器', th: 'จอมอนิเตอร์', vi: 'Màn hình máy tính', en: 'Monitors' },
+  Smartwatches: { km: 'នាឡិកាឆ្លាតវៃ', zh: '智能手表', th: 'สมาร์ทวอทช์', vi: 'Đồng hồ thông minh', en: 'Smartwatches' },
+  Keyboards: { km: 'ក្ដារចុច', zh: '键盘', th: 'คีย์บอร์ด', vi: 'Bàn phím', en: 'Keyboards' },
+  Audio: { km: 'ឧបករណ៍សំឡេង', zh: '音频设备', th: 'อุปกรณ์เสียง', vi: 'Thiết bị âm thanh', en: 'Audio' },
+  Cameras: { km: 'ម៉ាស៊ីនថតរូប', zh: '相机', th: 'กล้องถ่ายรูป', vi: 'Máy ảnh', en: 'Cameras' },
+  Chargers: { km: 'ឧបករណ៍សាកថ្ម', zh: '充电器', th: 'ที่ชาร์จ', vi: 'Bộ sạc', en: 'Chargers' },
+  Shoes: { km: 'ស្បែកជើង', zh: '鞋类', th: 'รองเท้า', vi: 'Giày dép', en: 'Shoes' },
+  Apparel: { km: 'សម្លៀកបំពាក់', zh: '服装', th: 'เครื่องแต่งกาย', vi: 'Quần áo', en: 'Apparel' },
+}
+
+const getCategoryVisuals = (name: string) => {
+  const n = (name || '').toLowerCase()
+  if (n.includes('phone') || n.includes('mobile') || n.includes('smart')) {
+    return { Icon: Smartphone, bg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' }
+  }
+  if (n.includes('laptop') || n.includes('computer') || n.includes('macbook')) {
+    return { Icon: Laptop, bg: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' }
+  }
+  if (n.includes('monitor') || n.includes('display') || n.includes('screen')) {
+    return { Icon: Monitor, bg: 'bg-sky-500/10 text-sky-500 border-sky-500/20' }
+  }
+  if (n.includes('watch')) {
+    return { Icon: Watch, bg: 'bg-amber-500/10 text-amber-500 border-amber-500/20' }
+  }
+  if (n.includes('keyboard')) {
+    return { Icon: Keyboard, bg: 'bg-violet-500/10 text-violet-500 border-violet-500/20' }
+  }
+  if (n.includes('audio') || n.includes('headphone') || n.includes('speaker') || n.includes('sound')) {
+    return { Icon: Headphones, bg: 'bg-rose-500/10 text-rose-500 border-rose-500/20' }
+  }
+  if (n.includes('camera') || n.includes('lens')) {
+    return { Icon: Camera, bg: 'bg-red-500/10 text-red-500 border-red-500/20' }
+  }
+  if (n.includes('charger') || n.includes('power') || n.includes('adapter')) {
+    return { Icon: Zap, bg: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' }
+  }
+  if (n.includes('shoe') || n.includes('sneaker') || n.includes('footwear')) {
+    return { Icon: Footprints, bg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' }
+  }
+  if (n.includes('apparel') || n.includes('clothing') || n.includes('shirt')) {
+    return { Icon: Shirt, bg: 'bg-pink-500/10 text-pink-500 border-pink-500/20' }
+  }
+  return { Icon: Folder, bg: 'bg-primary/10 text-primary border-primary/20' }
+}
+
 const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
+  const { language } = useThemeStore()
   const { t, i18n } = useTranslation(['products', 'common'])
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
 
-  const txt = (key: string) => t(`products.${key}`)
-
-  // Open add modal when parent triggers it (parent auto-resets to 0 after 200ms)
+  // Open add modal ONLY when parent triggers it with an active change
+  const prevTriggerRef = React.useRef(triggerAdd || 0)
   React.useEffect(() => {
-    if (triggerAdd && triggerAdd > 0) openCreateModal()
+    if (triggerAdd && triggerAdd > 0 && triggerAdd !== prevTriggerRef.current) {
+      openCreateModal()
+    }
+    prevTriggerRef.current = triggerAdd || 0
   }, [triggerAdd])
+
   const {
     page,
     setPage,
@@ -65,6 +122,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   } = useServerPagination({ storageKey: 'categories' })
 
   // UI state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
@@ -72,6 +130,15 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [expandedNodes, setExpandedNodes] = useState<Record<number, boolean>>({})
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    category: true,
+    parent: true,
+    slug: true,
+    products_count: true,
+    description: true,
+    sort_order: true,
+    status: true,
+  })
 
   // CSV Import Modal
   const [importOpen, setImportOpen] = useState(false)
@@ -84,19 +151,21 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   const [description, setDescription] = useState('')
   const [sortOrder, setSortOrder] = useState('0')
   const [isActive, setIsActive] = useState(true)
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload')
+  const [imageUrl, setImageUrl] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   // Sorting states
-  const [sortBy, setSortBy] = useState('id')
-  const [sortOrderField, setSortOrderField] = useState<'asc' | 'desc'>('desc')
+  const [sortBy, setSortBy] = useState('sort_order')
+  const [sortOrderField, setSortOrderField] = useState<'asc' | 'desc'>('asc')
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrderField(sortOrderField === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrderField('desc')
+      setSortOrderField('asc')
     }
     setPage(1)
   }
@@ -115,7 +184,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
   // Main Categories query
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['categories', page, debouncedSearch, perPage, sortBy, sortOrderField, recycleBinMode],
+    queryKey: ['categories', page, debouncedSearch, perPage, sortBy, sortOrderField, recycleBinMode, statusFilter],
     queryFn: () => api.get('/categories', { 
       params: { 
         page, 
@@ -123,14 +192,14 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         per_page: perPage, 
         sort_by: sortBy, 
         sort_order: sortOrderField,
-        status: recycleBinMode ? 'deleted' : 'active'
+        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
       } 
     }).then(r => r.data),
     placeholderData: (prev) => prev,
   })
 
   const categories: Category[] = data?.data ?? []
-  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
+  const pagination = data?.pagination ?? { total: categories.length, current_page: 1, last_page: 1 }
 
   // Mutations
   const createMutation = useMutation({
@@ -139,7 +208,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
       closeModal()
-      toast.success(t('toast.created', { item: t('pageContent.Category') }))
+      toast.success(t('toast.created', { item: t('products.colCategory', 'Category') }))
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? t('toast.error')
@@ -149,7 +218,6 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
   const updateMutation = useMutation({
     mutationFn: ({ id, fd }: { id: number; fd: FormData }) => {
-      // Use POST with _method=PUT to support multipart form data updates in Laravel
       fd.append('_method', 'PUT')
       return api.post(`/categories/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
     },
@@ -157,7 +225,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
       closeModal()
-      toast.success(t('toast.updated', { item: t('pageContent.Category') }))
+      toast.success(t('toast.updated', { item: t('products.colCategory', 'Category') }))
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? t('toast.error')
@@ -170,7 +238,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       qc.invalidateQueries({ queryKey: ['categories-list-dropdown'] })
-      toast.success(t('toast.deleted', { item: t('pageContent.Category') }))
+      toast.success(t('toast.deleted', { item: t('products.colCategory', 'Category') }))
       setDeleteTarget(null)
       adjustAfterDelete(categories.length)
       setSelectedRows(r => r.filter(x => x !== deleteTarget?.id))
@@ -242,6 +310,8 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     setDescription('')
     setSortOrder('0')
     setIsActive(true)
+    setImageMode('upload')
+    setImageUrl('')
     setImageFile(null)
     setImagePreview(null)
     setModalOpen(true)
@@ -255,6 +325,8 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     setSortOrder(String(cat.sort_order ?? 0))
     setIsActive(cat.is_active)
     setImageFile(null)
+    setImageMode(cat.image?.startsWith('http') ? 'url' : 'upload')
+    setImageUrl(cat.image?.startsWith('http') ? cat.image : '')
     if (cat.image) {
       setImagePreview(getAbsoluteImageUrl(cat.image))
     } else {
@@ -287,6 +359,8 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     fd.append('is_active', isActive ? '1' : '0')
     if (imageFile) {
       fd.append('image_file', imageFile)
+    } else if (imageUrl) {
+      fd.append('image', imageUrl)
     }
 
     if (editingCategory) {
@@ -303,7 +377,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     const fd = new FormData()
     fd.append('file', importFile)
     try {
-      const res = await api.post('/categories/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await api.post('/categories/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
@@ -370,80 +444,198 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // Render tree rows recursively
-  const renderTreeRows = (nodes: TreeCategory[], depth = 0): React.ReactNode[] => {
-    let rows: React.ReactNode[] = []
-    
-    nodes.forEach(node => {
-      const isExpanded = expandedNodes[node.id] ?? true
-      const hasChildren = node.children && node.children.length > 0
-      
-      rows.push(
-        <tr key={node.id} className="group hover:bg-muted/30 border-b border-border/40">
-          <td className="w-12 text-center">
-            <input
-              type="checkbox"
-              checked={selectedRows.includes(node.id)}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedRows(prev => [...prev, node.id])
-                } else {
-                  setSelectedRows(prev => prev.filter(id => id !== node.id))
-                }
-              }}
-              className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
-            />
-          </td>
-          <td className="font-medium text-foreground text-sm py-3">
-            <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 24}px` }}>
-              {hasChildren ? (
+  const getLocalizedName = (catName: string) => {
+    const lang = language || i18n.language || 'en'
+    if (lang === 'en') return null
+    return CATEGORY_NAMES_LOCALE[catName]?.[lang] || null
+  }
+
+  // Render Row Helper
+  const renderCategoryRow = (node: TreeCategory | Category, depth = 0, isTree = false) => {
+    const hasChildren = (node as TreeCategory).children && (node as TreeCategory).children!.length > 0
+    const isExpanded = expandedNodes[node.id] ?? true
+    const visuals = getCategoryVisuals(node.name)
+    const localized = getLocalizedName(node.name)
+
+    return (
+      <tr key={node.id} className="group hover:bg-muted/30 border-b border-border/40 transition-colors">
+        {/* Checkbox */}
+        <td className="w-12 text-center py-3.5">
+          <input
+            type="checkbox"
+            checked={selectedRows.includes(node.id)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedRows(prev => [...prev, node.id])
+              } else {
+                setSelectedRows(prev => prev.filter(id => id !== node.id))
+              }
+            }}
+            className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
+          />
+        </td>
+
+        {/* Category Image & Name */}
+        {visibleColumns.category !== false && (
+          <td className="py-3.5 pr-4">
+            <div className="flex items-center gap-3.5" style={{ paddingLeft: isTree ? `${depth * 24}px` : undefined }}>
+              {isTree && hasChildren ? (
                 <button
                   type="button"
                   onClick={() => toggleNode(node.id)}
-                  className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 >
                   {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 </button>
-              ) : (
-                <div className="w-6 h-6 flex items-center justify-center text-muted-foreground/30">•</div>
-              )}
-              {node.image ? (
-                <img 
-                  src={getAbsoluteImageUrl(node.image)} 
-                  alt={node.name} 
-                  className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              ) : (
-                <Folder size={16} className="text-indigo-500 flex-shrink-0" />
-              )}
-              <span>{node.name}</span>
+              ) : isTree && depth > 0 ? (
+                <div className="w-5 h-5 flex items-center justify-center text-muted-foreground/40 shrink-0 font-bold">↳</div>
+              ) : null}
+
+              {/* Category Image Avatar */}
+              <div className="relative w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 overflow-hidden shrink-0 shadow-2xs group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300">
+                {node.image ? (
+                  <img
+                    src={getAbsoluteImageUrl(node.image)}
+                    alt={node.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-115"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <div className={`w-full h-full flex items-center justify-center border ${visuals.bg}`}>
+                    <visuals.Icon size={22} />
+                  </div>
+                )}
+              </div>
+
+              {/* Name + Localized translation subtext */}
+              <div className="min-w-0 flex flex-col">
+                <span className="font-semibold text-foreground text-sm leading-snug group-hover:text-primary transition-colors">
+                  {language !== 'en' && localized ? localized : node.name}
+                </span>
+                <span className="text-[11px] text-muted-foreground/80 mt-0.5">
+                  {language !== 'en' ? node.name : t('products.colCategory', 'Category')}
+                </span>
+              </div>
             </div>
           </td>
-          <td className="text-muted-foreground font-mono text-xs">{node.slug}</td>
-          <td className="text-muted-foreground text-sm">{node.description ?? '—'}</td>
-          <td className="text-muted-foreground text-sm text-center">{node.sort_order ?? 0}</td>
-          <td>
-            <span className={node.is_active ? 'badge-success' : 'badge-muted'}>
+        )}
+
+        {/* Parent Category */}
+        {visibleColumns.parent !== false && (
+          <td className="py-3.5 px-3">
+            {node.parent ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                <FolderTree size={12} />
+                {node.parent.name}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium bg-muted/70 text-muted-foreground border border-border/50">
+                <Folder size={12} />
+                {t('products.rootCategory', 'Root')}
+              </span>
+            )}
+          </td>
+        )}
+
+        {/* Slug */}
+        {visibleColumns.slug !== false && (
+          <td className="py-3.5 px-3">
+            <span className="font-mono text-xs text-muted-foreground bg-muted/70 px-2 py-0.5 rounded-lg border border-border/40">
+              /{node.slug}
+            </span>
+          </td>
+        )}
+
+        {/* Products Count */}
+        {visibleColumns.products_count !== false && (
+          <td className="py-3.5 px-3 text-center">
+            <button
+              onClick={() => navigate(`/products?tab=products&category_id=${node.id}`)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+              title="Filter products by this category"
+            >
+              <Package size={13} />
+              <span>{node.products_count ?? 0}</span>
+              <span className="text-[11px] opacity-80">{t('products.itemsCount', 'Items')}</span>
+            </button>
+          </td>
+        )}
+
+        {/* Description */}
+        {visibleColumns.description !== false && (
+          <td className="py-3.5 px-3">
+            <span className="text-xs text-muted-foreground line-clamp-1 max-w-[220px]" title={node.description ?? ''}>
+              {node.description || '—'}
+            </span>
+          </td>
+        )}
+
+        {/* Sort Order */}
+        {visibleColumns.sort_order !== false && (
+          <td className="py-3.5 px-3 text-center">
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-muted text-xs font-bold text-foreground border border-border/60 shadow-2xs">
+              #{node.sort_order ?? 0}
+            </span>
+          </td>
+        )}
+
+        {/* Status */}
+        {visibleColumns.status !== false && (
+          <td className="py-3.5 px-3">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+              node.is_active 
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${node.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
               {node.is_active ? t('products.active') : t('products.inactive')}
             </span>
           </td>
-          <td className="text-right pr-4">
+        )}
+
+        {/* Actions */}
+        <td className="py-3.5 pr-4 text-right">
+          {recycleBinMode ? (
+            <div className="flex items-center justify-end gap-1">
+              <button
+                onClick={() => restoreMutation.mutate(node.id)}
+                className="p-1.5 hover:bg-muted rounded-lg text-indigo-500 hover:text-indigo-600 transition-colors"
+                title="Restore"
+              >
+                <RefreshCw size={14} />
+              </button>
+              <button
+                onClick={() => setDeleteTarget(node)}
+                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
+                title="Permanent Delete"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ) : (
             <TableActionMenu
               onEdit={() => openEditModal(node)}
               onDelete={() => setDeleteTarget(node)}
             />
-          </td>
-        </tr>
-      )
-      
+          )}
+        </td>
+      </tr>
+    )
+  }
+
+  // Render tree rows recursively
+  const renderTreeRows = (nodes: TreeCategory[], depth = 0): React.ReactNode[] => {
+    let rows: React.ReactNode[] = []
+    nodes.forEach(node => {
+      const isExpanded = expandedNodes[node.id] ?? true
+      const hasChildren = node.children && node.children.length > 0
+      rows.push(renderCategoryRow(node, depth, true))
       if (hasChildren && isExpanded) {
         rows = rows.concat(renderTreeRows(node.children!, depth + 1))
       }
     })
-    
     return rows
   }
 
@@ -460,10 +652,10 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setRecycleBinMode(!recycleBinMode)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors
                              ${recycleBinMode 
-                               ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20' 
-                               : 'bg-card border-border text-muted-foreground hover:text-foreground'}`}
+                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20' 
+                                : 'bg-card border-border text-muted-foreground hover:text-foreground'}`}
                 >
                   <Trash size={15} />
                   {recycleBinMode ? t('products.recycleBin') : t('products.trash')}
@@ -471,7 +663,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
                 <button
                   onClick={handleExport}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground transition-colors shadow-2xs"
                 >
                   <Download size={15} />
                   {t('products.exportCSV')}
@@ -479,7 +671,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
                 <button
                   onClick={() => setImportOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground transition-colors shadow-2xs"
                 >
                   <Upload size={15} />
                   {t('products.importCSV')}
@@ -501,7 +693,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
       {/* Bulk actions panel */}
       {selectedRows.length > 0 && (
-        <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
+        <div className="flex items-center justify-between p-3.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 rounded-2xl shadow-xs">
           <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium">
             <AlertCircle size={16} />
             <span>{selectedRows.length} {t('products.selectedCount')}</span>
@@ -511,7 +703,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
               <>
                 <button
                   onClick={() => bulkRestoreMutation.mutate(selectedRows)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-colors shadow-xs"
                 >
                   <RefreshCw size={13} />
                   {t('products.restoreSelected')}
@@ -523,7 +715,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                       setSelectedRows([])
                     }
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-colors shadow-xs"
                 >
                   <Trash size={13} />
                   {t('products.permanentDelete')}
@@ -532,7 +724,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
             ) : (
               <button
                 onClick={() => setBulkDeleteConfirmOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-500 cursor-pointer transition-colors shadow-xs"
               >
                 <Trash size={13} />
                 {t('products.deleteSelected')}
@@ -548,30 +740,59 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <SearchInput value={search} onChange={setSearch} placeholder={t('common.search')} />
-          <ResetButton onClick={() => { setSearch(''); setSortBy('sort_order'); setSortOrderField('asc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
+      {/* Filters Toolbar */}
+      <div className="bg-card rounded-2xl border border-border p-3.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchInput value={search} onChange={setSearch} placeholder="products.searchCategories" />
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+              setPage(1)
+            }}
+            className="h-10 px-3.5 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all shadow-sm cursor-pointer"
+          >
+            <option value="all">{t('common.allStatus', 'All Status')}</option>
+            <option value="active">{t('common.active', 'Active')}</option>
+            <option value="inactive">{t('common.inactive', 'Inactive')}</option>
+          </select>
+
+          <ResetButton onClick={() => { setSearch(''); setStatusFilter('all'); setSortBy('sort_order'); setSortOrderField('asc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
+          
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['categories'] })}
-              title="Refresh"
-              className="p-2 text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm cursor-pointer"
+              title={t('products.refresh', 'Refresh')}
+              className="h-10 w-10 flex items-center justify-center text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/80 transition-all shadow-sm active:scale-[0.98] cursor-pointer"
             >
               <RefreshCw size={15} />
             </button>
+
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'category', label: t('products.colCategory', 'Category') },
+                { key: 'parent', label: t('products.parentCategory', 'Parent') },
+                { key: 'slug', label: t('products.colSlug', 'Slug') },
+                { key: 'products_count', label: t('products.productsCount', 'Products') },
+                { key: 'description', label: t('products.colDescription', 'Description') },
+                { key: 'sort_order', label: t('products.colSortOrder', 'Sort Order') },
+                { key: 'status', label: t('products.colStatus', 'Status') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={setVisibleColumns}
+            />
           </div>
         </div>
       </div>
 
-      {/* Table / Tree view container */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+      {/* Categories Table */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs">
         <TableWrapper isFetching={isFetching}>
           <table className="w-full data-table">
             <thead>
-              <tr className="border-b border-border bg-muted/40">
-                <th className="w-12 text-center">
+              <tr className="border-b border-border bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
+                <th className="w-12 text-center py-3.5">
                   <input
                     type="checkbox"
                     checked={categories.length > 0 && selectedRows.length === categories.length}
@@ -585,121 +806,76 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
                   />
                 </th>
-                <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colName')} {renderSortIcon('name')}
+                {visibleColumns.category !== false && (
+                  <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5 font-semibold">
+                    {t('products.colCategory', 'Category')} {renderSortIcon('name')}
+                  </th>
+                )}
+                {visibleColumns.parent !== false && (
+                  <th onClick={() => handleSort('parent_id')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5 font-semibold">
+                    {t('products.parentCategory', 'Parent')} {renderSortIcon('parent_id')}
+                  </th>
+                )}
+                {visibleColumns.slug !== false && (
+                  <th onClick={() => handleSort('slug')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5 font-semibold">
+                    {t('products.colSlug', 'Slug')} {renderSortIcon('slug')}
+                  </th>
+                )}
+                {visibleColumns.products_count !== false && (
+                  <th className="text-center py-3.5 font-semibold">
+                    {t('products.productsCount', 'Products')}
+                  </th>
+                )}
+                {visibleColumns.description !== false && (
+                  <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5 font-semibold">
+                    {t('products.colDescription', 'Description')} {renderSortIcon('description')}
+                  </th>
+                )}
+                {visibleColumns.sort_order !== false && (
+                  <th onClick={() => handleSort('sort_order')} className="text-center cursor-pointer hover:bg-muted/65 select-none py-3.5 w-24 font-semibold">
+                    {t('products.colSortOrder', 'Sort')} {renderSortIcon('sort_order')}
+                  </th>
+                )}
+                {visibleColumns.status !== false && (
+                  <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5 w-28 font-semibold">
+                    {t('products.colStatus', 'Status')} {renderSortIcon('is_active')}
+                  </th>
+                )}
+                <th className="text-right pr-4 py-3.5 select-none w-24 font-semibold">
+                  {t('products.colActions', 'Actions')}
                 </th>
-                <th onClick={() => handleSort('slug')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colSlug')} {renderSortIcon('slug')}
-                </th>
-                <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colDescription')} {renderSortIcon('description')}
-                </th>
-                <th onClick={() => handleSort('sort_order')} className="text-center cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  {t('products.colSortOrder')} {renderSortIcon('sort_order')}
-                </th>
-                <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  {t('products.colStatus')} {renderSortIcon('is_active')}
-                </th>
-                <th className="text-right pr-4 py-3 select-none w-28">{t('products.colActions')}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="w-12"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
-                    <td><div className="skeleton h-4 w-32 rounded" /></td>
-                    <td><div className="skeleton h-4 w-28 rounded" /></td>
-                    <td><div className="skeleton h-4 w-48 rounded" /></td>
-                    <td><div className="skeleton h-4 w-12 rounded mx-auto" /></td>
-                    <td><div className="skeleton h-4 w-16 rounded" /></td>
-                    <td><div className="skeleton h-4 w-12 rounded ml-auto pr-4" /></td>
+                  <tr key={i} className="border-b border-border/40">
+                    <td className="w-12 py-3.5"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
+                    <td className="py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="skeleton h-12 w-12 rounded-2xl shrink-0" />
+                        <div className="space-y-1.5">
+                          <div className="skeleton h-4 w-28 rounded" />
+                          <div className="skeleton h-3 w-20 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-20 rounded-xl" /></td>
+                    <td className="py-3.5"><div className="skeleton h-5 w-24 rounded-lg" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-16 rounded-xl mx-auto" /></td>
+                    <td className="py-3.5"><div className="skeleton h-4 w-40 rounded" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-10 rounded-lg mx-auto" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-16 rounded-full" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-8 rounded-lg ml-auto pr-4" /></td>
                   </tr>
                 ))
               ) : isTreeView ? (
                 renderTreeRows(treeData)
               ) : (
-                categories.map((cat) => (
-                  <tr key={cat.id} className="group border-b border-border/40 hover:bg-muted/30">
-                    <td className="w-12 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.includes(cat.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRows(prev => [...prev, cat.id])
-                          } else {
-                            setSelectedRows(prev => prev.filter(id => id !== cat.id))
-                          }
-                        }}
-                        className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
-                      />
-                    </td>
-                    <td className="font-medium text-foreground text-sm py-3 flex items-center gap-2">
-                      {cat.image ? (
-                        <img 
-                          src={getAbsoluteImageUrl(cat.image)} 
-                          alt={cat.name} 
-                          className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                      ) : (
-                        <Folder size={16} className="text-indigo-500 flex-shrink-0" />
-                      )}
-                      <span>{cat.name}</span>
-                    </td>
-                    <td className="text-muted-foreground font-mono text-xs">{cat.slug}</td>
-                    <td className="text-muted-foreground text-sm">{cat.description ?? '—'}</td>
-                    <td className="text-muted-foreground text-sm text-center">{cat.sort_order ?? 0}</td>
-                    <td>
-                      <span className={cat.is_active ? 'badge-success' : 'badge-muted'}>
-                        {cat.is_active ? t('products.active') : t('products.inactive')}
-                      </span>
-                    </td>
-                    <td className="text-right pr-4">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {recycleBinMode ? (
-                          <>
-                            <button
-                              onClick={() => restoreMutation.mutate(cat.id)}
-                              className="p-1.5 hover:bg-muted rounded-lg text-indigo-500 hover:text-indigo-600 transition-colors"
-                              title="Restore"
-                            >
-                              <RefreshCw size={14} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(cat)}
-                              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-                              title="Permanent Delete"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => openEditModal(cat)}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(cat)}
-                              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                categories.map((cat) => renderCategoryRow(cat, 0, false))
               )}
               {!isLoading && categories.length === 0 && (
-                <EmptyState cols={7} />
+                <EmptyState cols={9} />
               )}
             </tbody>
           </table>
@@ -715,133 +891,224 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         />
       </div>
 
-      {/* Category Create/Edit Modal */}
+      {/* Clean Enterprise Category Create/Edit Modal */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
+              initial={{ scale: 0.96, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 8 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="bg-card border border-border/80 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingCategory ? t('pageContent.Edit Category') : t('pageContent.Add Category')}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground transition-colors">
+              {/* Clean Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-muted/15">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-xs">
+                    <Folder size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-foreground leading-tight">
+                      {editingCategory ? t('pageContent.Edit Category', 'Edit Category') : t('products.addCategory', 'Add Category')}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {editingCategory ? t('products.editCategoryDesc', 'Modify category attributes, parent relation and media') : t('products.addCategoryDesc', 'Create a new catalog category for organizing products')}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={closeModal} 
+                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                  title={t('common.cancel', 'Close')}
+                >
                   <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('pageContent.Name')}</label>
-                    <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      placeholder={t('forms.categoryName', 'Category Name')}
-                      className="form-input"
-                    />
-                  </div>
+              {/* Form Body */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+                {/* Category Name */}
+                <div>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colCategory', 'Category Name')} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder={t('products.categoryNamePlaceholder', 'e.g. Smartphones, Laptops, Keyboards...')}
+                    className="form-input text-sm rounded-xl py-2.5 px-3.5 bg-background border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
 
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.parentCategory')}</label>
-                    <ModernSelect
-                      value={parentId}
-                      onChange={(val) => setParentId(String(val))}
-                      options={[
-                        { value: '', label: t('products.rootCategory') },
-                        ...dropdownCats
-                          .filter(c => !editingCategory || (c.id !== editingCategory.id && c.parent_id !== editingCategory.id))
-                          .map(c => ({ value: c.id, label: c.name })),
-                      ]}
-                      placeholder={t('products.parentCategory')}
-                      buttonClassName="font-normal text-sm border-border bg-card cursor-pointer"
-                    />
-                  </div>
+                {/* Parent Category */}
+                <div>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.parentCategory', 'Parent Category')}
+                  </label>
+                  <ModernSelect
+                    value={parentId}
+                    onChange={(val) => setParentId(String(val))}
+                    options={[
+                      { value: '', label: t('products.rootCategoryOption', 'Root Level (No Parent)') },
+                      ...dropdownCats
+                        .filter(c => !editingCategory || (c.id !== editingCategory.id && c.parent_id !== editingCategory.id))
+                        .map(c => ({ value: c.id, label: c.name })),
+                    ]}
+                    placeholder={t('products.parentCategoryPlaceholder', 'Select parent category')}
+                    buttonClassName="font-normal text-sm border-border/80 bg-background cursor-pointer rounded-xl py-2.5"
+                  />
+                </div>
 
+                {/* Sort Order & Status Compact Card */}
+                <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-muted/25 border border-border/60 items-center">
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.sortOrder')}</label>
+                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                      {t('products.sortOrder', 'Sort Order')}
+                    </label>
                     <input
                       type="number"
                       value={sortOrder}
                       onChange={(e) => setSortOrder(e.target.value)}
                       min="0"
-                      className="form-input"
+                      className="form-input text-xs rounded-xl py-1.5 px-3 bg-background border-border/80"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm font-medium text-muted-foreground">{t('products.colStatus')}</span>
+                  <div className="flex items-center justify-between pl-3 border-l border-border/50">
+                    <div>
+                      <span className="block text-xs font-bold text-foreground">{t('products.colStatus', 'Status')}</span>
+                      <span className="text-[11px] text-muted-foreground">{isActive ? t('products.active', 'Active') : t('products.inactive', 'Inactive')}</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsActive(!isActive)}
-                      className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
+                      className="text-primary hover:opacity-80 transition-opacity cursor-pointer shrink-0"
                     >
-                      {isActive ? <ToggleRight size={36} /> : <ToggleLeft size={36} className="text-muted-foreground" />}
+                      {isActive ? <ToggleRight size={34} /> : <ToggleLeft size={34} className="text-muted-foreground" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Category Image picker */}
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">{t('products.categoryImage')}</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-xl border border-border overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+                {/* Clean Image / Media Card */}
+                <div className="p-4 rounded-2xl bg-muted/25 border border-border/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      {t('products.categoryImage', 'Category Image / Cover')}
+                    </label>
+                    <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/50 text-[11px] font-medium">
+                      <button
+                        type="button"
+                        onClick={() => setImageMode('upload')}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                          imageMode === 'upload' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {t('products.uploadFileTab', 'Upload')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageMode('url')}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                          imageMode === 'url' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {t('products.imageUrlTab', 'URL')}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3.5">
+                    {/* Visual Preview Box */}
+                    <div className="w-16 h-16 rounded-2xl border border-border/80 overflow-hidden bg-background flex items-center justify-center shrink-0 shadow-2xs relative group">
                       {imagePreview ? (
                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <ImageIcon className="text-muted-foreground/45" size={24} />
+                        <ImageIcon className="text-muted-foreground/35" size={24} />
                       )}
                     </div>
-                    <div className="flex-grow">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                        id="category-image-upload"
-                      />
-                      <label
-                        htmlFor="category-image-upload"
-                        className="inline-flex items-center justify-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted cursor-pointer transition-colors"
-                      >
-                        {t('products.uploadImage')}
-                      </label>
-                      <p className="text-xs text-muted-foreground mt-1">{t('products.imageRecommendation')}</p>
+
+                    {/* Mode Inputs */}
+                    <div className="flex-grow space-y-1.5 min-w-0">
+                      {imageMode === 'upload' ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                            id="clean-category-image-upload"
+                          />
+                          <label
+                            htmlFor="clean-category-image-upload"
+                            className="inline-flex items-center justify-center px-3.5 py-1.5 border border-border/80 rounded-xl text-xs font-semibold text-foreground bg-background hover:bg-muted cursor-pointer transition-colors shadow-2xs"
+                          >
+                            <Upload size={13} className="mr-1.5" />
+                            {t('products.uploadImage', 'Choose File')}
+                          </label>
+
+                          {imagePreview && (
+                            <button
+                              type="button"
+                              onClick={() => { setImageFile(null); setImagePreview(null); setImageUrl(''); }}
+                              className="px-2.5 py-1.5 text-xs text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
+                            >
+                              {t('common.remove', 'Remove')}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <input
+                          type="url"
+                          value={imageUrl}
+                          onChange={(e) => {
+                            setImageUrl(e.target.value)
+                            if (e.target.value) setImagePreview(e.target.value)
+                          }}
+                          placeholder={t('products.pasteImageUrl', 'Paste image URL (https://...)')}
+                          className="form-input text-xs rounded-xl py-1.5 px-3 bg-background border-border/80 w-full"
+                        />
+                      )}
+                      <p className="text-[10px] text-muted-foreground">{t('products.imageRecommendation', 'Recommended 400x400 JPG, PNG or WebP')}</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">{t('pageContent.Description')}</label>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colDescription', 'Description')}
+                  </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('pageContent.Description')}
-                    rows={3}
-                    className="form-input resize-none"
+                    placeholder={t('products.categoryDescPlaceholder', 'Short overview about products in this category...')}
+                    rows={2}
+                    className="form-input text-sm rounded-xl py-2 px-3 bg-background border-border/80 resize-none"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+                {/* Clean Footer Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/60">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg hover:opacity-90 shadow-sm flex items-center gap-1.5"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md shadow-primary/20 flex items-center gap-2 transition-all cursor-pointer"
                   >
-                    {(createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {editingCategory ? t('common.save') : t('common.create')}
+                    {(createMutation.isPending || updateMutation.isPending) ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                    <span>{editingCategory ? t('common.save', 'Save Changes') : t('products.addCategory', 'Create Category')}</span>
                   </button>
                 </div>
               </form>
@@ -853,22 +1120,22 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       {/* CSV Import Modal */}
       <AnimatePresence>
         {importOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              className="bg-card border border-border rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">{t('products.importCSV')}</h3>
-                <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
+                <h3 className="font-semibold text-base text-foreground">{t('products.importCSV')}</h3>
+                <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X size={18} />
                 </button>
               </div>
 
               <form onSubmit={handleImport} className="p-6 space-y-4">
-                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/10 transition-colors">
+                <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:bg-muted/10 transition-colors">
                   <Upload className="mx-auto text-muted-foreground mb-2" size={32} />
                   <input
                     type="file"
@@ -888,14 +1155,14 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   <button
                     type="button"
                     onClick={() => setImportOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg"
+                    className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-xl cursor-pointer"
                   >
                     {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={importing || !importFile}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg flex items-center gap-1.5"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 cursor-pointer"
                   >
                     {importing && <Loader2 size={14} className="animate-spin" />}
                     {t('products.importCSV')}
@@ -910,17 +1177,10 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('categories.deleteTitle', 'Delete Category')}
-        message={
-          <div>
-            <div>{t('categories.confirmDeleteCategoryMessage', 'Are you sure you want to delete category')}</div>
-            <div className="mt-1">
-              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
-            </div>
-          </div>
-        }
-        confirmText={t('categories.deleteTitle', 'Delete Category')}
-        cancelText={t('common.cancel', 'Cancel')}
+        title="categories.deleteTitle"
+        itemName={deleteTarget?.name}
+        confirmText="common.confirmDelete"
+        cancelText="common.cancel"
         onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {

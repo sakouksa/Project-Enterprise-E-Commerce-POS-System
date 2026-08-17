@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Customer\Customer;
 use App\Models\Customer\CustomerGroup;
 use App\Models\Order\Order;
+use App\Models\Sales\Sale;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -158,26 +159,35 @@ class CustomerController extends BaseApiController
             ->whereDate('created_at', now()->toDateString())
             ->count();
 
-        // Orders placed today that belong to any customer
-        $todayOrders = Order::whereDate('created_at', now()->toDateString())
+        // Orders & Sales placed today that belong to any customer
+        $todayOrders = Sale::whereDate('date', now()->toDateString())
+            ->whereNotNull('customer_id')
+            ->count() + Order::whereDate('created_at', now()->toDateString())
             ->whereNotNull('customer_id')
             ->count();
 
-        // Revenue from today's customer orders
-        $todayRevenue = (float) Order::whereDate('created_at', now()->toDateString())
+        // Revenue from today's customer sales and orders
+        $todayRevenue = (float) Sale::whereDate('date', now()->toDateString())
             ->whereNotNull('customer_id')
+            ->where('status', 'completed')
+            ->sum('grand_total') + (float) Order::whereDate('created_at', now()->toDateString())
+            ->whereNotNull('customer_id')
+            ->where('status', 'completed')
             ->sum('grand_total');
 
-        // Orders with pending payment status
-        $pendingPayments = Order::where('payment_status', 'pending')
+        // Orders/Sales with pending payment status
+        $pendingPayments = Sale::where('status', 'pending')
+            ->whereNotNull('customer_id')
+            ->count() + Order::where('payment_status', 'pending')
             ->whereNotNull('customer_id')
             ->count();
 
         // Customers who have an outstanding balance (paid less than total)
-        $creditCustomers = Order::whereNotNull('customer_id')
-            ->whereColumn('paid_amount', '<', 'grand_total')
-            ->distinct('customer_id')
-            ->count('customer_id');
+        $creditCustomerIds = array_unique(array_merge(
+            Sale::whereNotNull('customer_id')->whereColumn('paid_amount', '<', 'grand_total')->pluck('customer_id')->toArray(),
+            Order::whereNotNull('customer_id')->whereColumn('paid_amount', '<', 'grand_total')->pluck('customer_id')->toArray()
+        ));
+        $creditCustomers = count($creditCustomerIds);
 
         return response()->json([
             'success' => true,
@@ -208,7 +218,14 @@ class CustomerController extends BaseApiController
      */
     public function show(int $id): JsonResponse
     {
-        $customer = Customer::with(['group', 'user', 'addresses'])->findOrFail($id);
+        $customer = Customer::with([
+            'group',
+            'user',
+            'addresses',
+            'sales' => function ($q) {
+                $q->latest()->limit(15)->with(['items']);
+            }
+        ])->findOrFail($id);
         return $this->successResponse($customer);
     }
 

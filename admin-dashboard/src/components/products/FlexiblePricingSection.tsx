@@ -187,14 +187,14 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
               <SlidersHorizontal size={15} />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">{t('products.calcModeLabel', 'Calculation Mode')}</h4>
-              <p className="text-[11px] text-muted-foreground">{t('products.calcModeSubText', 'Choose how selling price and margins are computed')}</p>
+              <h4 className="text-xs font-bold text-foreground">{t('calcModeLabel', 'របៀបកំណត់តម្លៃ')}</h4>
+              <p className="text-[11px] text-muted-foreground">{t('calcModeSubText', 'ជ្រើសរើសរបៀបគណនាតម្លៃលក់ និងប្រាក់ចំណេញ')}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Currency Exchange Pill */}
-            <div className="flex items-center gap-1.5 bg-muted/40 hover:bg-muted px-2.5 py-1 rounded-lg border border-border/60 text-xs transition-all select-none">
+            <div className="flex items-center gap-1.5 bg-muted/40 hover:bg-muted px-2.5 py-1.5 rounded-xl border border-border/60 text-xs transition-all select-none">
               <Coins size={13} className="text-amber-500 shrink-0" />
               {!showExchangeRateInput ? (
                 <div className="flex items-center gap-1">
@@ -204,7 +204,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                     type="button"
                     onClick={() => setShowExchangeRateInput(true)}
                     className="p-0.5 hover:text-primary text-muted-foreground transition-colors cursor-pointer"
-                    title={t('products.editExchangeRate', 'Edit Exchange Rate')}
+                    title={t('editExchangeRate', 'កែប្រែអត្រាប្តូរប្រាក់')}
                   >
                     <RefreshCw size={11} />
                   </button>
@@ -216,13 +216,13 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                     type="number"
                     value={exchangeRate}
                     onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 4100)}
-                    className="w-14 bg-card border border-primary/50 rounded px-1 text-foreground font-mono text-xs focus:outline-none"
+                    className="w-16 bg-background border border-primary rounded-md px-1.5 py-0.5 text-foreground font-mono text-xs focus:outline-none"
                   />
                   <span className="text-muted-foreground">៛</span>
                   <button
                     type="button"
                     onClick={() => setShowExchangeRateInput(false)}
-                    className="px-1.5 py-0.5 bg-primary text-primary-foreground font-bold rounded text-[10px] cursor-pointer"
+                    className="px-2 py-0.5 bg-primary text-primary-foreground font-bold rounded text-[10px] cursor-pointer"
                   >
                     OK
                   </button>
@@ -242,7 +242,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                 }`}
               >
                 <DollarSign size={13} />
-                <span>{t('products.calcManual', 'Manual')}</span>
+                <span>{t('calcManual', 'បញ្ចូលផ្ទាល់')}</span>
               </button>
 
               <button
@@ -258,7 +258,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                 }`}
               >
                 <Percent size={13} />
-                <span>{t('products.calcMarginPct', 'Margin %')}</span>
+                <span>{t('calcMarginPct', 'តាម % ចំណេញ')}</span>
               </button>
 
               <button
@@ -274,7 +274,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                 }`}
               >
                 <TrendingUp size={13} />
-                <span>{t('products.calcTargetProfit', 'Target Profit $')}</span>
+                <span>{t('calcTargetProfit', 'តាម $ ចំណេញ')}</span>
               </button>
             </div>
           </div>
@@ -286,7 +286,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Percent size={13} className="text-primary" />
-                {t('products.targetMarginLabel', 'Target Margin %')}
+                {t('targetMarginLabel', 'ភាគរយចំណេញគោលដៅ (%)')}
               </span>
               <div className="relative w-28">
                 <input
@@ -307,7 +307,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
 
             <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-primary/20">
               <span className="text-[11px] font-medium text-muted-foreground mr-1">
-                {t('products.quickMarginPreset', 'Quick Presets:')}
+                {t('quickMarginPreset', 'ភាគរយរហ័ស:')}
               </span>
               {[10, 15, 20, 25, 30, 35, 40, 50, 60, 75].map((pct) => (
                 <button
@@ -332,10 +332,10 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
                 <TrendingUp size={13} className="text-emerald-600 dark:text-emerald-400" />
-                {t('products.targetProfitLabel', 'Target Profit $')}
+                {t('targetProfitLabel', 'ប្រាក់ចំណេញគោលដៅ ($)')}
               </span>
-              <div className="relative w-32">
-                <span className="absolute left-2.5 top-1 text-xs font-bold text-emerald-600">$</span>
+              <div className="relative w-32 flex items-center">
+                <span className="absolute left-2.5 text-xs font-bold text-emerald-600 pointer-events-none">$</span>
                 <input
                   type="number"
                   step="0.5"
@@ -344,33 +344,33 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                     setTargetProfitUSD(e.target.value)
                     applyTargetProfit(e.target.value)
                   }}
-                  className="form-input text-xs font-bold font-mono py-1 pr-2 pl-6 rounded-lg border-emerald-500/50 bg-background text-foreground w-full"
+                  className="form-input text-xs font-bold font-mono py-1 pr-2 pl-7 rounded-lg border-emerald-500/50 bg-background text-foreground w-full"
                 />
               </div>
             </div>
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-              {t('products.targetProfitFormula', 'ថ្លៃលក់ = ថ្លៃដើម + ប្រាក់ចំណេញគោលដៅ')}
+              {t('targetProfitFormula', 'ថ្លៃលក់ = ថ្លៃដើម + ប្រាក់ចំណេញគោលដៅ')}
             </p>
           </div>
         )}
       </div>
 
       {/* ─── Ultra-Clean Price Inputs Grid ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         {/* Cost Price */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1">
-            {t('products.colCostPrice', 'Cost Price')} ($)
+          <label className="block text-xs font-semibold text-foreground/90 mb-1">
+            {t('colCostPrice', 'ថ្លៃដើម ($)')}
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-2 text-xs font-bold text-muted-foreground">$</span>
+          <div className="relative flex items-center">
+            <span className="absolute left-3 text-xs font-bold text-muted-foreground pointer-events-none">$</span>
             <input
               type="number"
               step="0.01"
               value={costPrice}
               onChange={(e) => handleCostChange(e.target.value)}
               placeholder="0.00"
-              className="form-input text-sm font-bold font-mono w-full pl-7 pr-3 py-1.5"
+              className="form-input w-full h-9 pl-8 pr-3 py-1.5 text-xs sm:text-[13px] font-bold font-mono rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
           <div className="text-[11px] font-mono text-muted-foreground mt-1">
@@ -381,10 +381,10 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
         {/* Selling Price */}
         <div>
           <label className="block text-xs font-semibold text-primary mb-1">
-            {t('products.colSellingPrice', 'Selling Price')} ($) <span className="text-red-500">*</span>
+            {t('colSellingPrice', 'ថ្លៃលក់ ($)')} <span className="text-red-500">*</span>
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-2 text-xs font-bold text-primary">$</span>
+          <div className="relative flex items-center">
+            <span className="absolute left-3 text-xs font-bold text-primary pointer-events-none">$</span>
             <input
               type="number"
               step="0.01"
@@ -395,7 +395,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                 onSellingPriceChange(e.target.value)
               }}
               placeholder="0.00"
-              className="form-input text-sm font-bold font-mono w-full pl-7 pr-3 py-1.5 border-primary/60 focus:ring-2 focus:ring-primary/20 bg-primary/5 text-foreground"
+              className="form-input w-full h-9 pl-8 pr-3 py-1.5 text-xs sm:text-[13px] font-bold font-mono rounded-lg border border-primary/60 bg-primary/5 focus:ring-2 focus:ring-primary/20 text-foreground transition-all"
             />
           </div>
           <div className="text-[11px] font-mono font-semibold text-primary mt-1">
@@ -405,18 +405,18 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
 
         {/* Compare-at Price */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1">
-            {t('products.comparePrice', 'Compare-at Price')} ($)
+          <label className="block text-xs font-semibold text-foreground/90 mb-1">
+            {t('comparePrice', 'តម្លៃប្រៀបធៀប ($)')}
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-2 text-xs font-bold text-muted-foreground">$</span>
+          <div className="relative flex items-center">
+            <span className="absolute left-3 text-xs font-bold text-muted-foreground pointer-events-none">$</span>
             <input
               type="number"
               step="0.01"
               value={comparePrice}
               onChange={(e) => onComparePriceChange(e.target.value)}
               placeholder="0.00"
-              className="form-input text-sm font-bold font-mono w-full pl-7 pr-3 py-1.5"
+              className="form-input w-full h-9 pl-8 pr-3 py-1.5 text-xs sm:text-[13px] font-bold font-mono rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
           <div className="text-[11px] font-mono text-muted-foreground mt-1">
@@ -430,7 +430,7 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
         {/* Profit Card */}
         <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block truncate">
-            {t('products.expectedProfit', 'Profit')}
+            {t('expectedProfit', 'ប្រាក់ចំណេញ')}
           </span>
           <div className={`text-base font-bold font-mono ${profitUSD >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
             {formatUSD(profitUSD)}
@@ -443,39 +443,39 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
         {/* Margin % Card */}
         <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block truncate">
-            {t('products.marginPctLabel', 'Margin %')}
+            {t('profitMargin', 'Margin %')}
           </span>
           <div className={`text-base font-bold font-mono ${marginPct >= 20 ? 'text-emerald-600 dark:text-emerald-400' : marginPct >= 10 ? 'text-amber-600' : 'text-slate-600'}`}>
             {marginPct.toFixed(1)}%
           </div>
           <span className="text-[10px] text-muted-foreground block">
-            {t('products.profitOverSelling', 'Profit / Selling')}
+            {t('profitOverSelling', 'ចំណេញ / ថ្លៃលក់')}
           </span>
         </div>
 
         {/* Markup % Card */}
         <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block truncate">
-            {t('products.markupPctLabel', 'Markup %')}
+            {t('markupPctLabel', 'Markup %')}
           </span>
           <div className="text-base font-bold font-mono text-primary">
             {markupPct.toFixed(1)}%
           </div>
           <span className="text-[10px] text-muted-foreground block">
-            {t('products.profitOverCost', 'Profit / Cost')}
+            {t('profitOverCost', 'ចំណេញ / ថ្លៃដើម')}
           </span>
         </div>
 
         {/* Discount % Card */}
         <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block truncate">
-            {t('products.discountLabel', 'Discount %')}
+            {t('discountLabel', 'បញ្ចុះតម្លៃ %')}
           </span>
           <div className={`text-base font-bold font-mono ${discountPct > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
             {discountPct > 0 ? `${discountPct.toFixed(0)}% OFF` : '0%'}
           </div>
           <span className="text-[10px] text-muted-foreground block truncate">
-            {discountPct > 0 ? t('products.saveAmount', 'Save {{amount}}', { amount: formatUSD(savingsUSD) }) : t('products.noDiscount', 'No discount')}
+            {discountPct > 0 ? t('saveAmount', 'សន្សំ {{amount}}', { amount: formatUSD(savingsUSD) }) : t('noDiscount', 'គ្មានការបញ្ចុះតម្លៃ')}
           </span>
         </div>
       </div>
@@ -505,45 +505,49 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
 
       {/* ─── Tax Calculation Accordion (Optional) ─── */}
       {showTaxSelector && (
-        <div className="bg-card border border-border/80 rounded-2xl shadow-2xs overflow-hidden">
+        <div className="bg-card border border-border/80 rounded-xl shadow-2xs overflow-hidden">
           <button
             type="button"
             onClick={() => setIsTaxDetailsOpen(!isTaxDetailsOpen)}
-            className="w-full p-4 flex items-center justify-between text-xs font-bold text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+            className="w-full p-3.5 flex items-center justify-between text-xs font-bold text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2">
-              <Coins size={16} className="text-indigo-600 dark:text-indigo-400" />
-              <span>{t('products.taxBreakdownTitle', 'ការគណនាបូកបញ្ចូលពន្ធ')}</span>
+              <div className="p-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                <Coins size={15} />
+              </div>
+              <span className="text-xs sm:text-sm font-bold">{t('products.taxBreakdownTitle', 'ការគណនាបូកបញ្ចូលពន្ធ (Tax Inclusion Breakdown)')}</span>
               {selectedTax && (
-                <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-[10px] font-bold border border-indigo-500/20">
                   {selectedTax.name} ({selectedTax.rate}%)
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="text-[11px] font-normal">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="text-[11px] font-medium">
                 {isTaxDetailsOpen ? t('products.hideTaxDetails', 'លាក់ព៌តមានពន្ធ') : t('products.showTaxDetails', 'មើលព័ត៌មានលម្អិតពន្ធ')}
               </span>
-              {isTaxDetailsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {isTaxDetailsOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
             </div>
           </button>
 
           {isTaxDetailsOpen && (
-            <div className="p-4 pt-0 border-t border-border/50 space-y-3 mt-3 animate-in fade-in duration-200">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 pt-3 border-t border-border/60 space-y-3.5 animate-in fade-in duration-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 {onTaxIdChange && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{t('products.selectTaxRule', 'ជ្រើសរើសច្បាប់ពន្ធ:')}</span>
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground/90 mb-1">
+                      {t('products.selectTaxRule', 'ជ្រើសរើសច្បាប់ពន្ធ (Tax Rule)')}
+                    </label>
                     <select
                       value={taxId}
                       onChange={(e) => onTaxIdChange(e.target.value)}
-                      className="form-select text-xs py-1.5 px-3 rounded-xl border border-border/80 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 cursor-pointer font-medium shadow-2xs dark:[color-scheme:dark]"
+                      className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] font-medium rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
                     >
-                      <option value="" className="bg-card text-foreground dark:bg-slate-900 dark:text-slate-100">
-                        {t('products.noTax', 'គ្មានច្បាប់ពន្ធ')}
+                      <option value="">
+                        {t('products.noTax', 'គ្មានច្បាប់ពន្ធ (No Tax - 0%)')}
                       </option>
                       {taxes.map((tx) => (
-                        <option key={tx.id} value={tx.id} className="bg-card text-foreground dark:bg-slate-900 dark:text-slate-100">
+                        <option key={tx.id} value={tx.id}>
                           {tx.name} ({tx.rate}%)
                         </option>
                       ))}
@@ -551,51 +555,53 @@ export const FlexiblePricingSection: React.FC<FlexiblePricingSectionProps> = ({
                   </div>
                 )}
 
-                <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={priceIncludesTax}
-                    onChange={(e) => setPriceIncludesTax(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
-                  />
-                  <span>{t('products.taxInclusive', 'តម្លៃបូកបញ្ចូលពន្ធរួច')}</span>
-                </label>
+                <div className="h-9 flex items-center px-3.5 bg-muted/20 border border-border/80 rounded-lg">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs sm:text-[13px] font-medium text-foreground w-full">
+                    <input
+                      type="checkbox"
+                      checked={priceIncludesTax}
+                      onChange={(e) => setPriceIncludesTax(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
+                    />
+                    <span>{t('products.taxInclusive', 'តម្លៃលក់បានបូកបញ្ចូលពន្ធរួច (Tax Inclusive)')}</span>
+                  </label>
+                </div>
               </div>
 
               {taxRate > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
-                  <div className="bg-muted/20 p-3 rounded-xl border border-border/60">
-                    <span className="text-muted-foreground block text-[11px]">
+                  <div className="bg-muted/20 p-3 rounded-lg border border-border/60 space-y-0.5">
+                    <span className="text-muted-foreground block text-[11px] font-medium">
                       {t('products.netSellingPrice', 'ថ្លៃលក់សុទ្ធ (មុនពន្ធ)')}
                     </span>
-                    <span className="font-mono font-bold text-foreground text-sm mt-0.5 block">
+                    <span className="font-mono font-bold text-foreground text-sm block">
                       {formatUSD(netSellingUSD)}
                     </span>
                     <span className="text-[10px] text-muted-foreground font-mono">{formatKHR(netSellingUSD)}</span>
                   </div>
 
-                  <div className="bg-primary/5 p-3 rounded-xl border border-primary/30">
+                  <div className="bg-primary/5 p-3 rounded-lg border border-primary/30 space-y-0.5">
                     <span className="text-primary block text-[11px] font-semibold">
                       {t('products.taxAmount', 'ប្រាក់ពន្ធ')} ({taxRate}%)
                     </span>
-                    <span className="font-mono font-bold text-primary text-sm mt-0.5 block">
+                    <span className="font-mono font-bold text-primary text-sm block">
                       +{formatUSD(taxAmountUSD)}
                     </span>
                     <span className="text-[10px] text-primary/80 font-mono">{formatKHR(taxAmountUSD)}</span>
                   </div>
 
-                  <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/30">
+                  <div className="bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/30 space-y-0.5">
                     <span className="text-emerald-600 dark:text-emerald-400 block text-[11px] font-semibold">
                       {t('products.grossSellingPrice', 'ថ្លៃលក់សរុប (ក្រោយពន្ធ)')}
                     </span>
-                    <span className="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm mt-0.5 block">
+                    <span className="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm block">
                       {formatUSD(grossSellingUSD)}
                     </span>
                     <span className="text-[10px] text-emerald-600/80 font-mono">{formatKHR(grossSellingUSD)}</span>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground italic pt-1">
+                <p className="text-[11px] text-muted-foreground italic pt-0.5">
                   {t('products.taxHelpText', 'ជ្រើសរើសច្បាប់ពន្ធខាងលើដើម្បីមើលការបែងចែកថ្លៃដើម និងពន្ធសរុប។')}
                 </p>
               )}

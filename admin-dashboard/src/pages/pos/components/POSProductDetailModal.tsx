@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   X, ShoppingCart, Tag, ShieldCheck, Check, Layers, Barcode, Warehouse, Palette, Sparkles,
-  Monitor, Smartphone, Laptop, Watch, Keyboard, Headphones, Zap, Footprints, Shirt
+  Monitor, Smartphone, Laptop, Watch, Keyboard, Headphones, Camera, Zap, Footprints, Shirt, Ban
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Product, ProductVariant } from '../types'
+import { sound } from '@/utils/sound'
+import { useToast } from '@/hooks/useToast'
 
 interface POSProductDetailModalProps {
   product: Product | null
@@ -18,6 +20,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
   onAddToCart,
 }) => {
   const { t } = useTranslation(['pos', 'common'])
+  const toast = useToast()
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined)
   const [imei, setImei] = useState('')
   const [activeImgIndex, setActiveImgIndex] = useState(0)
@@ -48,11 +51,11 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
     if (v.attributes && Array.isArray(v.attributes) && v.attributes.length > 0) {
       const specAttr = v.attributes.find((a: any) => {
         const name = (a.attribute_name || a.attribute?.name || a.name || '').toLowerCase()
-        return ['size', 'spec', 'storage', 'ram', 'capacity', 'display', 'dimension', 'switch', 'screen', 'wattage'].includes(name)
+        return ['size', 'spec', 'storage', 'ram', 'capacity', 'display', 'dimension', 'switch', 'screen', 'wattage', 'lens', 'resolution', 'shoe', 'clothing'].some(k => name.includes(k))
       })
       const colorAttr = v.attributes.find((a: any) => {
         const name = (a.attribute_name || a.attribute?.name || a.name || '').toLowerCase()
-        return ['color', 'colour'].includes(name)
+        return ['color', 'colour', 'shade'].some(k => name.includes(k))
       })
       if (specAttr) spec = specAttr.value || (specAttr as any).attribute_value || ''
       if (colorAttr) color = colorAttr.value || (colorAttr as any).attribute_value || ''
@@ -70,6 +73,8 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
       let parts: string[] = []
       if (cleanName.includes('/')) {
         parts = cleanName.split('/').map(p => p.trim()).filter(Boolean)
+      } else if (cleanName.includes(' - ')) {
+        parts = cleanName.split(' - ').map(p => p.trim()).filter(Boolean)
       } else if (cleanName.includes('-')) {
         parts = cleanName.split('-').map(p => p.trim()).filter(Boolean)
       } else {
@@ -81,7 +86,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
         'natural titanium', 'titanium gray', 'titanium grey', 'desert titanium', 'titanium',
         'gold', 'rose gold', 'red', 'blue', 'green', 'purple', 'pink', 'orange', 'yellow',
         'midnight', 'starlight', 'gray', 'grey', 'brown', 'cyan', 'magenta', 'teal', 'navy',
-        'violet', 'beige', 'charcoal', 'emerald', 'amber',
+        'violet', 'beige', 'charcoal', 'emerald', 'amber', 'retro gray', 'pure white', 'triple black',
         'ខ្មៅ', 'ស', 'ប្រាក់', 'ប្រផេះ', 'ក្រហម', 'ខៀវ', 'មាស', 'លឿង', 'ស្វាយ', 'ផ្កាឈូក', 'ទឹកក្រូច', 'ត្នោត'
       ]
 
@@ -90,10 +95,10 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
         if (/\b\d+\s*(gb|tb|mb|g|t)\b/i.test(t)) return true
         if (/\b\d+\s*gb\s*\/\s*\d+\s*(gb|tb)\b/i.test(t)) return true
         if (/\d+(\.\d+)?\s*("|inch|in)\b/i.test(t) || /\b(fhd|qhd|4k|uhd|1080p|144hz|165hz|curved|ultrawide)\b/i.test(t)) return true
-        if (/\b\d+\s*mm\b/i.test(t) || /\b(gps|cellular)\b/i.test(t)) return true
+        if (/\b\d+\s*mm\b/i.test(t) || /\b(gps|cellular|ultra)\b/i.test(t)) return true
         if (/\b(eu|us|uk)\s*\d+\b/i.test(t) || /^size\s*\d+/i.test(t)) return true
-        if (/^size\s*(xs|s|m|l|xl|xxl|xxxl|free size)$/i.test(t) || /^(xs|s|m|l|xl|xxl|xxxl|free size)$/i.test(t)) return true
-        if (/\b(switch|wired|bluetooth|rgb|w|gan|pro zoom|kit lens)\b/i.test(t)) return true
+        if (/^(xs|s|m|l|xl|xxl|xxxl|free size)$/i.test(t)) return true
+        if (/\b(switch|wired|bluetooth|rgb|w|gan|pro zoom|kit lens|body only|studio|cinema|wireless|noise canceling|fast charger)\b/i.test(t)) return true
         return false
       }
 
@@ -142,32 +147,70 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
 
   // Dynamic Label Generator based on Category or Spec text
   const getSpecGroupHeader = (specSample: string, catName: string): { title: string; Icon: React.ElementType } => {
-    const combined = `${catName} ${specSample}`.toLowerCase()
-    if (combined.includes('gb') || combined.includes('tb') || combined.includes('mb') || combined.includes('ram') || combined.includes('storage') || /\b\d+g\b/.test(combined)) {
-      return { title: 'Storage / RAM (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Smartphone }
+    const c = (catName || '').toLowerCase()
+    const s = (specSample || '').toLowerCase()
+
+    if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone')) {
+      return { title: 'Storage & RAM (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Smartphone }
     }
-    if (combined.includes('"') || combined.includes('fhd') || combined.includes('qhd') || combined.includes('4k') || combined.includes('hz') || combined.includes('curved') || combined.includes('monitor') || combined.includes('display') || combined.includes('screen')) {
-      return { title: 'Display Size / Hz (ទំហំអេក្រង់)', Icon: Monitor }
+    if (c.includes('laptop') || c.includes('computer') || c.includes('macbook')) {
+      return { title: 'RAM & SSD Spec (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Laptop }
     }
-    if (combined.includes('mm') || combined.includes('gps') || combined.includes('cellular') || combined.includes('watch')) {
+    if (c.includes('monitor') || c.includes('display') || c.includes('screen')) {
+      return { title: 'Display Size & Resolution (ទំហំអេក្រង់)', Icon: Monitor }
+    }
+    if (c.includes('watch') || c.includes('smartwatch')) {
       return { title: 'Case Size & Connectivity (ទំហំប្រអប់)', Icon: Watch }
     }
-    if (combined.includes('switch') || combined.includes('rgb') || combined.includes('tkl') || combined.includes('keyboard')) {
-      return { title: 'Switch Type / Spec (ប្រភេទ Switch)', Icon: Keyboard }
+    if (c.includes('keyboard')) {
+      return { title: 'Switch Type & Format (ប្រភេទ Switch)', Icon: Keyboard }
     }
-    if (combined.includes('wired') || combined.includes('bluetooth') || combined.includes('anc') || combined.includes('audio') || combined.includes('speaker') || combined.includes('headphone')) {
-      return { title: 'Type / Connectivity (ប្រភេទកាស / បាស)', Icon: Headphones }
+    if (c.includes('headphone') || c.includes('speaker') || c.includes('audio') || c.includes('earbud') || c.includes('sound') || c.includes('mice') || c.includes('mouse')) {
+      return { title: 'Audio Type & Connectivity (ប្រភេទកាស / បាស)', Icon: Headphones }
     }
-    if (combined.includes('w') || combined.includes('gan') || combined.includes('usb') || combined.includes('charger')) {
-      return { title: 'Output Wattage (កម្លាំងសាក Watt)', Icon: Zap }
+    if (c.includes('camera') || c.includes('lens')) {
+      return { title: 'Lens Kit & Sensor Spec (លក្ខណៈ Lens)', Icon: Camera }
     }
-    if (combined.includes('eu') || combined.includes('shoe') || combined.includes('sneaker')) {
+    if (c.includes('charger') || c.includes('power') || c.includes('adapter')) {
+      return { title: 'Output Wattage & Ports (កម្លាំងសាក Watt)', Icon: Zap }
+    }
+    if (c.includes('shoe') || c.includes('sneaker') || c.includes('footwear')) {
       return { title: 'Shoe Size (ទំហំស្បែកជើង)', Icon: Footprints }
     }
-    if (combined.includes('s') || combined.includes('m') || combined.includes('l') || combined.includes('xl') || combined.includes('xxl') || combined.includes('apparel') || combined.includes('clothing')) {
-      return { title: 'Size (ទំហំអាវ)', Icon: Shirt }
+    if (c.includes('apparel') || c.includes('clothing') || c.includes('shirt') || c.includes('fashion') || c.includes('dress')) {
+      return { title: 'Clothing Size (ទំហំសម្លៀកបំពាក់)', Icon: Shirt }
     }
-    return { title: 'Specs / Size / Options (ជម្រើសលក្ខណៈ)', Icon: Sparkles }
+
+    // Spec content fallbacks
+    if (/\b(gb|tb|mb|ram|storage)\b/i.test(s)) {
+      return { title: 'Storage / RAM (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Smartphone }
+    }
+    if (/\b(fhd|qhd|4k|uhd|144hz|165hz|curved|ultrawide)\b/i.test(s) || /"/i.test(s)) {
+      return { title: 'Display Size & Resolution (ទំហំអេក្រង់)', Icon: Monitor }
+    }
+    if (/\b(gps|cellular|ultra)\b/i.test(s) || /\b\d+mm\b/i.test(s)) {
+      return { title: 'Case Size & Connectivity (ទំហំប្រអប់)', Icon: Watch }
+    }
+    if (/\b(switch|tkl|rgb)\b/i.test(s)) {
+      return { title: 'Switch Type & Format (ប្រភេទ Switch)', Icon: Keyboard }
+    }
+    if (/\b(wired|bluetooth|wireless|anc|noise canceling|studio)\b/i.test(s)) {
+      return { title: 'Audio Type & Connectivity (ប្រភេទកាស / បាស)', Icon: Headphones }
+    }
+    if (/\b(lens|body only|zoom|cinema)\b/i.test(s)) {
+      return { title: 'Lens Kit & Sensor Spec (លក្ខណៈ Lens)', Icon: Camera }
+    }
+    if (/\b(watt|usb-c|gan|\d+w)\b/i.test(s)) {
+      return { title: 'Output Wattage & Ports (កម្លាំងសាក Watt)', Icon: Zap }
+    }
+    if (/\b(eu\s*\d+|us\s*\d+|uk\s*\d+)\b/i.test(s)) {
+      return { title: 'Shoe Size (ទំហំស្បែកជើង)', Icon: Footprints }
+    }
+    if (/^(xs|s|m|l|xl|xxl|xxxl|free size)$/i.test(s.trim())) {
+      return { title: 'Clothing Size (ទំហំសម្លៀកបំពាក់)', Icon: Shirt }
+    }
+
+    return { title: 'Options & Specifications (ជម្រើសលក្ខណៈ)', Icon: Sparkles }
   }
 
   // Extract available specs dynamically from product variants
@@ -290,8 +333,15 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
 
 
   const currentPrice = selectedVariant?.selling_price ?? (product.selling_price || 0)
+  const currentStock = Number(selectedVariant ? (selectedVariant.stock ?? product.stock ?? 0) : (product.stock ?? 0))
+  const isOutOfStock = currentStock <= 0
 
   const handleAdd = () => {
+    if (isOutOfStock) {
+      sound.playError()
+      toast.error(t('productOutOfStock', `ទំនិញ "${product.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+      return
+    }
     onAddToCart(product, selectedVariant, imei.trim() || undefined)
     onClose()
   }
@@ -461,10 +511,17 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
         <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-muted/30 border border-border/60 text-xs">
           <div>
             <span className="text-muted-foreground block text-[10px]">{t('availableStock', 'Available Stock')}</span>
-            <span className="font-bold text-foreground flex items-center gap-1">
-              <Warehouse size={12} className="text-emerald-500" />
-              {product.stock ?? 50} {t('units', 'units')}
-            </span>
+            {isOutOfStock ? (
+              <span className="font-bold text-rose-500 flex items-center gap-1">
+                <Ban size={12} />
+                0 {t('units', 'units')} ({t('outOfStock', 'អស់ពីស្តុក')})
+              </span>
+            ) : (
+              <span className="font-bold text-foreground flex items-center gap-1">
+                <Warehouse size={12} className="text-emerald-500" />
+                {currentStock} {t('units', 'units')}
+              </span>
+            )}
           </div>
           <div>
             <span className="text-muted-foreground block text-[10px]">{t('unitTaxVat', 'Unit Tax / VAT')}</span>
@@ -477,12 +534,25 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
 
         {/* ── 4. 1688 STYLED BOTTOM FULL-WIDTH ACTION BUTTON (បន្ថែមទៅរទេះ) ────────────── */}
         <div className="pt-2 border-t border-border/60">
-          <button
-            onClick={handleAdd}
-            className="w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
-          >
-            <ShoppingCart size={18} /> {t('addToSaleCart', 'បន្ថែមទៅរទេះ')}
-          </button>
+          {isOutOfStock ? (
+            <button
+              type="button"
+              disabled={true}
+              onClick={handleAdd}
+              className="w-full py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 cursor-not-allowed shadow-none"
+            >
+              <Ban size={18} className="text-rose-500" />
+              <span>{t('outOfStockCannotSell', 'អស់ពីស្តុក - មិនអាចលក់បានទេ')}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
+            >
+              <ShoppingCart size={18} /> {t('addToSaleCart', 'បន្ថែមទៅរទេះ')}
+            </button>
+          )}
         </div>
 
       </div>

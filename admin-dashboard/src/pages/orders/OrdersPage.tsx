@@ -316,17 +316,18 @@ const OrdersPage: React.FC = () => {
 
             {/* Slide-out Modern Filter Drawer Trigger Button */}
             <button
+              type="button"
               onClick={() => setFilterDrawerOpen(true)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border transition-all shadow-2xs cursor-pointer ${
+              className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
                 activeFiltersCount > 0
-                  ? 'bg-primary/10 border-primary text-primary font-semibold'
-                  : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15'
+                  : 'border-border bg-card text-foreground hover:bg-muted/80'
               }`}
             >
-              <Filter size={14} />
-              <span>{t('filters')}</span>
+              <Filter size={15} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+              <span>{t('filters', 'Filter')}</span>
               {activeFiltersCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-primary text-white">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground leading-none">
                   {activeFiltersCount}
                 </span>
               )}
@@ -336,11 +337,12 @@ const OrdersPage: React.FC = () => {
           </div>
 
           <button
+            type="button"
             onClick={() => qc.invalidateQueries({ queryKey: ['orders'] })}
-            className="p-2 bg-card border border-border rounded-xl text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-2xs"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
             title="Refresh"
           >
-            <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>

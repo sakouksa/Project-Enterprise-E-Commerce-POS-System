@@ -14,7 +14,7 @@ export const BusinessAlertsWidget: React.FC<BusinessAlertsWidgetProps> = ({ aler
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm space-y-3 animate-pulse">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3 animate-pulse">
         <div className="h-4 w-32 bg-muted rounded" />
         <div className="h-12 bg-muted rounded-xl" />
       </div>
@@ -22,14 +22,14 @@ export const BusinessAlertsWidget: React.FC<BusinessAlertsWidgetProps> = ({ aler
   }
 
   return (
-    <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4 border-b border-border/40 pb-3">
-        <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+    <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
+      <div className="flex items-center justify-between mb-3.5 border-b border-border/40 pb-3">
+        <h3 className="font-extrabold text-sm sm:text-base text-foreground flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
-          {t('dashboard.businessAlerts')}
+          <span>{t('dashboard.businessAlerts')}</span>
         </h3>
-        <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-full">
-          {alerts?.length || 0} {t('common.active', 'Active')}
+        <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-2.5 py-0.5 rounded-full border border-amber-500/20">
+          {alerts?.length || 0} {t('dashboard.active', 'Active')}
         </span>
       </div>
 
@@ -67,7 +67,7 @@ export const BusinessAlertsWidget: React.FC<BusinessAlertsWidgetProps> = ({ aler
         ) : (
           <div className="py-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            {t('dashboard.allStockHealthy', 'All systems & business metrics are healthy')}
+            {t('dashboard.allSystemsHealthy', 'All systems & business metrics are healthy')}
           </div>
         )}
       </div>

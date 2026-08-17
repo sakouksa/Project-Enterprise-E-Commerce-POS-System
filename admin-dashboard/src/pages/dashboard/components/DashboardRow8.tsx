@@ -6,9 +6,9 @@ export const DashboardRow8: React.FC = () => {
   const { t } = useTranslation()
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {/* Traffic & Conversion Metrics */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
           <Globe2 className="w-4 h-4 text-blue-500" />
           {t('dashboard.webConversionMetrics', 'Web Conversion Metrics')}
@@ -26,7 +26,7 @@ export const DashboardRow8: React.FC = () => {
       </div>
 
       {/* Top Visited Pages */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-3">
           {t('dashboard.topViewedPages', 'Top Viewed Pages')}
         </h4>
@@ -38,14 +38,14 @@ export const DashboardRow8: React.FC = () => {
           ].map((page, idx) => (
             <div key={idx} className="flex justify-between items-center text-xs border-b border-border/20 pb-2 last:border-0 last:pb-0">
               <span className="text-muted-foreground font-semibold truncate max-w-[165px]">{page.path}</span>
-              <span className="font-bold text-foreground flex-shrink-0">{page.views}</span>
+              <span className="font-bold text-foreground shrink-0">{page.views}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Device Breakdown */}
-      <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+      <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs md:col-span-2 lg:col-span-1">
         <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-4">
           {t('dashboard.visitorDevices', 'Visitor Devices')}
         </h4>

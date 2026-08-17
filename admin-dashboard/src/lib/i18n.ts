@@ -9,7 +9,7 @@ export const namespaces = [
   'inventory', 'customers', 'customer', 'suppliers', 'sales', 'purchases', 'purchase', 'employees', 'employee',
   'settings', 'setting', 'reports', 'report', 'auth', 'tables', 'table', 'forms', 'form', 'pagination', 'errors', 'empty',
   'confirm', 'deleteConfirm', 'finance', 'logs', 'marketing', 'mobile',
-  'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website', 'pos', 'orders', 'order'
+  'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website', 'pos', 'orders', 'order', 'security'
 ]
 
 // Expose runtime translation dictionaries for React.createElement interceptor
@@ -26,14 +26,19 @@ function buildDictForNS(en: any, active: any) {
           const enTrimmed = enVal.trim()
           const keyTrimmed = key.trim()
 
-          activeDict[enTrimmed] = activeVal
-          activeLowerDict[enTrimmed.toLowerCase()] = activeVal
+          // Do not map pure numbers or error status codes (e.g. 500, 404) as text translations
+          if (!/^\d+$/.test(enTrimmed)) {
+            activeDict[enTrimmed] = activeVal
+            activeLowerDict[enTrimmed.toLowerCase()] = activeVal
+          }
 
-          activeDict[keyTrimmed] = activeVal
-          activeLowerDict[keyTrimmed.toLowerCase()] = activeVal
+          if (!/^\d+$/.test(keyTrimmed)) {
+            activeDict[keyTrimmed] = activeVal
+            activeLowerDict[keyTrimmed.toLowerCase()] = activeVal
 
-          const spacedKey = keyTrimmed.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')
-          activeLowerDict[spacedKey.toLowerCase()] = activeVal
+            const spacedKey = keyTrimmed.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')
+            activeLowerDict[spacedKey.toLowerCase()] = activeVal
+          }
         } else if (typeof enVal === 'object' && typeof activeVal === 'object') {
           buildDictForNS(enVal, activeVal)
         }
@@ -58,6 +63,14 @@ export function buildActiveDict() {
 export function translateString(text: string): string {
   const trimmed = text.trim()
   if (!trimmed) return text
+
+  // NEVER translate pure numbers, currency values, percentages, or numeric codes (e.g. 500, 750, 1,000, 250)
+  if (/^[\d,.\s%$#+\-/:()]+$/.test(trimmed) && /\d/.test(trimmed)) {
+    return text
+  }
+  if (!isNaN(Number(trimmed.replace(/[,\s]/g, '')))) {
+    return text
+  }
 
   if (activeDict[trimmed]) {
     const lead = text.match(/^\s*/)?.[0] || ''

@@ -1,6 +1,7 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, RotateCcw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import ModernSelect from '@/components/shared/ModernSelect'
+import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
 
 interface EmployeeFilterDrawerProps {
   isOpen: boolean
@@ -31,236 +32,126 @@ interface EmployeeFilterDrawerProps {
   onReset: () => void
 }
 
+const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    {children}
+  </div>
+)
+
+const inputCls = "w-full text-xs font-semibold rounded-xl bg-card border border-border/80 hover:border-primary/40 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all py-2.5 px-3.5 text-foreground shadow-2xs"
+
 export const EmployeeFilterDrawer: React.FC<EmployeeFilterDrawerProps> = ({
-  isOpen,
-  onClose,
-  branchesList = [],
-  deptList = [],
-  posList = [],
-  filterBranchId,
-  setFilterBranchId,
-  filterDeptId,
-  setFilterDeptId,
-  filterPosId,
-  setFilterPosId,
-  filterRole,
-  setFilterRole,
-  filterStatus,
-  setFilterStatus,
-  filterGender,
-  setFilterGender,
-  filterDateStart,
-  setFilterDateStart,
-  filterDateEnd,
-  setFilterDateEnd,
-  filterSalaryMin,
-  setFilterSalaryMin,
-  filterSalaryMax,
-  setFilterSalaryMax,
+  isOpen, onClose,
+  branchesList = [], deptList = [], posList = [],
+  filterBranchId, setFilterBranchId,
+  filterDeptId, setFilterDeptId,
+  filterPosId, setFilterPosId,
+  filterRole, setFilterRole,
+  filterStatus, setFilterStatus,
+  filterGender, setFilterGender,
+  filterDateStart, setFilterDateStart,
+  filterDateEnd, setFilterDateEnd,
+  filterSalaryMin, setFilterSalaryMin,
+  filterSalaryMax, setFilterSalaryMax,
   onReset,
 }) => {
+  const { t } = useTranslation(['employees', 'common'])
+  const activeCount = [filterBranchId, filterDeptId, filterPosId, filterRole, filterStatus, filterGender, filterDateStart, filterDateEnd, filterSalaryMin, filterSalaryMax].filter(Boolean).length
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40"
-            onClick={onClose}
-          />
-          {/* Drawer Panel */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
-          >
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between p-5 border-b border-border bg-card">
-              <div className="flex items-center gap-2">
-                <Filter size={16} className="text-primary" />
-                <h3 className="font-bold text-base text-foreground">
-                  Advanced Employee Filters
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+    <FilterDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      onReset={onReset}
+      title={t('employees.advanced_filters', 'Advanced Employee Filters')}
+      activeCount={activeCount}
+    >
+      <FL label={t('employees.branch', 'Branch')}>
+        <ModernSelect
+          value={filterBranchId}
+          onChange={setFilterBranchId}
+          options={[{ value: '', label: t('employees.all_branches', 'All Branches') }, ...branchesList.map((b: any) => ({ value: String(b.id), label: b.name }))]}
+          placeholder={t('employees.all_branches', 'All Branches')}
+        />
+      </FL>
 
-            {/* Drawer Body Content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-card">
-              {/* Branch Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Branch</label>
-                <select
-                  value={filterBranchId}
-                  onChange={e => setFilterBranchId(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
-                >
-                  <option value="">All Branches</option>
-                  {branchesList.map((b: any) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+      <FL label={t('employees.department', 'Department')}>
+        <ModernSelect
+          value={filterDeptId}
+          onChange={setFilterDeptId}
+          options={[{ value: '', label: t('employees.all_departments', 'All Departments') }, ...deptList.map((d: any) => ({ value: String(d.id), label: d.name }))]}
+          placeholder={t('employees.all_departments', 'All Departments')}
+        />
+      </FL>
 
-              {/* Department Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Department</label>
-                <select
-                  value={filterDeptId}
-                  onChange={e => setFilterDeptId(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
-                >
-                  <option value="">All Departments</option>
-                  {deptList.map((d: any) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
+      <FL label={t('employees.position', 'Position')}>
+        <ModernSelect
+          value={filterPosId}
+          onChange={setFilterPosId}
+          options={[{ value: '', label: t('employees.all_positions', 'All Positions') }, ...posList.map((p: any) => ({ value: String(p.id), label: p.name }))]}
+          placeholder={t('employees.all_positions', 'All Positions')}
+        />
+      </FL>
 
-              {/* Position Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Position</label>
-                <select
-                  value={filterPosId}
-                  onChange={e => setFilterPosId(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
-                >
-                  <option value="">All Positions</option>
-                  {posList.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
+      <FL label={t('employees.role', 'Role')}>
+        <ModernSelect
+          value={filterRole}
+          onChange={setFilterRole}
+          options={[
+            { value: '', label: t('employees.all_roles', 'All Roles') },
+            { value: 'admin', label: t('employees.admin', 'Admin') },
+            { value: 'manager', label: t('employees.manager', 'Manager') },
+            { value: 'staff', label: t('employees.staff', 'Staff') },
+          ]}
+          placeholder={t('employees.all_roles', 'All Roles')}
+        />
+      </FL>
 
-              {/* Role Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Role</label>
-                <select
-                  value={filterRole}
-                  onChange={e => setFilterRole(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
-                >
-                  <option value="">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
-                  <option value="staff">Staff</option>
-                </select>
-              </div>
+      <FL label={t('employees.employment_status', 'Employment Status')}>
+        <ModernSelect
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={[
+            { value: '', label: t('employees.all_statuses', 'All Statuses') },
+            { value: 'active', label: t('employees.active', 'Active') },
+            { value: 'inactive', label: t('employees.inactive', 'Inactive') },
+            { value: 'resigned', label: t('employees.resigned', 'Resigned') },
+          ]}
+          placeholder={t('employees.all_statuses', 'All Statuses')}
+        />
+      </FL>
 
-              {/* Employment Status Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Employment Status</label>
-                <select
-                  value={filterStatus}
-                  onChange={e => setFilterStatus(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
-                >
-                  <option value="">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="resigned">Resigned</option>
-                </select>
-              </div>
+      <FL label={t('employees.gender', 'Gender')}>
+        <ModernSelect
+          value={filterGender}
+          onChange={setFilterGender}
+          options={[
+            { value: '', label: t('employees.all_genders', 'All Genders') },
+            { value: 'male', label: t('employees.male', 'Male') },
+            { value: 'female', label: t('employees.female', 'Female') },
+          ]}
+          placeholder={t('employees.all_genders', 'All Genders')}
+        />
+      </FL>
 
-              {/* Gender Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Gender</label>
-                <select
-                  value={filterGender}
-                  onChange={e => setFilterGender(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2 cursor-pointer"
-                >
-                  <option value="">All Genders</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
+      <FL label={t('employees.date_joined_from', 'Date Joined From')}>
+        <input type="date" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} className={inputCls} />
+      </FL>
 
-              {/* Date Joined / Date Range Filter */}
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Date Joined / Date Start</label>
-                <input
-                  type="date"
-                  value={filterDateStart}
-                  onChange={e => setFilterDateStart(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
-                />
-              </div>
+      <FL label={t('employees.date_joined_to', 'Date Joined To')}>
+        <input type="date" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} className={inputCls} />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Date Joined / Date End</label>
-                <input
-                  type="date"
-                  value={filterDateEnd}
-                  onChange={e => setFilterDateEnd(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
-                />
-              </div>
-
-              {/* Basic Salary Range */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Min Salary ($)</label>
-                  <input
-                    type="number"
-                    value={filterSalaryMin}
-                    onChange={e => setFilterSalaryMin(e.target.value)}
-                    placeholder="Min"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Max Salary ($)</label>
-                  <input
-                    type="number"
-                    value={filterSalaryMax}
-                    onChange={e => setFilterSalaryMax(e.target.value)}
-                    placeholder="Max"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Drawer Footer */}
-            <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={onReset}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl border border-border transition-colors"
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted border border-border rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      <div className="grid grid-cols-2 gap-2.5">
+        <FL label={t('employees.min_salary', 'Min Salary ($)')}>
+          <input type="number" value={filterSalaryMin} onChange={e => setFilterSalaryMin(e.target.value)} placeholder={t('employees.min', 'Min')} className={inputCls} />
+        </FL>
+        <FL label={t('employees.max_salary', 'Max Salary ($)')}>
+          <input type="number" value={filterSalaryMax} onChange={e => setFilterSalaryMax(e.target.value)} placeholder={t('employees.max', 'Max')} className={inputCls} />
+        </FL>
+      </div>
+    </FilterDrawerShell>
   )
 }
 

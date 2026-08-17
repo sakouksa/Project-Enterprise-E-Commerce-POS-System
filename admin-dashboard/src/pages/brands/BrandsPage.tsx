@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, Edit2, Trash2, X, Tag, ToggleLeft, ToggleRight, Loader2, 
-  ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, Image as ImageIcon
+  ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, 
+  Image as ImageIcon, Package, Sparkles, Save
 } from 'lucide-react'
 import api from '@/api/client'
 import { getAbsoluteImageUrl } from '@/utils/image'
@@ -16,11 +18,11 @@ import ResetButton from '@/components/shared/ResetButton'
 import EmptyState from '@/components/shared/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
-import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { ColumnSettingsPopover } from '@/components/shared/ColumnSettingsPopover'
 
 interface Brand {
   id: number
@@ -30,17 +32,41 @@ interface Brand {
   description?: string | null
   logo?: string | null
   is_active: boolean
+  products_count?: number
   deleted_at?: string | null
 }
 
+const getBrandVisuals = (name: string) => {
+  const n = (name || '').trim()
+  const initial = n.length > 0 ? n.slice(0, 2).toUpperCase() : 'BR'
+  const colors = [
+    'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+    'bg-sky-500/10 text-sky-500 border-sky-500/20',
+    'bg-violet-500/10 text-violet-500 border-violet-500/20',
+    'bg-rose-500/10 text-rose-500 border-rose-500/20',
+    'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    'bg-pink-500/10 text-pink-500 border-pink-500/20',
+  ]
+  const idx = (n.charCodeAt(0) || 0) % colors.length
+  return { initial, style: colors[idx] }
+}
+
 const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
-  const { t, i18n } = useTranslation(['products', 'common'])
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['products', 'common'])
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
 
-  // Open add modal when parent triggers it (parent auto-resets to 0 after 200ms)
+  // Open add modal ONLY when parent triggers it with a positive change
+  const prevTriggerRef = React.useRef(triggerAdd || 0)
   React.useEffect(() => {
-    if (triggerAdd && triggerAdd > 0) openCreateModal()
+    if (triggerAdd && triggerAdd > 0 && triggerAdd !== prevTriggerRef.current) {
+      openCreateModal()
+    }
+    prevTriggerRef.current = triggerAdd || 0
   }, [triggerAdd])
 
   const {
@@ -55,12 +81,20 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   } = useServerPagination({ storageKey: 'brands' })
 
   // UI state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Brand | null>(null)
   const [recycleBinMode, setRecycleBinMode] = useState(false)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    brand: true,
+    slug: true,
+    products_count: true,
+    description: true,
+    status: true,
+  })
 
   // CSV Import Modal
   const [importOpen, setImportOpen] = useState(false)
@@ -71,19 +105,20 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [logoUrl, setLogoUrl] = useState('')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   // Sorting states
   const [sortBy, setSortBy] = useState('id')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrder('desc')
+      setSortOrder('asc')
     }
     setPage(1)
   }
@@ -95,7 +130,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
 
   // Query
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['brands', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode],
+    queryKey: ['brands', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
     queryFn: () => api.get('/brands', { 
       params: { 
         page, 
@@ -103,7 +138,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
         per_page: perPage, 
         sort_by: sortBy, 
         sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : undefined
+        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
       } 
     }).then(r => r.data),
     placeholderData: (prev) => prev,
@@ -117,7 +152,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     mutationFn: (fd: FormData) => api.post('/brands', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('toast.created'))
+      toast.success(t('toast.created', { item: t('products.colBrand', 'Brand') }))
       closeModal()
     },
     onError: (err: any) => {
@@ -132,7 +167,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('toast.updated'))
+      toast.success(t('toast.updated', { item: t('products.colBrand', 'Brand') }))
       closeModal()
     },
     onError: (err: any) => {
@@ -144,12 +179,14 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     mutationFn: (id: number) => api.delete(`/brands/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
-      toast.success(t('toast.deleted'))
+      toast.success(t('toast.deleted', { item: t('products.colBrand', 'Brand') }))
       setDeleteTarget(null)
       adjustAfterDelete(brands.length)
+      setSelectedRows(r => r.filter(x => x !== deleteTarget?.id))
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error'))
+      setDeleteTarget(null)
     }
   })
 
@@ -170,10 +207,10 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.deleted'))
       setDeleteTarget(null)
-      adjustAfterDelete(brands.length)
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error'))
+      setDeleteTarget(null)
     }
   })
 
@@ -208,6 +245,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     setName('')
     setDescription('')
     setIsActive(true)
+    setLogoUrl('')
     setLogoFile(null)
     setLogoPreview(null)
     setModalOpen(true)
@@ -219,6 +257,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     setDescription(brand.description ?? '')
     setIsActive(brand.is_active)
     setLogoFile(null)
+    setLogoUrl(brand.logo?.startsWith('http') ? brand.logo : '')
     setLogoPreview(brand.logo ? getAbsoluteImageUrl(brand.logo) : null)
     setModalOpen(true)
   }
@@ -243,7 +282,11 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     fd.append('name', name)
     if (description) fd.append('description', description)
     fd.append('is_active', isActive ? '1' : '0')
-    if (logoFile) fd.append('logo', logoFile)
+    if (logoFile) {
+      fd.append('logo_file', logoFile)
+    } else if (logoUrl) {
+      fd.append('logo', logoUrl)
+    }
 
     if (editingBrand) {
       updateMutation.mutate({ id: editingBrand.id, fd })
@@ -302,8 +345,19 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
             action={
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setRecycleBinMode(!recycleBinMode)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors
+                             ${recycleBinMode 
+                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20' 
+                                : 'bg-card border-border text-muted-foreground hover:text-foreground'}`}
+                >
+                  <Trash size={15} />
+                  {recycleBinMode ? t('products.recycleBin') : t('products.trash')}
+                </button>
+
+                <button
                   onClick={handleExport}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground transition-colors shadow-2xs cursor-pointer"
                 >
                   <Download size={15} />
                   {t('products.exportCSV')}
@@ -311,7 +365,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
 
                 <button
                   onClick={() => setImportOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground transition-colors shadow-2xs cursor-pointer"
                 >
                   <Upload size={15} />
                   {t('products.importCSV')}
@@ -333,19 +387,43 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
 
       {/* Bulk actions panel */}
       {selectedRows.length > 0 && (
-        <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
+        <div className="flex items-center justify-between p-3.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 rounded-2xl shadow-xs">
           <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium">
             <AlertCircle size={16} />
             <span>{selectedRows.length} {t('products.selectedCount')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBulkDeleteConfirmOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500 cursor-pointer"
-            >
-              <Trash size={13} />
-              {t('products.deleteSelected')}
-            </button>
+            {recycleBinMode ? (
+              <>
+                <button
+                  onClick={() => bulkRestoreMutation.mutate(selectedRows)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-colors shadow-xs cursor-pointer"
+                >
+                  <RefreshCw size={13} />
+                  {t('products.restoreSelected')}
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm('Permanently delete selected brands? This cannot be undone.')) {
+                      selectedRows.forEach(id => forceDeleteMutation.mutate(id))
+                      setSelectedRows([])
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-colors shadow-xs cursor-pointer"
+                >
+                  <Trash size={13} />
+                  {t('products.permanentDelete')}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setBulkDeleteConfirmOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-500 cursor-pointer transition-colors shadow-xs"
+              >
+                <Trash size={13} />
+                {t('products.deleteSelected')}
+              </button>
+            )}
             <button
               onClick={() => setSelectedRows([])}
               className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 cursor-pointer"
@@ -356,30 +434,56 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <SearchInput value={search} onChange={setSearch} placeholder={t('products.searchBrands')} />
-          <ResetButton onClick={() => { setSearch(''); setSortBy('created_at'); setSortOrder('desc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
+      {/* Filters Toolbar */}
+      <div className="bg-card rounded-2xl border border-border p-3.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchInput value={search} onChange={setSearch} placeholder="products.searchBrands" />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+              setPage(1)
+            }}
+            className="h-10 px-3.5 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all shadow-sm cursor-pointer"
+          >
+            <option value="all">{t('common.allStatus', 'All Status')}</option>
+            <option value="active">{t('common.active', 'Active')}</option>
+            <option value="inactive">{t('common.inactive', 'Inactive')}</option>
+          </select>
+
+          <ResetButton onClick={() => { setSearch(''); setStatusFilter('all'); setSortBy('id'); setSortOrder('asc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['brands'] })}
-              title={t('products.refresh')}
-              className="p-2 text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm cursor-pointer"
+              title={t('products.refresh', 'Refresh')}
+              className="h-10 w-10 flex items-center justify-center text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/80 transition-all shadow-sm active:scale-[0.98] cursor-pointer"
             >
               <RefreshCw size={15} />
             </button>
+
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'brand', label: t('products.colBrand', 'Brand') },
+                { key: 'slug', label: t('products.colSlug', 'Slug') },
+                { key: 'products_count', label: t('products.productsCount', 'Products') },
+                { key: 'description', label: t('products.colDescription', 'Description') },
+                { key: 'status', label: t('products.colStatus', 'Status') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={setVisibleColumns}
+            />
           </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+      {/* Brands Table */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs">
         <TableWrapper isFetching={isFetching}>
           <table className="w-full data-table">
             <thead>
-              <tr className="border-b border-border bg-muted/40 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                <th className="w-12 text-center">
+              <tr className="border-b border-border bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider font-semibold">
+                <th className="w-12 text-center py-3.5">
                   <input
                     type="checkbox"
                     checked={brands.length > 0 && selectedRows.length === brands.length}
@@ -393,83 +497,190 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
                     className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
                   />
                 </th>
-                <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colBrand')} {renderSortIcon('name')}
-                </th>
-                <th onClick={() => handleSort('slug')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colSlug')} {renderSortIcon('slug')}
-                </th>
-                <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colDescription')} {renderSortIcon('description')}
-                </th>
-                <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  {t('products.colStatus')} {renderSortIcon('is_active')}
-                </th>
-                <th className="text-right pr-4 py-3 select-none w-28">{t('products.colActions')}</th>
+                {visibleColumns.brand !== false && (
+                  <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5">
+                    {t('products.colBrand', 'Brand')} {renderSortIcon('name')}
+                  </th>
+                )}
+                {visibleColumns.slug !== false && (
+                  <th onClick={() => handleSort('slug')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5">
+                    {t('products.colSlug', 'Slug')} {renderSortIcon('slug')}
+                  </th>
+                )}
+                {visibleColumns.products_count !== false && (
+                  <th className="text-center py-3.5">
+                    {t('products.productsCount', 'Products')}
+                  </th>
+                )}
+                {visibleColumns.description !== false && (
+                  <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5">
+                    {t('products.colDescription', 'Description')} {renderSortIcon('description')}
+                  </th>
+                )}
+                {visibleColumns.status !== false && (
+                  <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3.5 w-28">
+                    {t('products.colStatus', 'Status')} {renderSortIcon('is_active')}
+                  </th>
+                )}
+                <th className="text-right pr-4 py-3.5 select-none w-24">{t('products.colActions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="w-12"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
-                    <td><div className="skeleton h-4 w-32 rounded" /></td>
-                    <td><div className="skeleton h-4 w-28 rounded" /></td>
-                    <td><div className="skeleton h-4 w-48 rounded" /></td>
-                    <td><div className="skeleton h-4 w-16 rounded" /></td>
-                    <td><div className="skeleton h-4 w-12 rounded ml-auto pr-4" /></td>
+                  <tr key={i} className="border-b border-border/40">
+                    <td className="w-12 py-3.5"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
+                    <td className="py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="skeleton h-12 w-12 rounded-2xl shrink-0" />
+                        <div className="space-y-1.5">
+                          <div className="skeleton h-4 w-28 rounded" />
+                          <div className="skeleton h-3 w-16 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5"><div className="skeleton h-5 w-24 rounded-lg" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-16 rounded-xl mx-auto" /></td>
+                    <td className="py-3.5"><div className="skeleton h-4 w-44 rounded" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-16 rounded-full" /></td>
+                    <td className="py-3.5"><div className="skeleton h-6 w-8 rounded-lg ml-auto pr-4" /></td>
                   </tr>
                 ))
               ) : (
-                brands.map((brand) => (
-                  <tr key={brand.id} className="group border-b border-border/40 hover:bg-muted/30">
-                    <td className="w-12 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.includes(brand.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRows(prev => [...prev, brand.id])
-                          } else {
-                            setSelectedRows(prev => prev.filter(id => id !== brand.id))
-                          }
-                        }}
-                        className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
-                      />
-                    </td>
-                    <td className="font-medium text-foreground text-sm py-3 flex items-center gap-2">
-                      {brand.logo ? (
-                        <img 
-                          src={getAbsoluteImageUrl(brand.logo)} 
-                          alt={brand.name} 
-                          className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
+                brands.map((brand) => {
+                  const visuals = getBrandVisuals(brand.name)
+                  return (
+                    <tr key={brand.id} className="group border-b border-border/40 hover:bg-muted/30 transition-colors">
+                      {/* Checkbox */}
+                      <td className="w-12 text-center py-3.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(brand.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRows(prev => [...prev, brand.id])
+                            } else {
+                              setSelectedRows(prev => prev.filter(id => id !== brand.id))
+                            }
                           }}
+                          className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
                         />
-                      ) : (
-                        <Tag size={16} className="text-blue-500 flex-shrink-0" />
+                      </td>
+
+                      {/* Brand Logo & Name */}
+                      {visibleColumns.brand !== false && (
+                        <td className="py-3.5 pr-4">
+                          <div className="flex items-center gap-3.5">
+                            {/* Logo Avatar */}
+                            <div className="relative w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 overflow-hidden shrink-0 shadow-2xs group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300">
+                              {brand.logo ? (
+                                <img 
+                                  src={getAbsoluteImageUrl(brand.logo)} 
+                                  alt={brand.name} 
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-115"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none'
+                                  }}
+                                />
+                              ) : (
+                                <div className={`w-full h-full flex items-center justify-center font-bold text-xs border ${visuals.style}`}>
+                                  {visuals.initial}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Brand Info */}
+                            <div className="min-w-0 flex flex-col">
+                              <span className="font-semibold text-foreground text-sm leading-snug group-hover:text-primary transition-colors">
+                                {brand.name}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground/80 mt-0.5">
+                                {t('products.colBrand', 'Brand')}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
                       )}
-                      <span>{brand.name}</span>
-                    </td>
-                    <td className="text-muted-foreground font-mono text-xs">{brand.slug}</td>
-                    <td className="text-muted-foreground text-sm">{brand.description ?? '—'}</td>
-                    <td>
-                      <span className={brand.is_active ? 'badge-success' : 'badge-muted'}>
-                        {brand.is_active ? t('products.active') : t('products.inactive')}
-                      </span>
-                    </td>
-                    <td className="text-right pr-4">
-                      <TableActionMenu
-                        onEdit={() => openEditModal(brand)}
-                        onDelete={() => setDeleteTarget(brand)}
-                      />
-                    </td>
-                  </tr>
-                ))
+
+                      {/* Slug */}
+                      {visibleColumns.slug !== false && (
+                        <td className="py-3.5 px-3">
+                          <span className="font-mono text-xs text-muted-foreground bg-muted/70 px-2 py-0.5 rounded-lg border border-border/40">
+                            /{brand.slug}
+                          </span>
+                        </td>
+                      )}
+
+                      {/* Products Count */}
+                      {visibleColumns.products_count !== false && (
+                        <td className="py-3.5 px-3 text-center">
+                          <button
+                            onClick={() => navigate(`/products?tab=products&brand_id=${brand.id}`)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                            title="Filter products by this brand"
+                          >
+                            <Package size={13} />
+                            <span>{brand.products_count ?? 0}</span>
+                            <span className="text-[11px] opacity-80">{t('products.itemsCount', 'Items')}</span>
+                          </button>
+                        </td>
+                      )}
+
+                      {/* Description */}
+                      {visibleColumns.description !== false && (
+                        <td className="py-3.5 px-3">
+                          <span className="text-xs text-muted-foreground line-clamp-1 max-w-[240px]" title={brand.description ?? ''}>
+                            {brand.description || '—'}
+                          </span>
+                        </td>
+                      )}
+
+                      {/* Status */}
+                      {visibleColumns.status !== false && (
+                        <td className="py-3.5 px-3">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            brand.is_active 
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${brand.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                            {brand.is_active ? t('products.active') : t('products.inactive')}
+                          </span>
+                        </td>
+                      )}
+
+                      {/* Actions */}
+                      <td className="py-3.5 pr-4 text-right">
+                        {recycleBinMode ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => restoreMutation.mutate(brand.id)}
+                              className="p-1.5 hover:bg-muted rounded-lg text-indigo-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                              title="Restore"
+                            >
+                              <RefreshCw size={14} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(brand)}
+                              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+                              title="Permanent Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <TableActionMenu
+                            onEdit={() => openEditModal(brand)}
+                            onDelete={() => setDeleteTarget(brand)}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
               )}
               {!isLoading && brands.length === 0 && (
-                <EmptyState cols={6} />
+                <EmptyState cols={7} />
               )}
             </tbody>
           </table>
@@ -485,103 +696,164 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
         />
       </div>
 
-      {/* Brand Create/Edit Modal */}
+      {/* Clean Enterprise Brand Create/Edit Modal */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              initial={{ scale: 0.96, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 8 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="bg-card border border-border/80 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingBrand ? t('products.editBrand') : t('products.addBrand')}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+              {/* Clean Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-muted/15">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-xs">
+                    <Tag size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-foreground leading-tight">
+                      {editingBrand ? t('products.editBrand', 'Edit Brand') : t('products.addBrand', 'Add Brand')}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {editingBrand ? t('products.editBrandDesc', 'Update brand metadata and logo insignia') : t('products.addBrandDesc', 'Create a new manufacturer or brand mark')}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={closeModal} 
+                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                  title={t('common.cancel', 'Close')}
+                >
                   <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Form Body */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+                {/* Brand Name */}
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.colBrand')}</label>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colBrand', 'Brand Name')} <span className="text-red-500">*</span>
+                  </label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    placeholder={t('forms.brandNamePlaceholder', 'Brand Name (e.g., Apple, Nike)')}
-                    className="form-input"
+                    placeholder={t('products.brandNamePlaceholder', 'e.g. Apple, Samsung, Nike, Logitech...')}
+                    className="form-input text-sm rounded-xl py-2.5 px-3.5 bg-background border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
-                {/* Logo Image Picker */}
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">{t('products.colPhoto')}</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-xl border border-border overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+                {/* Status Card */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/25 border border-border/60">
+                  <div>
+                    <span className="block text-xs font-bold text-foreground">{t('products.colStatus', 'Status')}</span>
+                    <span className="text-[11px] text-muted-foreground">{isActive ? t('products.active', 'Active') : t('products.inactive', 'Inactive')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsActive(!isActive)}
+                    className="text-primary hover:opacity-80 transition-opacity cursor-pointer shrink-0"
+                  >
+                    {isActive ? <ToggleRight size={34} /> : <ToggleLeft size={34} className="text-muted-foreground" />}
+                  </button>
+                </div>
+
+                {/* Clean Image / Logo Card */}
+                <div className="p-4 rounded-2xl bg-muted/25 border border-border/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      {t('products.colPhoto', 'Brand Logo / Icon')}
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center gap-3.5">
+                    {/* Visual Preview Box */}
+                    <div className="w-16 h-16 rounded-2xl border border-border/80 overflow-hidden bg-background flex items-center justify-center shrink-0 shadow-2xs relative group">
                       {logoPreview ? (
-                        <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                        <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <ImageIcon className="text-muted-foreground/45" size={20} />
+                        <ImageIcon className="text-muted-foreground/35" size={24} />
                       )}
                     </div>
-                    <div className="flex-grow">
+
+                    {/* Logo Inputs */}
+                    <div className="flex-grow space-y-2 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          className="hidden"
+                          id="clean-brand-logo-upload"
+                        />
+                        <label
+                          htmlFor="clean-brand-logo-upload"
+                          className="inline-flex items-center justify-center px-3.5 py-1.5 border border-border/80 rounded-xl text-xs font-semibold text-foreground bg-background hover:bg-muted cursor-pointer transition-colors shadow-2xs"
+                        >
+                          <Upload size={13} className="mr-1.5" />
+                          {t('products.uploadLogo', 'Choose File')}
+                        </label>
+
+                        {logoPreview && (
+                          <button
+                            type="button"
+                            onClick={() => { setLogoFile(null); setLogoPreview(null); setLogoUrl(''); }}
+                            className="px-2.5 py-1.5 text-xs text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
+                          >
+                            {t('common.remove', 'Remove')}
+                          </button>
+                        )}
+                      </div>
+
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="hidden"
-                        id="brand-logo-upload"
+                        type="url"
+                        value={logoUrl}
+                        onChange={(e) => {
+                          setLogoUrl(e.target.value)
+                          if (e.target.value) setLogoPreview(e.target.value)
+                        }}
+                        placeholder={t('products.pasteImageUrl', 'Or paste logo URL (https://...)')}
+                        className="form-input text-xs rounded-xl py-1.5 px-3 bg-background border-border/80 w-full"
                       />
-                      <label
-                        htmlFor="brand-logo-upload"
-                        className="inline-flex items-center justify-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted cursor-pointer transition-colors"
-                      >
-                        {t('products.uploadLogo')}
-                      </label>
+                      <p className="text-[10px] text-muted-foreground">{t('products.uploadLogoRecommendation', 'Recommended 300x300 PNG, JPG or WebP')}</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.colDescription')}</label>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colDescription', 'Description')}
+                  </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('products.colDescription')}
-                    rows={3}
-                    className="form-input resize-none"
+                    placeholder={t('products.brandDescPlaceholder', 'Short overview about this brand...')}
+                    rows={2}
+                    className="form-input text-sm rounded-xl py-2 px-3 bg-background border-border/80 resize-none"
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">{t('products.colStatus')}</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsActive(!isActive)}
-                    className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
-                  >
-                    {isActive ? <ToggleRight size={36} /> : <ToggleLeft size={36} className="text-muted-foreground" />}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+                {/* Clean Footer Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/60">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg hover:opacity-90 shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md shadow-primary/20 flex items-center gap-2 transition-all cursor-pointer"
                   >
-                    {isSaving && <Loader2 size={14} className="animate-spin" />}
-                    {editingBrand ? t('common.save') : t('products.addBrand')}
+                    {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    <span>{editingBrand ? t('common.save', 'Save Changes') : t('products.addBrand', 'Create Brand')}</span>
                   </button>
                 </div>
               </form>
@@ -593,22 +865,22 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
       {/* CSV Import Modal */}
       <AnimatePresence>
         {importOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              className="bg-card border border-border rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">{t('products.importCSV')}</h3>
+                <h3 className="font-semibold text-base text-foreground">{t('products.importCSV')}</h3>
                 <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X size={18} />
                 </button>
               </div>
 
               <form onSubmit={handleImport} className="p-6 space-y-4">
-                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/10 transition-colors">
+                <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:bg-muted/10 transition-colors">
                   <Upload className="mx-auto text-muted-foreground mb-2" size={32} />
                   <input
                     type="file"
@@ -627,14 +899,14 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
                   <button
                     type="button"
                     onClick={() => setImportOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg cursor-pointer"
+                    className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-xl cursor-pointer"
                   >
                     {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={importing || !importFile}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 cursor-pointer"
                   >
                     {importing && <Loader2 size={14} className="animate-spin" />}
                     {t('products.importCSV')}
@@ -649,17 +921,10 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('brands.deleteTitle', 'Delete Brand')}
-        message={
-          <div>
-            <div>{t('brands.confirmDeleteBrandMessage', 'Are you sure you want to delete brand')}</div>
-            <div className="mt-1">
-              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
-            </div>
-          </div>
-        }
-        confirmText={t('brands.deleteTitle', 'Delete Brand')}
-        cancelText={t('common.cancel', 'Cancel')}
+        title="brands.deleteTitle"
+        itemName={deleteTarget?.name}
+        confirmText="common.confirmDelete"
+        cancelText="common.cancel"
         onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {

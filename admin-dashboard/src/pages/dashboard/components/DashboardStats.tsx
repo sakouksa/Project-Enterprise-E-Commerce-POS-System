@@ -312,9 +312,9 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
   const renderCardGrid = (cards: any[], gridCols: string) => {
     if (isLoading) {
       return (
-        <div className={`grid ${gridCols} gap-4`}>
+        <div className={`grid ${gridCols} gap-3 sm:gap-4`}>
           {Array.from({ length: cards.length }).map((_, i) => (
-            <div key={i} className="h-28 bg-card border border-border/60 rounded-2xl p-4 space-y-3 animate-pulse flex flex-col justify-between">
+            <div key={i} className="h-28 bg-card border border-border/60 rounded-2xl p-4 space-y-3 animate-pulse flex flex-col justify-between shadow-2xs">
               <div className="flex items-center justify-between">
                 <div className="h-3 w-20 bg-muted rounded" />
                 <div className="h-7 w-7 bg-muted rounded-xl" />
@@ -327,7 +327,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
     }
 
     return (
-      <div className={`grid ${gridCols} gap-4`}>
+      <div className={`grid ${gridCols} gap-3 sm:gap-4`}>
         {cards.map((card, idx) => {
           const isPositive = card.change >= 0
           const numericValue = typeof card.value === 'number' ? card.value : parseFloat(String(card.value).replace(/[^0-9.-]+/g, '')) || 0
@@ -338,25 +338,25 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
               key={card.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.03, duration: 0.2 }}
+              transition={{ delay: idx * 0.02, duration: 0.2 }}
               whileHover={{ y: -3, transition: { duration: 0.1 } }}
               onClick={() => navigate(card.route)}
-              className="bg-card border border-border/60 hover:border-primary/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between group"
+              className="bg-card border border-border/70 hover:border-primary/50 rounded-2xl p-3.5 sm:p-4.5 shadow-2xs hover:shadow-md transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between group"
             >
               {/* Header info */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="text-xs font-bold text-muted-foreground block leading-snug">{card.title}</span>
-                  <h3 className="text-lg md:text-xl font-black text-foreground mt-1 tracking-tight">{card.value}</h3>
+                  <span className="text-[11px] sm:text-xs font-bold text-muted-foreground block truncate leading-snug">{card.title}</span>
+                  <h3 className="text-base sm:text-lg md:text-xl font-black text-foreground mt-0.5 sm:mt-1 tracking-tight truncate">{card.value}</h3>
                 </div>
-                <div className={`p-2 bg-gradient-to-br ${card.gradient} rounded-xl shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                <div className={`p-2 sm:p-2.5 bg-gradient-to-br ${card.gradient} rounded-xl sm:rounded-2xl shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
                   {card.icon}
                 </div>
               </div>
 
               {/* Sparkline & change info */}
-              <div className="flex items-end justify-between mt-3">
-                <div className="flex items-center gap-1 text-[11px] font-bold">
+              <div className="flex items-end justify-between mt-2.5 sm:mt-3 gap-2">
+                <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold shrink-0">
                   {card.change !== 0 ? (
                     <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${
                       isPositive 
@@ -372,7 +372,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
                 </div>
 
                 {/* SVG Sparkline */}
-                <div className="w-14 h-6 opacity-60">
+                <div className="w-12 sm:w-16 h-5 sm:h-6 opacity-60 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={sparkData}>
                       <Area 
@@ -402,26 +402,28 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
     return null
   }
 
+  const responsiveGridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-4'
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Row: Primary Financial KPIs */}
       {filteredTop.length > 0 && (
         <div>
-          {renderCardGrid(filteredTop, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
+          {renderCardGrid(filteredTop, responsiveGridClass)}
         </div>
       )}
 
       {/* Second Row: Enterprise Entity Stats */}
       {filteredSecond.length > 0 && (
         <div>
-          {renderCardGrid(filteredSecond, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
+          {renderCardGrid(filteredSecond, responsiveGridClass)}
         </div>
       )}
 
       {/* Third Row: Operational Alert Counters */}
       {filteredThird.length > 0 && (
         <div>
-          {renderCardGrid(filteredThird, 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4')}
+          {renderCardGrid(filteredThird, responsiveGridClass)}
         </div>
       )}
     </div>

@@ -15,9 +15,12 @@ import { LoginHistoryTable } from './components/LoginHistoryTable'
 import { ProfileSettings } from './components/ProfileSettings'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import { LoadingSpinner } from '@/components/common'
+import { 
+  User, LayoutDashboard, Shield, Key, History, Monitor, Settings, Sparkles 
+} from 'lucide-react'
 
 const ProfilePage: React.FC = () => {
-  const { t } = useTranslation()
+  const { t } = useTranslation('profile')
   const qc = useQueryClient()
   const toast = useToast()
   const [activeTab, setActiveTab] = useState<'overview' | 'personal' | 'security' | 'permissions' | 'activities' | 'logins' | 'settings'>('overview')
@@ -28,7 +31,7 @@ const ProfilePage: React.FC = () => {
   const loginPage = useServerPagination({ storageKey: 'profile-login-histories' })
 
   // Preferences State
-  const [timezone, setTimezone] = useState('UTC')
+  const [timezone, setTimezone] = useState('Asia/Phnom_Penh')
   const [emailNotify, setEmailNotify] = useState(true)
   const [pushNotify, setPushNotify] = useState(true)
   const [smsNotify, setSmsNotify] = useState(false)
@@ -41,7 +44,7 @@ const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (profile) {
-      setTimezone(profile.timezone ?? 'UTC')
+      setTimezone(profile.timezone || 'Asia/Phnom_Penh')
       setEmailNotify(profile.email_notify ?? true)
       setPushNotify(profile.push_notify ?? true)
       setSmsNotify(profile.sms_notify ?? false)
@@ -80,10 +83,10 @@ const ProfilePage: React.FC = () => {
     onSuccess: (updatedUser) => {
       qc.invalidateQueries({ queryKey: ['profile'] })
       useAuthStore.getState().updateUser(updatedUser as any)
-      toast.success(t('profile.personal_tab.success_update', 'Personal details updated successfully.'))
+      toast.success(t('personal_tab.success_update', 'Personal details updated successfully.'))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('profile.personal_tab.fail_update', 'Failed to update personal details.'))
+      toast.error(err?.response?.data?.message ?? t('personal_tab.fail_update', 'Failed to update personal details.'))
     }
   })
 
@@ -92,10 +95,10 @@ const ProfilePage: React.FC = () => {
     onSuccess: (avatarUrl) => {
       qc.invalidateQueries({ queryKey: ['profile'] })
       useAuthStore.getState().updateUser({ avatar: avatarUrl })
-      toast.success(t('profile.avatar.upload_success', 'Avatar uploaded successfully.'))
+      toast.success(t('avatar.upload_success', 'Avatar uploaded successfully.'))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('profile.avatar.upload_fail', 'Failed to upload avatar.'))
+      toast.error(err?.response?.data?.message ?? t('avatar.upload_fail', 'Failed to upload avatar.'))
     }
   })
 
@@ -104,31 +107,31 @@ const ProfilePage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['profile'] })
       useAuthStore.getState().updateUser({ avatar: null })
-      toast.success(t('profile.avatar.remove_success', 'Avatar removed successfully.'))
+      toast.success(t('avatar.remove_success', 'Avatar removed successfully.'))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('profile.avatar.remove_fail', 'Failed to remove avatar.'))
+      toast.error(err?.response?.data?.message ?? t('avatar.remove_fail', 'Failed to remove avatar.'))
     }
   })
 
   const changePasswordMutation = useMutation({
     mutationFn: profileService.changePassword,
     onSuccess: () => {
-      toast.success(t('profile.security_tab.password_success', 'Password changed successfully.'))
+      toast.success(t('security_tab.password_success', 'Password changed successfully.'))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('profile.security_tab.password_fail', 'Failed to change password.'))
+      toast.error(err?.response?.data?.message ?? t('security_tab.password_fail', 'Failed to change password.'))
     }
   })
 
   const logoutDevicesMutation = useMutation({
     mutationFn: profileService.logoutOtherDevices,
     onSuccess: () => {
-      toast.success(t('profile.security_tab.revoke_success', 'Logged out other devices successfully.'))
+      toast.success(t('security_tab.revoke_success', 'Logged out other devices successfully.'))
       qc.invalidateQueries({ queryKey: ['profile-sessions'] })
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('profile.security_tab.revoke_fail', 'Failed to log out other devices.'))
+      toast.error(err?.response?.data?.message ?? t('security_tab.revoke_fail', 'Failed to log out other devices.'))
     }
   })
 
@@ -139,14 +142,14 @@ const ProfilePage: React.FC = () => {
       ip_address: profile.last_login_at ? '127.0.0.1' : '192.168.1.1',
       browser: 'Chrome',
       device: 'Desktop',
-      platform: 'Windows',
+      platform: 'Mac OS / Web',
       last_activity: profile.last_login_at || new Date().toISOString(),
       is_current: true
     }
   ] : []
 
   if (isProfileLoading || !profile) {
-    return <LoadingSpinner fullPage label={t('profile.loading_specs', 'Loading profile specifications...')} />
+    return <LoadingSpinner fullPage label={t('loading_specs', 'Loading profile specifications...')} />
   }
 
   const handleUpdateProfile = (data: any) => {
@@ -172,7 +175,7 @@ const ProfilePage: React.FC = () => {
   const handleSavePreferences = () => {
     updateProfileMutation.mutate({
       timezone,
-      language: localStorage.getItem('enterprise-pos-lang') || 'en',
+      language: localStorage.getItem('enterprise-pos-lang') || 'km',
       email_notify: emailNotify,
       push_notify: pushNotify,
       sms_notify: smsNotify,
@@ -180,24 +183,34 @@ const ProfilePage: React.FC = () => {
   }
 
   const tabs = [
-    { id: 'overview', label: t('profile.overview', 'Overview') },
-    { id: 'personal', label: t('profile.personal_information', 'Personal Information') },
-    { id: 'security', label: t('profile.security', 'Security') },
-    { id: 'permissions', label: t('profile.permissions', 'Permissions') },
-    { id: 'activities', label: t('profile.activity_logs', 'Activity Logs') },
-    { id: 'logins', label: t('profile.login_history', 'Login History') },
-    { id: 'settings', label: t('profile.settings', 'Settings') }
+    { id: 'overview', label: t('overview', 'Overview'), icon: LayoutDashboard },
+    { id: 'personal', label: t('personal_information', 'Personal Information'), icon: User },
+    { id: 'security', label: t('security', 'Security'), icon: Shield },
+    { id: 'permissions', label: t('permissions', 'Permissions'), icon: Key },
+    { id: 'activities', label: t('activity_logs', 'Activity Logs'), icon: History },
+    { id: 'logins', label: t('login_history', 'Login History'), icon: Monitor },
+    { id: 'settings', label: t('settings', 'Settings & Preferences'), icon: Settings }
   ] as const
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <div className="space-y-6 pb-12 w-full">
+      {/* ── 1. PAGE HEADER & BREADCRUMBS ────────────────────────────────────────── */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-foreground font-semibold">{t('profile.title', 'Account & Profile Settings')}</h1>
-        <p className="text-sm text-muted-foreground">{t('profile.subtitle', 'Manage your identity, settings, preferences, and session security.')}</p>
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground mb-1">
+          <span>{t('overview', 'Dashboard')}</span>
+          <span>/</span>
+          <span className="text-foreground font-bold">{t('title', 'Profile')}</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-2.5">
+          <Sparkles className="text-primary" size={26} />
+          {t('title', 'Account & Profile Settings')}
+        </h1>
+        <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+          {t('subtitle', 'Manage your identity, personal details, system preferences, and session security.')}
+        </p>
       </div>
 
-      {/* Profile Header Card */}
+      {/* ── 2. PROFILE HERO BANNER ──────────────────────────────────────────── */}
       <ProfileHeader
         profile={profile}
         onAvatarUpload={handleAvatarUpload}
@@ -207,27 +220,34 @@ const ProfilePage: React.FC = () => {
         onChangePasswordClick={() => setActiveTab('security')}
       />
 
-      {/* Tabs Layout */}
-      <div className="flex flex-col gap-6">
-        <div className="border-b border-border overflow-x-auto no-scrollbar">
-          <nav className="flex gap-6 min-w-max pb-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 text-sm font-semibold border-b-2 transition-all duration-200 focus:outline-none ${activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
+      {/* ── 3. TABS NAVIGATION (RESPONSIVE & CLEAN) ────────────────────────── */}
+      <div className="space-y-6">
+        <div className="bg-muted/40 p-1.5 rounded-2xl border border-border/80 overflow-x-auto max-w-full shadow-2xs">
+          <nav className="flex items-center gap-1.5 min-w-max">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'bg-card text-primary shadow-xs border border-border/60'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                   }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+                >
+                  <Icon size={14} className={isActive ? 'text-primary' : 'text-muted-foreground'} />
+                  <span>{tab.label}</span>
+                </button>
+              )
+            })}
           </nav>
         </div>
 
-        {/* Tab Body */}
-        <div className="mt-2">
+        {/* ── 4. TAB BODY CONTENT ──────────────────────────────────────────── */}
+        <div>
           {activeTab === 'overview' && (
             <ProfileOverview
               profile={profile}

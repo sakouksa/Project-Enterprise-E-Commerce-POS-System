@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Sparkles,
   Link as LinkIcon,
-  Tag,
   Eye,
   Save,
   Loader2,
@@ -149,15 +148,15 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
     const trimmed = tagText.trim().toLowerCase()
     if (!trimmed) return
     if (!keywordTags.includes(trimmed)) {
-      const nextTags = [...keywordTags, trimmed]
-      onMetaKeywordsChange(nextTags.join(', '))
+      const updated = [...keywordTags, trimmed].join(', ')
+      onMetaKeywordsChange(updated)
     }
     setKeywordInput('')
   }
 
   const handleRemoveKeywordTag = (tagToRemove: string) => {
-    const nextTags = keywordTags.filter((t) => t !== tagToRemove)
-    onMetaKeywordsChange(nextTags.join(', '))
+    const updated = keywordTags.filter((k) => k !== tagToRemove).join(', ')
+    onMetaKeywordsChange(updated)
   }
 
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -170,63 +169,75 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(canonicalUrl)
     setCopiedUrl(true)
-    setTimeout(() => setCopiedUrl(false), 2000)
+    setTimeout(() => setCopiedUrl(false), 1500)
   }
 
-  // Preset tag suggestions
+  // Recommended keywords based on product properties
   const suggestedTags = useMemo(() => {
-    const set = new Set<string>()
-    if (brandName) set.add(brandName.toLowerCase())
-    if (categoryName) set.add(categoryName.toLowerCase())
-    set.add('tech')
-    set.add('enterprise')
-    set.add('pos')
-    set.add('store')
-    return Array.from(set).filter((t) => !keywordTags.includes(t))
-  }, [brandName, categoryName, keywordTags])
+    const suggestions: string[] = []
+    if (categoryName && !keywordTags.includes(categoryName.toLowerCase())) {
+      suggestions.push(categoryName.toLowerCase())
+    }
+    if (brandName && !keywordTags.includes(brandName.toLowerCase())) {
+      suggestions.push(brandName.toLowerCase())
+    }
+    const defaults = ['tech', 'enterprise', 'pos', 'store']
+    defaults.forEach((d) => {
+      if (!keywordTags.includes(d) && suggestions.length < 5) suggestions.push(d)
+    })
+    return suggestions
+  }, [categoryName, brandName, keywordTags])
 
   return (
     <div className="space-y-6">
-      {/* ─── 1. TOP METRIC CARDS HEADER (SEO HEALTH & LENGTH CHARS) ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: Overall SEO Health Score */}
-        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[145px]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t('products.seoScoreLabel', 'SEO Health Score')}
-            </span>
-            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <ShieldCheck size={16} />
+      {/* ─── 1. SEO HEALTH & QUALITY AUDIT DASHBOARD ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Metric 1: Overall Score */}
+        <div className="bg-card p-4 rounded-2xl border border-border shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t('products.seoHealthAudit', 'SEO Quality Score')}
+              </span>
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center border shrink-0 ${
+                  seoAudit >= 80
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : seoAudit >= 50
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                }`}
+              >
+                <ShieldCheck size={15} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span
+                className={`text-2xl font-black font-mono tracking-tight ${
+                  seoAudit >= 80
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : seoAudit >= 50
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {seoAudit}/100
+              </span>
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
+          <div className="pt-2 mt-2 border-t border-border/40">
             <span
-              className={`text-3xl font-black font-mono tracking-tight ${
-                seoAudit >= 80
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : seoAudit >= 50
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-rose-600 dark:text-rose-400'
-              }`}
-            >
-              {seoAudit}/100
-            </span>
-          </div>
-          <div className="pt-2">
-            <span
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
-                seoAudit >= 80
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+              className={`inline-flex items-center gap-1 text-[10px] font-bold ${
+                seoAudit >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
               }`}
             >
               {seoAudit >= 80 ? (
                 <>
-                  <CheckCircle2 size={13} /> {t('products.seoScoreOptimal', 'Excellent SEO Setup')}
+                  <CheckCircle2 size={11} /> {t('products.seoScoreOptimal', 'Optimal SEO')}
                 </>
               ) : (
                 <>
-                  <AlertTriangle size={13} /> {t('products.seoScoreNeedsWork', 'Needs Optimization')}
+                  <AlertTriangle size={11} /> {t('products.seoScoreNeedsWork', 'Needs Improvement')}
                 </>
               )}
             </span>
@@ -234,120 +245,114 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
         </div>
 
         {/* Metric 2: Meta Title Health */}
-        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[145px]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t('products.metaTitleHealth', 'Meta Title Length')}
-            </span>
-            <div className="p-2 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-              <Search size={16} />
+        <div className="bg-card p-4 rounded-2xl border border-border shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t('products.metaTitleHealth', 'Meta Title Length')}
+              </span>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                <Search size={15} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-black font-mono text-foreground">
+                {metaTitle.length}
+              </span>
+              <span className="text-[10px] font-bold text-muted-foreground">
+                / 60 {t('products.charsCount', 'chars')}
+              </span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2.5xl font-black font-mono text-slate-900 dark:text-slate-100">
-              {metaTitle.length}
-            </span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-              / 60 {t('products.charsCount', 'chars')}
-            </span>
-          </div>
-          <div className="pt-2">
-            <span
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
-                metaTitle.length >= 30 && metaTitle.length <= 60
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              {t('products.optimalRange', { range: '30-60' })}
+          <div className="pt-2 mt-2 border-t border-border/40">
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              {metaTitle.length >= 30 && metaTitle.length <= 60 ? '✓ ' + t('products.optimal', 'Optimal') : t('products.optimalRange', '30-60 range')}
             </span>
           </div>
         </div>
 
         {/* Metric 3: Meta Description Health */}
-        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[145px]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t('products.metaDescHealth', 'Meta Description Length')}
-            </span>
-            <div className="p-2 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-              <Globe size={16} />
+        <div className="bg-card p-4 rounded-2xl border border-border shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t('products.metaDescHealth', 'Description Length')}
+              </span>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                <Globe size={15} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-black font-mono text-foreground">
+                {metaDescription.length}
+              </span>
+              <span className="text-[10px] font-bold text-muted-foreground">
+                / 160 {t('products.charsCount', 'chars')}
+              </span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2.5xl font-black font-mono text-slate-900 dark:text-slate-100">
-              {metaDescription.length}
-            </span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-              / 160 {t('products.charsCount', 'chars')}
-            </span>
-          </div>
-          <div className="pt-2">
-            <span
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
-                metaDescription.length >= 70 && metaDescription.length <= 160
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              {t('products.optimalRange', { range: '70-160' })}
+          <div className="pt-2 mt-2 border-t border-border/40">
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              {metaDescription.length >= 70 && metaDescription.length <= 160 ? '✓ ' + t('products.optimal', 'Optimal') : t('products.optimalRange', '70-160 range')}
             </span>
           </div>
         </div>
 
         {/* Metric 4: Canonical URL Slug */}
-        <div className="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[145px]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t('products.canonicalUrlLabel', 'Canonical Slug URL')}
-            </span>
-            <div className="p-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              <LinkIcon size={16} />
+        <div className="bg-card p-4 rounded-2xl border border-border shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t('products.canonicalUrlLabel', 'URL Slug')}
+              </span>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                <LinkIcon size={15} />
+              </div>
+            </div>
+            <div className="truncate text-xs font-mono font-bold text-foreground">
+              /{formattedSlug || 'slug'}
             </div>
           </div>
-          <div className="truncate text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
-            /{formattedSlug || 'slug'}
-          </div>
-          <div className="pt-2">
+          <div className="pt-2 mt-2 border-t border-border/40">
             <button
               type="button"
               onClick={handleCopyUrl}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 text-primary text-[10px] font-bold hover:underline cursor-pointer"
             >
-              {copiedUrl ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-              <span>{copiedUrl ? t('products.copiedLink', 'Copied Link') : t('products.copyFullUrl', 'Copy Full URL')}</span>
+              {copiedUrl ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+              <span>{copiedUrl ? t('products.copiedLink', 'Copied') : t('products.copyFullUrl', 'Copy Full URL')}</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* ─── 2. LIVE INTERACTIVE GOOGLE SEARCH SERP & SOCIAL PREVIEW CARD ─── */}
-      <div className="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="bg-card p-6 rounded-2xl border border-border shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
               <Eye size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-base font-bold text-foreground">
                 {t('products.serpPreviewTitle', 'Google Search SERP Preview')}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {t('products.googleSearchNotice', 'This is how your product listing will appear in Google search results.')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* SERP vs Social Card Toggle */}
-            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center p-1 bg-muted rounded-xl border border-border">
               <button
                 type="button"
                 onClick={() => setPreviewTab('serp')}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   previewTab === 'serp'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-card text-primary shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Search size={13} />
@@ -358,38 +363,38 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
                 onClick={() => setPreviewTab('social')}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   previewTab === 'social'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-card text-primary shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Share2 size={13} />
-                <span>Social Card</span>
+                <span>{t('products.socialCard', 'Social Card')}</span>
               </button>
             </div>
 
             {/* Desktop vs Mobile Toggle */}
-            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center p-1 bg-muted rounded-xl border border-border">
               <button
                 type="button"
                 onClick={() => setPreviewDevice('desktop')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   previewDevice === 'desktop'
-                    ? 'bg-white dark:bg-slate-900 text-primary shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-card text-primary shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Monitor size={14} className="inline mr-1" /> Desktop
+                <Monitor size={14} className="inline mr-1" /> {t('products.desktop', 'Desktop')}
               </button>
               <button
                 type="button"
                 onClick={() => setPreviewDevice('mobile')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   previewDevice === 'mobile'
-                    ? 'bg-white dark:bg-slate-900 text-primary shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-card text-primary shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Smartphone size={14} className="inline mr-1" /> Mobile
+                <Smartphone size={14} className="inline mr-1" /> {t('products.mobile', 'Mobile')}
               </button>
             </div>
           </div>
@@ -398,21 +403,21 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
         {/* Live Card Render Container */}
         {previewTab === 'serp' ? (
           <div
-            className={`mx-auto p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/60 transition-all ${
+            className={`mx-auto p-5 rounded-2xl border border-border bg-muted/20 transition-all ${
               previewDevice === 'mobile' ? 'max-w-sm' : 'w-full'
             }`}
           >
             <div className="space-y-1.5">
               {/* Domain & Favicon Header */}
-              <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-                <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold shrink-0 text-primary border border-primary/20">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold shrink-0 text-primary border border-primary/20">
                   <Search size={12} />
                 </div>
                 <div className="truncate">
-                  <div className="font-semibold text-slate-900 dark:text-slate-100 leading-none text-[12px]">
+                  <div className="font-semibold text-foreground leading-none text-[12px]">
                     Enterprise Store
                   </div>
-                  <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  <div className="font-mono text-[11px] text-muted-foreground truncate mt-0.5">
                     {canonicalUrl}
                   </div>
                 </div>
@@ -424,35 +429,35 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
               </h4>
 
               {/* Snippet Description */}
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2 font-normal">
+              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 font-normal">
                 {displayDesc}
               </p>
             </div>
           </div>
         ) : (
           <div
-            className={`mx-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden shadow-xs transition-all ${
+            className={`mx-auto rounded-2xl border border-border bg-card overflow-hidden shadow-xs transition-all ${
               previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-md'
             }`}
           >
-            <div className="h-40 bg-slate-100 dark:bg-slate-900 relative flex items-center justify-center overflow-hidden">
+            <div className="h-40 bg-muted/40 relative flex items-center justify-center overflow-hidden">
               {productImage ? (
                 <img src={productImage} alt="Social OG Preview" className="w-full h-full object-cover" />
               ) : (
                 <div className="text-center p-4">
-                  <Globe size={32} className="mx-auto text-slate-400 mb-1 opacity-50" />
-                  <span className="text-xs text-slate-400 font-semibold">{t('products.socialThumbnail', 'Social Share Thumbnail')}</span>
+                  <Globe size={32} className="mx-auto text-muted-foreground/40 mb-1" />
+                  <span className="text-xs text-muted-foreground font-semibold">{t('products.socialThumbnail', 'Social Share Thumbnail')}</span>
                 </div>
               )}
             </div>
-            <div className="p-4 space-y-1 bg-slate-50 dark:bg-slate-900/60">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            <div className="p-4 space-y-1 bg-muted/20">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 YOURSTORE.COM
               </span>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+              <h4 className="text-sm font-bold text-foreground truncate">
                 {displayTitle}
               </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+              <p className="text-xs text-muted-foreground line-clamp-2">
                 {displayDesc}
               </p>
             </div>
@@ -461,21 +466,21 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
       </div>
 
       {/* ─── 3. FORM INPUTS & SMART HELPERS ─── */}
-      <div className="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-xs space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="bg-card p-5 rounded-xl border border-border/80 shadow-2xs space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Meta Title Field */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+              <label className="block text-xs font-semibold text-foreground/90">
                 {t('products.metaTitleField', 'SEO Meta Title')}
               </label>
               <button
                 type="button"
                 onClick={handleAutoGenerateTitle}
-                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-[11px] font-medium text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                <Wand2 size={12} />
-                {t('products.autoGenerate')}
+                <Wand2 size={11} />
+                {t('products.autoGenerate', 'Auto Generate')}
               </button>
             </div>
             <input
@@ -483,29 +488,29 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
               value={metaTitle}
               onChange={(e) => onMetaTitleChange(e.target.value)}
               placeholder={t('products.metaTitlePlaceholder', 'SEO Search Engine Title...')}
-              className="w-full h-10 px-3.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
+              className="w-full h-9 px-3 bg-background border border-border/80 rounded-lg text-xs sm:text-[13px] font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
             />
           </div>
 
-          {/* Meta Slug Field */}
-          <div className="space-y-1.5">
+          {/* Meta Slug Field (Clean Addon Prefix Group - No Collision) */}
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+              <label className="block text-xs font-semibold text-foreground/90">
                 {t('products.urlSlugLabel', 'Product URL Slug (Permalink)')}
               </label>
               {onSlugChange && (
                 <button
                   type="button"
                   onClick={handleAutoSlug}
-                  className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] font-medium text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
                 >
                   <RefreshCw size={11} />
-                  {t('products.autoGenerate')}
+                  {t('products.autoGenerate', 'Auto Generate')}
                 </button>
               )}
             </div>
-            <div className="relative flex items-center">
-              <span className="absolute left-3 font-mono text-[11px] text-slate-400 dark:text-slate-500">
+            <div className="flex items-center rounded-lg border border-border/80 bg-background overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+              <span className="px-2.5 py-1.5 bg-muted/60 border-r border-border font-mono text-xs font-semibold text-muted-foreground select-none shrink-0">
                 /products/
               </span>
               <input
@@ -513,23 +518,23 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
                 value={formattedSlug}
                 onChange={(e) => onSlugChange && onSlugChange(e.target.value)}
                 placeholder="product-url-slug"
-                className="w-full h-10 pl-7 pr-3.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 disabled:opacity-60"
+                className="w-full h-9 px-3 bg-transparent text-xs sm:text-[13px] font-mono font-medium text-foreground focus:outline-none placeholder:text-muted-foreground disabled:opacity-60"
               />
             </div>
           </div>
 
           {/* Meta Keywords Pill Tag Manager */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-foreground/90">
               {t('products.colKeywords', 'SEO Keywords & Search Tags')}
             </label>
 
             {keywordTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2 p-2 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap gap-1.5 mb-1.5 p-2 bg-muted/30 rounded-lg border border-border/60">
                 {keywordTags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 text-xs font-bold font-sans"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-xs font-medium font-sans"
                   >
                     <span>{tag}</span>
                     <button
@@ -537,7 +542,7 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
                       onClick={() => handleRemoveKeywordTag(tag)}
                       className="hover:text-rose-500 transition-colors cursor-pointer"
                     >
-                      <X size={12} />
+                      <X size={11} />
                     </button>
                   </span>
                 ))}
@@ -551,21 +556,21 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
                 onChange={(e) => setKeywordInput(e.target.value)}
                 onKeyDown={handleKeywordKeyDown}
                 placeholder={t('products.addKeywordPlaceholder', 'Type keyword and press Enter or comma...')}
-                className="w-full h-10 px-3.5 pr-10 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                className="w-full h-9 px-3 pr-9 bg-background border border-border/80 rounded-lg text-xs sm:text-[13px] text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
               />
               <button
                 type="button"
                 onClick={() => handleAddKeywordTag(keywordInput)}
-                className="absolute right-2 p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+                className="absolute right-1.5 p-1 rounded-md bg-muted hover:bg-muted/80 text-foreground transition-all cursor-pointer"
               >
-                <Plus size={14} />
+                <Plus size={13} />
               </button>
             </div>
 
             {/* Quick Tag Ideas */}
             {suggestedTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mr-1">
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[11px] font-bold text-muted-foreground mr-1">
                   {t('products.suggestedTags', 'Quick Tag Suggestions:')}
                 </span>
                 {suggestedTags.map((tag) => (
@@ -573,7 +578,7 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
                     key={tag}
                     type="button"
                     onClick={() => handleAddKeywordTag(tag)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary border border-slate-200 dark:border-slate-700 text-[11px] font-semibold transition-all cursor-pointer"
+                    className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-primary border border-border/60 text-[11px] font-medium transition-all cursor-pointer"
                   >
                     + {tag}
                   </button>
@@ -583,40 +588,40 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
           </div>
 
           {/* Meta Description Field */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+              <label className="block text-xs font-semibold text-foreground/90">
                 {t('products.colMetaDesc', 'Search Engine Meta Description')}
               </label>
               <button
                 type="button"
                 onClick={handleAutoSummarizeDesc}
-                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-[11px] font-medium text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                <Sparkles size={12} />
+                <Sparkles size={11} />
                 {t('products.autoSummarize', 'Auto Summarize')}
               </button>
             </div>
             <textarea
-              rows={3}
+              rows={2}
               value={metaDescription}
               onChange={(e) => onMetaDescriptionChange(e.target.value)}
               placeholder={t('products.metaDescPlaceholder', 'Brief 150-character summary for Google search snippet...')}
-              className="w-full p-3 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 resize-none"
+              className="w-full p-2.5 bg-background border border-border/80 rounded-lg text-xs sm:text-[13px] text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground resize-none leading-relaxed"
             />
           </div>
         </div>
 
         {/* Indexing Preferences */}
-        <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-border">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={allowIndexing}
               onChange={(e) => setAllowIndexing(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
             />
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-semibold text-foreground">
               {t('products.allowSearchIndexing', 'Allow Search Engine Indexing (index, follow)')}
             </span>
           </label>
@@ -626,9 +631,9 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
               type="checkbox"
               checked={includeSitemap}
               onChange={(e) => setIncludeSitemap(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
             />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-bold text-foreground">
               {t('products.includeSitemap', 'Include Product Page in XML Sitemap')}
             </span>
           </label>
@@ -636,17 +641,19 @@ export const FlexibleSEOSection: React.FC<FlexibleSEOSectionProps> = ({
       </div>
 
       {/* ─── 4. BOTTOM ACTION BAR ─── */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
         <button
           type="button"
           disabled={isSaving}
           onClick={onSave}
-          className="px-6 py-2.5 bg-gradient-primary text-white rounded-xl text-xs font-extrabold shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-extrabold shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
         >
           {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-          <span>{t('products.saveSeoDetails', 'រក្សាទុកព័ត៌មាន SEO')}</span>
+          <span>{t('products.saveSeoDetails', 'Save SEO Details')}</span>
         </button>
       </div>
     </div>
   )
 }
+
+export default FlexibleSEOSection

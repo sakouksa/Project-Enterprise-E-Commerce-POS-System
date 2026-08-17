@@ -84,25 +84,25 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
     : [{ value: selectedWarehouseId ?? 0, label: selectedWarehouseName || t('warehouse', 'Warehouse') }]
 
   return (
-    <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs backdrop-blur-md space-y-3">
+    <div className="bg-card border border-border/80 rounded-3xl p-3.5 sm:p-4 md:p-5 shadow-2xs backdrop-blur-md space-y-3 sm:space-y-3.5">
       {/* Top Meta info & Title */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-3">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-0.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-border/50 pb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground font-medium mb-0.5">
             <span>{t('salesAndOperations', 'Sales & Operations')}</span>
             <span>/</span>
             <span className="text-primary font-semibold">{t('posTerminal', 'POS Terminal')}</span>
           </div>
-          <h1 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
-            {t('enterprisePosTerminal', 'Enterprise POS Terminal')}
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20 flex items-center gap-1">
+          <h1 className="text-lg sm:text-xl font-black text-foreground tracking-tight flex items-center gap-2 truncate">
+            <span>{t('enterprisePosTerminal', 'Enterprise POS Terminal')}</span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-[11px] font-bold border border-emerald-500/20 flex items-center gap-1 shrink-0">
               <ShieldCheck size={12} /> {t('activeShift', 'Active Shift')}
             </span>
           </h1>
         </div>
 
         {/* Live Status & Clock */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           {/* Network Badge */}
           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
             isOnline
@@ -112,35 +112,35 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             {isOnline ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <Wifi size={13} /> {t('onlineTerminal', 'Online Terminal')}
+                <Wifi size={13} /> <span className="hidden xs:inline">{t('onlineTerminal', 'Online Terminal')}</span>
               </>
             ) : (
               <>
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <WifiOff size={13} /> {t('offlineReady', 'Offline Ready')}
+                <WifiOff size={13} /> <span>{t('offlineReady', 'Offline Ready')}</span>
               </>
             )}
           </div>
 
           {/* Clock & Date */}
-          <div className="hidden sm:flex items-center gap-2 bg-muted/40 border border-border/60 px-3 py-1.5 rounded-xl text-xs font-medium text-foreground">
+          <div className="hidden md:flex items-center gap-2 bg-muted/40 border border-border/60 px-3 py-1.5 rounded-xl text-xs font-medium text-foreground">
             <Clock size={14} className="text-primary" />
             <span>{dateStr}</span>
-            <span className="font-bold text-primary">{timeStr}</span>
+            <span className="font-bold text-primary font-mono">{timeStr}</span>
           </div>
 
           {/* Cashier Badge — dynamic from auth */}
-          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-xl text-xs font-semibold text-primary">
-            <User size={14} />
-            <span>{cashierName || t('cashier', 'Cashier')}</span>
+          <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-semibold text-primary">
+            <User size={13} />
+            <span className="truncate max-w-[120px]">{cashierName || t('cashier', 'Cashier')}</span>
           </div>
         </div>
       </div>
 
       {/* Selectors Bar: Store, Branch, Warehouse, Register */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-        <div className="flex items-center gap-2 bg-muted/30 border border-border/60 rounded-xl px-2.5 py-1.5">
-          <Store size={14} className="text-muted-foreground shrink-0" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 text-xs">
+        <div className="flex items-center gap-2 bg-muted/20 border border-border/70 hover:border-primary/40 transition-colors rounded-2xl px-3 py-2">
+          <Store size={15} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
             <span className="text-[10px] text-muted-foreground block leading-tight font-medium">{t('store', 'Store')}</span>
             <ModernSelect
@@ -155,8 +155,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-muted/30 border border-border/60 rounded-xl px-2.5 py-1.5">
-          <Building2 size={14} className="text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-2 bg-muted/20 border border-border/70 hover:border-primary/40 transition-colors rounded-2xl px-3 py-2">
+          <Building2 size={15} className="text-emerald-500 shrink-0" />
           <div className="flex-1 min-w-0">
             <span className="text-[10px] text-muted-foreground block leading-tight font-medium">{t('branch', 'Branch')}</span>
             <ModernSelect
@@ -171,8 +171,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-muted/30 border border-border/60 rounded-xl px-2.5 py-1.5">
-          <Warehouse size={14} className="text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-2 bg-muted/20 border border-border/70 hover:border-primary/40 transition-colors rounded-2xl px-3 py-2">
+          <Warehouse size={15} className="text-amber-500 shrink-0" />
           <div className="flex-1 min-w-0">
             <span className="text-[10px] text-muted-foreground block leading-tight font-medium">{t('warehouse', 'Warehouse')}</span>
             <ModernSelect
@@ -187,8 +187,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-muted/30 border border-border/60 rounded-xl px-2.5 py-1.5">
-          <Monitor size={14} className="text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-2 bg-muted/20 border border-border/70 rounded-2xl px-3 py-2">
+          <Monitor size={15} className="text-purple-500 shrink-0" />
           <div className="flex-1 min-w-0">
             <span className="text-[10px] text-muted-foreground block leading-tight font-medium">{t('registerAndShift', 'Register & Shift')}</span>
             <div className="font-bold text-foreground truncate">{cashRegister} • {currentShift}</div>

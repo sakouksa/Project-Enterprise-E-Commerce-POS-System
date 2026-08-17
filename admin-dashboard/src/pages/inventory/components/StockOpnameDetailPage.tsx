@@ -72,7 +72,7 @@ export const StockOpnameDetailPage: React.FC<StockOpnameDetailPageProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                {t('inventory.opname_card', 'Opname Card')}
+                {t('opname_card', t('inventory.opname_card', 'Stock Audit Card'))}
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
                 REF: #{detail?.reference_number || `OPN-${opnameId}`}

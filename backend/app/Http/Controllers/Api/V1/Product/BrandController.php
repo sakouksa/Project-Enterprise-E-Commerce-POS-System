@@ -23,7 +23,8 @@ class BrandController extends BaseApiController
         $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
         $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
 
-        $brands = Brand::when($request->status === 'deleted', function ($q) {
+        $brands = Brand::withCount('products')
+            ->when($request->status === 'deleted', function ($q) {
                 $q->onlyTrashed();
             })
             ->when($request->status && $request->status !== 'deleted', function ($q) use ($request) {
@@ -41,7 +42,7 @@ class BrandController extends BaseApiController
      */
     public function show(int $id): JsonResponse
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::withCount('products')->findOrFail($id);
         return $this->successResponse($brand);
     }
 

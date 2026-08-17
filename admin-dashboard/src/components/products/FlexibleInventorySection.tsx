@@ -104,10 +104,10 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
 
   // Quick Reasons
   const quickReasons = [
-    { label: t('products.reasonRestock', 'ទិញចូល (Restock)'), val: 'Restock inventory purchase' },
-    { label: t('products.reasonDamaged', 'ទំនិញខូច (Damaged)'), val: 'Damaged or defective stock' },
-    { label: t('products.reasonLost', 'បាត់បង់ (Lost)'), val: 'Inventory count mismatch' },
-    { label: t('products.reasonAudit', 'សវនកម្ម (Audit)'), val: 'Physical stock audit alignment' },
+    { label: t('reasonRestock', 'Restock'), val: 'Restock inventory purchase' },
+    { label: t('reasonDamaged', 'Damaged'), val: 'Damaged or defective stock' },
+    { label: t('reasonLost', 'Lost'), val: 'Inventory count mismatch' },
+    { label: t('reasonAudit', 'Audit'), val: 'Physical stock audit alignment' },
   ]
 
   // Submit Adjustment
@@ -168,37 +168,37 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
   return (
     <div className="space-y-5">
       {/* ─── Top 4 Sleek KPI Metric Cards ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
         {/* Card 1: Total Stock */}
-        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-4 rounded-2xl shadow-2xs hover:border-indigo-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
+        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-3.5 rounded-2xl shadow-2xs hover:border-indigo-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              {t('products.totalStockInSystem', 'ស្តុកសរុបក្នុងប្រព័ន្ធ')}
+              {t('totalStockInSystem', 'ស្តុកសរុបក្នុងប្រព័ន្ធ')}
             </span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
-              <Boxes size={16} />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
+              <Boxes size={15} />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-2.5">
             <div className="flex items-baseline justify-between gap-1">
-              <span className="text-2xl font-black font-mono tracking-tight text-foreground">
+              <span className="text-xl font-black font-mono tracking-tight text-foreground">
                 {currentStock.toLocaleString()}
               </span>
-              <span className="text-[11px] font-bold text-muted-foreground">{t('products.unitsUnit', 'គ្រឿង / Units')}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">{t('unitsUnit', 'គ្រឿង')}</span>
             </div>
-            <div className="pt-2.5 mt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">{t('products.stockStatusLabel', 'ស្ថានភាព:')}</span>
+            <div className="pt-2 mt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground text-[10px]">{t('stockStatusLabel', 'ស្ថានភាព:')}</span>
               {currentStock <= 0 ? (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center gap-1">
-                  <AlertTriangle size={11} /> {t('products.outOfStock', 'Out of Stock')}
+                  <AlertTriangle size={10} /> {t('outOfStock', 'ដាច់ស្តុក')}
                 </span>
               ) : currentStock <= threshold ? (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                  <ShieldAlert size={11} /> {t('products.lowStock', 'Low Stock')}
+                  <ShieldAlert size={10} /> {t('lowStock', 'ស្តុកជិតអស់')}
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <CheckCircle2 size={11} /> {t('products.inStock', 'In Stock')}
+                  <CheckCircle2 size={10} /> {t('inStock', 'មានស្តុក')}
                 </span>
               )}
             </div>
@@ -206,64 +206,64 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
         </div>
 
         {/* Card 2: Cost Value */}
-        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-4 rounded-2xl shadow-2xs hover:border-purple-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
+        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-3.5 rounded-2xl shadow-2xs hover:border-purple-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              {t('products.totalCostValue', 'តម្លៃដើមស្តុកសរុប')}
+              {t('totalCostValue', 'តម្លៃដើមស្តុកសរុប')}
             </span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
-              <Package size={16} />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+              <Package size={15} />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black font-mono tracking-tight text-purple-600 dark:text-purple-400">
+          <div className="mt-2.5">
+            <div className="text-xl font-black font-mono tracking-tight text-purple-600 dark:text-purple-400">
               ${totalCostValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="pt-2.5 mt-2 border-t border-border/40 text-[11px] text-muted-foreground font-medium">
-              {t('products.costValueFormula', '(ស្តុកសរុប × តម្លៃដើម)')}
+            <div className="pt-2 mt-2 border-t border-border/40 text-[10px] text-muted-foreground font-medium">
+              {t('costValueFormula', '(ស្តុកសរុប × តម្លៃដើម)')}
             </div>
           </div>
         </div>
 
         {/* Card 3: Selling Value */}
-        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-4 rounded-2xl shadow-2xs hover:border-emerald-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
+        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-3.5 rounded-2xl shadow-2xs hover:border-emerald-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              {t('products.totalSellingValue', 'តម្លៃលក់ស្តុកសរុប')}
+              {t('totalSellingValue', 'តម្លៃលក់ស្តុកសរុប')}
             </span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-              <TrendingUp size={16} />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <TrendingUp size={15} />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+          <div className="mt-2.5">
+            <div className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
               ${totalSellingValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="pt-2.5 mt-2 border-t border-border/40 text-[11px] text-muted-foreground font-medium">
-              {t('products.sellingValueFormula', '(ស្តុកសរុប × តម្លៃលក់)')}
+            <div className="pt-2 mt-2 border-t border-border/40 text-[10px] text-muted-foreground font-medium">
+              {t('sellingValueFormula', '(ស្តុកសរុប × តម្លៃលក់)')}
             </div>
           </div>
         </div>
 
         {/* Card 4: Low Stock Threshold */}
-        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-4 rounded-2xl shadow-2xs hover:border-amber-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
+        <div className="bg-card/90 dark:bg-card/60 border border-border/80 p-3.5 rounded-2xl shadow-2xs hover:border-amber-500/40 hover:shadow-xs transition-all duration-200 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              {t('products.lowStockThresholdLabel', 'កម្រិតស្តុកជិតអស់')}
+              {t('lowStockThresholdLabel', 'កម្រិតស្តុកជិតអស់')}
             </span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-              <Sliders size={16} />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+              <Sliders size={15} />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-2.5">
             <div className="flex items-baseline justify-between gap-1">
-              <span className="text-2xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-400">
+              <span className="text-xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-400">
                 {threshold}
               </span>
-              <span className="text-[11px] font-bold text-muted-foreground">{t('products.unitsUnit', 'គ្រឿង / Units')}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">{t('unitsUnit', 'គ្រឿង')}</span>
             </div>
-            <div className="pt-2.5 mt-2 border-t border-border/40 text-[11px] text-muted-foreground font-medium">
-              {trackInventory ? t('products.trackingEnabled', 'កំពុងតាមដានកម្រិតស្តុក') : t('products.trackingDisabled', 'មិនតាមដានកម្រិតស្តុកទេ')}
+            <div className="pt-2 mt-2 border-t border-border/40 text-[10px] text-muted-foreground font-medium truncate">
+              {trackInventory ? t('trackingEnabled', 'កំពុងតាមដានកម្រិតស្តុក') : t('trackingDisabled', 'មិនតាមដានកម្រិតស្តុកទេ')}
             </div>
           </div>
         </div>
@@ -277,10 +277,10 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
           </div>
           <div>
             <h4 className="text-xs font-bold text-foreground">
-              {t('products.stockTrackingSettings', 'ការកំណត់តាមដានស្តុក')}
+              {t('stockTrackingSettings', 'ការកំណត់តាមដានស្តុក')}
             </h4>
             <p className="text-[11px] text-muted-foreground">
-              {t('products.stockTrackingDesc', 'តាមដានចំនួនស្តុកស្វ័យប្រវត្តិពេលលក់ និងកំណត់កម្រិតប្រកាសអាសន្ន')}
+              {t('stockTrackingDesc', 'តាមដានចំនួនស្តុកស្វ័យប្រវត្តិពេលលក់ និងកំណត់កម្រិតប្រកាសអាសន្ន')}
             </p>
           </div>
         </div>
@@ -295,7 +295,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
             />
             <span className="text-xs font-bold text-foreground">
-              {t('products.trackStockLevel', 'តាមដានស្តុក (Track Stock)')}
+              {t('trackStockLevel', 'តាមដានស្តុក')}
             </span>
           </label>
 
@@ -354,17 +354,17 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
             )}
           </div>
 
-          <form onSubmit={handleSubmitAdjustment} className="space-y-4">
-            <div className={`grid grid-cols-1 ${variants && variants.length > 0 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-              {/* Warehouse Location (ModernSelect) */}
+          <form onSubmit={handleSubmitAdjustment} className="space-y-3.5">
+            <div className={`grid grid-cols-1 ${variants && variants.length > 0 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3.5`}>
+              {/* Warehouse Location */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">
-                  {t('products.warehouseLocationLabel', 'ទីតាំងឃ្លាំង (Warehouse)')} <span className="text-rose-500">*</span>
+                <label className="block text-xs font-semibold text-foreground/90 mb-1">
+                  {t('products.warehouseLocationLabel', 'ទីតាំងឃ្លាំង (Warehouse)')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={warehouseId}
                   onChange={(e) => setWarehouseId(e.target.value)}
-                  className="form-select w-full text-xs font-semibold h-[38px] rounded-xl border border-border/80 bg-background text-foreground cursor-pointer"
+                  className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
                   <option value="">{t('products.selectWarehousePlaceholder', 'ជ្រើសរើសឃ្លាំង...')}</option>
                   {warehouses.map((w) => (
@@ -376,13 +376,13 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
               {/* Variant Selector (If Product Has Variants) */}
               {variants && variants.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">
+                  <label className="block text-xs font-semibold text-foreground/90 mb-1">
                     {t('products.variantOptionLabel', 'ជម្រើសទំនិញ (Variant)')}
                   </label>
                   <select
                     value={variantId}
                     onChange={(e) => setVariantId(e.target.value)}
-                    className="form-select w-full text-xs font-semibold h-[38px] rounded-xl border border-border/80 bg-background text-foreground cursor-pointer"
+                    className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 cursor-pointer"
                   >
                     <option value="">{t('products.allMainStockPlaceholder', 'ស្តុកទូទៅ (All / Main Stock)')}</option>
                     {variants.map((v) => (
@@ -394,8 +394,8 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
 
               {/* Quantity Input */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">
-                  {t('products.quantityLabel', 'ចំនួនស្តុក (Quantity)')} <span className="text-rose-500">*</span>
+                <label className="block text-xs font-semibold text-foreground/90 mb-1">
+                  {t('products.quantityLabel', 'ចំនួនស្តុក (Quantity)')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -404,7 +404,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                     placeholder={t('products.enterQtyPlaceholder', 'បញ្ចូលចំនួន...')}
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    className="form-input text-xs font-semibold font-sans px-3.5 py-2 h-[38px] w-full rounded-xl bg-background text-foreground dark:bg-slate-900/60 border border-border/80 focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] font-mono rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all"
                     required
                   />
                 </div>
@@ -413,14 +413,14 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
 
             {/* Adjustment Type Segmented Tab */}
             <div>
-              <label className="block text-xs font-bold text-muted-foreground mb-1.5">
-                {t('products.actionLabel', 'ប្រភេទការកែប្រែ (Action)')} <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold text-foreground/90 mb-1">
+                {t('products.actionLabel', 'ប្រភេទការកែប្រែ (Action)')} <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted/30 dark:bg-slate-900/50 rounded-xl border border-border/70">
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted/30 dark:bg-slate-900/50 rounded-lg border border-border/70">
                 <button
                   type="button"
                   onClick={() => setAdjustmentType('addition')}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  className={`py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                     adjustmentType === 'addition'
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -433,7 +433,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                 <button
                   type="button"
                   onClick={() => setAdjustmentType('subtraction')}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  className={`py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                     adjustmentType === 'subtraction'
                       ? 'bg-rose-600 text-white shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -446,7 +446,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                 <button
                   type="button"
                   onClick={() => setAdjustmentType('audit')}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  className={`py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                     adjustmentType === 'audit'
                       ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -459,7 +459,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
             </div>
 
             {/* Quick Quantity Presets */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
               <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
                 <Zap size={12} className="text-amber-500" />
                 {t('products.quickQty', 'រហ័ស:')}
@@ -469,7 +469,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                   key={num}
                   type="button"
                   onClick={() => handleQuickQty(num)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-muted/30 hover:bg-primary/10 text-muted-foreground hover:text-primary border border-border/60 transition-all cursor-pointer active:scale-95"
+                  className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-muted/30 hover:bg-primary/10 text-muted-foreground hover:text-primary border border-border/60 transition-all cursor-pointer active:scale-95"
                 >
                   +{num}
                 </button>
@@ -477,8 +477,8 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
             </div>
 
             {/* Reason Description & Presets */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-muted-foreground">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-foreground/90">
                 {t('products.reasonLabel', 'មូលហេតុនៃការកែប្រែ (Reason)')}
               </label>
               <input
@@ -486,7 +486,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                 placeholder={t('products.reasonPlaceholder', 'ឧទាហរណ៍៖ ទិញចូលបន្ថែម, ទំនិញខូច, ផ្ទៀងផ្ទាត់ស្តុក...')}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="form-input text-xs font-medium font-sans px-3.5 py-2 h-[38px] w-full rounded-xl bg-background text-foreground dark:bg-slate-900/60 border border-border/80 focus:ring-2 focus:ring-primary/20"
+                className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all"
               />
 
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -505,14 +505,14 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
             </div>
 
             {/* Submit Action */}
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={isAddingAdjustment || !quantity}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-primary text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
               >
-                {isAddingAdjustment ? <Loader2 className="animate-spin" size={15} /> : <Plus size={15} />}
-                <span>{t('products.logAdjustment', 'រក្សាទុកការកែប្រែស្តុក')}</span>
+                {isAddingAdjustment ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
+                <span>{t('logAdjustment', 'Save Stock Adjustment')}</span>
               </button>
             </div>
           </form>
@@ -528,9 +528,9 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-foreground">
-                    {t('products.stockMovementHistory', 'ប្រវត្តិកែប្រែស្តុក (History)')}
+                    {t('stockMovementHistory', 'Stock Movement History')}
                   </h4>
-                  <p className="text-[10px] text-muted-foreground">{t('products.stockMovementHistorySub', 'កំណត់ត្រាកាត់/បន្ថែមក្នុងប្រព័ន្ធ')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('stockMovementHistorySub', 'Track stock adjustments and transactions')}</p>
                 </div>
               </div>
 
@@ -545,7 +545,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('products.filterAll', 'ទាំងអស់')}
+                  {t('filterAll', 'All')}
                 </button>
                 <button
                   type="button"
@@ -556,7 +556,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('products.filterAdd', '+បន្ថែម')}
+                  {t('filterAdd', '+ Add')}
                 </button>
                 <button
                   type="button"
@@ -567,7 +567,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('products.filterDeduct', '-កាត់')}
+                  {t('filterDeduct', '- Deduct')}
                 </button>
               </div>
             </div>
@@ -577,9 +577,9 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
               <table className="w-full data-table text-xs">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-muted-foreground sticky top-0 bg-card">
-                    <th className="text-left py-2.5 px-3 font-bold text-[10px] uppercase">{t('products.tableType', 'ប្រតិបត្តិការ')}</th>
-                    <th className="text-left py-2.5 px-3 font-bold text-[10px] uppercase">{t('products.tableQty', 'ចំនួន')}</th>
-                    <th className="text-left py-2.5 px-3 font-bold text-[10px] uppercase">{t('products.tableReason', 'មូលហេតុ')}</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-[10px] uppercase">{t('tableType', 'Type')}</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-[10px] uppercase">{t('tableQty', 'Qty')}</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-[10px] uppercase">{t('tableReason', 'Reason')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">

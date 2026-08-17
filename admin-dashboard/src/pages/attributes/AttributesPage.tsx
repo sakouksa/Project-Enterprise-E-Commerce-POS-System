@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, Edit2, Trash2, X, Tag, ToggleLeft, ToggleRight, Loader2, 
   ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, 
-  Sliders, Paintbrush, ListPlus, Settings
+  Sliders, Paintbrush, ListPlus, Settings, Save
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -22,6 +22,7 @@ import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { ColumnSettingsPopover } from '@/components/shared/ColumnSettingsPopover'
 
 interface AttributeValue {
   id: number
@@ -42,13 +43,18 @@ interface Attribute {
 }
 
 const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
+  const { language } = useThemeStore()
   const { t, i18n } = useTranslation(['products', 'common'])
   const qc = useQueryClient()
   const toast = useToast()
 
-  // Open add modal when parent triggers it (parent auto-resets to 0 after 200ms)
+  // Open add modal only when triggerAdd changes to a positive number
+  const prevTriggerRef = React.useRef(triggerAdd || 0)
   React.useEffect(() => {
-    if (triggerAdd && triggerAdd > 0) openCreateModal()
+    if (triggerAdd && triggerAdd > 0 && triggerAdd !== prevTriggerRef.current) {
+      openCreateModal()
+    }
+    prevTriggerRef.current = triggerAdd || 0
   }, [triggerAdd])
 
   const {
@@ -63,12 +69,19 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   } = useServerPagination({ storageKey: 'attributes' })
 
   // UI state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingAttr, setEditingAttr] = useState<Attribute | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Attribute | null>(null)
   const [recycleBinMode, setRecycleBinMode] = useState(false)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    name: true,
+    type: true,
+    values: true,
+    status: true,
+  })
 
   // Nested values list management state
   const [valuesList, setValuesList] = useState<Omit<AttributeValue, 'id'>[]>([])
@@ -107,7 +120,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
   // Query
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['attributes', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode],
+    queryKey: ['attributes', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
     queryFn: () => api.get('/attributes', { 
       params: { 
         page, 
@@ -115,7 +128,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         per_page: perPage, 
         sort_by: sortBy, 
         sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : undefined
+        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
       } 
     }).then(r => r.data),
     placeholderData: (prev) => prev,
@@ -400,18 +413,43 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       )}
 
       {/* Filters */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <SearchInput value={search} onChange={setSearch} placeholder={t('products.searchAttributes')} />
-          <ResetButton onClick={() => { setSearch(''); setSortBy('created_at'); setSortOrder('desc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
+      <div className="bg-card rounded-2xl border border-border p-3.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchInput value={search} onChange={setSearch} placeholder="products.searchAttributes" />
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+              setPage(1)
+            }}
+            className="h-10 px-3.5 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all shadow-sm cursor-pointer"
+          >
+            <option value="all">{t('common.allStatus', 'All Status')}</option>
+            <option value="active">{t('common.active', 'Active')}</option>
+            <option value="inactive">{t('common.inactive', 'Inactive')}</option>
+          </select>
+
+          <ResetButton onClick={() => { setSearch(''); setStatusFilter('all'); setSortBy('created_at'); setSortOrder('desc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['attributes'] })}
               title={t('products.refresh')}
-              className="p-2 text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm cursor-pointer"
+              className="h-10 w-10 flex items-center justify-center text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/80 transition-all shadow-sm active:scale-[0.98] cursor-pointer"
             >
               <RefreshCw size={15} />
             </button>
+
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'name', label: t('products.colAttributeName', 'Attribute Name') },
+                { key: 'type', label: t('products.colDisplayType', 'Display Type') },
+                { key: 'values', label: t('products.colValuesConfigured', 'Values Configured') },
+                { key: 'status', label: t('products.colStatus', 'Status') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={setVisibleColumns}
+            />
           </div>
         </div>
       </div>
@@ -436,16 +474,24 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
                   />
                 </th>
-                <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colAttributeName')} {renderSortIcon('name')}
-                </th>
-                <th onClick={() => handleSort('type')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-32">
-                  {t('products.colDisplayType')} {renderSortIcon('type')}
-                </th>
-                <th className="text-left py-3">{t('products.colValuesConfigured')}</th>
-                <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  {t('products.colStatus')} {renderSortIcon('is_active')}
-                </th>
+                {visibleColumns.name !== false && (
+                  <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
+                    {t('products.colAttributeName')} {renderSortIcon('name')}
+                  </th>
+                )}
+                {visibleColumns.type !== false && (
+                  <th onClick={() => handleSort('type')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-32">
+                    {t('products.colDisplayType')} {renderSortIcon('type')}
+                  </th>
+                )}
+                {visibleColumns.values !== false && (
+                  <th className="text-left py-3">{t('products.colValuesConfigured')}</th>
+                )}
+                {visibleColumns.status !== false && (
+                  <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
+                    {t('products.colStatus')} {renderSortIcon('is_active')}
+                  </th>
+                )}
                 <th className="text-right pr-4 py-3 select-none w-28">{t('products.colActions')}</th>
               </tr>
             </thead>
@@ -454,7 +500,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     <td className="w-12"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
-                    <td><div className="skeleton h-4 w-32 rounded" /></td>
+                    <td className="py-3"><div className="skeleton h-4 w-32 rounded" /></td>
                     <td><div className="skeleton h-4 w-20 rounded" /></td>
                     <td><div className="skeleton h-4 w-48 rounded" /></td>
                     <td><div className="skeleton h-4 w-16 rounded" /></td>
@@ -478,35 +524,63 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                         className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
                       />
                     </td>
-                    <td className="font-medium text-foreground text-sm py-3 flex items-center gap-2">
-                      <Sliders size={16} className="text-indigo-500 flex-shrink-0" />
-                      <span>{attr.name}</span>
-                    </td>
-                    <td className="text-sm font-semibold capitalize text-muted-foreground">{attr.type}</td>
-                    <td className="py-3">
-                      <div className="flex flex-wrap gap-1.5 max-w-lg">
-                        {attr.values && attr.values.length > 0 ? (
-                          attr.values.map(val => (
-                            <span 
-                              key={val.id} 
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border border-border/60 bg-muted/40 text-foreground"
+                    {visibleColumns.name !== false && (
+                      <td className="font-medium text-foreground text-sm py-3">
+                        <span className="font-semibold text-foreground text-sm">{attr.name}</span>
+                      </td>
+                    )}
+                    {visibleColumns.type !== false && (
+                      <td>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground capitalize">
+                          {attr.type === 'select' && t('products.dropdownSelect', 'Dropdown Select')}
+                          {attr.type === 'color' && t('products.colorSwatches', 'Color Swatches')}
+                          {attr.type === 'button' && t('products.productButtons', 'Pill Buttons')}
+                          {attr.type === 'text' && t('products.plainTextField', 'Text Input')}
+                          {!['select', 'color', 'button', 'text'].includes(attr.type) && attr.type}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.values !== false && (
+                      <td>
+                        <div className="flex flex-wrap gap-1 items-center max-w-xs">
+                          {(attr.values || []).slice(0, 4).map((v) => (
+                            <span
+                              key={v.id}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/20"
                             >
-                              {attr.type === 'color' && val.color_code && (
-                                <span className="w-2.5 h-2.5 rounded-full border border-border" style={{ backgroundColor: val.color_code }} />
+                              {attr.type === 'color' && v.color_code && (
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full border border-border"
+                                  style={{ backgroundColor: v.color_code }}
+                                />
                               )}
-                              {val.value}
+                              {v.value}
                             </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground/60">—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={attr.is_active ? 'badge-success' : 'badge-muted'}>
-                        {attr.is_active ? t('products.active') : t('products.inactive')}
-                      </span>
-                    </td>
+                          ))}
+                          {(attr.values || []).length > 4 && (
+                            <span className="text-[11px] text-muted-foreground font-semibold">
+                              +{attr.values!.length - 4}
+                            </span>
+                          )}
+                          {(!attr.values || attr.values.length === 0) && (
+                            <span className="text-xs text-muted-foreground italic">—</span>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.status !== false && (
+                      <td>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            attr.is_active
+                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {attr.is_active ? t('products.active') : t('products.inactive')}
+                        </span>
+                      </td>
+                    )}
                     <td className="text-right pr-4">
                       <TableActionMenu
                         onEdit={() => openEditModal(attr)}
@@ -516,203 +590,235 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                   </tr>
                 ))
               )}
-              {!isLoading && attributes.length === 0 && (
-                <EmptyState cols={6} />
-              )}
             </tbody>
           </table>
         </TableWrapper>
 
-        <Pagination 
-          currentPage={pagination.current_page} 
-          lastPage={pagination.last_page} 
-          total={pagination.total} 
-          perPage={perPage} 
-          onPageChange={setPage} 
-          onPerPageChange={setPerPage} 
-        />
+        {/* Pagination */}
+        <div className="p-4 border-t border-border">
+          <Pagination 
+            currentPage={pagination.current_page} 
+            lastPage={pagination.last_page} 
+            total={pagination.total} 
+            perPage={perPage} 
+            onPageChange={setPage} 
+            onPerPageChange={setPerPage} 
+          />
+        </div>
       </div>
 
-      {/* Attribute Create/Edit Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingAttr ? t('products.editAttribute') : t('products.addAttribute')}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                  <X size={18} />
-                </button>
+      {/* Create / Edit Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-lg bg-card rounded-3xl border border-border shadow-2xl overflow-hidden animate-scale-in">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-2xs">
+                  <Sliders size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground leading-tight">
+                    {editingAttr ? t('products.editAttribute', 'Edit Attribute') : t('products.addAttribute', 'Add Attribute')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {editingAttr ? t('products.editAttributeDesc', 'Modify display type and customizable variant options') : t('products.addAttributeDesc', 'Create a new product variation dimension (e.g. Size, Color, Storage...)')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                type="button"
+                className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body Form */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-4.5 max-h-[calc(85vh-130px)] overflow-y-auto">
+              {/* Attribute Name */}
+              <div>
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                  {t('products.colAttributeName', 'Attribute Name')} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder={t('products.attributeNamePlaceholder', 'e.g. Color, Size, Storage, RAM, Material...')}
+                  className="form-input text-sm h-11 px-3.5 rounded-xl bg-background border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium w-full"
+                />
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.colAttributeName')}</label>
-                    <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      placeholder={t('forms.attributeNamePlaceholder', 'e.g. Color, Size, Material')}
-                      className="form-input"
-                    />
-                  </div>
+              {/* Display Type + Status Toggle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-end">
+                <div>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colDisplayType', 'Display Type')}
+                  </label>
+                  <ModernSelect
+                    value={type}
+                    onChange={(val) => setType(String(val) as any)}
+                    options={[
+                      { value: 'select', label: t('products.dropdownSelect', 'Dropdown Select') },
+                      { value: 'color', label: t('products.colorSwatches', 'Color Swatches') },
+                      { value: 'button', label: t('products.productButtons', 'Pill Buttons') },
+                      { value: 'text', label: t('products.plainTextField', 'Text Input') },
+                    ]}
+                    placeholder={t('products.colDisplayType')}
+                    size="lg"
+                    className="w-full"
+                    buttonClassName="font-medium text-sm border-border/80 bg-background rounded-xl h-11 px-3.5 cursor-pointer w-full"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.colDisplayType')}</label>
-                    <ModernSelect
-                      value={type}
-                      onChange={(val) => setType(String(val) as any)}
-                      options={[
-                        { value: 'select', label: t('products.dropdownSelect') },
-                        { value: 'color', label: t('products.colorSwatches') },
-                        { value: 'button', label: t('products.productButtons') },
-                        { value: 'text', label: t('products.plainTextField') },
-                      ]}
-                      placeholder={t('products.colDisplayType')}
-                      buttonClassName="font-normal text-sm border-border bg-card cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm font-medium text-muted-foreground">{t('products.colStatus')}</span>
+                {/* Status Toggle Card */}
+                <div>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colStatus', 'Status')}
+                  </label>
+                  <div className="flex items-center justify-between px-3.5 rounded-xl bg-muted/30 border border-border/80 h-11 w-full box-border">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                      <span className="text-xs font-semibold text-foreground">
+                        {isActive ? t('products.active', 'Active') : t('products.inactive', 'Inactive')}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsActive(!isActive)}
-                      className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isActive ? 'bg-primary' : 'bg-muted-foreground/30'
+                      }`}
                     >
-                      {isActive ? <ToggleRight size={36} /> : <ToggleLeft size={36} className="text-muted-foreground" />}
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          isActive ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Nested Values Builder */}
+              <div className="pt-3 border-t border-border/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-xs text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <ListPlus size={14} className="text-primary" />
+                    {t('products.colValuesConfigured', 'Configured Values')}
+                  </h4>
+                  <span className="text-[11px] text-muted-foreground font-semibold">
+                    {valuesList.length} {t('products.optionsCount', 'Options')}
+                  </span>
+                </div>
+
+                {/* Builder Input Strip */}
+                <div className="grid grid-cols-12 gap-2 items-center bg-muted/20 p-2.5 rounded-2xl border border-border/60">
+                  <div className={type === 'color' ? 'col-span-5' : 'col-span-8'}>
+                    <input
+                      value={newValueText}
+                      onChange={(e) => setNewValueText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleAddValue()
+                        }
+                      }}
+                      placeholder={type === 'color' ? t('products.attributeColorPlaceholder', 'e.g. Midnight Black') : t('products.attributeValuePlaceholder', 'e.g. Medium, 256GB, Red...')}
+                      className="form-input text-xs h-10 py-2 px-3 rounded-xl bg-background border-border/80 font-medium w-full"
+                    />
+                  </div>
+
+                  {type === 'color' && (
+                    <div className="col-span-4 flex items-center gap-1.5">
+                      <input
+                        type="color"
+                        value={newColorCode}
+                        onChange={(e) => setNewColorCode(e.target.value)}
+                        className="w-8 h-8 rounded-lg border border-border/80 p-0 cursor-pointer flex-shrink-0"
+                      />
+                      <input
+                        value={newColorCode}
+                        onChange={(e) => setNewColorCode(e.target.value)}
+                        className="form-input h-10 py-1.5 px-2 text-[11px] font-mono rounded-lg bg-background border-border/80 w-full uppercase"
+                      />
+                    </div>
+                  )}
+
+                  <div className={type === 'color' ? 'col-span-3' : 'col-span-4'}>
+                    <button
+                      type="button"
+                      onClick={handleAddValue}
+                      className="w-full h-10 text-xs bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 shadow-xs flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                    >
+                      <Plus size={13} />
+                      <span>{t('products.addOption', 'Add')}</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Nested Values Builder */}
-                <div className="pt-4 border-t border-border space-y-3">
-                  <h4 className="font-medium text-sm text-foreground flex items-center gap-1.5">
-                    <ListPlus size={16} className="text-primary" />
-                    {t('products.colValuesConfigured')}
-                  </h4>
-
-                  {/* Builder Form */}
-                  <div className="grid grid-cols-12 gap-2 items-end bg-muted/20 p-3 rounded-xl border border-border/40">
-                    <div className={type === 'color' ? 'col-span-4' : 'col-span-7'}>
-                      <input
-                        value={newValueText}
-                        onChange={(e) => setNewValueText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleAddValue()
-                          }
-                        }}
-                        placeholder={type === 'color' ? 'Red' : 'e.g. Medium'}
-                        className="form-input py-1.5 text-xs"
-                      />
-                    </div>
-
-                    {type === 'color' && (
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="color"
-                            value={newColorCode}
-                            onChange={(e) => setNewColorCode(e.target.value)}
-                            className="w-7 h-7 rounded border border-border p-0 cursor-pointer"
+                {/* List of current values */}
+                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                  {valuesList.map((val, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-border/70 bg-card hover:border-primary/40 transition-colors text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        {type === 'color' && val.color_code && (
+                          <span 
+                            className="w-4 h-4 rounded-full border border-border/80 flex-shrink-0 shadow-2xs" 
+                            style={{ backgroundColor: val.color_code }} 
                           />
-                          <input
-                            value={newColorCode}
-                            onChange={(e) => setNewColorCode(e.target.value)}
-                            className="form-input py-1.5 text-[10px] font-mono w-16"
-                          />
-                        </div>
+                        )}
+                        <span className="font-semibold text-foreground">{val.value}</span>
+                        {val.color_code && <span className="text-[10px] text-muted-foreground font-mono">({val.color_code})</span>}
                       </div>
-                    )}
-
-                    <div className="col-span-3">
-                      <input
-                        type="number"
-                        value={newValueSort}
-                        onChange={(e) => setNewValueSort(e.target.value)}
-                        className="form-input py-1.5 text-xs"
-                      />
-                    </div>
-
-                    <div className="col-span-2">
                       <button
                         type="button"
-                        onClick={handleAddValue}
-                        className="w-full py-1.5 text-xs bg-primary text-white font-semibold rounded-lg hover:opacity-90 flex items-center justify-center gap-1 cursor-pointer"
+                        onClick={() => handleRemoveValue(idx)}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1.5 rounded-lg transition-colors cursor-pointer"
                       >
-                        +
+                        <Trash2 size={13} />
                       </button>
                     </div>
-                  </div>
-
-                  {/* List of current values */}
-                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                    {valuesList.map((val, idx) => (
-                      <div 
-                        key={idx} 
-                        className="flex items-center justify-between p-2 rounded-lg border border-border bg-card text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          {type === 'color' && val.color_code && (
-                            <span 
-                              className="w-4 h-4 rounded-full border border-border flex-shrink-0" 
-                              style={{ backgroundColor: val.color_code }} 
-                            />
-                          )}
-                          <span className="font-medium text-foreground">{val.value}</span>
-                          {val.color_code && <span className="text-[10px] text-muted-foreground font-mono">({val.color_code})</span>}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveValue(idx)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 p-1 rounded cursor-pointer"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {valuesList.length === 0 && (
-                      <div className="text-center py-4 text-xs text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border">
-                        {t('products.noValuesConfigured', 'No values added yet. Enter a value name above and click +')}
-                      </div>
-                    )}
-                  </div>
+                  ))}
+                  {valuesList.length === 0 && (
+                    <div className="text-center py-4 text-xs text-muted-foreground bg-muted/10 rounded-2xl border border-dashed border-border/80">
+                      {t('products.noValuesConfigured', 'No values added yet. Enter a value name above and click Add')}
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                  >
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg hover:opacity-90 shadow-sm flex items-center gap-1.5 cursor-pointer"
-                  >
-                    {isSaving && <Loader2 size={14} className="animate-spin" />}
-                    {editingAttr ? t('common.save') : t('products.addAttribute')}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              {/* Footer Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-xl transition-all cursor-pointer"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-primary rounded-xl hover:opacity-90 shadow-md hover:shadow-primary/20 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  <span>{editingAttr ? t('common.save', 'Save Changes') : t('products.addAttribute', 'Create Attribute')}</span>
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* CSV Import Modal */}
       <AnimatePresence>
@@ -773,17 +879,10 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('attributes.deleteTitle', 'Delete Attribute')}
-        message={
-          <div>
-            <div>{t('attributes.confirmDeleteAttributeMessage', 'Are you sure you want to delete attribute')}</div>
-            <div className="mt-1">
-              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
-            </div>
-          </div>
-        }
-        confirmText={t('attributes.deleteTitle', 'Delete Attribute')}
-        cancelText={t('common.cancel', 'Cancel')}
+        title="attributes.deleteTitle"
+        itemName={deleteTarget?.name}
+        confirmText="common.confirmDelete"
+        cancelText="common.cancel"
         onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {

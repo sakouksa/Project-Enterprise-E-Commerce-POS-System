@@ -14,9 +14,25 @@ class PurchaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Clean existing tables in cascade order
+        DB::table('purchase_return_items')->delete();
+        DB::table('purchase_returns')->delete();
+        DB::table('purchase_items')->delete();
+        DB::table('purchases')->delete();
+
         $companyId = Company::value('id') ?? 1;
         $branchId = Branch::value('id') ?? 1;
         $warehouseId = Warehouse::value('id') ?? 1;
+
+        $supplierIds = Supplier::pluck('id')->toArray();
+        if (empty($supplierIds)) {
+            $supplierIds = [1];
+        }
+
+        $products = Product::with('variants')->get();
+        if ($products->isEmpty()) {
+            return;
+        }
 
         $purchases = [];
         $purchaseItems = [];
@@ -28,52 +44,90 @@ class PurchaseSeeder extends Seeder
 
         // Generate 100 purchases
         for ($pId = 1; $pId <= 100; $pId++) {
-            $suppId = rand(1, 50);
+            $suppId = $supplierIds[array_rand($supplierIds)];
             $subtotal = 0;
-            $itemsInPurchase = 4; // Generate exactly 4 items per purchase to reach 400 items total
+            $itemsInPurchase = rand(3, 6); // 3 to 6 items per purchase
 
-            // Create items first to calculate subtotal
+            // Pick random products for this purchase
+            $selectedProducts = $products->random(min($itemsInPurchase, $products->count()));
+
             $tempItems = [];
-            for ($itemIdx = 1; $itemIdx <= $itemsInPurchase; $itemIdx++) {
-                $productId = rand(1, 100);
-                $qty = rand(10, 50);
-                $unitCost = rand(50, 200) * 1000;
-                $discPercent = rand(0, 5);
-                $discAmt = ($qty * $unitCost) * $discPercent / 100;
-                $taxPercent = 11.0000;
-                $taxAmt = (($qty * $unitCost) - $discAmt) * $taxPercent / 100;
-                $itemSubtotal = ($qty * $unitCost);
-                $itemTotal = $itemSubtotal - $discAmt + $taxAmt;
+            $itemIdx = 1;
+            foreach ($selectedProducts as $product) {
+                $qty = rand(5, 40);
+                
+                // Check if product has variants
+                $variant = $product->variants->isNotEmpty() ? $product->variants->random() : null;
+                $variantId = $variant ? $variant->id : null;
+                
+                // Unit cost from variant or product, fallback to reasonable USD cost
+                $baseCost = (float)($variant?->cost_price ?? $product->cost_price ?? 0);
+                if ($baseCost <= 0) {
+                    $baseCost = round(rand(15, 250) + (rand(0, 99) / 100), 2);
+                }
+                $unitCost = $baseCost;
+
+                $discPercent = rand(0, 8);
+                $discAmt = round(($qty * $unitCost) * $discPercent / 100, 2);
+                $taxPercent = 10.00;
+                $taxAmt = round((($qty * $unitCost) - $discAmt) * $taxPercent / 100, 2);
+                $itemSubtotal = round($qty * $unitCost, 2);
+                $itemTotal = round($itemSubtotal - $discAmt + $taxAmt, 2);
 
                 $subtotal += $itemTotal;
 
                 $tempItems[] = [
                     'id' => $pItemCount++,
                     'purchase_id' => $pId,
-                    'product_id' => $productId,
-                    'product_variant_id' => null,
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variantId,
                     'quantity' => $qty,
                     'quantity_received' => $qty,
                     'unit_cost' => $unitCost,
+                    'unit_cost_base' => $unitCost,
                     'discount_percent' => $discPercent,
                     'discount_amount' => $discAmt,
                     'tax_percent' => $taxPercent,
                     'tax_amount' => $taxAmt,
                     'subtotal' => $itemSubtotal,
+                    'subtotal_base' => $itemSubtotal,
                     'total' => $itemTotal,
-                    'notes' => 'Bulk supply order item ' . $itemIdx,
-                    'created_at' => now()->subDays(60 - $pId),
-                    'updated_at' => now()->subDays(60 - $pId),
+                    'total_base' => $itemTotal,
+                    'currency_code' => 'USD',
+                    'exchange_rate' => 1.000000,
+                    'notes' => 'Supply item #' . $itemIdx . ' for ' . $product->name,
+                    'created_at' => now()->subDays(100 - $pId),
+                    'updated_at' => now()->subDays(100 - $pId),
                 ];
+                $itemIdx++;
             }
 
-            $discountAmount = $subtotal * rand(0, 5) / 100;
-            $taxAmount = ($subtotal - $discountAmount) * 11 / 100;
-            $shippingCost = rand(50, 150) * 1000;
-            $grandTotal = $subtotal - $discountAmount + $taxAmount + $shippingCost;
-            $paymentStatus = $pId % 5 === 0 ? 'unpaid' : ($pId % 5 === 1 ? 'partial' : 'paid');
-            $paidAmount = $paymentStatus === 'paid' ? $grandTotal : ($paymentStatus === 'partial' ? $grandTotal * 0.5 : 0);
-            $dueAmount = $grandTotal - $paidAmount;
+            $discountAmount = round($subtotal * rand(0, 5) / 100, 2);
+            $taxAmount = round(($subtotal - $discountAmount) * 10 / 100, 2);
+            $shippingCost = round(rand(10, 80) + (rand(0, 99) / 100), 2);
+            $grandTotal = round($subtotal - $discountAmount + $taxAmount + $shippingCost, 2);
+            
+            // Valid status enum: 'draft', 'ordered', 'partial', 'received', 'cancelled'
+            $statusRandom = rand(1, 100);
+            $status = $statusRandom <= 65 ? 'received' : ($statusRandom <= 80 ? 'ordered' : ($statusRandom <= 95 ? 'partial' : 'draft'));
+            
+            // Valid payment_status enum: 'unpaid', 'partial', 'paid'
+            $paymentRandom = rand(1, 100);
+            $paymentStatus = $paymentRandom <= 60 ? 'paid' : ($paymentRandom <= 85 ? 'partial' : 'unpaid');
+            $paidAmount = $paymentStatus === 'paid' ? $grandTotal : ($paymentStatus === 'partial' ? round($grandTotal * 0.5, 2) : 0.00);
+            $dueAmount = round($grandTotal - $paidAmount, 2);
+
+            // Fix quantity_received on items based on status
+            foreach ($tempItems as &$tItem) {
+                if ($status === 'received') {
+                    $tItem['quantity_received'] = $tItem['quantity'];
+                } elseif ($status === 'partial') {
+                    $tItem['quantity_received'] = max(1, (int)floor($tItem['quantity'] * 0.5));
+                } else {
+                    $tItem['quantity_received'] = 0;
+                }
+            }
+            unset($tItem);
 
             $purchases[] = [
                 'id' => $pId,
@@ -83,34 +137,41 @@ class PurchaseSeeder extends Seeder
                 'supplier_id' => $suppId,
                 'user_id' => 1,
                 'reference_number' => 'PO-' . date('Ymd') . '-' . str_pad($pId, 4, '0', STR_PAD_LEFT),
-                'date' => now()->subDays(60 - $pId)->format('Y-m-d'),
-                'due_date' => now()->subDays(60 - $pId)->addDays(30)->format('Y-m-d'),
-                'status' => 'received',
+                'date' => now()->subDays(100 - $pId)->format('Y-m-d'),
+                'due_date' => now()->subDays(100 - $pId)->addDays(30)->format('Y-m-d'),
+                'status' => $status,
                 'payment_status' => $paymentStatus,
                 'subtotal' => $subtotal,
+                'subtotal_base' => $subtotal,
                 'tax_amount' => $taxAmount,
+                'tax_amount_base' => $taxAmount,
                 'discount_amount' => $discountAmount,
+                'discount_amount_base' => $discountAmount,
                 'shipping_cost' => $shippingCost,
+                'shipping_cost_base' => $shippingCost,
                 'grand_total' => $grandTotal,
+                'grand_total_base' => $grandTotal,
                 'paid_amount' => $paidAmount,
+                'paid_amount_base' => $paidAmount,
                 'due_amount' => $dueAmount,
-                'currency_code' => 'IDR',
+                'due_amount_base' => $dueAmount,
+                'currency_code' => 'USD',
                 'exchange_rate' => 1.000000,
-                'notes' => 'Warehouse replenishment purchase order ' . $pId,
-                'created_at' => now()->subDays(60 - $pId),
-                'updated_at' => now()->subDays(60 - $pId),
+                'notes' => 'Inventory replenishment purchase order #' . $pId,
+                'created_at' => now()->subDays(100 - $pId),
+                'updated_at' => now()->subDays(100 - $pId),
             ];
 
             foreach ($tempItems as $item) {
                 $purchaseItems[] = $item;
             }
 
-            // Create purchase returns (let's create 15 purchase returns total)
-            if ($pId <= 15) {
-                $retItemId = rand(0, $itemsInPurchase - 1);
+            // Create purchase returns (15 purchase returns total)
+            if ($pId <= 15 && count($tempItems) > 0) {
+                $retItemId = rand(0, count($tempItems) - 1);
                 $retItem = $tempItems[$retItemId];
-                $retQty = rand(1, 3);
-                $retTotal = $retQty * $retItem['unit_cost'];
+                $retQty = rand(1, min(3, $retItem['quantity']));
+                $retTotal = round($retQty * $retItem['unit_cost'], 2);
 
                 $purchaseReturns[] = [
                     'id' => $pId,
@@ -119,12 +180,12 @@ class PurchaseSeeder extends Seeder
                     'supplier_id' => $suppId,
                     'user_id' => 1,
                     'reference_number' => 'PRT-' . date('Ymd') . '-' . str_pad($pId, 4, '0', STR_PAD_LEFT),
-                    'date' => now()->subDays(60 - $pId)->addDays(5)->format('Y-m-d'),
+                    'date' => now()->subDays(100 - $pId)->addDays(5)->format('Y-m-d'),
                     'total_amount' => $retTotal,
-                    'reason' => 'Defective or broken item return ' . $pId,
+                    'reason' => 'Defective or damaged items returned from PO #' . $pId,
                     'status' => 'approved',
-                    'created_at' => now()->subDays(60 - $pId)->addDays(5),
-                    'updated_at' => now()->subDays(60 - $pId)->addDays(5),
+                    'created_at' => now()->subDays(100 - $pId)->addDays(5),
+                    'updated_at' => now()->subDays(100 - $pId)->addDays(5),
                 ];
 
                 $purchaseReturnItems[] = [
@@ -132,13 +193,13 @@ class PurchaseSeeder extends Seeder
                     'purchase_return_id' => $pId,
                     'purchase_item_id' => $retItem['id'],
                     'product_id' => $retItem['product_id'],
-                    'product_variant_id' => null,
+                    'product_variant_id' => $retItem['product_variant_id'],
                     'quantity' => $retQty,
                     'unit_cost' => $retItem['unit_cost'],
                     'total' => $retTotal,
-                    'notes' => 'Returned due to physical damage',
-                    'created_at' => now()->subDays(60 - $pId)->addDays(5),
-                    'updated_at' => now()->subDays(60 - $pId)->addDays(5),
+                    'notes' => 'Returned due to factory packaging defect',
+                    'created_at' => now()->subDays(100 - $pId)->addDays(5),
+                    'updated_at' => now()->subDays(100 - $pId)->addDays(5),
                 ];
             }
         }
@@ -154,5 +215,13 @@ class PurchaseSeeder extends Seeder
         // Batch insert returns
         DB::table('purchase_returns')->insert($purchaseReturns);
         DB::table('purchase_return_items')->insert($purchaseReturnItems);
+
+        // Sync PostgreSQL sequences so auto-increment works on new inserts
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("SELECT setval(pg_get_serial_sequence('purchases', 'id'), coalesce(max(id), 1) + 1, false) FROM purchases;");
+            DB::statement("SELECT setval(pg_get_serial_sequence('purchase_items', 'id'), coalesce(max(id), 1) + 1, false) FROM purchase_items;");
+            DB::statement("SELECT setval(pg_get_serial_sequence('purchase_returns', 'id'), coalesce(max(id), 1) + 1, false) FROM purchase_returns;");
+            DB::statement("SELECT setval(pg_get_serial_sequence('purchase_return_items', 'id'), coalesce(max(id), 1) + 1, false) FROM purchase_return_items;");
+        }
     }
 }

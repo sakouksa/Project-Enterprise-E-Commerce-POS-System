@@ -97,16 +97,24 @@ class JwtTokenService
     {
         $plainToken = Str::random(80);
         $expiresAt = Carbon::now()->addDays($this->refreshTtlDays);
+        $deviceId = $clientInfo['device_id'] ?? Str::uuid()->toString();
 
         JwtRefreshToken::create([
-            'user_id'    => $user->id,
-            'token'      => hash('sha256', $plainToken),
-            'device'     => $clientInfo['device'] ?? null,
-            'browser'    => $clientInfo['browser'] ?? null,
-            'os'         => $clientInfo['os'] ?? null,
-            'ip_address' => $clientInfo['ip_address'] ?? null,
-            'expires_at' => $expiresAt,
-            'revoked'    => false,
+            'user_id'        => $user->id,
+            'device_id'      => $deviceId,
+            'device_name'    => $clientInfo['device_name'] ?? $clientInfo['device'] ?? 'Unknown Device',
+            'device_type'    => $clientInfo['device_type'] ?? 'web',
+            'token'          => hash('sha256', $plainToken),
+            'device'         => $clientInfo['device'] ?? 'Web',
+            'browser'        => $clientInfo['browser'] ?? null,
+            'os'             => $clientInfo['os'] ?? null,
+            'platform'       => $clientInfo['platform'] ?? $clientInfo['os'] ?? null,
+            'app_version'    => $clientInfo['app_version'] ?? '2.0.0',
+            'ip_address'     => $clientInfo['ip_address'] ?? null,
+            'expires_at'     => $expiresAt,
+            'last_active_at' => now(),
+            'status'         => 'active',
+            'revoked'        => false,
         ]);
 
         return $plainToken;
@@ -130,7 +138,17 @@ class JwtTokenService
         }
 
         // Revoke current token (rotation)
-        $refreshTokenRecord->update(['revoked' => true]);
+        $refreshTokenRecord->update([
+            'revoked'        => true,
+            'status'         => 'revoked',
+            'revoked_at'     => now(),
+            'last_active_at' => now(),
+        ]);
+
+        // Keep existing device_id during rotation if available
+        if (!empty($refreshTokenRecord->device_id) && empty($clientInfo['device_id'])) {
+            $clientInfo['device_id'] = $refreshTokenRecord->device_id;
+        }
 
         // Issue new tokens
         $accessTokenData = $this->generateAccessToken($user);
@@ -147,18 +165,35 @@ class JwtTokenService
     /**
      * Revoke single Refresh Token
      */
-    public function revokeRefreshToken(string $plainRefreshToken): void
+    public function revokeRefreshToken(string $plainRefreshToken, ?int $revokedById = null): void
     {
         $hashed = hash('sha256', $plainRefreshToken);
-        JwtRefreshToken::where('token', $hashed)->update(['revoked' => true]);
+        JwtRefreshToken::where('token', $hashed)->update([
+            'revoked'    => true,
+            'status'     => 'revoked',
+            'revoked_at' => now(),
+            'revoked_by' => $revokedById,
+        ]);
     }
 
     /**
      * Revoke all Refresh Tokens for User
      */
-    public function revokeAllUserTokens(int $userId): void
+    public function revokeAllUserTokens(int $userId, ?int $exceptTokenId = null, ?int $revokedById = null): void
     {
-        JwtRefreshToken::where('user_id', $userId)->update(['revoked' => true]);
+        $query = JwtRefreshToken::where('user_id', $userId)
+            ->where('revoked', false);
+
+        if ($exceptTokenId) {
+            $query->where('id', '!=', $exceptTokenId);
+        }
+
+        $query->update([
+            'revoked'    => true,
+            'status'     => 'revoked',
+            'revoked_at' => now(),
+            'revoked_by' => $revokedById,
+        ]);
     }
 
     private function getSecretKey(): string

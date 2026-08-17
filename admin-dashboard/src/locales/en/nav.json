@@ -81,5 +81,13 @@
   "nav.allNotifications": "All Notifications",
   "nav.notificationTemplates": "Notification Templates",
   "nav.notificationSettings": "Notification Settings",
-  "nav.notifications": "Notifications"
+  "nav.notifications": "Notifications",
+  "securityManagement": "System Security",
+  "securityOverview": "Security Overview",
+  "connectedDevices": "Connected Devices",
+  "securitySettings": "Security Policies",
+  "nav.securityManagement": "System Security",
+  "nav.securityOverview": "Security Overview",
+  "nav.connectedDevices": "Connected Devices",
+  "nav.securitySettings": "Security Policies"
 }

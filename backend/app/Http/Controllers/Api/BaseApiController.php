@@ -46,7 +46,13 @@ class BaseApiController extends Controller
                 'to'           => $paginator->lastItem(),
                 'links'        => method_exists($paginator, 'linkCollection') ? $paginator->linkCollection()->toArray() : [],
                 'meta'         => [
-                    'path' => method_exists($paginator, 'path') ? $paginator->path() : '',
+                    'path'         => method_exists($paginator, 'path') ? $paginator->path() : '',
+                    'total'        => $paginator->total(),
+                    'per_page'     => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'last_page'    => $paginator->lastPage(),
+                    'from'         => $paginator->firstItem(),
+                    'to'           => $paginator->lastItem(),
                 ],
                 'pagination'   => [
                     'total'        => $paginator->total(),
@@ -100,7 +106,13 @@ class BaseApiController extends Controller
             'to'           => $data->lastItem(),
             'links'        => method_exists($data, 'linkCollection') ? $data->linkCollection()->toArray() : [],
             'meta'         => [
-                'path' => method_exists($data, 'path') ? $data->path() : '',
+                'path'         => method_exists($data, 'path') ? $data->path() : '',
+                'total'        => $data->total(),
+                'per_page'     => $data->perPage(),
+                'current_page' => $data->currentPage(),
+                'last_page'    => $data->lastPage(),
+                'from'         => $data->firstItem(),
+                'to'           => $data->lastItem(),
             ],
             'pagination'   => [
                 'total'        => $data->total(),
@@ -131,7 +143,13 @@ class BaseApiController extends Controller
             'to'           => $paginator->lastItem(),
             'links'        => method_exists($paginator, 'linkCollection') ? $paginator->linkCollection()->toArray() : [],
             'meta'         => [
-                'path' => method_exists($paginator, 'path') ? $paginator->path() : '',
+                'path'         => method_exists($paginator, 'path') ? $paginator->path() : '',
+                'total'        => $paginator->total(),
+                'per_page'     => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'from'         => $paginator->firstItem(),
+                'to'           => $paginator->lastItem(),
             ],
             'pagination'   => [
                 'total'        => $paginator->total(),

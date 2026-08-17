@@ -118,28 +118,28 @@ export const POSTopCards: React.FC<POSTopCardsProps> = ({
   ]
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-5 lg:grid-cols-10">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 2xl:grid-cols-10 gap-2 sm:gap-2.5">
       {cards.map((c, i) => {
         const Icon = c.icon
         return (
           <div
             key={i}
-            className={`p-2.5 rounded-xl border transition-all shrink-0 min-w-[125px] sm:min-w-0 ${
+            className={`p-2.5 sm:p-3 rounded-2xl border transition-all duration-150 shadow-2xs ${
               c.highlight
                 ? 'bg-primary/5 border-primary/40 shadow-xs ring-1 ring-primary/20'
-                : 'bg-card border-border/70 hover:border-border'
+                : 'bg-card border-border/70 hover:border-primary/40'
             }`}
           >
             <div className="flex items-center justify-between gap-1 mb-1">
-              <span className="text-[10px] font-semibold text-muted-foreground truncate">{c.title}</span>
-              <div className={`p-1 rounded-md border ${c.color}`}>
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted-foreground truncate">{c.title}</span>
+              <div className={`p-1 rounded-lg border shrink-0 ${c.color}`}>
                 {loadingStats && (i === 0 || i === 1)
                   ? <Loader2 size={12} className="animate-spin" />
                   : <Icon size={12} />
                 }
               </div>
             </div>
-            <div className="text-xs font-black text-foreground truncate">{c.value}</div>
+            <div className="text-xs sm:text-sm font-black text-foreground truncate">{c.value}</div>
           </div>
         )
       })}

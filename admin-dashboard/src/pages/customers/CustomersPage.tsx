@@ -1,19 +1,22 @@
 import React, { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { AnimatePresence } from 'framer-motion'
 import {
-  Users, Plus, Search, Filter, RefreshCw, Download, Settings
+  Users, Plus, Search, Filter, RefreshCw, Download, Settings, X, UsersRound, MapPin
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
+import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 import CustomerGroupsPage from './CustomerGroupsPage'
 import CustomerAddressesPage from './CustomerAddressesPage'
@@ -23,13 +26,16 @@ import { CustomerFilterDrawer } from './components/CustomerFilterDrawer'
 import { CustomerDetailDrawer } from './components/CustomerDetailDrawer'
 import { CustomerFormModal } from './components/CustomerFormModal'
 import { CustomerTableSection } from './components/CustomerTableSection'
+import { getAbsoluteImageUrl } from '@/utils/image'
 import type { Customer, CustomerFormData } from './types'
 
 const CustomersPage: React.FC = () => {
-  const { t } = useTranslation()
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['customers', 'common', 'toast'])
   const toast = useToast()
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const activeTab = (searchParams.get('workspaceTab') as 'customers' | 'groups' | 'addresses') || 'customers'
 
   const setActiveTab = (tab: string) => {
@@ -58,7 +64,6 @@ const CustomersPage: React.FC = () => {
   const [viewCustomer, setViewCustomer] = useState<Customer | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
-  const [showColSettings, setShowColSettings] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     name: true,
     email: true,
@@ -76,6 +81,10 @@ const CustomersPage: React.FC = () => {
   const [groupIdFilter, setGroupIdFilter] = useState('')
   const [genderFilter, setGenderFilter] = useState('')
 
+  // Subtab Action Delegators
+  const [groupsActions, setGroupsActions] = useState<{ openAdd: () => void; exportData: () => void } | null>(null)
+  const [addressesActions, setAddressesActions] = useState<{ openAdd: () => void; exportData: () => void } | null>(null)
+
   // Photo upload states
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -86,6 +95,8 @@ const CustomersPage: React.FC = () => {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm<CustomerFormData>({
     defaultValues: {
@@ -97,6 +108,7 @@ const CustomersPage: React.FC = () => {
       phone: '',
       gender: '',
       birth_date: '',
+      credit_limit: '1000',
       tax_number: '',
       notes: '',
       is_active: true
@@ -135,6 +147,7 @@ const CustomersPage: React.FC = () => {
     enabled: activeTab === 'customers',
   })
 
+  // Top stats cards remain active across tab changes for enterprise CRM overview
   const { data: statsData } = useQuery({
     queryKey: ['customers-stats', debouncedSearch, statusFilter, groupIdFilter, genderFilter],
     queryFn: () => api.get('/customers/stats', {
@@ -145,7 +158,6 @@ const CustomersPage: React.FC = () => {
         gender: genderFilter,
       }
     }).then(r => r.data.data),
-    enabled: activeTab === 'customers',
   })
 
   const customers: Customer[] = data?.data ?? []
@@ -159,10 +171,10 @@ const CustomersPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
-      toast.success('Customer registered successfully.')
+      toast.success(t('toast.created', { item: t('customers.title', 'Customer') }))
       closeModal()
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to create customer.')
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to create customer.'))
   })
 
   const updateMutation = useMutation({
@@ -172,10 +184,10 @@ const CustomersPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
-      toast.success('Customer profile updated.')
+      toast.success(t('toast.updated', { item: t('customers.title', 'Customer') }))
       closeModal()
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to update customer.')
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to update customer.'))
   })
 
   const deleteMutation = useMutation({
@@ -183,58 +195,22 @@ const CustomersPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
-      toast.success('Customer deleted.')
+      toast.success(t('toast.deleted', { item: t('customers.title', 'Customer') }))
       setDeleteTarget(null)
       adjustAfterDelete(customers.length)
     },
     onError: () => {
-      toast.error('Failed to delete customer.')
+      toast.error(t('toast.error', 'Failed to delete customer.'))
       setDeleteTarget(null)
     }
   })
 
   const openCreateModal = () => {
-    setEditingCustomer(null)
-    setPhotoFile(null)
-    setPhotoPreview(null)
-    setPhotoAction('keep')
-    reset({
-      company_id: '1',
-      customer_group_id: '',
-      user_id: '',
-      name: '',
-      email: '',
-      phone: '',
-      gender: '',
-      birth_date: '',
-      credit_limit: '1000',
-      tax_number: '',
-      notes: '',
-      is_active: true
-    })
-    setModalOpen(true)
+    navigate('/customers/create')
   }
 
   const openEditModal = (cust: Customer) => {
-    setEditingCustomer(cust)
-    setPhotoFile(null)
-    setPhotoPreview(cust.photo ?? null)
-    setPhotoAction('keep')
-    reset({
-      company_id: cust.company_id.toString(),
-      customer_group_id: cust.customer_group_id?.toString() ?? '',
-      user_id: cust.user_id?.toString() ?? '',
-      name: cust.name,
-      email: cust.email ?? '',
-      phone: cust.phone ?? '',
-      gender: cust.gender ?? '',
-      birth_date: cust.birth_date ?? '',
-      credit_limit: cust.credit_limit?.toString() ?? '1000',
-      tax_number: cust.tax_number ?? '',
-      notes: cust.notes ?? '',
-      is_active: cust.is_active
-    })
-    setModalOpen(true)
+    navigate(`/customers/${cust.id}/edit`)
   }
 
   const closeModal = () => {
@@ -286,7 +262,49 @@ const CustomersPage: React.FC = () => {
     }
   }
 
-  const handleExport = () => toast.info('Exporting customer dataset...')
+  const handleExport = () => {
+    const infoId = toast.info(t('customers.toast.exportDownloading', 'Downloading customer dataset...'))
+    setTimeout(() => {
+      try {
+        const headers = [
+          t('customers.id', 'ID'),
+          t('customers.name', 'Customer Name'),
+          t('customers.email', 'Email'),
+          t('customers.phone', 'Phone'),
+          t('customers.customerGroup', 'Group'),
+          t('customers.totalSpent', 'Total Spent'),
+          t('customers.orderCount', 'Orders'),
+          t('customers.loyaltyPoints', 'Loyalty Points'),
+          t('common.status', 'Status'),
+        ]
+        const rows = (customers || []).map((c: any) => [
+          c.id,
+          `"${(c.name || '').replace(/"/g, '""')}"`,
+          `"${(c.email || '').replace(/"/g, '""')}"`,
+          `"${(c.phone || '').replace(/"/g, '""')}"`,
+          `"${(c.group?.name || t('customers.standardGroup', 'Standard')).replace(/"/g, '""')}"`,
+          c.total_spent || 0,
+          c.order_count || 0,
+          c.loyalty_points || 0,
+          c.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')
+        ])
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.setAttribute('href', url)
+        link.setAttribute('download', `customers_export_${new Date().toISOString().slice(0, 10)}.csv`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        toast.dismiss(infoId)
+        toast.success(t('customers.toast.exportSuccess', 'Customer list exported successfully.'))
+      } catch (e) {
+        toast.dismiss(infoId)
+        toast.error(t('toast.error', 'Export failed'))
+      }
+    }, 400)
+  }
 
   const resetAllFilters = () => {
     setStatusFilter('all')
@@ -297,88 +315,148 @@ const CustomersPage: React.FC = () => {
 
   return (
     <div className="space-y-5 print:p-0">
-      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Customers' }]} />
+      <Breadcrumb
+        items={
+          activeTab === 'groups'
+            ? [
+                { label: t('customers.title', 'Customers'), path: '/customers' },
+                { label: t('customers.customerGroups', 'Customer Groups') }
+              ]
+            : activeTab === 'addresses'
+            ? [
+                { label: t('customers.title', 'Customers'), path: '/customers' },
+                { label: t('customers.customerAddresses', 'Customer Addresses') }
+              ]
+            : [{ label: t('customers.title', 'Customers') }]
+        }
+      />
 
       {/* Hero Header */}
       <div className="bg-card border border-border p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
-            <span>Customer Relationship Management</span>
+            <span>{t('customers.headerTitle', 'Customer Relationship Management')}</span>
           </h1>
           <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            Manage customer accounts, purchase history, loyalty rewards, customer groups, and delivery addresses.
+            {t('customers.headerSubtitle', 'Manage customer accounts, purchase history, loyalty rewards, customer groups, and delivery addresses.')}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
-          >
-            <Download size={15} />
-            <span>Export CSV</span>
-          </button>
-          <button
-            onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-          >
-            <Plus size={16} />
-            <span>Add Customer</span>
-          </button>
+          {activeTab === 'customers' ? (
+            <>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
+              >
+                <Download size={15} />
+                <span>{t('customers.exportCsv', 'Export CSV')}</span>
+              </button>
+              <button
+                onClick={openCreateModal}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>{t('customers.addCustomer', 'Add Customer')}</span>
+              </button>
+            </>
+          ) : activeTab === 'groups' ? (
+            <>
+              <button
+                onClick={() => groupsActions?.exportData?.()}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
+              >
+                <Download size={15} />
+                <span>{t('customers.exportCsv', 'Export CSV')}</span>
+              </button>
+              <button
+                onClick={() => groupsActions?.openAdd?.()}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>{t('customers.addGroup', 'Add Group')}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => addressesActions?.exportData?.()}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
+              >
+                <Download size={15} />
+                <span>{t('customers.exportCsv', 'Export CSV')}</span>
+              </button>
+              <button
+                onClick={() => addressesActions?.openAdd?.()}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
+              >
+                <Plus size={16} />
+                <span>{t('customers.addAddress', 'Add Address')}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Sub-tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-border pb-1 overflow-x-auto no-scrollbar print:hidden">
-        {[
-          { id: 'customers', label: 'All Customers' },
-          { id: 'groups', label: 'Customer Groups' },
-          { id: 'addresses', label: 'Delivery Addresses' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Top Overview Cards (Clean Design & Always Visible at top across tab changes) */}
+      <CustomerStatsCards stats={statsData} totalFallback={pagination.total} />
 
+      {/* Sub-tabs Navigation */}
+      <WorkspaceTabs
+        tabs={[
+          { id: 'customers', label: t('customers.tab_allCustomers', 'All Customers'), icon: Users },
+          { id: 'groups', label: t('customers.tab_groups', 'Customer Groups'), icon: UsersRound },
+          { id: 'addresses', label: t('customers.tab_addresses', 'Delivery Addresses'), icon: MapPin },
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
+
+      {/* Active Tab View */}
       {activeTab === 'groups' ? (
-        <CustomerGroupsPage />
+        <CustomerGroupsPage isTab={true} onRegisterActions={setGroupsActions} />
       ) : activeTab === 'addresses' ? (
-        <CustomerAddressesPage />
+        <CustomerAddressesPage isTab={true} onRegisterActions={setAddressesActions} />
       ) : (
         <>
-          {/* KPI Cards */}
-          <CustomerStatsCards stats={statsData} totalFallback={pagination.total} />
-
           {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
+              <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="Search customer name, email, phone..."
-                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
+                  placeholder={t('customers.searchPlaceholder', 'Search customer name, email, phone...')}
+                  className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
                 />
+                {search && (
+                  <button
+                    onClick={() => { setSearch(''); setPage(1); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               <button
+                type="button"
                 onClick={() => setFilterDrawerOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-xs"
+                className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
+                  (statusFilter !== 'all' || groupIdFilter || genderFilter)
+                    ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
+                    : 'border-border bg-card hover:bg-muted/80 text-foreground'
+                }`}
               >
-                <Filter size={14} />
-                <span>Filter</span>
+                <Filter size={15} className={(statusFilter !== 'all' || groupIdFilter || genderFilter) ? 'text-primary' : 'text-muted-foreground'} />
+                <span>{t('common.filter', 'Filter')}</span>
+                {(statusFilter !== 'all' || groupIdFilter || genderFilter) && (
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                )}
               </button>
 
               <ResetButton onClick={resetAllFilters} />
@@ -386,43 +464,28 @@ const CustomersPage: React.FC = () => {
 
             <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
               <button
+                type="button"
                 onClick={() => qc.invalidateQueries({ queryKey: ['customers'] })}
-                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-                title="Refresh"
+                className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+                title={t('common.refresh', 'Refresh')}
               >
-                <RefreshCw size={14} />
+                <RefreshCw size={15} />
               </button>
 
-              <div className="relative">
-                <button
-                  onClick={() => setShowColSettings(!showColSettings)}
-                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-                  title="Column Settings"
-                >
-                  <Settings size={14} />
-                </button>
-                <AnimatePresence>
-                  {showColSettings && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowColSettings(false)} />
-                      <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
-                        <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">Toggle Columns</p>
-                        {Object.keys(visibleColumns).map((col) => (
-                          <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns[col]}
-                              onChange={(e) => setVisibleColumns((prev) => ({ ...prev, [col]: e.target.checked }))}
-                              className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                            />
-                            <span>{col}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
+              <ColumnSettingsPopover
+                columns={[
+                  { key: 'name', label: t('customers.name', 'Customer Name') },
+                  { key: 'email', label: t('customers.email', 'Email') },
+                  { key: 'phone', label: t('customers.phone', 'Phone') },
+                  { key: 'group', label: t('customers.customerGroup', 'Group') },
+                  { key: 'totalSpent', label: t('customers.totalSpent', 'Total Spent') },
+                  { key: 'orderCount', label: t('customers.ordersCount', 'Orders') },
+                  { key: 'loyaltyPoints', label: t('customers.loyaltyPoints', 'Loyalty Points') },
+                  { key: 'status', label: t('common.status', 'Status') },
+                ]}
+                visibleColumns={visibleColumns}
+                onChange={setVisibleColumns}
+              />
             </div>
           </div>
 
@@ -482,13 +545,18 @@ const CustomersPage: React.FC = () => {
             photoPreview={photoPreview}
             onPhotoChange={onPhotoChange}
             removePhoto={removePhoto}
+            watch={watch}
+            setValue={setValue}
           />
 
           {/* Delete Dialog */}
           <ConfirmDialog
             open={!!deleteTarget}
-            title="Delete Customer Profile"
-            message={`Are you sure you want to delete customer "${deleteTarget?.name}"?`}
+            title="customers.deleteTitle"
+            itemName={deleteTarget?.name}
+            confirmText="common.confirmDelete"
+            cancelText="common.cancel"
+            loading={deleteMutation.isPending}
             onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             onCancel={() => setDeleteTarget(null)}
           />

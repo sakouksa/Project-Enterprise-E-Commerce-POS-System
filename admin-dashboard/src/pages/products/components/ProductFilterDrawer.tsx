@@ -1,6 +1,8 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, RotateCcw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
+import ModernSelect from '@/components/shared/ModernSelect'
+import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
 
 interface ProductFilterDrawerProps {
   isOpen: boolean
@@ -14,161 +16,123 @@ interface ProductFilterDrawerProps {
   stockLevelFilter: string
   setStockLevelFilter: (val: string) => void
   priceMinFilter: string
-  setPriceMinFilter: (val: string) => void
   priceMaxFilter: string
+  setPriceMinFilter: (val: string) => void
   setPriceMaxFilter: (val: string) => void
   categories: any[]
   brands: any[]
   onReset: () => void
 }
 
+const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    {children}
+  </div>
+)
+
+const inputCls = "w-full text-xs font-semibold rounded-xl bg-card border border-border/80 hover:border-primary/40 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all py-2.5 px-3.5 text-foreground shadow-2xs"
+
 export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
-  isOpen,
-  onClose,
-  statusFilter,
-  setStatusFilter,
-  categoryFilter,
-  setCategoryFilter,
-  brandFilter,
-  setBrandFilter,
-  stockLevelFilter,
-  setStockLevelFilter,
-  priceMinFilter,
-  setPriceMinFilter,
-  priceMaxFilter,
-  setPriceMaxFilter,
-  categories = [],
-  brands = [],
+  isOpen, onClose,
+  statusFilter, setStatusFilter,
+  categoryFilter, setCategoryFilter,
+  brandFilter, setBrandFilter,
+  stockLevelFilter, setStockLevelFilter,
+  priceMinFilter, priceMaxFilter,
+  setPriceMinFilter, setPriceMaxFilter,
+  categories = [], brands = [],
   onReset,
 }) => {
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['products', 'common'])
+
+  const activeCount = [statusFilter, categoryFilter, brandFilter, stockLevelFilter, priceMinFilter, priceMaxFilter].filter(Boolean).length
+
+  const statusOptions = [
+    { value: '', label: t('allStatus', 'All Statuses') },
+    { value: 'active', label: t('common.active', 'Active') },
+    { value: 'inactive', label: t('common.inactive', 'Inactive') },
+    { value: 'draft', label: t('draft', 'Draft / Hidden') },
+    { value: 'archived', label: t('archived', 'Archived') },
+  ]
+
+  const categoryOptions = [
+    { value: '', label: t('allCategories', 'All Categories') },
+    ...categories.map((c: any) => ({ value: String(c.id), label: c.name }))
+  ]
+
+  const brandOptions = [
+    { value: '', label: t('allBrands', 'All Brands') },
+    ...brands.map((b: any) => ({ value: String(b.id), label: b.name }))
+  ]
+
+  const stockLevelOptions = [
+    { value: '', label: t('allStockLevels', 'All Stock Levels') },
+    { value: 'in_stock', label: t('inStock', 'In Stock (> 0)') },
+    { value: 'low_stock', label: t('lowStock', 'Low Stock Warning') },
+    { value: 'out_of_stock', label: t('outOfStock', 'Out of Stock (= 0)') },
+  ]
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40" onClick={onClose} />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-border bg-card">
-              <div className="flex items-center gap-2">
-                <Filter size={16} className="text-primary" />
-                <h3 className="font-bold text-base text-foreground">Filter Products Catalog</h3>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+    <FilterDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      onReset={onReset}
+      title={t('drawerTitle', 'Filter Products Catalog')}
+      activeCount={activeCount}
+      applyLabel={t('applyFilters', 'Apply Filters')}
+      resetLabel={t('reset', 'Reset Filters')}
+    >
+      <FL label={t('filterStatus', 'Product Status')}>
+        <ModernSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={statusOptions}
+          placeholder={t('allStatus', 'All Statuses')}
+        />
+      </FL>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-card">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Product Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">All Statuses</option>
-                  <option value="active">Active & Visible</option>
-                  <option value="draft">Draft / Hidden</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </div>
+      <FL label={t('filterCategory', 'Category')}>
+        <ModernSelect
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          options={categoryOptions}
+          placeholder={t('allCategories', 'All Categories')}
+        />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Category</label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
+      <FL label={t('filterBrand', 'Brand')}>
+        <ModernSelect
+          value={brandFilter}
+          onChange={setBrandFilter}
+          options={brandOptions}
+          placeholder={t('allBrands', 'All Brands')}
+        />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Brand</label>
-                <select
-                  value={brandFilter}
-                  onChange={(e) => setBrandFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">All Brands</option>
-                  {brands.map((b: any) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+      <FL label={t('filterStockLevel', 'Stock Level')}>
+        <ModernSelect
+          value={stockLevelFilter}
+          onChange={setStockLevelFilter}
+          options={stockLevelOptions}
+          placeholder={t('allStockLevels', 'All Stock Levels')}
+        />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Stock Level</label>
-                <select
-                  value={stockLevelFilter}
-                  onChange={(e) => setStockLevelFilter(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">All Stock Levels</option>
-                  <option value="in_stock">In Stock (&gt; 0)</option>
-                  <option value="low_stock">Low Stock Warning</option>
-                  <option value="out_of_stock">Out of Stock (= 0)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Min Price ($)</label>
-                  <input
-                    type="number"
-                    value={priceMinFilter}
-                    onChange={(e) => setPriceMinFilter(e.target.value)}
-                    placeholder="0"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Max Price ($)</label>
-                  <input
-                    type="number"
-                    value={priceMaxFilter}
-                    onChange={(e) => setPriceMaxFilter(e.target.value)}
-                    placeholder="1000"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={onReset}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl border border-border transition-colors"
-              >
-                <RotateCcw size={13} />
-                <span>Reset Filters</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      <FL label={t('filterPriceRange', 'Price Range ($)')}>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">$</span>
+            <input type="number" value={priceMinFilter} onChange={e => setPriceMinFilter(e.target.value)} placeholder={t('minPrice', 'Min')} className={`${inputCls} pl-7`} />
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">$</span>
+            <input type="number" value={priceMaxFilter} onChange={e => setPriceMaxFilter(e.target.value)} placeholder={t('maxPrice', 'Max')} className={`${inputCls} pl-7`} />
+          </div>
+        </div>
+      </FL>
+    </FilterDrawerShell>
   )
 }
 

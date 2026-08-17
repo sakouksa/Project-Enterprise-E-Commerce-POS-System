@@ -79,7 +79,7 @@ const QuickActionDropdown: React.FC = () => {
         className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all duration-200"
       >
         <Plus className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">{t('common.quick_add', 'Quick Add')}</span>
+        <span className="hidden sm:inline">{t('quick_add', 'Quick Add')}</span>
       </button>
 
       <AnimatePresence>
@@ -93,7 +93,7 @@ const QuickActionDropdown: React.FC = () => {
           >
             <div className="px-3 py-2 border-b border-border/50 mb-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                {t('common.quick_actions', 'Quick Actions')}
+                {t('quick_actions', 'Quick Actions')}
               </span>
             </div>
             <div className="space-y-0.5">

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Loader2, Check } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Check, Truck, Building, Mail, Phone, MapPin, CreditCard, User, FileText } from 'lucide-react'
 import type { Supplier, SupplierFormData, SupplierContact } from '../types/supplier.types'
 
 interface SupplierFormModalProps {
@@ -27,7 +27,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   isSubmitting,
   onSubmit,
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['suppliers', 'common'])
 
   const addContactRow = () => {
     setContacts(prev => [...prev, { name: '', title: '', email: '', phone: '', is_primary: prev.length === 0 }])
@@ -48,258 +48,334 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto print:hidden">
+          {/* Backdrop */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-card border border-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+          />
+
+          {/* Modal Content */}
+          <motion.div
+            initial={{ scale: 0.96, opacity: 0, y: 8 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            className="relative bg-card border border-border rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] z-10"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="font-bold text-base text-foreground">
-                {editingSupplier ? t('suppliers.editSupplier', 'Edit Supplier') : t('suppliers.addSupplier', 'Create New Supplier')}
-              </h3>
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground cursor-pointer">
+            <div className="flex items-center justify-between px-6 py-4.5 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 shrink-0">
+                  <Truck size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-foreground leading-tight">
+                    {editingSupplier ? t('suppliers.editSupplier', 'Edit Supplier') : t('suppliers.addSupplier', 'Create New Supplier')}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {editingSupplier ? t('suppliers.editSubtitle', 'Update supplier profile and credentials') : t('suppliers.createSubtitle', 'Fill in the information to register a new vendor')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
                 <X size={18} />
               </button>
             </div>
 
             {/* Body Form */}
-            <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">
-                    {t('suppliers.code', 'Supplier Code')} *
-                  </label>
-                  <input
-                    value={formData.code}
-                    onChange={e => setFormField('code', e.target.value)}
-                    required
-                    placeholder="SUP-001"
-                    className="form-input text-xs w-full font-mono uppercase"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">
-                    {t('suppliers.name', 'Supplier / Company Name')} *
-                  </label>
-                  <input
-                    value={formData.name}
-                    onChange={e => setFormField('name', e.target.value)}
-                    required
-                    placeholder="Apple Distribution Asia"
-                    className="form-input text-xs w-full font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.email', 'Email Address')}</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={e => setFormField('email', e.target.value)}
-                    placeholder="orders@supplier.com"
-                    className="form-input text-xs w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.phone', 'Phone Number')}</label>
-                  <input
-                    value={formData.phone}
-                    onChange={e => setFormField('phone', e.target.value)}
-                    placeholder="+855 12 345 678"
-                    className="form-input text-xs w-full font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.fax', 'Fax Number')}</label>
-                  <input
-                    value={formData.fax}
-                    onChange={e => setFormField('fax', e.target.value)}
-                    placeholder="+855 23 888 999"
-                    className="form-input text-xs w-full font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.taxNumber', 'Tax ID / NPWP')}</label>
-                  <input
-                    value={formData.tax_number}
-                    onChange={e => setFormField('tax_number', e.target.value)}
-                    placeholder="K001-90023412"
-                    className="form-input text-xs w-full font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.address', 'Street Address')}</label>
-                <textarea
-                  value={formData.address}
-                  onChange={e => setFormField('address', e.target.value)}
-                  rows={2}
-                  placeholder="Building #12, Street 271, Sangkat Boeung Tumpun..."
-                  className="form-input text-xs w-full resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.city', 'City')}</label>
-                  <input
-                    value={formData.city}
-                    onChange={e => setFormField('city', e.target.value)}
-                    placeholder="Phnom Penh"
-                    className="form-input text-xs w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.province', 'Province / State')}</label>
-                  <input
-                    value={formData.province}
-                    onChange={e => setFormField('province', e.target.value)}
-                    placeholder="Phnom Penh"
-                    className="form-input text-xs w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.country', 'Country')}</label>
-                  <input
-                    value={formData.country}
-                    onChange={e => setFormField('country', e.target.value)}
-                    placeholder="Cambodia"
-                    className="form-input text-xs w-full"
-                  />
-                </div>
-              </div>
-
-              {/* Banking Info */}
-              <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-3">
-                <span className="font-bold text-foreground block uppercase text-[10px] tracking-wider">
-                  {t('suppliers.bankingDetails', 'Bank Account Information')}
+            <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+              {/* Section 1: Basic Information */}
+              <div className="p-4 bg-muted/20 border border-border/70 rounded-2xl space-y-3.5">
+                <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <Building size={12} className="text-primary" />
+                  {t('suppliers.basicInfo', 'Basic Information')}
                 </span>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.bankName', 'Bank Name')}</label>
+                    <label className="block font-semibold text-foreground mb-1.5">
+                      {t('suppliers.code', 'Supplier Code')} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={formData.code}
+                      onChange={e => setFormField('code', e.target.value)}
+                      required
+                      placeholder="SPL-001"
+                      className="form-input text-xs w-full font-mono uppercase rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">
+                      {t('suppliers.name', 'Supplier / Company Name')} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={formData.name}
+                      onChange={e => setFormField('name', e.target.value)}
+                      required
+                      placeholder="e.g. Pioneer Electronics"
+                      className="form-input text-xs w-full font-medium rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Contact & Location */}
+              <div className="p-4 bg-muted/20 border border-border/70 rounded-2xl space-y-3.5">
+                <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <Mail size={12} className="text-blue-500" />
+                  {t('suppliers.contactInfo', 'Contact & Location')}
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.email', 'Email Address')}</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={e => setFormField('email', e.target.value)}
+                      placeholder="sales@supplier.com"
+                      className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.phone', 'Phone Number')}</label>
+                    <input
+                      value={formData.phone}
+                      onChange={e => setFormField('phone', e.target.value)}
+                      placeholder="+855 12 345 678"
+                      className="form-input text-xs w-full font-mono rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.fax', 'Fax Number')}</label>
+                    <input
+                      value={formData.fax}
+                      onChange={e => setFormField('fax', e.target.value)}
+                      placeholder="+855 23 888 999"
+                      className="form-input text-xs w-full font-mono rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.taxNumber', 'Tax ID / NPWP')}</label>
+                    <input
+                      value={formData.tax_number}
+                      onChange={e => setFormField('tax_number', e.target.value)}
+                      placeholder="01.002.003.4-005.002"
+                      className="form-input text-xs w-full font-mono rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.address', 'Street Address')}</label>
+                  <textarea
+                    value={formData.address}
+                    onChange={e => setFormField('address', e.target.value)}
+                    rows={2}
+                    placeholder="Building #12, Street 271, Sangkat Boeung Tumpun..."
+                    className="form-input text-xs w-full resize-none rounded-xl border border-border bg-card text-foreground"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.city', 'City')}</label>
+                    <input
+                      value={formData.city}
+                      onChange={e => setFormField('city', e.target.value)}
+                      placeholder="Phnom Penh"
+                      className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.province', 'Province / State')}</label>
+                    <input
+                      value={formData.province}
+                      onChange={e => setFormField('province', e.target.value)}
+                      placeholder="Phnom Penh"
+                      className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.country', 'Country')}</label>
+                    <input
+                      value={formData.country}
+                      onChange={e => setFormField('country', e.target.value)}
+                      placeholder="Cambodia"
+                      className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Banking Info */}
+              <div className="p-4 bg-muted/20 border border-border/70 rounded-2xl space-y-3.5">
+                <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <CreditCard size={12} className="text-purple-500" />
+                  {t('suppliers.bankingAndTax', 'Banking & Tax Details')}
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.bankName', 'Bank Name')}</label>
                     <input
                       value={formData.bank_name}
                       onChange={e => setFormField('bank_name', e.target.value)}
                       placeholder="ABA Bank / Canadia"
-                      className="form-input text-xs w-full"
+                      className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.bankAccountNumber', 'Account Number')}</label>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.bankAccountNumber', 'Account Number')}</label>
                     <input
                       value={formData.bank_account_number}
                       onChange={e => setFormField('bank_account_number', e.target.value)}
                       placeholder="000 123 456"
-                      className="form-input text-xs w-full font-mono"
+                      className="form-input text-xs w-full font-mono rounded-xl border border-border bg-card text-foreground"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-muted-foreground mb-1">{t('suppliers.bankAccountName', 'Account Name')}</label>
+                    <label className="block font-semibold text-foreground mb-1.5">{t('suppliers.bankAccountName', 'Beneficiary Name')}</label>
                     <input
                       value={formData.bank_account_name}
                       onChange={e => setFormField('bank_account_name', e.target.value)}
-                      placeholder="APPLE ASIA CO LTD"
-                      className="form-input text-xs w-full"
+                      placeholder="PT Pioneer Electronics"
+                      className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Contacts Repeater */}
-              <div className="border-t border-border pt-4 space-y-3">
+              {/* Section 4: Contacts Repeater */}
+              <div className="p-4 bg-muted/20 border border-border/70 rounded-2xl space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-foreground">{t('suppliers.representatives', 'Contact Persons')}</span>
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1.5">
+                    <User size={12} className="text-emerald-500" />
+                    {t('suppliers.representatives', 'Supplier Contacts')}
+                  </span>
                   <button
                     type="button"
                     onClick={addContactRow}
                     className="text-xs text-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Plus size={12} /> {t('suppliers.addContact', 'Add Contact')}
+                    <Plus size={13} /> {t('suppliers.addContact', 'Add Contact')}
                   </button>
                 </div>
 
-                {contacts.map((c, idx) => (
-                  <div key={idx} className="p-3 bg-muted/20 border border-border rounded-xl space-y-2 relative">
-                    <button
-                      type="button"
-                      onClick={() => removeContactRow(idx)}
-                      className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-red-500 rounded cursor-pointer"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] text-muted-foreground font-semibold">Name *</label>
-                        <input
-                          value={c.name}
-                          onChange={e => updateContactField(idx, 'name', e.target.value)}
-                          placeholder="Contact Person Name"
-                          required
-                          className="form-input text-xs w-full"
-                        />
+                {contacts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic text-center py-2">
+                    {t('suppliers.noContactsYet', 'No contact persons added. Click "+ Add Contact" above.')}
+                  </p>
+                ) : (
+                  contacts.map((c, idx) => (
+                    <div key={idx} className="p-3 bg-card border border-border/70 rounded-xl space-y-2.5 relative shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => removeContactRow(idx)}
+                        className="absolute top-2.5 right-2.5 p-1 text-muted-foreground hover:text-red-500 rounded-lg cursor-pointer transition-colors"
+                        title={t('common.delete', 'Remove')}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pr-6">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground font-semibold mb-1 block">
+                            {t('suppliers.contactName', 'Full Name')} <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            value={c.name}
+                            onChange={e => updateContactField(idx, 'name', e.target.value)}
+                            placeholder="Contact Person Name"
+                            required
+                            className="form-input text-xs w-full rounded-lg border border-border bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground font-semibold mb-1 block">
+                            {t('suppliers.contactTitle', 'Role / Position')}
+                          </label>
+                          <input
+                            value={c.title || c.position || ''}
+                            onChange={e => updateContactField(idx, 'title', e.target.value)}
+                            placeholder="Key Account Manager"
+                            className="form-input text-xs w-full rounded-lg border border-border bg-background"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground font-semibold">Title / Role</label>
-                        <input
-                          value={c.title || c.position || ''}
-                          onChange={e => updateContactField(idx, 'title', e.target.value)}
-                          placeholder="Sales Director"
-                          className="form-input text-xs w-full"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground font-semibold mb-1 block">
+                            {t('suppliers.email', 'Email')}
+                          </label>
+                          <input
+                            type="email"
+                            value={c.email || ''}
+                            onChange={e => updateContactField(idx, 'email', e.target.value)}
+                            placeholder="contact@supplier.com"
+                            className="form-input text-xs w-full rounded-lg border border-border bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground font-semibold mb-1 block">
+                            {t('suppliers.phone', 'Phone')}
+                          </label>
+                          <input
+                            value={c.phone || ''}
+                            onChange={e => updateContactField(idx, 'phone', e.target.value)}
+                            placeholder="+855 12 888 777"
+                            className="form-input text-xs w-full font-mono rounded-lg border border-border bg-background"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] text-muted-foreground font-semibold">Email</label>
-                        <input
-                          type="email"
-                          value={c.email || ''}
-                          onChange={e => updateContactField(idx, 'email', e.target.value)}
-                          placeholder="rep@supplier.com"
-                          className="form-input text-xs w-full"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground font-semibold">Phone</label>
-                        <input
-                          value={c.phone || ''}
-                          onChange={e => updateContactField(idx, 'phone', e.target.value)}
-                          placeholder="+855 12 888 777"
-                          className="form-input text-xs w-full font-mono"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
+              </div>
+
+              {/* Section 5: Notes */}
+              <div className="p-4 bg-muted/20 border border-border/70 rounded-2xl space-y-2">
+                <span className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <FileText size={12} className="text-amber-500" />
+                  {t('suppliers.notes', 'Notes & Logistics Terms')}
+                </span>
+                <textarea
+                  value={formData.notes}
+                  onChange={e => setFormField('notes', e.target.value)}
+                  rows={2}
+                  placeholder={t('suppliers.notesPlaceholder', 'Enter key vendor terms, payment schedules, or remarks...')}
+                  className="form-input text-xs w-full resize-none rounded-xl border border-border bg-card text-foreground"
+                />
               </div>
 
               {/* Status Switch */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
-                <span className="font-bold text-foreground">Active in Procurement</span>
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/30 border border-border">
+                <div>
+                  <span className="font-bold text-foreground block">{t('suppliers.status', 'Supplier Status')}</span>
+                  <span className="text-[11px] text-muted-foreground">{t('suppliers.statusDesc', 'Toggle supplier active state in procurement and POS')}</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setFormField('is_active', !formData.is_active)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     formData.is_active
                       ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
                       : 'bg-muted text-muted-foreground border border-border'
                   }`}
                 >
-                  {formData.is_active ? 'Active' : 'Inactive'}
+                  {formData.is_active ? t('suppliers.active', 'Active') : t('suppliers.inactive', 'Inactive')}
                 </button>
               </div>
 
               {/* Footer Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border">
                 <button
                   type="button"
                   onClick={onClose}
@@ -310,7 +386,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-primary text-primary-foreground rounded-xl font-bold shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-primary text-primary-foreground rounded-xl font-bold shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:opacity-90 transition-opacity"
                 >
                   {isSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                   <span>{editingSupplier ? t('common.saveChanges', 'Save Changes') : t('suppliers.saveSupplier', 'Create Supplier')}</span>

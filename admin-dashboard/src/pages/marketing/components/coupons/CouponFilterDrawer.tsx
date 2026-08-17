@@ -1,6 +1,6 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, RotateCcw } from 'lucide-react'
+import ModernSelect from '@/components/shared/ModernSelect'
+import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
 
 interface CouponFilterDrawerProps {
   isOpen: boolean
@@ -22,159 +22,95 @@ interface CouponFilterDrawerProps {
   onReset: () => void
 }
 
+const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    {children}
+  </div>
+)
+
+const inputCls = "w-full text-xs font-semibold rounded-xl bg-card border border-border/80 hover:border-primary/40 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all py-2.5 px-3.5 text-foreground shadow-2xs"
+
 export const CouponFilterDrawer: React.FC<CouponFilterDrawerProps> = ({
-  isOpen,
-  onClose,
-  filterStatus,
-  setFilterStatus,
-  filterType,
-  setFilterType,
-  filterMinDiscount,
-  setFilterMinDiscount,
-  filterMaxDiscount,
-  setFilterMaxDiscount,
-  filterUsageLimit,
-  setFilterUsageLimit,
-  filterStartDate,
-  setFilterStartDate,
-  filterEndDate,
-  setFilterEndDate,
+  isOpen, onClose,
+  filterStatus, setFilterStatus,
+  filterType, setFilterType,
+  filterMinDiscount, setFilterMinDiscount,
+  filterMaxDiscount, setFilterMaxDiscount,
+  filterUsageLimit, setFilterUsageLimit,
+  filterStartDate, setFilterStartDate,
+  filterEndDate, setFilterEndDate,
   onReset,
 }) => {
+  const activeCount = [filterStatus !== 'all' ? filterStatus : '', filterType !== 'all' ? filterType : '', filterMinDiscount, filterMaxDiscount, filterUsageLimit !== 'all' ? filterUsageLimit : '', filterStartDate, filterEndDate].filter(Boolean).length
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40" onClick={onClose} />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-border bg-card">
-              <div className="flex items-center gap-2">
-                <Filter size={16} className="text-primary" />
-                <h3 className="font-bold text-base text-foreground">Filter Coupons & Vouchers</h3>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+    <FilterDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      onReset={onReset}
+      title="Filter Coupons & Vouchers"
+      activeCount={activeCount}
+    >
+      <FL label="Coupon Status">
+        <ModernSelect
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={[
+            { value: 'all', label: 'All Statuses' },
+            { value: 'active', label: 'Active & Usable' },
+            { value: 'inactive', label: 'Inactive / Paused' },
+            { value: 'expired', label: 'Expired Vouchers' },
+            { value: 'scheduled', label: 'Scheduled Future' },
+          ]}
+          placeholder="All Statuses"
+        />
+      </FL>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-card">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Coupon Status</label>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active & Usable</option>
-                  <option value="inactive">Inactive / Paused</option>
-                  <option value="expired">Expired Vouchers</option>
-                  <option value="scheduled">Scheduled Future</option>
-                </select>
-              </div>
+      <FL label="Discount Type">
+        <ModernSelect
+          value={filterType}
+          onChange={setFilterType}
+          options={[
+            { value: 'all', label: 'All Types' },
+            { value: 'percentage', label: 'Percentage (%)' },
+            { value: 'fixed', label: 'Fixed Amount ($)' },
+            { value: 'free_shipping', label: 'Free Shipping' },
+          ]}
+          placeholder="All Types"
+        />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Discount Type</label>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="all">All Types</option>
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="fixed">Fixed Amount ($)</option>
-                  <option value="free_shipping">Free Shipping</option>
-                </select>
-              </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <FL label="Min Discount">
+          <input type="number" value={filterMinDiscount} onChange={e => setFilterMinDiscount(e.target.value)} placeholder="0" className={inputCls} />
+        </FL>
+        <FL label="Max Discount">
+          <input type="number" value={filterMaxDiscount} onChange={e => setFilterMaxDiscount(e.target.value)} placeholder="100" className={inputCls} />
+        </FL>
+      </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Min Discount</label>
-                  <input
-                    type="number"
-                    value={filterMinDiscount}
-                    onChange={(e) => setFilterMinDiscount(e.target.value)}
-                    placeholder="0"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Max Discount</label>
-                  <input
-                    type="number"
-                    value={filterMaxDiscount}
-                    onChange={(e) => setFilterMaxDiscount(e.target.value)}
-                    placeholder="100"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                  />
-                </div>
-              </div>
+      <FL label="Usage Limit Policy">
+        <ModernSelect
+          value={filterUsageLimit}
+          onChange={setFilterUsageLimit}
+          options={[
+            { value: 'all', label: 'All Limits' },
+            { value: 'unlimited', label: 'Unlimited Uses' },
+            { value: 'limited', label: 'Limited Quantity Uses' },
+          ]}
+          placeholder="All Limits"
+        />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Usage Limit Policy</label>
-                <select
-                  value={filterUsageLimit}
-                  onChange={(e) => setFilterUsageLimit(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="all">All Limits</option>
-                  <option value="unlimited">Unlimited Uses</option>
-                  <option value="limited">Limited Quantity Uses</option>
-                </select>
-              </div>
+      <FL label="Expires From Date">
+        <input type="date" value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} className={inputCls} />
+      </FL>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Expires From Date</label>
-                <input
-                  type="date"
-                  value={filterStartDate}
-                  onChange={(e) => setFilterStartDate(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Expires To Date</label>
-                <input
-                  type="date"
-                  value={filterEndDate}
-                  onChange={(e) => setFilterEndDate(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={onReset}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl border border-border transition-colors"
-              >
-                <RotateCcw size={13} />
-                <span>Reset Filters</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      <FL label="Expires To Date">
+        <input type="date" value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} className={inputCls} />
+      </FL>
+    </FilterDrawerShell>
   )
 }
 

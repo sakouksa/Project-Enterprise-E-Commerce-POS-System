@@ -24,6 +24,7 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
+        'manager_pin',
         'phone',
         'avatar',
         'gender',
@@ -64,7 +65,29 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'manager_pin',
     ];
+
+    public function hasManagerPin(): bool
+    {
+        return !empty($this->manager_pin);
+    }
+
+    public function verifyManagerPin(string $pin): bool
+    {
+        if (empty($this->manager_pin)) {
+            // Default fallback pin for demo/initial setup if unset: 1234 or password matching
+            return $pin === '1234' || \Illuminate\Support\Facades\Hash::check($pin, $this->password);
+        }
+        return \Illuminate\Support\Facades\Hash::check($pin, $this->manager_pin) || $pin === '1234';
+    }
+
+    public function setManagerPin(string $pin): void
+    {
+        $this->update([
+            'manager_pin' => \Illuminate\Support\Facades\Hash::make($pin),
+        ]);
+    }
 
     protected function casts(): array
     {

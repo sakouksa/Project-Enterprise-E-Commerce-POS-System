@@ -45,15 +45,40 @@ export interface Purchase {
 }
 
 export const STATUS_BADGE: Record<string, string> = {
-  draft: 'px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-  ordered: 'px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  partial: 'px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  received: 'px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  cancelled: 'px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  draft: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
+  ordered: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+  partial: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+  received: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+  cancelled: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20',
 }
 
 export const PAYMENT_BADGE: Record<string, string> = {
-  unpaid: 'px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  partial: 'px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  paid: 'px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  unpaid: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20',
+  partial: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+  paid: 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
 }
+
+export const getDeliveryStatusLabel = (status: string, t: any): string => {
+  const map: Record<string, { key: string; fallback: string }> = {
+    draft: { key: 'delivery_status.draft', fallback: 'Draft' },
+    ordered: { key: 'delivery_status.ordered', fallback: 'Ordered' },
+    partial: { key: 'delivery_status.partial', fallback: 'Partially Received' },
+    received: { key: 'delivery_status.received', fallback: 'Received' },
+    cancelled: { key: 'delivery_status.cancelled', fallback: 'Cancelled' },
+  }
+  const item = map[status]
+  if (!item) return t(`purchases.${status}`, status)
+  return t(`purchases.${item.key}`, t(`purchases.${status}`, item.fallback))
+}
+
+export const getPaymentStatusLabel = (status: string, t: any): string => {
+  const map: Record<string, { key: string; fallback: string }> = {
+    unpaid: { key: 'payment_status.unpaid', fallback: 'Unpaid' },
+    partial: { key: 'payment_status.partial', fallback: 'Partially Paid' },
+    paid: { key: 'payment_status.paid', fallback: 'Paid' },
+  }
+  const item = map[status]
+  if (!item) return t(`purchases.${status}`, status)
+  return t(`purchases.${item.key}`, t(`purchases.${status}`, item.fallback))
+}
+

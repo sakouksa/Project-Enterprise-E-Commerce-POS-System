@@ -20,6 +20,8 @@ export interface Customer {
   tax_number?: string
   notes?: string
   is_active: boolean
+  addresses?: any[]
+  sales?: any[]
   created_at: string
   updated_at: string
 }

@@ -38,6 +38,8 @@ use App\Http\Controllers\Api\V1\Report\PurchaseReportController;
 use App\Http\Controllers\Api\V1\Report\InventoryReportController;
 use App\Http\Controllers\Api\V1\Report\DashboardController;
 use App\Http\Controllers\Api\V1\Auth\ProfileController;
+use App\Http\Controllers\Api\V1\Auth\DeviceController;
+use App\Http\Controllers\Api\V1\Auth\SecurityController;
 use App\Http\Controllers\Api\V1\Notification\NotificationController;
 use App\Http\Controllers\Api\V1\Notification\NotificationTemplateController;
 use App\Http\Controllers\Api\V1\Notification\NotificationSettingController;
@@ -75,6 +77,23 @@ Route::prefix('v1')->group(function () {
             Route::get('activity-logs',     [ProfileController::class, 'activityLogs']);
             Route::get('login-history',     [ProfileController::class, 'loginHistory']);
             Route::post('logout-devices',   [ProfileController::class, 'logoutDevices']);
+        });
+
+        // ─── Devices & Session Management ─────────────────────────────────
+        Route::prefix('devices')->group(function () {
+            Route::get('/',                     [DeviceController::class, 'index']);
+            Route::post('revoke-others',        [DeviceController::class, 'revokeOthers']);
+            Route::post('{id}/revoke',          [DeviceController::class, 'revoke']);
+            Route::post('{id}/suspicious',      [DeviceController::class, 'markSuspicious']);
+        });
+
+        // ─── Security & Manager Overrides ───────────────────────────────────
+        Route::prefix('security')->group(function () {
+            Route::get('overview',              [SecurityController::class, 'overview']);
+            Route::get('settings',              [SecurityController::class, 'settings']);
+            Route::put('settings',              [SecurityController::class, 'updateSettings']);
+            Route::post('verify-manager-pin',   [SecurityController::class, 'verifyManagerPin']);
+            Route::post('set-manager-pin',      [SecurityController::class, 'setManagerPin']);
         });
 
         // ─── Dashboard ────────────────────────────────────────────────────
@@ -246,6 +265,9 @@ Route::prefix('v1')->group(function () {
             Route::get('sales/{id}',               [POSController::class, 'show']);
             Route::post('sales/{id}/return',       [POSController::class, 'processReturn']);
             Route::get('product-search',           [POSController::class, 'productSearch']);
+            Route::get('products/barcode/{code}',  [POSController::class, 'barcodeLookup']);
+            Route::post('voice-search',            [POSController::class, 'voiceSearch']);
+            Route::post('vision-search',           [POSController::class, 'visionSearch']);
             Route::post('apply-coupon',            [POSController::class, 'applyCoupon']);
             Route::apiResource('cash-registers',   CashRegisterController::class);
             Route::post('cash-registers/{id}/open',  [CashRegisterController::class, 'open']);

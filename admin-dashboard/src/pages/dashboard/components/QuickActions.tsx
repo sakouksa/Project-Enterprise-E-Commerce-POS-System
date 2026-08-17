@@ -88,21 +88,21 @@ export const QuickActions: React.FC = () => {
   const allowedItems = items.filter((item) => !item.permission || hasPermission(item.permission))
 
   return (
-    <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
-      <h3 className="font-bold text-sm text-foreground mb-4">
+    <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 shadow-2xs">
+      <h3 className="font-extrabold text-sm sm:text-base text-foreground mb-3.5">
         {t('dashboard.quickActions')}
       </h3>
-      <div className="grid grid-cols-1 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-2.5">
         {allowedItems.map((item, idx) => (
           <button
             key={idx}
             onClick={() => navigate(item.path)}
-            className={`w-full p-2.5 rounded-xl border border-border/60 text-left flex items-center gap-3 transition-all duration-200 ${item.color}`}
+            className={`w-full p-2.5 sm:p-3 rounded-2xl border border-border/60 hover:border-primary/40 text-left flex items-center gap-3 transition-all duration-150 cursor-pointer shadow-2xs active:scale-98 ${item.color}`}
           >
-            <span className="p-1.5 bg-muted/60 rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="p-2 bg-muted/60 rounded-xl flex items-center justify-center shrink-0">
               {item.icon}
             </span>
-            <span className="text-xs font-bold text-foreground truncate">{item.label}</span>
+            <span className="text-xs font-black text-foreground truncate">{item.label}</span>
           </button>
         ))}
       </div>

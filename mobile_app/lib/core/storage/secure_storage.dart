@@ -13,6 +13,16 @@ class SecureStorageService {
   static const _keyBranchId = 'branch_id';
   static const _keyPin = 'security_pin';
   static const _keyBiometrics = 'biometrics_enabled';
+  static const _keyDeviceId = 'mobile_device_id';
+
+  Future<String> getOrCreateDeviceId() async {
+    var id = await _storage.read(key: _keyDeviceId);
+    if (id == null || id.isEmpty) {
+      id = 'mob_${DateTime.now().millisecondsSinceEpoch}';
+      await _storage.write(key: _keyDeviceId, value: id);
+    }
+    return id;
+  }
 
   Future<void> saveTokens({required String accessToken, String? refreshToken}) async {
     await _storage.write(key: _keyAccessToken, value: accessToken);

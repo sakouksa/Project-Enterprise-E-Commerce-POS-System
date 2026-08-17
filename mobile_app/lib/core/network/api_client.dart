@@ -32,6 +32,12 @@ final dioProvider = Provider<Dio>((ref) {
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+        final deviceId = await storage.getOrCreateDeviceId();
+        options.headers['X-Device-Id'] = deviceId;
+        options.headers['X-Device-Name'] = 'Flutter Mobile POS';
+        options.headers['X-Device-Type'] = 'mobile';
+        options.headers['X-Platform'] = 'Mobile';
+
         final companyId = await storage.getCompanyId();
         if (companyId != null) {
           options.headers['X-Company-ID'] = companyId;

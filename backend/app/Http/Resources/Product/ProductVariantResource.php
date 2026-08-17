@@ -24,6 +24,12 @@ class ProductVariantResource extends JsonResource
             'stock'         => ($this->relationLoaded('inventories') && $this->inventories->count() > 0)
                                 ? (float) $this->inventories->sum('quantity')
                                 : (float) ($this->stock ?? 0),
+            'warehouse_stocks' => $this->whenLoaded('inventories', fn() => $this->inventories->map(fn($inv) => [
+                'warehouse_id'      => $inv->warehouse_id,
+                'warehouse_name'    => $inv->warehouse?->name ?? ('Warehouse #' . $inv->warehouse_id),
+                'quantity'          => (float) $inv->quantity,
+                'reserved_quantity' => (float) ($inv->reserved_quantity ?? 0),
+            ])),
             'attributes'    => $this->whenLoaded('attributeValues', function() {
                 return $this->attributeValues->map(fn($av) => [
                     'id'             => $av->id,

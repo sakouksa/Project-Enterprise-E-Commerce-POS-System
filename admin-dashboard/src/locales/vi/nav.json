@@ -81,5 +81,13 @@
   "nav.allNotifications": "Tất cả thông báo",
   "nav.notificationTemplates": "Mẫu thông báo",
   "nav.notificationSettings": "Cài đặt thông báo",
-  "nav.notifications": "Thông báo"
+  "nav.notifications": "Thông báo",
+  "securityManagement": "Bảo Mật Hệ Thống",
+  "securityOverview": "Tổng quan bảo mật",
+  "connectedDevices": "Thiết bị đã kết nối",
+  "securitySettings": "Chính sách bảo mật",
+  "nav.securityManagement": "Bảo Mật Hệ Thống",
+  "nav.securityOverview": "Tổng quan bảo mật",
+  "nav.connectedDevices": "Thiết bị đã kết nối",
+  "nav.securitySettings": "Chính sách bảo mật"
 }

@@ -1,7 +1,7 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import ModernSelect from '@/components/shared/ModernSelect'
+import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
 import type { TabType } from '../types'
 
 interface FinanceFilterDrawerProps {
@@ -32,161 +32,93 @@ interface FinanceFilterDrawerProps {
   onReset: () => void
 }
 
+const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    {children}
+  </div>
+)
+
+const inputCls = "w-full text-xs font-semibold rounded-xl bg-card border border-border/80 hover:border-primary/40 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all py-2.5 px-3.5 text-foreground shadow-2xs"
+
 export const FinanceFilterDrawer: React.FC<FinanceFilterDrawerProps> = ({
-  isOpen,
-  onClose,
-  activeTab,
-  categories = [],
-  filterType,
-  setFilterType,
-  filterStatus,
-  setFilterStatus,
-  filterAccount,
-  setFilterAccount,
-  filterCategory,
-  setFilterCategory,
-  filterPaymentMethod,
-  setFilterPaymentMethod,
-  filterDateStart,
-  setFilterDateStart,
-  filterDateEnd,
-  setFilterDateEnd,
-  filterAmountMin,
-  setFilterAmountMin,
-  filterAmountMax,
-  setFilterAmountMax,
-  filterCreatedBy,
-  setFilterCreatedBy,
+  isOpen, onClose,
+  activeTab, categories = [],
+  filterType, setFilterType,
+  filterStatus, setFilterStatus,
+  filterAccount, setFilterAccount,
+  filterCategory, setFilterCategory,
+  filterPaymentMethod, setFilterPaymentMethod,
+  filterDateStart, setFilterDateStart,
+  filterDateEnd, setFilterDateEnd,
+  filterAmountMin, setFilterAmountMin,
+  filterAmountMax, setFilterAmountMax,
+  filterCreatedBy, setFilterCreatedBy,
   onReset,
 }) => {
   const { t } = useTranslation(['finance', 'common'])
+  const activeCount = [filterStatus, filterCategory, filterDateStart, filterDateEnd, filterAmountMin, filterAmountMax].filter(Boolean).length
+
+  const categoryOptions = [
+    { value: '', label: t('finance.all_categories', 'All Categories') },
+    ...categories.map((c) => ({ value: String(c.id), label: c.name }))
+  ]
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40" onClick={onClose} />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-card border-l border-border shadow-2xl z-50 flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-border bg-card">
-              <div className="flex items-center gap-2">
-                <Filter size={16} className="text-primary" />
-                <h3 className="font-bold text-base text-foreground">{t('finance.filter_title', 'Filter Ledger Records')}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+    <FilterDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      onReset={onReset}
+      title={t('finance.filter_title', 'Filter Ledger Records')}
+      activeCount={activeCount}
+      resetLabel={t('common.reset', 'Reset Filters')}
+    >
+      <FL label={t('finance.status_col', 'Status')}>
+        <ModernSelect
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={[
+            { value: '', label: t('finance.all_statuses', 'All Statuses') },
+            { value: 'approved', label: t('finance.status_approved', 'Approved') },
+            { value: 'pending', label: t('finance.status_pending', 'Pending') },
+            { value: 'rejected', label: t('finance.status_rejected', 'Rejected') },
+            { value: 'active', label: t('finance.status_active', 'Active') },
+            { value: 'inactive', label: t('finance.status_inactive', 'Inactive') },
+            { value: 'open', label: t('finance.status_open', 'Open Till') },
+            { value: 'closed', label: t('finance.status_closed', 'Closed Till') },
+          ]}
+          placeholder={t('finance.all_statuses', 'All Statuses')}
+        />
+      </FL>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-card">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('finance.status_col', 'Status')}</label>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                >
-                  <option value="">{t('finance.all_statuses', 'All Statuses')}</option>
-                  <option value="approved">{t('finance.status_approved', 'Approved')}</option>
-                  <option value="pending">{t('finance.status_pending', 'Pending')}</option>
-                  <option value="rejected">{t('finance.status_rejected', 'Rejected')}</option>
-                  <option value="active">{t('finance.status_active', 'Active')}</option>
-                  <option value="inactive">{t('finance.status_inactive', 'Inactive')}</option>
-                  <option value="open">{t('finance.status_open', 'Open Till')}</option>
-                  <option value="closed">{t('finance.status_closed', 'Closed Till')}</option>
-                </select>
-              </div>
-
-              {activeTab === 'expenses' && (
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('finance.category_col', 'Category')}</label>
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2 cursor-pointer"
-                  >
-                    <option value="">{t('finance.all_categories', 'All Categories')}</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('finance.from_date', 'From Date')}</label>
-                <input
-                  type="date"
-                  value={filterDateStart}
-                  onChange={(e) => setFilterDateStart(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('finance.to_date', 'To Date')}</label>
-                <input
-                  type="date"
-                  value={filterDateEnd}
-                  onChange={(e) => setFilterDateEnd(e.target.value)}
-                  className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('finance.min_amount', 'Min Amount')}</label>
-                  <input
-                    type="number"
-                    value={filterAmountMin}
-                    onChange={(e) => setFilterAmountMin(e.target.value)}
-                    placeholder="0"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">{t('finance.max_amount', 'Max Amount')}</label>
-                  <input
-                    type="number"
-                    value={filterAmountMax}
-                    onChange={(e) => setFilterAmountMax(e.target.value)}
-                    placeholder="99999"
-                    className="form-input rounded-xl text-sm w-full bg-card text-foreground border-border py-2"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={onReset}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl border border-border transition-colors"
-              >
-                <RotateCcw size={13} />
-                <span>{t('common.reset', 'Reset Filters')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-              >
-                {t('common.apply', 'Apply Filters')}
-              </button>
-            </div>
-          </motion.div>
-        </>
+      {activeTab === 'expenses' && (
+        <FL label={t('finance.category_col', 'Category')}>
+          <ModernSelect
+            value={filterCategory}
+            onChange={setFilterCategory}
+            options={categoryOptions}
+            placeholder={t('finance.all_categories', 'All Categories')}
+          />
+        </FL>
       )}
-    </AnimatePresence>
+
+      <FL label={t('finance.from_date', 'From Date')}>
+        <input type="date" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} className={inputCls} />
+      </FL>
+
+      <FL label={t('finance.to_date', 'To Date')}>
+        <input type="date" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} className={inputCls} />
+      </FL>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        <FL label={t('finance.min_amount', 'Min Amount')}>
+          <input type="number" value={filterAmountMin} onChange={e => setFilterAmountMin(e.target.value)} placeholder="0" className={inputCls} />
+        </FL>
+        <FL label={t('finance.max_amount', 'Max Amount')}>
+          <input type="number" value={filterAmountMax} onChange={e => setFilterAmountMax(e.target.value)} placeholder="99999" className={inputCls} />
+        </FL>
+      </div>
+    </FilterDrawerShell>
   )
 }
 

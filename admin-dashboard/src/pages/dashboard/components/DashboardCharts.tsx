@@ -197,43 +197,44 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
   ] as const
 
   return (
-    <div className="bg-card border border-border/60 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col justify-between">
+    <div className="bg-card border border-border/80 rounded-3xl p-4 sm:p-5 md:p-6 shadow-2xs flex flex-col justify-between space-y-4">
       {/* Header & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4 mb-4">
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-muted/40 rounded-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 border-b border-border/40 pb-4">
+        {/* Horizontal scrollable tab buttons on mobile */}
+        <div className="flex items-center gap-1.5 p-1 bg-muted/40 rounded-2xl overflow-x-auto no-scrollbar max-w-full">
           {chartTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveChartTab(tab.id as any)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all duration-150 cursor-pointer shrink-0 active:scale-95
                 ${
                   activeChartTab === tab.id
-                    ? 'bg-card text-foreground shadow-xs'
+                    ? 'bg-card text-foreground shadow-2xs border border-border/60'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           ))}
         </div>
 
         {/* Dynamic Analytics Summary Badge Strip */}
-        <div className="flex items-center gap-4 bg-muted/30 px-3.5 py-1.5 rounded-xl border border-border/30 text-xs">
+        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 bg-muted/30 px-3.5 py-1.5 rounded-2xl border border-border/40 text-xs shrink-0 self-stretch sm:self-auto">
           <div>
             <span className="text-[10px] text-muted-foreground font-medium block">{activeInsights.lbl1}</span>
-            <span className="font-bold text-foreground">{activeInsights.val1}</span>
+            <span className="font-extrabold text-foreground">{activeInsights.val1}</span>
           </div>
-          <div className="w-px h-6 bg-border/40" />
+          <div className="w-px h-6 bg-border/50" />
           <div>
             <span className="text-[10px] text-muted-foreground font-medium block">{activeInsights.lbl2}</span>
-            <span className="font-bold text-primary">{activeInsights.val2}</span>
+            <span className="font-extrabold text-primary">{activeInsights.val2}</span>
           </div>
         </div>
       </div>
 
       {/* Chart Canvas */}
-      <div className="h-80 w-full">
+      <div className="h-64 sm:h-80 md:h-96 w-full">
         {isLoading ? (
           <div className="h-full w-full bg-muted/20 animate-pulse rounded-xl flex items-center justify-center text-xs text-muted-foreground font-semibold">
             {t('dashboard.loadingDashboard', 'កំពុងភ្ជាប់ទិន្នន័យ...')}

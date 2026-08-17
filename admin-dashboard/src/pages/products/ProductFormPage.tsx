@@ -4,12 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Edit2, X, Check, Loader2, Image as ImageIcon, Upload, Eye
+  Edit2, X, Check, Loader2, Image as ImageIcon, Upload, Eye,
+  Package, DollarSign, Layers, Box, Globe, SlidersHorizontal,
+  ArrowRight, ArrowLeft, Sparkles, LayoutGrid, CheckCircle2, ChevronRight
 } from 'lucide-react'
 import api from '@/api/client'
 import { productService } from '@/services/productService'
 import { useToast } from '@/hooks/useToast'
 import { LoadingSpinner, DeleteConfirmDialog } from '@/components/common'
+import CustomErrorMessage from '@/components/ui/CustomErrorMessage'
 import { getAbsoluteImageUrl } from '@/utils/image'
 
 // Modular Components
@@ -46,6 +49,9 @@ const ProductFormPage: React.FC = () => {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'inventory' | 'dimensions' | 'seo' | 'variants'>('general')
 
   // Main Form State
   const [form, setForm] = useState<ProductForm>(BLANK_FORM)
@@ -86,7 +92,13 @@ const ProductFormPage: React.FC = () => {
   const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false)
 
   // ─── Queries ──────────────────────────────────────────────────────────────
-  const { data: productDetail, isLoading: isLoadingDetail, refetch: refetchDetail } = useQuery({
+  const {
+    data: productDetail,
+    isLoading: isLoadingDetail,
+    isError: isErrorDetail,
+    error: detailError,
+    refetch: refetchDetail,
+  } = useQuery({
     queryKey: ['product-detail-page', productId],
     queryFn: () => productId ? productService.show(productId) : null,
     enabled: isEdit,
@@ -402,8 +414,11 @@ const ProductFormPage: React.FC = () => {
   }
 
   // ─── Custom Attribute Handlers ────────────────────────────────────────────
-  const handleAddUserCustomSize = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddUserCustomSize = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     const trimmed = customInputSize.trim()
     if (!trimmed) return
     if (!userAddedSizes.includes(trimmed)) setUserAddedSizes(prev => [...prev, trimmed])
@@ -411,8 +426,11 @@ const ProductFormPage: React.FC = () => {
     setCustomInputSize('')
   }
 
-  const handleAddUserCustomColor = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddUserCustomColor = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     const trimmed = customInputColor.trim()
     if (!trimmed) return
     const norm = normalizeColorName(trimmed)
@@ -485,8 +503,54 @@ const ProductFormPage: React.FC = () => {
     )
   }
 
+  if (isEdit && isErrorDetail) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[420px] p-6 max-w-xl mx-auto text-center">
+        <CustomErrorMessage
+          variant="card"
+          severity="error"
+          code={(detailError as any)?.response?.status || 500}
+          title={t('errors.serverErrorTitle', 'Unable to Load Product')}
+          message={(detailError as any)?.response?.data?.message || t('errors.serverErrorDesc', 'Failed to retrieve product details from server.')}
+          details={(detailError as any)?.response?.data}
+          onRetry={() => refetchDetail()}
+          action={{
+            label: t('back', 'Back to Products'),
+            onClick: () => navigate('/products'),
+          }}
+          className="w-full shadow-2xl"
+        />
+      </div>
+    )
+  }
+
+  const tabsList = [
+    { id: 'general', label: t('tabGeneral', 'General & Media'), icon: Package, badge: null },
+    { id: 'pricing', label: t('tabPricing', 'Pricing & Margins'), icon: DollarSign, badge: form.selling_price ? `$${Number(form.selling_price || 0).toFixed(2)}` : null },
+    { id: 'inventory', label: t('tabInventory', 'Inventory & Stock'), icon: Layers, badge: form.track_inventory ? t('trackStockLevel', 'Track Stock') : null },
+    { id: 'dimensions', label: t('tabDimensions', 'Dimensions & Shipping'), icon: Box, badge: form.weight ? `${form.weight}kg` : null },
+    { id: 'seo', label: t('tabSEO', 'SEO & Meta'), icon: Globe, badge: null },
+    { id: 'variants', label: t('tabVariants', 'Product Variants'), icon: SlidersHorizontal, badge: (productDetail?.variants?.length || 0) > 0 ? `${productDetail.variants.length}` : null },
+  ]
+
+  const handleNextTab = () => {
+    const currentIndex = tabsList.findIndex(tab => tab.id === activeTab)
+    if (currentIndex < tabsList.length - 1) {
+      setActiveTab(tabsList[currentIndex + 1].id as any)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const handlePrevTab = () => {
+    const currentIndex = tabsList.findIndex(tab => tab.id === activeTab)
+    if (currentIndex > 0) {
+      setActiveTab(tabsList[currentIndex - 1].id as any)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
-    <div className="space-y-6 pb-20 max-w-7xl mx-auto">
+    <div className="space-y-5 pb-24 w-full">
       {/* Top Header */}
       <ProductFormHeader
         isEdit={isEdit}
@@ -494,140 +558,360 @@ const ProductFormPage: React.FC = () => {
         productDetail={productDetail}
         isPending={saveMutation.isPending}
         onSubmit={handleSubmit}
+        onOpenLivePreview={() => setIsLivePreviewOpen(true)}
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Core Product Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Card 1: General Info */}
-          <ProductBasicInfoSection
-            form={form}
-            setField={setField}
-            categories={categories || []}
-            brands={brands || []}
-            units={units || []}
-            taxes={taxes || []}
-            isSkuManuallyEdited={isSkuManuallyEdited}
-            setIsSkuManuallyEdited={setIsSkuManuallyEdited}
-            generateSKU={generateSKU}
-          />
-
-          {/* Card 2: Media & Photos */}
-          <ProductMediaSection
-            isEdit={isEdit}
-            productId={productId}
-            productDetail={productDetail}
-            createImagePreviews={createImagePreviews}
-            createDragActive={createDragActive}
-            handleCreateDrag={handleCreateDrag}
-            handleCreateDrop={handleCreateDrop}
-            handleCreateImageFiles={handleCreateImageFiles}
-            handleRemoveCreateImage={handleRemoveCreateImage}
-            handleSetPrimaryCreateImage={handleSetPrimaryCreateImage}
-            onUpdateImagePrimary={(imgId) => updateImageMutation.mutate({ imgId, data: { is_primary: true } })}
-            onDeleteImage={(imgId) => deleteImageMutation.mutate({ productId: productId!, imgId })}
-          />
-
-          {/* Card 3: Pricing Strategy */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
-            <FlexiblePricingSection
-              costPrice={form.cost_price}
-              sellingPrice={form.selling_price}
-              comparePrice={form.compare_price}
-              taxId={form.tax_id}
-              taxes={taxes || []}
-              onCostPriceChange={(val) => setField('cost_price', val)}
-              onSellingPriceChange={(val) => setField('selling_price', val)}
-              onComparePriceChange={(val) => setField('compare_price', val)}
-              onTaxIdChange={(val) => setField('tax_id', val)}
-              showTaxSelector={true}
-            />
-          </div>
-
-          {/* Card 4: Inventory Management */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
-            <FlexibleInventorySection
-              trackInventory={form.track_inventory}
-              hasVariants={form.has_variants}
-              lowStockThreshold={form.low_stock_threshold}
-              onTrackInventoryChange={(val) => setField('track_inventory', val)}
-              onHasVariantsChange={(val) => setField('has_variants', val)}
-              onLowStockThresholdChange={(val) => setField('low_stock_threshold', val)}
-            />
-          </div>
-
-          {/* Card 5: Physical Dimensions */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
-            <FlexibleDimensionsSection
-              weight={form.weight}
-              length={form.length}
-              width={form.width}
-              height={form.height}
-              onWeightChange={(val) => setField('weight', val)}
-              onLengthChange={(val) => setField('length', val)}
-              onWidthChange={(val) => setField('width', val)}
-              onHeightChange={(val) => setField('height', val)}
-            />
-          </div>
-
-          {/* Card 6: SEO Discovery */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
-            <FlexibleSEOSection
-              metaTitle={form.meta_title}
-              metaKeywords={form.meta_keywords}
-              metaDescription={form.meta_description}
-              productName={form.name}
-              onMetaTitleChange={(val) => setField('meta_title', val)}
-              onMetaKeywordsChange={(val) => setField('meta_keywords', val)}
-              onMetaDescriptionChange={(val) => setField('meta_description', val)}
-            />
+      <div className="space-y-5">
+        {/* Navigation Tabs Pill Bar */}
+        <div className="bg-card border border-border/80 rounded-xl p-1.5 shadow-2xs overflow-x-auto">
+          <div className="flex items-center gap-1 min-w-max">
+            {tabsList.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                  }`}
+                >
+                  <Icon size={15} />
+                  <span>{tab.label}</span>
+                  {tab.badge && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                      isActive
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* Card 7: Multi-Dimensional Variants Matrix */}
-        <ProductVariantsSection
-          productId={productId}
-          form={form}
-          setField={setField}
-          productDetail={productDetail}
-          selectedPresetMode={selectedPresetMode}
-          setSelectedPresetMode={setSelectedPresetMode}
-          customSizeCategory={customSizeCategory}
-          activeCategoryKey={activeCategoryKey}
-          handleSwitchSizeCategory={handleSwitchSizeCategory}
-          customSelectedSizes={customSelectedSizes}
-          setCustomSelectedSizes={setCustomSelectedSizes}
-          customInputSize={customInputSize}
-          setCustomInputSize={setCustomInputSize}
-          userAddedSizes={userAddedSizes}
-          handleAddUserCustomSize={handleAddUserCustomSize}
-          customSelectedColors={customSelectedColors}
-          setCustomSelectedColors={setCustomSelectedColors}
-          customInputColor={customInputColor}
-          setCustomInputColor={setCustomInputColor}
-          customColorHex={customColorHex}
-          setCustomColorHex={setCustomColorHex}
-          userAddedColors={userAddedColors}
-          handleAddUserCustomColor={handleAddUserCustomColor}
-          isGeneratingVariants={isGeneratingVariants}
-          matrixProgress={matrixProgress}
-          handleGenerateMatrix={handleGenerateMatrix}
-          variantPage={variantPage}
-          setVariantPage={setVariantPage}
-          variantPageSize={variantPageSize}
-          setVariantPageSize={setVariantPageSize}
-          selectedVariantIds={selectedVariantIds}
-          setSelectedVariantIds={setSelectedVariantIds}
-          onOpenEditVariant={(v) => setEditingVariant({ ...v })}
-          onOpenViewVariant={(v) => setViewingVariant({ ...v })}
-          onOpenDeleteVariant={(v) => setVariantToDelete(v)}
-          onOpenClearAllVariants={() => setIsClearAllVariantsOpen(true)}
-          onOpenBulkDeleteVariants={() => setBulkDeleteVariantConfirmOpen(true)}
-          onQuickToggleVariantStatus={(v) => updateVariantMutation.mutate({ id: v.id, data: { is_active: !v.is_active } })}
-        />
-      </form>
+        {/* Tab Content Panes */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'general' && (
+            <motion.div
+              key="general"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="grid grid-cols-1 xl:grid-cols-12 gap-6"
+            >
+              <div className="xl:col-span-7">
+                <ProductBasicInfoSection
+                  form={form}
+                  setField={setField}
+                  categories={categories || []}
+                  brands={brands || []}
+                  units={units || []}
+                  taxes={taxes || []}
+                  isSkuManuallyEdited={isSkuManuallyEdited}
+                  setIsSkuManuallyEdited={setIsSkuManuallyEdited}
+                  generateSKU={generateSKU}
+                />
+              </div>
+              <div className="xl:col-span-5">
+                <ProductMediaSection
+                  isEdit={isEdit}
+                  productId={productId}
+                  productDetail={productDetail}
+                  createImagePreviews={createImagePreviews}
+                  createDragActive={createDragActive}
+                  handleCreateDrag={handleCreateDrag}
+                  handleCreateDrop={handleCreateDrop}
+                  handleCreateImageFiles={handleCreateImageFiles}
+                  handleRemoveCreateImage={handleRemoveCreateImage}
+                  handleSetPrimaryCreateImage={handleSetPrimaryCreateImage}
+                  onUpdateImagePrimary={(imgId) => updateImageMutation.mutate({ imgId, data: { is_primary: true } })}
+                  onDeleteImage={(imgId) => deleteImageMutation.mutate({ productId: productId!, imgId })}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'pricing' && (
+            <motion.div
+              key="pricing"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs"
+            >
+              <FlexiblePricingSection
+                costPrice={form.cost_price}
+                sellingPrice={form.selling_price}
+                comparePrice={form.compare_price}
+                taxId={form.tax_id}
+                taxes={taxes || []}
+                onCostPriceChange={(val) => setField('cost_price', val)}
+                onSellingPriceChange={(val) => setField('selling_price', val)}
+                onComparePriceChange={(val) => setField('compare_price', val)}
+                onTaxIdChange={(val) => setField('tax_id', val)}
+                showTaxSelector={true}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'inventory' && (
+            <motion.div
+              key="inventory"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs"
+            >
+              <FlexibleInventorySection
+                trackInventory={form.track_inventory}
+                hasVariants={form.has_variants}
+                lowStockThreshold={form.low_stock_threshold}
+                onTrackInventoryChange={(val) => setField('track_inventory', val)}
+                onHasVariantsChange={(val) => setField('has_variants', val)}
+                onLowStockThresholdChange={(val) => setField('low_stock_threshold', val)}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'dimensions' && (
+            <motion.div
+              key="dimensions"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs"
+            >
+              <FlexibleDimensionsSection
+                weight={form.weight}
+                length={form.length}
+                width={form.width}
+                height={form.height}
+                onWeightChange={(val) => setField('weight', val)}
+                onLengthChange={(val) => setField('length', val)}
+                onWidthChange={(val) => setField('width', val)}
+                onHeightChange={(val) => setField('height', val)}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'seo' && (
+            <motion.div
+              key="seo"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs"
+            >
+              <FlexibleSEOSection
+                metaTitle={form.meta_title}
+                metaKeywords={form.meta_keywords}
+                metaDescription={form.meta_description}
+                productName={form.name}
+                onMetaTitleChange={(val) => setField('meta_title', val)}
+                onMetaKeywordsChange={(val) => setField('meta_keywords', val)}
+                onMetaDescriptionChange={(val) => setField('meta_description', val)}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'variants' && (
+            <motion.div
+              key="variants"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+            >
+              <ProductVariantsSection
+                productId={productId}
+                form={form}
+                setField={setField}
+                productDetail={productDetail}
+                selectedPresetMode={selectedPresetMode}
+                setSelectedPresetMode={setSelectedPresetMode}
+                customSizeCategory={customSizeCategory}
+                activeCategoryKey={activeCategoryKey}
+                handleSwitchSizeCategory={handleSwitchSizeCategory}
+                customSelectedSizes={customSelectedSizes}
+                setCustomSelectedSizes={setCustomSelectedSizes}
+                customInputSize={customInputSize}
+                setCustomInputSize={setCustomInputSize}
+                userAddedSizes={userAddedSizes}
+                handleAddUserCustomSize={handleAddUserCustomSize}
+                customSelectedColors={customSelectedColors}
+                setCustomSelectedColors={setCustomSelectedColors}
+                customInputColor={customInputColor}
+                setCustomInputColor={setCustomInputColor}
+                customColorHex={customColorHex}
+                setCustomColorHex={setCustomColorHex}
+                userAddedColors={userAddedColors}
+                handleAddUserCustomColor={handleAddUserCustomColor}
+                isGeneratingVariants={isGeneratingVariants}
+                matrixProgress={matrixProgress}
+                handleGenerateMatrix={handleGenerateMatrix}
+                variantPage={variantPage}
+                setVariantPage={setVariantPage}
+                variantPageSize={variantPageSize}
+                setVariantPageSize={setVariantPageSize}
+                selectedVariantIds={selectedVariantIds}
+                setSelectedVariantIds={setSelectedVariantIds}
+                onOpenEditVariant={(v) => setEditingVariant({ ...v })}
+                onOpenViewVariant={(v) => setViewingVariant({ ...v })}
+                onOpenDeleteVariant={(v) => setVariantToDelete(v)}
+                onOpenClearAllVariants={() => setIsClearAllVariantsOpen(true)}
+                onOpenBulkDeleteVariants={() => setBulkDeleteVariantConfirmOpen(true)}
+                onQuickToggleVariantStatus={(v) => updateVariantMutation.mutate({ id: v.id, data: { is_active: !v.is_active } })}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tab Footer Navigation */}
+        <div className="flex items-center justify-between pt-3 border-t border-border/60">
+          <div>
+            {tabsList.findIndex(tab => tab.id === activeTab) > 0 && (
+              <button
+                type="button"
+                onClick={handlePrevTab}
+                className="h-9 px-3.5 sm:px-4 rounded-lg border border-border/80 bg-card hover:bg-muted text-xs sm:text-[13px] font-bold text-muted-foreground hover:text-foreground flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+              >
+                <ArrowLeft size={14} />
+                <span>{t('previous', 'Previous')}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {tabsList.findIndex(tab => tab.id === activeTab) < tabsList.length - 1 && (
+              <button
+                type="button"
+                onClick={handleNextTab}
+                className="h-9 px-4 sm:px-5 rounded-lg border border-border/80 bg-muted hover:bg-muted/80 text-xs sm:text-[13px] font-bold text-foreground flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                <span>{t('next', 'Next')}</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saveMutation.isPending}
+              className="h-9 px-4 sm:px-5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-[13px] font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>{t('saving', 'Saving...')}</span>
+                </>
+              ) : (
+                <>
+                  <Check size={14} />
+                  <span>{isEdit ? t('saveChanges', 'Save Changes') : t('createProduct', 'Create Product')}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* ─── MODALS & DRAWERS ─── */}
+      {/* View Variant Details Modal */}
+      <AnimatePresence>
+        {viewingVariant && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <Package size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">{t('products.variantDetails', 'Variant Details')}</h3>
+                    <p className="text-xs text-muted-foreground font-mono">{viewingVariant.sku || '—'}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setViewingVariant(null)} className="p-1 text-muted-foreground hover:text-foreground cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3.5 text-xs">
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 flex items-center gap-3">
+                  {getVariantColorHex(viewingVariant) && (
+                    <span
+                      className="w-8 h-8 rounded-xl border border-black/20 shrink-0 shadow-2xs"
+                      style={{ backgroundColor: getVariantColorHex(viewingVariant) || undefined }}
+                    />
+                  )}
+                  <div>
+                    <h4 className="font-bold text-sm text-foreground">{viewingVariant.name}</h4>
+                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      viewingVariant.is_active ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border'
+                    }`}>
+                      {viewingVariant.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="p-3 rounded-xl bg-card border border-border">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('products.colPrice', 'Selling Price')}</span>
+                    <p className="text-sm font-bold text-primary font-mono mt-0.5">${Number(viewingVariant.selling_price || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-card border border-border">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('products.colCostPrice', 'Cost Price')}</span>
+                    <p className="text-sm font-bold text-muted-foreground font-mono mt-0.5">${Number(viewingVariant.cost_price || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-card border border-border">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('products.colStock', 'Stock')}</span>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">{viewingVariant.stock ?? 0}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setViewingVariant(null)}
+                    className="px-4 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
+                  >
+                    {t('common.close', 'Close')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v = viewingVariant
+                      setViewingVariant(null)
+                      setEditingVariant({ ...v })
+                    }}
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:bg-primary/90 flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Edit2 size={13} />
+                    <span>{t('common.edit', 'Edit')}</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Edit Variant Modal */}
       <AnimatePresence>
         {editingVariant && (
@@ -639,7 +923,7 @@ const ProductFormPage: React.FC = () => {
               className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
             >
               <div className="flex items-center justify-between border-b border-border/70 pb-3">
-                <h3 className="text-base font-bold text-foreground">Edit Variant Details</h3>
+                <h3 className="text-base font-bold text-foreground">{t('products.editVariantDetails', 'Edit Variant Details')}</h3>
                 <button type="button" onClick={() => setEditingVariant(null)} className="p-1 text-muted-foreground hover:text-foreground cursor-pointer">
                   <X size={18} />
                 </button>
@@ -661,10 +945,10 @@ const ProductFormPage: React.FC = () => {
                     }
                   })
                 }}
-                className="space-y-3 text-xs"
+                className="space-y-3.5 text-xs"
               >
                 <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">Variant Name *</label>
+                  <label className="block font-semibold text-muted-foreground mb-1">{t('products.variantName', 'Variant Name')} *</label>
                   <input
                     type="text"
                     required
@@ -675,18 +959,18 @@ const ProductFormPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-muted-foreground mb-1">SKU</label>
+                  <label className="block font-semibold text-muted-foreground mb-1">{t('products.sku', 'SKU')}</label>
                   <input
                     type="text"
                     value={editingVariant.sku || ''}
                     onChange={e => setEditingVariant({ ...editingVariant, sku: e.target.value })}
-                    className="form-input text-xs font-mono w-full"
+                    className="form-input text-xs font-mono w-full uppercase"
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block font-semibold text-muted-foreground mb-1">Selling ($)</label>
+                    <label className="block font-semibold text-muted-foreground mb-1">{t('products.colPrice', 'Selling Price ($)')}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -697,7 +981,7 @@ const ProductFormPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-muted-foreground mb-1">Cost ($)</label>
+                    <label className="block font-semibold text-muted-foreground mb-1">{t('products.colCostPrice', 'Cost Price ($)')}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -707,7 +991,7 @@ const ProductFormPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-muted-foreground mb-1">Stock</label>
+                    <label className="block font-semibold text-muted-foreground mb-1">{t('products.colStock', 'Stock')}</label>
                     <input
                       type="number"
                       value={editingVariant.stock ?? ''}
@@ -718,7 +1002,7 @@ const ProductFormPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
-                  <span className="font-bold text-foreground">Active in Catalog</span>
+                  <span className="font-bold text-foreground">{t('products.activeInCatalog', 'Active in Catalog')}</span>
                   <button
                     type="button"
                     onClick={() => setEditingVariant({ ...editingVariant, is_active: !editingVariant.is_active })}
@@ -726,7 +1010,7 @@ const ProductFormPage: React.FC = () => {
                       editingVariant.is_active ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-muted text-muted-foreground border border-border'
                     }`}
                   >
-                    {editingVariant.is_active ? 'Active' : 'Inactive'}
+                    {editingVariant.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                   </button>
                 </div>
 
@@ -736,7 +1020,7 @@ const ProductFormPage: React.FC = () => {
                     onClick={() => setEditingVariant(null)}
                     className="px-4 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted cursor-pointer"
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
@@ -744,7 +1028,7 @@ const ProductFormPage: React.FC = () => {
                     className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {updateVariantMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                    <span>Save Changes</span>
+                    <span>{t('products.saveChanges', 'Save Changes')}</span>
                   </button>
                 </div>
               </form>

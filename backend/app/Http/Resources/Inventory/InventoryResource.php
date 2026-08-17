@@ -13,6 +13,8 @@ class InventoryResource extends JsonResource
             'id'                 => $this->id,
             'warehouse_id'       => $this->warehouse_id,
             'product_id'         => $this->product_id,
+            'product_variant_id' => $this->product_variant_id,
+            'sku'                => $this->variant?->sku ?? $this->product?->sku,
             'stock_qty'          => (float) $this->quantity,
             'quantity'           => (float) $this->quantity,
             'reserved_quantity'  => (float) $this->reserved_quantity,
@@ -23,10 +25,19 @@ class InventoryResource extends JsonResource
             'created_at'         => $this->created_at?->toIso8601String(),
             'updated_at'         => $this->updated_at?->toIso8601String(),
             
+            'variant' => $this->whenLoaded('variant', fn() => $this->variant ? [
+                'id'            => $this->variant->id,
+                'name'          => $this->variant->name,
+                'sku'           => $this->variant->sku,
+                'barcode'       => $this->variant->barcode,
+                'selling_price' => $this->variant->selling_price,
+                'image'         => $this->variant->image,
+            ] : null),
             'product' => $this->whenLoaded('product', fn() => [
-                'id'       => $this->product?->id,
-                'name'     => $this->product?->name,
-                'sku'      => $this->product?->sku,
+                'id'            => $this->product?->id,
+                'name'          => $this->product?->name,
+                'sku'           => $this->product?->sku,
+                'primary_image' => $this->product?->primaryImage?->image ?? $this->product?->image,
                 'category' => $this->product?->category ? [
                     'id'   => $this->product->category->id,
                     'name' => $this->product->category->name,

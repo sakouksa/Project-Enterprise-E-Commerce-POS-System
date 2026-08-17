@@ -81,5 +81,13 @@
   "nav.allNotifications": "การแจ้งเตือนทั้งหมด",
   "nav.notificationTemplates": "แม่แบบการแจ้งเตือน",
   "nav.notificationSettings": "ตั้งค่าการแจ้งเตือน",
-  "nav.notifications": "การแจ้งเตือน"
+  "nav.notifications": "การแจ้งเตือน",
+  "securityManagement": "ความปลอดภัยของระบบ",
+  "securityOverview": "ภาพรวมความปลอดภัย",
+  "connectedDevices": "อุปกรณ์ที่เชื่อมต่อ",
+  "securitySettings": "นโยบายความปลอดภัย",
+  "nav.securityManagement": "ความปลอดภัยของระบบ",
+  "nav.securityOverview": "ภาพรวมความปลอดภัย",
+  "nav.connectedDevices": "อุปกรณ์ที่เชื่อมต่อ",
+  "nav.securitySettings": "นโยบายความปลอดภัย"
 }

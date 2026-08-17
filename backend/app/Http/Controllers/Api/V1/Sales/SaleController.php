@@ -10,6 +10,7 @@ use App\Models\Product\ProductVariant;
 use App\Models\Marketing\Coupon;
 use App\Models\Inventory\Inventory;
 use App\Models\Inventory\InventoryMovement;
+use App\Models\Customer\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -107,14 +108,43 @@ class SaleController extends BaseApiController
                 }
             }
 
-            // 1. Create Sale Header
+            // ─── 0. STRICT STOCK AVAILABILITY CHECK ───────────────────────────
+            foreach ($validated['items'] as $itemData) {
+                $productId = (int) $itemData['product_id'];
+                $variantId = !empty($itemData['product_variant_id']) ? (int) $itemData['product_variant_id'] : null;
+                $quantity  = (float) ($itemData['quantity'] ?? $itemData['qty'] ?? 1);
+
+                $product = Product::find($productId);
+                if ($product && $product->track_inventory) {
+                    $invQuery = Inventory::where('product_id', $productId)
+                        ->when($variantId, fn($q) => $q->where('product_variant_id', $variantId));
+
+                    $warehouseId = $user->warehouse_id ?? DB::table('warehouses')->where('company_id', $user->company_id ?? 1)->value('id') ?? 1;
+                    if ($warehouseId) {
+                        $invQuery->where('warehouse_id', $warehouseId);
+                    }
+
+                    $availableStock = (float) ($invQuery->sum('quantity') ?? 0);
+
+                    if ($availableStock <= 0 || $availableStock < $quantity) {
+                        abort(response()->json([
+                            'success' => false,
+                            'message' => "ទំនិញ '{$product->name}' អស់ពីស្តុកហើយ (ស្តុកនៅសល់: {$availableStock}, ចំនួនចង់ទិញ: {$quantity})។ មិនអាចលក់បានឡើយ!",
+                            'errors'  => [
+                                'stock' => ["Product '{$product->name}' has insufficient stock. Available: {$availableStock}, Requested: {$quantity}"]
+                            ]
+                        ], 422));
+                    }
+                }
+            }
+
+            // 1. Create Sale Record
             $sale = Sale::create([
                 'company_id'      => $user->company_id ?? 1,
-                'branch_id'       => $user->branch_id ?? 1,
-                'store_id'        => $user->store_id ?? 1,
-                'warehouse_id'    => $user->warehouse_id ?? 1,
-                'customer_id'     => array_key_exists('customer_id', $validated) ? $validated['customer_id'] : null,
-                'user_id'         => $user->id ?? 1,
+                'branch_id'       => $user->branch_id ?? DB::table('branches')->where('company_id', $user->company_id ?? 1)->value('id') ?? 1,
+                'warehouse_id'    => $user->warehouse_id ?? DB::table('warehouses')->where('company_id', $user->company_id ?? 1)->value('id') ?? 1,
+                'customer_id'     => $validated['customer_id'] ?? null,
+                'user_id'         => $user->id,
                 'invoice_number'  => $invoiceNumber,
                 'date'            => now(),
                 'status'          => 'completed',
@@ -218,6 +248,23 @@ class SaleController extends BaseApiController
                 $coupon = Coupon::where('code', $couponCode)->first();
                 if ($coupon) {
                     $coupon->increment('used_count');
+                }
+            }
+
+            // 4. Update Customer total_spent, order_count, and loyalty_points
+            if (!empty($sale->customer_id)) {
+                $customer = Customer::find($sale->customer_id);
+                if ($customer) {
+                    $completedSales = Sale::where('customer_id', $customer->id)->where('status', 'completed');
+                    $customerTotalSpent = (float) $completedSales->sum('grand_total');
+                    $customerOrderCount = $completedSales->count();
+                    $customerLoyaltyPoints = round($customerTotalSpent, 2);
+
+                    $customer->update([
+                        'total_spent'    => $customerTotalSpent,
+                        'order_count'    => $customerOrderCount,
+                        'loyalty_points' => $customerLoyaltyPoints,
+                    ]);
                 }
             }
 

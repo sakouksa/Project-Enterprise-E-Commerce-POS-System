@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, User } from 'lucide-react'
+import { EmployeeAvatar } from './EmployeeAvatar'
 
 interface EmployeeDetailDrawerProps {
   isOpen: boolean
@@ -38,13 +39,13 @@ export const EmployeeDetailDrawer: React.FC<EmployeeDetailDrawerProps> = ({
 
               {/* Profile Card Header */}
               <div className="flex items-center gap-4 bg-muted/40 p-4 rounded-xl border border-border">
-                <div className="w-20 h-20 rounded-full overflow-hidden border border-border bg-muted flex items-center justify-center">
-                  {selectedItem.photo ? (
-                    <img src={getPhotoUrl(selectedItem.photo) || ''} alt="" className="object-cover w-full h-full" />
-                  ) : (
-                    <User size={36} className="text-muted-foreground" />
-                  )}
-                </div>
+                <EmployeeAvatar
+                  photo={selectedItem.photo}
+                  name={selectedItem.name}
+                  id={selectedItem.id}
+                  size="xl"
+                  getPhotoUrl={getPhotoUrl}
+                />
                 <div>
                   <h2 className="text-xl font-bold text-foreground">{selectedItem.name}</h2>
                   <p className="font-mono text-xs text-muted-foreground">{selectedItem.employee_number}</p>

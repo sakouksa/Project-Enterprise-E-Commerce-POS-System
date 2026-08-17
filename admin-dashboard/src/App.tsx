@@ -37,9 +37,11 @@ const POSPage             = React.lazy(() => import('@/pages/pos/POSPage'))
 const PurchasesPage       = React.lazy(() => import('@/pages/purchases/PurchasesPage'))
 const PurchaseReturnsPage = React.lazy(() => import('@/pages/purchases/PurchaseReturnsPage'))
 const SuppliersPage       = React.lazy(() => import('@/pages/suppliers/SuppliersPage'))
+const SupplierFormPage   = React.lazy(() => import('@/pages/suppliers/SupplierFormPage'))
 
 // Customers
 const CustomersPage       = React.lazy(() => import('@/pages/customers/CustomersPage'))
+const CustomerFormPage   = React.lazy(() => import('@/pages/customers/CustomerFormPage'))
 const CustomerGroupsPage  = React.lazy(() => import('@/pages/customers/CustomerGroupsPage'))
 
 // Employees
@@ -84,6 +86,11 @@ const UnitsPage           = React.lazy(() => import('@/pages/settings/UnitsPage'
 const ReviewsPage         = React.lazy(() => import('@/pages/reviews/ReviewsPage'))
 const ProfilePage         = React.lazy(() => import('@/pages/profile/ProfilePage'))
 
+// Security & Devices
+const SecurityOverviewDashboard = React.lazy(() => import('@/pages/security/SecurityOverviewDashboard'))
+const DeviceManagementPage      = React.lazy(() => import('@/pages/security/DeviceManagementPage'))
+const SecuritySettingsPage      = React.lazy(() => import('@/pages/security/SecuritySettingsPage'))
+
 // Notifications
 const NotificationListPage        = React.lazy(() => import('@/pages/notifications/NotificationListPage'))
 const NotificationTemplateListPage = React.lazy(() => import('@/pages/notifications/NotificationTemplateListPage'))
@@ -105,7 +112,7 @@ const queryClient = new QueryClient({
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  permission?: string
+  permission?: string | string[]
   role?: string
 }
 
@@ -168,14 +175,15 @@ const AppContent: React.FC = () => {
             <Route path="/dashboard"               element={<DashboardPage />} />
 
             {/* ── Products ──────────────────────────────────────────────── */}
-            <Route path="/products"                element={<ProtectedRoute permission="products.view"><ProductsPage /></ProtectedRoute>} />
-            <Route path="/products/create"         element={<ProtectedRoute permission="products.create"><ProductFormPage /></ProtectedRoute>} />
-            <Route path="/products/:id/edit"       element={<ProtectedRoute permission="products.edit"><ProductFormPage /></ProtectedRoute>} />
-            <Route path="/categories"              element={<ProtectedRoute permission="categories.view"><CategoriesPage /></ProtectedRoute>} />
-            <Route path="/brands"                  element={<ProtectedRoute permission="brands.view"><BrandsPage /></ProtectedRoute>} />
-            <Route path="/units"                   element={<ProtectedRoute permission="units.view"><UnitsPage /></ProtectedRoute>} />
-            <Route path="/taxes"                   element={<ProtectedRoute permission="taxes.view"><TaxesPage /></ProtectedRoute>} />
-            <Route path="/attributes"              element={<ProtectedRoute permission="attributes.view"><AttributesPage /></ProtectedRoute>} />
+            <Route path="/products"                element={<ProtectedRoute permission={['products.view', 'product.view']}><ProductsPage /></ProtectedRoute>} />
+            <Route path="/products/create"         element={<ProtectedRoute permission={['products.create', 'product.create']}><ProductFormPage /></ProtectedRoute>} />
+            <Route path="/products/:id/edit"       element={<ProtectedRoute permission={['products.edit', 'product.update', 'product.edit']}><ProductFormPage /></ProtectedRoute>} />
+            <Route path="/products/edit/:id"       element={<ProtectedRoute permission={['products.edit', 'product.update', 'product.edit']}><ProductFormPage /></ProtectedRoute>} />
+            <Route path="/categories"              element={<ProtectedRoute permission={['categories.view', 'category.view']}><CategoriesPage /></ProtectedRoute>} />
+            <Route path="/brands"                  element={<ProtectedRoute permission={['brands.view', 'brand.view']}><BrandsPage /></ProtectedRoute>} />
+            <Route path="/units"                   element={<ProtectedRoute permission={['units.view', 'unit.view']}><UnitsPage /></ProtectedRoute>} />
+            <Route path="/taxes"                   element={<ProtectedRoute permission={['taxes.view', 'tax.view']}><TaxesPage /></ProtectedRoute>} />
+            <Route path="/attributes"              element={<ProtectedRoute permission={['attributes.view', 'attribute.view']}><AttributesPage /></ProtectedRoute>} />
 
             {/* ── Inventory ─────────────────────────────────────────────── */}
             <Route path="/inventory"               element={<ProtectedRoute permission="inventory.view"><InventoryPage /></ProtectedRoute>} />
@@ -192,11 +200,19 @@ const AppContent: React.FC = () => {
 
             {/* ── Purchases ─────────────────────────────────────────────── */}
             <Route path="/purchases"               element={<ProtectedRoute permission="purchases.view"><PurchasesPage /></ProtectedRoute>} />
+            <Route path="/purchases/create"        element={<ProtectedRoute permission="purchases.create"><PurchasesPage /></ProtectedRoute>} />
+            <Route path="/purchases/:id/edit"      element={<ProtectedRoute permission="purchases.edit"><PurchasesPage /></ProtectedRoute>} />
             <Route path="/purchases/returns"       element={<ProtectedRoute permission="purchases.view"><PurchaseReturnsPage /></ProtectedRoute>} />
             <Route path="/suppliers"               element={<ProtectedRoute permission="suppliers.view"><SuppliersPage /></ProtectedRoute>} />
+            <Route path="/suppliers/create"        element={<ProtectedRoute permission="suppliers.create"><SupplierFormPage /></ProtectedRoute>} />
+            <Route path="/suppliers/:id/edit"      element={<ProtectedRoute permission="suppliers.edit"><SupplierFormPage /></ProtectedRoute>} />
+            <Route path="/suppliers/edit/:id"      element={<ProtectedRoute permission="suppliers.edit"><SupplierFormPage /></ProtectedRoute>} />
 
             {/* ── Customers ─────────────────────────────────────────────── */}
             <Route path="/customers"               element={<ProtectedRoute permission="customers.view"><CustomersPage /></ProtectedRoute>} />
+            <Route path="/customers/create"        element={<ProtectedRoute permission="customers.create"><CustomerFormPage /></ProtectedRoute>} />
+            <Route path="/customers/:id/edit"      element={<ProtectedRoute permission="customers.edit"><CustomerFormPage /></ProtectedRoute>} />
+            <Route path="/customers/edit/:id"      element={<ProtectedRoute permission="customers.edit"><CustomerFormPage /></ProtectedRoute>} />
             <Route path="/customers/groups"        element={<ProtectedRoute permission="customers.view"><CustomerGroupsPage /></ProtectedRoute>} />
 
             {/* ── Employees ─────────────────────────────────────────────── */}
@@ -235,17 +251,23 @@ const AppContent: React.FC = () => {
             <Route path="/reports/profit-loss"     element={<ProtectedRoute permission="reports.view"><ReportsPage type="profit-loss" /></ProtectedRoute>} />
 
             {/* ── Administration ────────────────────────────────────────── */}
-            <Route path="/users"                   element={<ProtectedRoute permission="users.view"><UsersPage /></ProtectedRoute>} />
-            <Route path="/roles"                   element={<ProtectedRoute permission="roles.view"><RolesPage /></ProtectedRoute>} />
-            <Route path="/permissions"             element={<ProtectedRoute permission="permissions.view"><PermissionsPage /></ProtectedRoute>} />
-            <Route path="/activity-logs"           element={<ProtectedRoute permission="activity_logs.view"><ActivityLogsPage /></ProtectedRoute>} />
-            <Route path="/recycle-bin"             element={<ProtectedRoute permission="recycle_bin.view"><RecycleBinPage /></ProtectedRoute>} />
+            <Route path="/users"                   element={<ProtectedRoute permission="user.view"><UsersPage /></ProtectedRoute>} />
+            <Route path="/roles"                   element={<ProtectedRoute permission="role.view"><RolesPage /></ProtectedRoute>} />
+            <Route path="/permissions"             element={<ProtectedRoute permission="permission.view"><PermissionsPage /></ProtectedRoute>} />
+            <Route path="/activity-logs"           element={<ProtectedRoute permission="activity_log.view"><ActivityLogsPage /></ProtectedRoute>} />
+            <Route path="/recycle-bin"             element={<ProtectedRoute permission="activity_log.view"><RecycleBinPage /></ProtectedRoute>} />
 
             {/* ── Notifications ────────────────────────────────────────── */}
             <Route path="/notifications"            element={<ProtectedRoute permission="notification.view"><NotificationListPage /></ProtectedRoute>} />
             <Route path="/notification-templates"   element={<ProtectedRoute permission="notification.template.view"><NotificationTemplateListPage /></ProtectedRoute>} />
             <Route path="/notifications/settings"  element={<ProtectedRoute permission="notification.view"><NotificationSettingsPage /></ProtectedRoute>} />
 
+
+            {/* ── Security & Devices ────────────────────────────────────── */}
+            <Route path="/security"                element={<ProtectedRoute><SecurityOverviewDashboard /></ProtectedRoute>} />
+            <Route path="/security/overview"       element={<ProtectedRoute><SecurityOverviewDashboard /></ProtectedRoute>} />
+            <Route path="/security/devices"        element={<ProtectedRoute><DeviceManagementPage /></ProtectedRoute>} />
+            <Route path="/security/settings"       element={<ProtectedRoute permission="settings.view"><SecuritySettingsPage /></ProtectedRoute>} />
 
             {/* ── Settings / Reviews ────────────────────────────────────── */}
             <Route path="/settings"                element={<ProtectedRoute permission="settings.view"><SettingsPage /></ProtectedRoute>} />

@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, Edit2, Trash2, X, Percent, ToggleLeft, ToggleRight, Loader2, 
-  ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, Settings
+  ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, Settings,
+  Save
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -21,6 +22,7 @@ import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { ColumnSettingsPopover } from '@/components/shared/ColumnSettingsPopover'
 
 interface Tax {
   id: number
@@ -33,13 +35,18 @@ interface Tax {
 }
 
 const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
+  const { language } = useThemeStore()
   const { t, i18n } = useTranslation(['products', 'common'])
   const qc = useQueryClient()
   const toast = useToast()
 
-  // Open add modal when parent triggers it (parent auto-resets to 0 after 200ms)
+  // Open add modal only when triggerAdd changes to a positive number
+  const prevTriggerRef = React.useRef(triggerAdd || 0)
   React.useEffect(() => {
-    if (triggerAdd && triggerAdd > 0) openCreateModal()
+    if (triggerAdd && triggerAdd > 0 && triggerAdd !== prevTriggerRef.current) {
+      openCreateModal()
+    }
+    prevTriggerRef.current = triggerAdd || 0
   }, [triggerAdd])
 
   const {
@@ -54,12 +61,19 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   } = useServerPagination({ storageKey: 'taxes' })
 
   // UI state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTax, setEditingTax] = useState<Tax | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Tax | null>(null)
   const [recycleBinMode, setRecycleBinMode] = useState(false)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    name: true,
+    rate: true,
+    type: true,
+    status: true,
+  })
 
   // CSV Import Modal
   const [importOpen, setImportOpen] = useState(false)
@@ -93,7 +107,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
 
   // Query
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['taxes', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode],
+    queryKey: ['taxes', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
     queryFn: () => api.get('/taxes', { 
       params: { 
         page, 
@@ -101,7 +115,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
         per_page: perPage, 
         sort_by: sortBy, 
         sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : undefined
+        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
       } 
     }).then(r => r.data),
     placeholderData: (prev) => prev,
@@ -348,18 +362,43 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       )}
 
       {/* Filters */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <SearchInput value={search} onChange={setSearch} placeholder={t('products.searchTaxes')} />
-          <ResetButton onClick={() => { setSearch(''); setSortBy('created_at'); setSortOrder('desc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
+      <div className="bg-card rounded-2xl border border-border p-3.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchInput value={search} onChange={setSearch} placeholder="products.searchTaxes" />
+          
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+              setPage(1)
+            }}
+            className="h-10 px-3.5 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all shadow-sm cursor-pointer"
+          >
+            <option value="all">{t('common.allStatus', 'All Status')}</option>
+            <option value="active">{t('common.active', 'Active')}</option>
+            <option value="inactive">{t('common.inactive', 'Inactive')}</option>
+          </select>
+
+          <ResetButton onClick={() => { setSearch(''); setStatusFilter('all'); setSortBy('created_at'); setSortOrder('desc'); setPage(1); setRecycleBinMode(false); setSelectedRows([]) }} />
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['taxes'] })}
               title={t('products.refresh')}
-              className="p-2 text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm cursor-pointer"
+              className="h-10 w-10 flex items-center justify-center text-muted-foreground border border-border bg-card rounded-xl hover:text-foreground hover:bg-muted/80 transition-all shadow-sm active:scale-[0.98] cursor-pointer"
             >
               <RefreshCw size={15} />
             </button>
+
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'name', label: t('products.colTaxName', 'Tax Name') },
+                { key: 'rate', label: t('products.colTaxRate', 'Tax Rate') },
+                { key: 'type', label: t('products.colCalculationType', 'Calculation Type') },
+                { key: 'status', label: t('products.colStatus', 'Status') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={setVisibleColumns}
+            />
           </div>
         </div>
       </div>
@@ -384,18 +423,26 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                     className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
                   />
                 </th>
-                <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
-                  {t('products.colTaxName')} {renderSortIcon('name')}
-                </th>
-                <th onClick={() => handleSort('rate')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-32">
-                  {t('products.colTaxRate')} {renderSortIcon('rate')}
-                </th>
-                <th onClick={() => handleSort('type')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-36">
-                  {t('products.colCalculationType')} {renderSortIcon('type')}
-                </th>
-                <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
-                  {t('products.colStatus')} {renderSortIcon('is_active')}
-                </th>
+                {visibleColumns.name !== false && (
+                  <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3">
+                    {t('products.colTaxName')} {renderSortIcon('name')}
+                  </th>
+                )}
+                {visibleColumns.rate !== false && (
+                  <th onClick={() => handleSort('rate')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-32">
+                    {t('products.colTaxRate')} {renderSortIcon('rate')}
+                  </th>
+                )}
+                {visibleColumns.type !== false && (
+                  <th onClick={() => handleSort('type')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-36">
+                    {t('products.colCalculationType')} {renderSortIcon('type')}
+                  </th>
+                )}
+                {visibleColumns.status !== false && (
+                  <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 select-none py-3 w-28">
+                    {t('products.colStatus')} {renderSortIcon('is_active')}
+                  </th>
+                )}
                 <th className="text-right pr-4 py-3 select-none w-28">{t('products.colActions')}</th>
               </tr>
             </thead>
@@ -404,7 +451,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     <td className="w-12"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
-                    <td><div className="skeleton h-4 w-32 rounded" /></td>
+                    <td className="py-3"><div className="skeleton h-4 w-32 rounded" /></td>
                     <td><div className="skeleton h-4 w-16 rounded" /></td>
                     <td><div className="skeleton h-4 w-28 rounded" /></td>
                     <td><div className="skeleton h-4 w-16 rounded" /></td>
@@ -428,21 +475,29 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                         className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary cursor-pointer"
                       />
                     </td>
-                    <td className="font-medium text-foreground text-sm py-3 flex items-center gap-2">
-                      <Percent size={16} className="text-blue-500 flex-shrink-0" />
-                      <span>{tax.name}</span>
-                    </td>
-                    <td className="font-mono text-sm font-semibold text-foreground py-3">
-                      {tax.rate}{tax.type === 'percentage' ? '%' : ''}
-                    </td>
-                    <td className="text-sm font-semibold text-muted-foreground py-3">
-                      {tax.type === 'percentage' ? t('products.percentage') : t('products.fixed')}
-                    </td>
-                    <td>
-                      <span className={tax.is_active ? 'badge-success' : 'badge-muted'}>
-                        {tax.is_active ? t('products.active') : t('products.inactive')}
-                      </span>
-                    </td>
+                    {visibleColumns.name !== false && (
+                      <td className="font-medium text-foreground text-sm py-3 flex items-center gap-2">
+                        <Percent size={16} className="text-blue-500 flex-shrink-0" />
+                        <span>{tax.name}</span>
+                      </td>
+                    )}
+                    {visibleColumns.rate !== false && (
+                      <td className="font-mono text-sm font-semibold text-foreground py-3">
+                        {tax.rate}{tax.type === 'percentage' ? '%' : ''}
+                      </td>
+                    )}
+                    {visibleColumns.type !== false && (
+                      <td className="text-sm font-semibold text-muted-foreground py-3">
+                        {tax.type === 'percentage' ? t('products.percentage') : t('products.fixed')}
+                      </td>
+                    )}
+                    {visibleColumns.status !== false && (
+                      <td>
+                        <span className={tax.is_active ? 'badge-success' : 'badge-muted'}>
+                          {tax.is_active ? t('products.active') : t('products.inactive')}
+                        </span>
+                      </td>
+                    )}
                     <td className="text-right pr-4">
                       <TableActionMenu
                         onEdit={() => openEditModal(tax)}
@@ -472,40 +527,59 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       {/* Tax Create/Edit Modal */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="bg-card border border-border/80 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingTax ? t('products.editTaxRule') : t('products.addTaxRule')}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-2xs">
+                    <Percent size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground leading-tight">
+                      {editingTax ? t('products.editTaxRule', 'Edit Tax Rule') : t('products.addTaxRule', 'Add Tax Rule')}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {editingTax ? t('products.editTaxDesc', 'Modify tax rate, calculation formula and status') : t('products.addTaxDesc', 'Create a new tax regulation for sales and checkout')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeModal}
+                  type="button"
+                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                >
                   <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Modal Body Form */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-4.5 max-h-[calc(85vh-130px)] overflow-y-auto">
+                {/* Tax Name */}
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">
-                    {t('products.colTaxName')} <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    {t('products.colTaxName', 'Tax Name')} <span className="text-destructive">*</span>
                   </label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    placeholder={t('forms.taxNamePlaceholder', 'e.g. VAT 11%, GST')}
-                    className="form-input"
+                    placeholder={t('products.taxNamePlaceholder', 'e.g. VAT 10%, GST 7%')}
+                    className="form-input text-sm h-11 px-3.5 rounded-xl bg-background border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium w-full"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Grid: Rate + Calculation Type */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">
-                      {t('products.colTaxRate')} {type === 'percentage' ? '(%)' : '($)'} <span className="text-red-500">*</span>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                      {t('products.colTaxRate', 'Tax Rate')} {type === 'percentage' ? '(%)' : '($)'} <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="number"
@@ -514,51 +588,77 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                       onChange={(e) => setRate(e.target.value)}
                       required
                       min="0"
-                      className="form-input"
+                      className="form-input text-sm h-11 px-3.5 rounded-xl bg-background border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-semibold w-full"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">{t('products.colCalculationType')}</label>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                      {t('products.colCalculationType', 'Calculation Type')}
+                    </label>
                     <ModernSelect
                       value={type}
                       onChange={(val) => setType(String(val) as any)}
                       options={[
-                        { value: 'percentage', label: t('products.percentage') },
-                        { value: 'fixed', label: t('products.fixed') },
+                        { value: 'percentage', label: t('products.percentage', 'Percentage (%)') },
+                        { value: 'fixed', label: t('products.fixed', 'Fixed Amount ($)') },
                       ]}
                       placeholder={t('products.colCalculationType')}
-                      buttonClassName="font-normal text-sm border-border bg-card cursor-pointer"
+                      size="lg"
+                      className="w-full"
+                      buttonClassName="font-medium text-sm border-border/80 bg-background rounded-xl h-11 px-3.5 cursor-pointer w-full"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">{t('products.colStatus')}</span>
+                {/* Status Toggle Card */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/30 border border-border/60">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                    <div>
+                      <span className="text-xs font-bold text-foreground block">
+                        {isActive ? t('products.active', 'Active') : t('products.inactive', 'Inactive')}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {isActive ? t('products.activeDesc', 'Enabled for sales transactions') : t('products.inactiveDesc', 'Hidden from checkout calculations')}
+                      </span>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setIsActive(!isActive)}
-                    className="text-primary hover:opacity-80 transition-opacity cursor-pointer"
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      isActive ? 'bg-primary' : 'bg-muted-foreground/30'
+                    }`}
                   >
-                    {isActive ? <ToggleRight size={36} /> : <ToggleLeft size={36} className="text-muted-foreground" />}
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        isActive ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/60">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-xl transition-all cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg hover:opacity-90 shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-primary rounded-xl hover:opacity-90 shadow-md hover:shadow-primary/20 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                   >
-                    {isSaving && <Loader2 size={14} className="animate-spin" />}
-                    {editingTax ? t('common.save') : t('products.addTaxRule')}
+                    {isSaving ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                    <span>{editingTax ? t('common.save', 'Save Changes') : t('products.addTaxRule', 'Create Tax Rule')}</span>
                   </button>
                 </div>
               </form>
@@ -626,17 +726,10 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('taxes.deleteTitle', 'Delete Tax Rule')}
-        message={
-          <div>
-            <div>{t('taxes.confirmDeleteTaxMessage', 'Are you sure you want to delete tax rule')}</div>
-            <div className="mt-1">
-              <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
-            </div>
-          </div>
-        }
-        confirmText={t('taxes.deleteTitle', 'Delete Tax Rule')}
-        cancelText={t('common.cancel', 'Cancel')}
+        title="taxes.deleteTitle"
+        itemName={deleteTarget?.name}
+        confirmText="common.confirmDelete"
+        cancelText="common.cancel"
         onConfirm={() => {
           if (deleteTarget) {
             if (recycleBinMode) {

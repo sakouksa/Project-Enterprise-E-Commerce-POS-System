@@ -21,7 +21,8 @@ export interface Product {
   sold_count: number
   rating_avg: number
   description?: string
-  primary_image?: { image: string } | null
+  primary_image?: string | { image?: string; url?: string } | null
+  images?: Array<{ id?: number; url?: string; image?: string; thumb_url?: string; is_primary?: boolean }> | null
   category?: { id: number; name: string } | null
   brand?: { id: number; name: string } | null
   unit?: { id: number; name: string; symbol?: string } | null

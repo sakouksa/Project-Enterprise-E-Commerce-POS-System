@@ -385,10 +385,11 @@ class PurchaseService
             // Check overall status
             $status = $purchase->status;
             if ($anyReceived) {
-                // Check if ALL items in PO are fully received
+                // Reload items freshly from database to get updated quantity_received
+                $purchase->load('items');
                 $fullyReceived = true;
                 foreach ($purchase->items as $pi) {
-                    if ($pi->quantity_received < $pi->quantity) {
+                    if ((float)$pi->quantity_received < (float)$pi->quantity) {
                         $fullyReceived = false;
                         break;
                     }
@@ -401,6 +402,7 @@ class PurchaseService
             ]);
 
             $purchase->refresh();
+            $purchase->load(['supplier', 'warehouse', 'branch', 'creator', 'items.product', 'items.variant', 'returns']);
 
             return [
                 'purchase'            => $purchase,

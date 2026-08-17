@@ -1,26 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
-  CheckCircle,
   CheckCircle2,
-  Clock,
   Loader2,
   Warehouse,
   Package,
   Info,
   Plus,
   Minus,
+  Search,
+  CheckCheck,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Layers,
+  Sparkles,
+  RotateCcw,
+  Check
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/hooks/useToast'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface StockOpnameFormProps {
   opnameId?: number | null
   onClose: () => void
 }
+
+type FilterTab = 'all' | 'discrepancy' | 'matched' | 'surplus' | 'deficit'
 
 export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onClose }) => {
   const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
@@ -33,6 +43,10 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
   const [warehouseId, setWarehouseId] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<Array<{ id: number; product: any; system_quantity: number; physical_quantity: number; notes: string }>>([])
+  
+  // Search & Filter state for counting matrix
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('all')
 
   // Queries
   const { data: detail, isLoading: loadingDetail } = useQuery({
@@ -84,6 +98,45 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     [items]
   )
 
+  const discrepancyCount = useMemo(
+    () => items.filter(it => it.physical_quantity !== it.system_quantity).length,
+    [items]
+  )
+
+  const matchedCount = useMemo(
+    () => items.filter(it => it.physical_quantity === it.system_quantity).length,
+    [items]
+  )
+
+  const surplusCount = useMemo(
+    () => items.filter(it => it.physical_quantity > it.system_quantity).length,
+    [items]
+  )
+
+  const deficitCount = useMemo(
+    () => items.filter(it => it.physical_quantity < it.system_quantity).length,
+    [items]
+  )
+
+  // Filtered items list based on search and tab
+  const filteredItems = useMemo(() => {
+    return items.filter(it => {
+      const pName = (it.product?.name || '').toLowerCase()
+      const pSku = (it.product?.sku || '').toLowerCase()
+      const q = searchQuery.toLowerCase().trim()
+      const matchesSearch = !q || pName.includes(q) || pSku.includes(q)
+
+      if (!matchesSearch) return false
+
+      const diff = it.physical_quantity - it.system_quantity
+      if (activeFilterTab === 'discrepancy') return diff !== 0
+      if (activeFilterTab === 'matched') return diff === 0
+      if (activeFilterTab === 'surplus') return diff > 0
+      if (activeFilterTab === 'deficit') return diff < 0
+      return true
+    })
+  }, [items, searchQuery, activeFilterTab])
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: (payload: any) => api.post('/stock-opnames', payload),
@@ -92,16 +145,18 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
       if (created?.id) {
         setCurrentOpnameId(created.id)
         qc.invalidateQueries({ queryKey: ['stock-opnames'] })
+        qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
         qc.invalidateQueries({ queryKey: ['stock-opname-detail', created.id] })
-        toast.success(t('inventory.draftCreatedSuccess', 'Stock opname created as draft and warehouse stock levels snapped'))
+        toast.success(t('draftCreatedSuccess', t('inventory.draftCreatedSuccess', 'Stock opname created and inventory snapshot taken successfully!')))
       } else {
         qc.invalidateQueries({ queryKey: ['stock-opnames'] })
+        qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
         onClose()
       }
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || 'Unexpected server error.'
-      toast.error(`${t('inventory.opnameStartError', 'Failed to start stock opname')}: ${errMsg}`)
+      toast.error(`${t('opnameStartError', t('inventory.opnameStartError', 'Failed to start stock opname'))}: ${errMsg}`)
     }
   })
 
@@ -109,13 +164,15 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     mutationFn: (opnameItems: any) => api.post(`/stock-opnames/${currentOpnameId}/complete`, { items: opnameItems }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stock-opnames'] })
+      qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
       qc.invalidateQueries({ queryKey: ['inventory-levels'] })
-      toast.success(t('inventory.reconcileSuccess', 'Stock opname count completed and discrepancies reconciled'))
+      qc.invalidateQueries({ queryKey: ['inventory-dashboard-stats'] })
+      toast.success(t('reconcileSuccess', t('inventory.reconcileSuccess', 'Stock opname count completed and discrepancies reconciled!')))
       onClose()
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || 'Unexpected server error.'
-      toast.error(`${t('inventory.opnameCompleteError', 'Failed to complete stock opname')}: ${errMsg}`)
+      toast.error(`${t('opnameCompleteError', t('inventory.opnameCompleteError', 'Failed to complete stock opname'))}: ${errMsg}`)
     }
   })
 
@@ -139,10 +196,19 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     }))
   }
 
+  const handleSetAllToMatch = () => {
+    setItems(prev => prev.map(it => ({
+      ...it,
+      physical_quantity: it.system_quantity,
+      notes: ''
+    })))
+    toast.success(t('setAllMatchSuccess', 'All physical counts set to match system quantities.'))
+  }
+
   const handleStartOpname = (e: React.FormEvent) => {
     e.preventDefault()
     if (!warehouseId) {
-      toast.error(t('inventory.selectWarehouseHint', 'Please select a warehouse location to start audit count'))
+      toast.error(t('selectWarehouseHint', t('inventory.selectWarehouseHint', 'Please select a warehouse location to start audit count')))
       return
     }
     createMutation.mutate({
@@ -151,8 +217,8 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     })
   }
 
-  const handleCompleteOpname = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCompleteOpname = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     const opnameItems = items.map(it => ({
       id: it.id,
       physical_quantity: parseFloat(it.physical_quantity.toString()),
@@ -170,9 +236,10 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
 
   if (isEdit && loadingDetail) {
     return (
-      <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <Loader2 className="animate-spin mx-auto mb-3 text-primary" size={28} />
-        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading Details...</p>
+      <div className="p-16 text-center bg-card rounded-2xl border border-border shadow-xs flex flex-col items-center justify-center gap-3">
+        <Loader2 className="animate-spin text-primary" size={32} />
+        <p className="text-sm font-bold text-foreground">{t('loadingOpnameData', 'Loading Stock Opname Data...')}</p>
+        <p className="text-xs text-muted-foreground">{t('fetchingSnapshotDetails', 'Retrieving warehouse snapshot matrix...')}</p>
       </div>
     )
   }
@@ -183,366 +250,485 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
 
   return (
     <div className="space-y-6">
-      {/* Top Page Header Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <CheckCircle2 size={20} />
+      
+      {/* ─── Top Dedicated Header Bar ──────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/80 p-5 sm:p-6 rounded-2xl shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <CheckCircle2 size={24} />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                {isEdit
+                  ? t('opnameDetails', t('inventory.opnameDetails', 'Stock Audit Details'))
+                  : t('create_opname', t('inventory.create_opname', 'New Stock Audit'))}
+              </h1>
+              {isEdit && (
+                <span className="px-2.5 py-0.5 rounded-full font-mono text-xs font-bold bg-muted text-foreground border border-border">
+                  {detail?.reference_number || `OPN-${currentOpnameId}`}
+                </span>
+              )}
+              {isEdit && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  isDone
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                }`}>
+                  {isDone ? t('statusDone', 'Completed') : t('statusDraft', 'In Progress / Draft')}
+                </span>
+              )}
             </div>
-            <span>
-              {isEdit
-                ? t('opnameDetails', t('opname_details', t('inventory.opname_details', 'Stock Opname Details')))
-                : t('create_opname', t('inventory.create_opname', 'New Stock Opname Audit'))}
-            </span>
-            {isEdit && (
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700">
-                {detail?.reference_number || `OPN-${currentOpnameId}`}
-              </span>
-            )}
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {t('opname_desc', t('inventory.opname_desc', 'Snap system stock snapshot and verify physical inventory counts.'))}
-          </p>
+            <p className="text-xs text-muted-foreground">
+              {t('opname_desc', t('inventory.opname_desc', 'Snap real-time system stock snapshot and reconcile on-ground physical inventory.'))}
+            </p>
+          </div>
         </div>
 
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-bold text-xs shadow-2xs cursor-pointer active:scale-95 shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-all font-bold text-xs shadow-xs cursor-pointer active:scale-95 shrink-0 self-start sm:self-center"
         >
           <ArrowLeft size={16} />
-          <span>{t('backToOpnames', t('inventory.backToOpnames', 'Back to Stock Opnames'))}</span>
+          <span>{t('backToOpnames', t('inventory.backToOpnames', 'Back to Stock List'))}</span>
         </button>
       </div>
 
-      {/* Top Banner Card - Status Banner */}
-      {isEdit && (
-        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-4 shadow-2xs">
-          <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-primary shadow-2xs shrink-0">
-            <CheckCircle2 size={22} />
+      {/* ─── INITIAL CREATION SCREEN (Before Snapshot) ────────────────────── */}
+      {!isEdit && (
+        <form onSubmit={handleStartOpname} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Left Column: Form Setup (5 cols) */}
+            <div className="lg:col-span-5 bg-card border border-border/80 p-6 rounded-2xl shadow-xs space-y-5">
+              <div className="flex items-center gap-2.5 border-b border-border pb-3.5">
+                <Info size={16} className="text-primary" />
+                <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                  {t('generalInformation', t('inventory.generalInfoCard', 'Audit Parameters'))}
+                </h3>
+              </div>
+
+              {/* Warehouse Selection */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-foreground">
+                  {t('warehouse', t('inventory.warehouse', 'Target Warehouse Location'))} <span className="text-rose-500">*</span>
+                </label>
+                <ModernSelect
+                  value={warehouseId}
+                  onChange={(val) => setWarehouseId(String(val))}
+                  options={[
+                    { value: '', label: t('selectWarehouseLocation', t('inventory.selectWarehouseLocation', 'Select Warehouse Location...')) },
+                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
+                  ]}
+                  placeholder={t('selectWarehouseLocation', t('inventory.selectWarehouseLocation', 'Select Warehouse Location...'))}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t('warehouseSnapshotNotice', 'The system will instantly snap all products & current quantities in this warehouse.')}
+                </p>
+              </div>
+
+              {/* Audit Notes */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-foreground">
+                  {t('notes', t('inventory.notes', 'Audit Notes / Purpose'))}
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                  placeholder={t('auditDescPlaceholder', t('inventory.auditDescPlaceholder', 'e.g., Monthly Cycle Count, Mid-Year Audit, End-of-Week Reconciliation...'))}
+                  className="w-full p-3.5 rounded-xl border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none font-medium placeholder:text-muted-foreground/60"
+                />
+              </div>
+
+              {/* Action Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || !warehouseId}
+                  className="w-full py-3 text-xs font-bold text-white bg-primary hover:opacity-90 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {createMutation.isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>{t('snappingInventory', 'Capturing Snapshot...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Warehouse size={16} />
+                      <span>{t('startAuditSnapshot', t('inventory.startAuditSnapshot', 'Start Stock Audit Snapshot'))}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column: Interactive Feature Card (7 cols) */}
+            <div className="lg:col-span-7 bg-card border border-border/80 p-6 sm:p-8 rounded-2xl shadow-xs flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                  <Sparkles size={14} />
+                  <span>{t('smartCycleCounting', 'Enterprise Stock Audit Workflow')}</span>
+                </div>
+                <h3 className="text-lg font-black text-foreground tracking-tight">
+                  {t('howOpnameWorks', 'How Stock Audit & Count Verification Works')}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t('opnameWorkflowExplanation', 'Stock Audit allows warehouse managers to record a frozen snapshot of book inventory, record actual physical items counted on the shelves, calculate discrepancy variances, and automatically reconcile stock levels upon completion.')}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+                  <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                      1
+                    </div>
+                    <h4 className="text-xs font-bold text-foreground">{t('snapStock', 'Snap Stock')}</h4>
+                    <p className="text-[11px] text-muted-foreground">{t('snapStockDesc', 'Captures live quantities across all catalog SKUs in selected warehouse.')}</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                      2
+                    </div>
+                    <h4 className="text-xs font-bold text-foreground">{t('physicalCount', 'Physical Count')}</h4>
+                    <p className="text-[11px] text-muted-foreground">{t('physicalCountDesc', 'Staff inputs actual verified quantities with quick steppers & variance tags.')}</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                      3
+                    </div>
+                    <h4 className="text-xs font-bold text-foreground">{t('reconcileStock', 'Reconcile')}</h4>
+                    <p className="text-[11px] text-muted-foreground">{t('reconcileStockDesc', 'Automatic inventory adjustments and audit movement logs generated.')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedWarehouseObj && (
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+                      <Warehouse size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">{selectedWarehouseObj.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{selectedWarehouseObj.address || t('activeWarehouseHub', 'Active Warehouse Hub')}</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-white text-center shrink-0 shadow-2xs">
+                    {t('readyToSnap', 'Ready to Snap')}
+                  </span>
+                </div>
+              )}
+            </div>
+
           </div>
-          <div className="space-y-1 min-w-0 flex-1">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{detail?.reference_number || `OPN-${currentOpnameId}`}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-              {t('warehouse', t('inventory.warehouse', 'Warehouse Hub'))}: {detail?.warehouse?.name || 'Main Warehouse'}
-            </p>
-            <div>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                isDone ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-              }`}>
-                {isDone
-                  ? t('statusDone', t('inventory.statusDone', t('common.completed', 'Completed')))
-                  : t('statusDraft', t('inventory.statusDraft', t('common.draft', 'Draft')))}
-              </span>
+        </form>
+      )}
+
+      {/* ─── ACTIVE COUNTING MATRIX SCREEN (Editing / In Progress) ────────── */}
+      {isEdit && (
+        <div className="space-y-6">
+          
+          {/* Header Summary Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('auditedSKUs', 'Total SKUs Audited')}</span>
+              <p className="text-xl font-black text-foreground font-mono">{items.length}</p>
+            </div>
+
+            <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('system_qty', 'System Book Units')}</span>
+              <p className="text-xl font-black text-foreground font-mono">{totalSystemUnits}</p>
+            </div>
+
+            <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('physical_qty', 'Physical Counted')}</span>
+              <p className="text-xl font-black text-foreground font-mono">{totalPhysicalUnits}</p>
+            </div>
+
+            <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('variance', 'Net Discrepancy')}</span>
+              <p className={`text-xl font-black font-mono ${totalDiff > 0 ? 'text-emerald-600 dark:text-emerald-400' : totalDiff < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'}`}>
+                {totalDiff > 0 ? `+${totalDiff}` : totalDiff}
+              </p>
             </div>
           </div>
+
+          {/* Main Matrix Card */}
+          <div className="bg-card border border-border/80 rounded-2xl shadow-xs overflow-hidden">
+            
+            {/* Search & Filter Tabs Toolbar */}
+            <div className="p-4 border-b border-border bg-muted/20 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilterTab === 'all'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t('all', 'All')} ({items.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('discrepancy')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilterTab === 'discrepancy'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t('discrepancies', 'Discrepancies')} ({discrepancyCount})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('matched')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilterTab === 'matched'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t('matched', 'Matched')} ({matchedCount})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('surplus')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilterTab === 'surplus'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t('surplus', 'Surplus (+)')} ({surplusCount})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('deficit')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeFilterTab === 'deficit'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t('shortage', 'Shortage (-)')} ({deficitCount})
+                </button>
+              </div>
+
+              {/* Search & Quick Action Buttons */}
+              <div className="flex items-center gap-2.5">
+                <div className="relative min-w-[220px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t('searchProductOrSku', 'Search product or SKU...')}
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all font-medium"
+                  />
+                </div>
+
+                {isDraft && (
+                  <button
+                    type="button"
+                    onClick={handleSetAllToMatch}
+                    title={t('setAllToMatchTooltip', 'Fill all physical quantities with system quantities')}
+                    className="px-3 py-1.5 text-xs font-bold rounded-xl border border-border bg-card hover:bg-muted text-foreground flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs active:scale-95"
+                  >
+                    <CheckCheck size={14} className="text-emerald-500" />
+                    <span className="hidden sm:inline">{t('matchAll', 'Match All')}</span>
+                  </button>
+                )}
+              </div>
+
+            </div>
+
+            {/* Items Matrix Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                    <th className="py-3.5 px-4">{t('colProduct', 'Product / SKU')}</th>
+                    <th className="py-3.5 px-4 w-36 text-center">{t('system_qty', 'System Book Qty')}</th>
+                    <th className="py-3.5 px-4 w-52 text-center">{t('physical_qty', 'Physical Counted')}</th>
+                    <th className="py-3.5 px-4 w-36 text-center">{t('variance', 'Variance Diff')}</th>
+                    <th className="py-3.5 px-4">{t('itemNotes', 'Discrepancy Reason / Notes')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-xs font-semibold">
+                  {filteredItems.map((item) => {
+                    const originalIndex = items.findIndex(it => it.id === item.id)
+                    const variance = item.physical_quantity - item.system_quantity
+                    
+                    return (
+                      <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                        
+                        {/* Product info */}
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-xs text-foreground block">
+                              {item.product?.name || 'Unknown Product'}
+                            </span>
+                            {item.product?.sku && (
+                              <span className="font-mono text-[11px] text-muted-foreground block">
+                                {item.product.sku}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* System Qty */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="font-mono font-bold text-xs bg-muted/60 px-3 py-1.5 rounded-lg text-foreground border border-border/70 inline-block">
+                            {item.system_quantity}
+                          </span>
+                        </td>
+
+                        {/* Physical Qty Stepper */}
+                        <td className="py-3.5 px-4">
+                          {isDone ? (
+                            <div className="text-center font-mono font-black text-sm text-foreground">
+                              {item.physical_quantity}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleStepPhysicalQuantity(originalIndex, -1)}
+                                className="w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
+                              >
+                                <Minus size={13} />
+                              </button>
+                              <input
+                                type="number"
+                                value={item.physical_quantity}
+                                onChange={(e) => handleItemChange(originalIndex, 'physical_quantity', parseInt(e.target.value, 10) || 0)}
+                                min="0"
+                                step="1"
+                                className="w-20 h-8 px-2 bg-background border border-border rounded-lg font-mono font-bold text-center text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleStepPhysicalQuantity(originalIndex, 1)}
+                                className="w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
+                              >
+                                <Plus size={13} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Variance badge */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-extrabold ${
+                            variance > 0
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : variance < 0
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                : 'bg-muted/40 text-muted-foreground border border-border/40'
+                          }`}>
+                            {variance > 0 ? `+${variance}` : variance}
+                          </span>
+                        </td>
+
+                        {/* Note input */}
+                        <td className="py-3.5 px-4">
+                          {isDone ? (
+                            <span className="text-muted-foreground font-normal italic text-[11px]">
+                              {formatNoteText(item.notes) || '—'}
+                            </span>
+                          ) : (
+                            <input
+                              type="text"
+                              value={formatNoteText(item.notes)}
+                              onChange={(e) => handleItemChange(originalIndex, 'notes', e.target.value)}
+                              placeholder={t('reasonDiffPlaceholder', t('inventory.reasonDiffPlaceholder', 'Reason for diff...'))}
+                              className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-foreground text-xs focus:outline-none focus:border-primary transition-all font-medium placeholder:text-muted-foreground/50"
+                            />
+                          )}
+                        </td>
+
+                      </tr>
+                    )
+                  })}
+
+                  {filteredItems.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-12 text-muted-foreground text-xs">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Package size={36} className="text-muted-foreground/40" />
+                          <p className="font-bold text-foreground">
+                            {t('noMatchingItems', 'No items match your filter criteria.')}
+                          </p>
+                          <p className="text-[11px]">
+                            {t('tryAdjustingSearchOrTab', 'Try adjusting your search query or switching tabs.')}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Bottom Actions & Reconciliation Bar */}
+            <div className="p-5 border-t border-border bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Info size={15} className="text-primary shrink-0" />
+                <span>
+                  {isDraft
+                    ? t('reconcileNotice', 'Review counted numbers above. Clicking "Verify & Reconcile" will update active warehouse stock.')
+                    : t('completedNotice', 'This audit is completed and stock reconciliations have already been applied.')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-5 py-2.5 text-xs font-bold text-foreground border border-border rounded-xl hover:bg-muted transition-colors bg-card cursor-pointer active:scale-95"
+                >
+                  {t('close', 'Close')}
+                </button>
+
+                {isDraft && (
+                  <button
+                    type="button"
+                    onClick={() => handleCompleteOpname()}
+                    disabled={completeMutation.isPending}
+                    className="px-6 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    {completeMutation.isPending ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin" />
+                        <span>{t('reconciling', 'Reconciling Stock...')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        <span>{t('verifyAndReconcile', t('inventory.verifyAndReconcile', 'Verify & Reconcile Stock'))}</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+
+          </div>
+
         </div>
       )}
 
-      {/* Form Content */}
-      <form onSubmit={handleStartOpname} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Side: General Information Card */}
-          <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5 h-fit">
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-              <Info size={16} className="text-primary" />
-              <h3 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                {t('inventory.generalInfoCard', 'GENERAL INFORMATION')}
-              </h3>
-            </div>
-
-            {isEdit ? (
-              <div className="space-y-4 text-xs">
-                <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
-                    {t('inventory.warehouse', 'Warehouse Hub')}
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100 block text-sm">
-                    {selectedWarehouseObj?.name || detail?.warehouse?.name || 'Unknown Warehouse'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
-                    {t('inventory.auditedItemsCount', 'Audited Items Count')}
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100 block">
-                    <span className="font-mono">{items.length}</span> {t('inventory.linesCount', 'items')}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
-                    {t('inventory.netDiscrepancyVariance', 'Net Discrepancy Variance')}
-                  </span>
-                  <span className={`font-mono font-bold text-sm block ${totalDiff > 0 ? 'text-emerald-600 dark:text-emerald-400' : totalDiff < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'}`}>
-                    {totalDiff > 0 ? `+${totalDiff}` : totalDiff}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold mb-0.5">
-                    {t('inventory.notes', 'Notes')}
-                  </span>
-                  <span className="font-medium text-slate-600 dark:text-slate-300 block italic bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                    "{notes || '—'}"
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Warehouse Location Selector */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {t('inventory.warehouse', 'Warehouse Hub')} <span className="text-rose-500">*</span>
-                  </label>
-                  <ModernSelect
-                    value={warehouseId}
-                    onChange={(val) => setWarehouseId(String(val))}
-                    options={[
-                      { value: '', label: t('inventory.selectWarehouseLocation', 'Select Warehouse Location...') },
-                      ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
-                    ]}
-                    placeholder={t('inventory.selectWarehouseLocation', 'Select Warehouse Location...')}
-                  />
-                </div>
-
-                {/* Audit Notes Textarea */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {t('inventory.notes', 'Notes')}
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={4}
-                    placeholder={t('inventory.auditDescPlaceholder', 'Audit description or reference...')}
-                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none font-medium"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right Side: Count Verification Card */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
-                <div className="flex items-center gap-2">
-                  <Package size={16} className="text-primary" />
-                  <h3 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                    {t('inventory.countVerification', 'COUNT VERIFICATION')}
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-bold border border-primary/20">
-                    <span className="font-mono">{items.length}</span> {t('inventory.linesCount', 'items')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Items Matrix Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60">
-                      <th className="py-3 px-4">{t('inventory.colProductManagement', 'PRODUCT / SKU')}</th>
-                      <th className="py-3 px-4 w-32">{t('inventory.system_qty', 'System Qty')}</th>
-                      <th className="py-3 px-4 w-44">{t('inventory.physical_qty', 'Physical Qty')}</th>
-                      <th className="py-3 px-4 w-36">{t('inventory.variance', 'Net Discrepancy')}</th>
-                      <th className="py-3 px-4">{t('inventory.itemNotes', 'Item Notes')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs font-semibold">
-                    {items.map((item, idx) => {
-                      const variance = item.physical_quantity - item.system_quantity
-                      return (
-                        <tr key={idx} className="hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
-                          {/* Product Info */}
-                          <td className="py-3.5 px-4">
-                            <div className="space-y-0.5">
-                              <span className="font-bold text-xs text-slate-900 dark:text-slate-100 block">
-                                {item.product?.name || 'Unknown Product'}
-                              </span>
-                              {item.product?.sku && (
-                                <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 block">
-                                  {item.product.sku}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* System Qty Badge */}
-                          <td className="py-3.5 px-4">
-                            <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 inline-block">
-                              {item.system_quantity}
-                            </span>
-                          </td>
-
-                          {/* Physical Qty Input & Stepper */}
-                          <td className="py-3.5 px-4">
-                            {isDone ? (
-                              <span className="font-mono font-black text-sm text-slate-900 dark:text-slate-100">
-                                {item.physical_quantity}
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleStepPhysicalQuantity(idx, -1)}
-                                  className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
-                                >
-                                  <Minus size={13} />
-                                </button>
-                                <input
-                                  type="number"
-                                  value={item.physical_quantity}
-                                  onChange={(e) => handleItemChange(idx, 'physical_quantity', parseInt(e.target.value, 10) || 0)}
-                                  required
-                                  min="0"
-                                  step="1"
-                                  className="w-16 h-8 px-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg font-mono font-bold text-center text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-primary"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleStepPhysicalQuantity(idx, 1)}
-                                  className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
-                                >
-                                  <Plus size={13} />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Variance Badge */}
-                          <td className="py-3.5 px-4 font-mono font-extrabold">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs ${
-                              variance > 0
-                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                : variance < 0
-                                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                  : 'text-slate-500 dark:text-slate-400'
-                            }`}>
-                              {variance > 0 ? `+${variance}` : variance}
-                            </span>
-                          </td>
-
-                          {/* Item Notes */}
-                          <td className="py-3.5 px-4">
-                            {isDone ? (
-                              <span className="text-slate-500 dark:text-slate-400 font-normal italic">
-                                "{formatNoteText(item.notes) || '—'}"
-                              </span>
-                            ) : (
-                              <input
-                                type="text"
-                                value={formatNoteText(item.notes)}
-                                onChange={(e) => handleItemChange(idx, 'notes', e.target.value)}
-                                placeholder={t('reasonDiffPlaceholder', t('inventory.reasonDiffPlaceholder', 'Reason for diff...'))}
-                                className="w-full p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:border-primary transition-all font-medium"
-                              />
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-
-                    {items.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="text-center py-12 text-slate-400 text-xs">
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <Package size={36} className="text-slate-300 dark:text-slate-700" />
-                            <p className="font-semibold text-slate-600 dark:text-slate-300">
-                              {t('inventory.noOpnameRecordsYet', 'No inventory records snapped for this warehouse yet.')}
-                            </p>
-                            <p className="text-[11px] text-slate-400">
-                              {t('inventory.selectWarehouseToStart', 'Select a warehouse and click Start Audit Snapshot.')}
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Bottom Summary Bar */}
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
-              <div className="flex items-center gap-6">
-                <div>
-                  <span className="text-slate-500 dark:text-slate-400 block font-bold text-[10px] uppercase">
-                    {t('inventory.system_qty', 'System Qty')}
-                  </span>
-                  <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1">
-                    <span className="font-mono">{totalSystemUnits}</span>
-                    <span className="font-sans text-xs font-semibold text-slate-500 dark:text-slate-400">{t('inventory.units', t('products.units', 'units'))}</span>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-slate-500 dark:text-slate-400 block font-bold text-[10px] uppercase">
-                    {t('inventory.physical_qty', 'Physical Qty')}
-                  </span>
-                  <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1">
-                    <span className="font-mono">{totalPhysicalUnits}</span>
-                    <span className="font-sans text-xs font-semibold text-slate-500 dark:text-slate-400">{t('inventory.units', t('products.units', 'units'))}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block font-bold text-[10px] uppercase text-right">
-                  {t('inventory.variance', 'Net Discrepancy')}
-                </span>
-                <div className={`font-black text-sm flex items-center justify-end gap-1 ${totalDiff > 0 ? 'text-emerald-600 dark:text-emerald-400' : totalDiff < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'}`}>
-                  <span className="font-mono">{totalDiff > 0 ? `+${totalDiff}` : totalDiff}</span>
-                  <span className="font-sans text-xs font-semibold text-slate-500 dark:text-slate-400">{t('inventory.units', t('products.units', 'units'))}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Floating Bottom Action Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            {isEdit ? (
-              <span>{t('inventory.auditingItemsCount', 'Auditing {{count}} item(s) in warehouse snapshot', { count: items.length })}</span>
-            ) : (
-              <span>{t('inventory.selectWarehouseHint', 'Select a warehouse location to start audit count')}</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 cursor-pointer active:scale-95"
-            >
-              {t('common.cancel', 'Cancel')}
-            </button>
-
-            {!isEdit && (
-              <button
-                type="submit"
-                disabled={createMutation.isPending}
-                className="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:opacity-90 rounded-xl flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                {createMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Warehouse size={15} />}
-                <span>{t('inventory.startAuditSnapshot', 'Start Audit Snapshot')}</span>
-              </button>
-            )}
-
-            {isEdit && isDraft && (
-              <button
-                type="button"
-                onClick={handleCompleteOpname}
-                disabled={completeMutation.isPending}
-                className="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                {completeMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                <span>{t('inventory.verifyAndReconcile', 'Verify & Reconcile')}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </form>
     </div>
   )
 }

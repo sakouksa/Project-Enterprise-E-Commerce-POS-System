@@ -42,23 +42,23 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
+    <div className="bg-card border border-border/80 rounded-xl p-5 shadow-2xs space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-2 pb-3.5 mb-4 border-b border-border/70">
-        <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
-          <Layers size={18} />
+      <div className="flex items-center gap-2 pb-3 border-b border-border/60">
+        <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+          <Layers size={16} />
         </div>
         <div>
-          <h3 className="font-bold text-sm text-foreground">{t('products.generalInfo')}</h3>
-          <p className="text-[11px] text-muted-foreground">{t('products.generalInfoSub', 'Core identifiers, classification and taxonomy')}</p>
+          <h3 className="font-bold text-xs sm:text-sm text-foreground">{t('generalInfo', 'General Information')}</h3>
+          <p className="text-[11px] text-muted-foreground">{t('generalSub', 'Basic product identifiers, category, brand, and description')}</p>
         </div>
       </div>
 
       <div className="space-y-4">
         {/* Row 1: Product Name */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1">
-            {t('products.name')} <span className="text-red-500">*</span>
+          <label className="block text-xs font-semibold text-foreground/90 mb-1">
+            {t('colName', 'Product Name')} <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -66,18 +66,18 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
               required
               value={form.name}
               onChange={e => handleNameChange(e.target.value)}
-              placeholder={t('products.namePlaceholder', 'e.g. iPhone 16 Pro Max 256GB Desert Titanium')}
-              className="form-input w-full text-sm font-medium"
+              placeholder={t('namePlaceholder', 'e.g. iPhone 16 Pro Max 256GB Desert Titanium')}
+              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] font-medium rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
         </div>
 
         {/* Row 2: SKU & Barcode */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-muted-foreground">
-                {t('products.sku')} <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-foreground/90">
+                {t('sku', 'SKU')} <span className="text-red-500">*</span>
               </label>
               <button
                 type="button"
@@ -85,10 +85,10 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
                   setField('sku', generateSKU(form.name) || `SKU-${Date.now().toString().slice(-6)}`)
                   setIsSkuManuallyEdited(false)
                 }}
-                className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                className="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-medium cursor-pointer"
               >
-                <RefreshCw size={10} />
-                <span>{t('products.autoGenerate', 'Auto Gen')}</span>
+                <RefreshCw size={11} />
+                <span>{t('autoGenerate', 'Auto Generate')}</span>
               </button>
             </div>
             <input
@@ -100,22 +100,22 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
                 setIsSkuManuallyEdited(true)
               }}
               placeholder="SKU-IPHONE-16-PRO"
-              className="form-input w-full font-mono text-xs uppercase"
+              className="form-input w-full h-9 px-3 py-1.5 font-mono text-xs uppercase rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-muted-foreground">
-                {t('products.barcode')}
+              <label className="block text-xs font-semibold text-foreground/90">
+                {t('colBarcode', 'Barcode')}
               </label>
               <button
                 type="button"
                 onClick={handleAutoGenerateBarcode}
-                className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                className="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-medium cursor-pointer"
               >
-                <Wand2 size={10} />
-                <span>{t('products.generateBarcode', 'Gen EAN-13')}</span>
+                <Wand2 size={11} />
+                <span>{t('generateBarcode', 'Gen EAN-13')}</span>
               </button>
             </div>
             <input
@@ -123,24 +123,24 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
               value={form.barcode}
               onChange={e => setField('barcode', e.target.value)}
               placeholder="885909123456"
-              className="form-input w-full font-mono text-xs"
+              className="form-input w-full h-9 px-3 py-1.5 font-mono text-xs rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
         </div>
 
         {/* Row 3: Category, Brand, Unit */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">
-              {t('products.category')} <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-foreground/90 mb-1">
+              {t('colCategory', 'Category')} <span className="text-red-500">*</span>
             </label>
             <select
               value={form.category_id}
               onChange={e => setField('category_id', e.target.value)}
-              className="form-select w-full text-xs font-medium cursor-pointer"
+              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
               required
             >
-              <option value="">{t('products.selectCategory', 'Select Category...')}</option>
+              <option value="">{t('allCategories', 'Select category...')}</option>
               {(categories || []).map((c: any) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -150,15 +150,15 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">
-              {t('products.brand')}
+            <label className="block text-xs font-semibold text-foreground/90 mb-1">
+              {t('colBrand', 'Brand')}
             </label>
             <select
               value={form.brand_id}
               onChange={e => setField('brand_id', e.target.value)}
-              className="form-select w-full text-xs font-medium cursor-pointer"
+              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
             >
-              <option value="">{t('products.selectBrand', 'None / Generic...')}</option>
+              <option value="">{t('allBrands', 'None / Generic...')}</option>
               {(brands || []).map((b: any) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -168,15 +168,15 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">
-              {t('products.unit')}
+            <label className="block text-xs font-semibold text-foreground/90 mb-1">
+              {t('productUnit', 'Product Unit')}
             </label>
             <select
               value={form.unit_id}
               onChange={e => setField('unit_id', e.target.value)}
-              className="form-select w-full text-xs font-medium cursor-pointer"
+              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
             >
-              <option value="">{t('products.selectUnit', 'Piece (pcs)...')}</option>
+              <option value="">{t('allUnits', 'Select unit...')}</option>
               {(units || []).map((u: any) => (
                 <option key={u.id} value={u.id}>
                   {u.name} ({u.symbol || u.code || 'pcs'})
@@ -188,82 +188,90 @@ export const ProductBasicInfoSection: React.FC<ProductBasicInfoSectionProps> = (
 
         {/* Row 4: Short Description & Full Description */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1">
-            {t('products.shortDescription', 'Short Summary (POS Display)')}
+          <label className="block text-xs font-semibold text-foreground/90 mb-1">
+            {t('shortDescription', 'Short Summary')}
           </label>
           <input
             type="text"
             value={form.short_description}
             onChange={e => setField('short_description', e.target.value)}
-            placeholder={t('products.shortDescPlaceholder', 'Quick 1-line feature highlight for POS receipt & cashier view')}
-            className="form-input w-full text-xs"
+            placeholder={t('shortDescPlaceholder', 'Brief summary sentence for POS & receipts...')}
+            className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1">
-            {t('products.description', 'Full Specifications & Description')}
+          <label className="block text-xs font-semibold text-foreground/90 mb-1">
+            {t('colDescription', 'Specifications & Detailed Description')}
           </label>
           <textarea
             value={form.description}
             onChange={e => setField('description', e.target.value)}
-            rows={4}
-            placeholder={t('products.descPlaceholder', 'Full catalog details and technical specifications...')}
-            className="form-input w-full resize-none text-xs"
+            rows={3}
+            placeholder={t('descPlaceholder', 'Detailed catalog specifications and features...')}
+            className="form-input w-full p-2.5 text-xs sm:text-[13px] resize-none rounded-lg border border-border/80 bg-background leading-relaxed focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
 
         {/* Row 5: Status & Feature Switches */}
         <div className="pt-2 border-t border-border/60 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border/70 hover:bg-muted/30 cursor-pointer transition-colors">
+          <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer ${
+            form.status === 'active' ? 'bg-primary/5 border-primary/40 shadow-2xs' : 'border-border/70 hover:bg-muted/30'
+          }`}>
             <input
               type="checkbox"
               checked={form.status === 'active'}
               onChange={e => setField('status', e.target.checked ? 'active' : 'inactive')}
-              className="w-4 h-4 rounded text-primary focus:ring-primary/30"
+              className="mt-0.5 w-3.5 h-3.5 rounded text-primary focus:ring-primary/30"
             />
             <div>
-              <span className="text-xs font-bold text-foreground block">{t('products.active', 'Active')}</span>
-              <span className="text-[10px] text-muted-foreground">{t('products.activeDesc', 'Visible in sales')}</span>
+              <span className="text-xs font-bold text-foreground block">{t('active', 'Active')}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight block">{t('activeDesc', 'Visible in store & POS')}</span>
             </div>
           </label>
 
-          <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border/70 hover:bg-muted/30 cursor-pointer transition-colors">
+          <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer ${
+            form.is_featured ? 'bg-amber-500/5 border-amber-500/40 shadow-2xs' : 'border-border/70 hover:bg-muted/30'
+          }`}>
             <input
               type="checkbox"
               checked={form.is_featured}
               onChange={e => setField('is_featured', e.target.checked)}
-              className="w-4 h-4 rounded text-primary focus:ring-primary/30"
+              className="mt-0.5 w-3.5 h-3.5 rounded text-amber-500 focus:ring-amber-500/30"
             />
             <div>
-              <span className="text-xs font-bold text-foreground block">{t('products.featured', 'Featured')}</span>
-              <span className="text-[10px] text-muted-foreground">{t('products.featuredDesc', 'Top showcase')}</span>
+              <span className="text-xs font-bold text-foreground block">{t('featured', 'Featured Product')}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight block">{t('featuredDesc', 'Show on top/featured')}</span>
             </div>
           </label>
 
-          <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border/70 hover:bg-muted/30 cursor-pointer transition-colors">
+          <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer ${
+            form.is_digital ? 'bg-purple-500/5 border-purple-500/40 shadow-2xs' : 'border-border/70 hover:bg-muted/30'
+          }`}>
             <input
               type="checkbox"
               checked={form.is_digital}
               onChange={e => setField('is_digital', e.target.checked)}
-              className="w-4 h-4 rounded text-primary focus:ring-primary/30"
+              className="mt-0.5 w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-600/30"
             />
             <div>
-              <span className="text-xs font-bold text-foreground block">{t('products.digital', 'Digital')}</span>
-              <span className="text-[10px] text-muted-foreground">{t('products.digitalDesc', 'No physical delivery')}</span>
+              <span className="text-xs font-bold text-foreground block">{t('digitalProduct', 'Digital Product')}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight block">{t('digitalDesc', 'No shipping required')}</span>
             </div>
           </label>
 
-          <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border/70 hover:bg-muted/30 cursor-pointer transition-colors">
+          <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer ${
+            form.track_inventory ? 'bg-emerald-500/5 border-emerald-500/40 shadow-2xs' : 'border-border/70 hover:bg-muted/30'
+          }`}>
             <input
               type="checkbox"
               checked={form.track_inventory}
               onChange={e => setField('track_inventory', e.target.checked)}
-              className="w-4 h-4 rounded text-primary focus:ring-primary/30"
+              className="mt-0.5 w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-600/30"
             />
             <div>
-              <span className="text-xs font-bold text-foreground block">{t('products.trackStock', 'Stock Track')}</span>
-              <span className="text-[10px] text-muted-foreground">{t('products.trackStockDesc', 'Deduct on sale')}</span>
+              <span className="text-xs font-bold text-foreground block">{t('trackStockLevel', 'Track Stock Level')}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight block">{t('trackStockDesc', 'Deduct on sale')}</span>
             </div>
           </label>
         </div>

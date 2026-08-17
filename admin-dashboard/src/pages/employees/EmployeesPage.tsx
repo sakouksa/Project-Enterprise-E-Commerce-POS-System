@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Trash2, RefreshCw, Briefcase, Users, UserCheck, DollarSign, Calendar,
-  Download, Upload, Filter, Settings, RotateCcw, QrCode
+  Download, Upload, Filter, Settings, RotateCcw, QrCode, X
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import WorkspaceTabs, { type WorkspaceTabItem } from '@/components/shared/WorkspaceTabs'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
 import ShiftsTab from './components/ShiftsTab'
@@ -617,17 +618,36 @@ const EmployeesPage: React.FC = () => {
     filterRole,
   ].filter(Boolean).length
 
+  const workspaceTabs: WorkspaceTabItem[] = [
+    { id: 'employees', label: t('employees.employees', 'បុគ្គលិក'), count: empList?.length, icon: Users },
+    { id: 'departments', label: t('employees.departments', 'ដេប៉ាតឺម៉ង់'), count: deptList?.length, icon: Briefcase },
+    { id: 'positions', label: t('employees.positions', 'តួនាទីការងារ'), count: posList?.length, icon: UserCheck },
+    { id: 'attendance', label: t('employees.attendance', 'វត្តមាន'), icon: Calendar },
+    { id: 'payrolls', label: t('employees.payrolls', 'ប្រាក់បៀវត្សរ៍'), icon: DollarSign },
+    { id: 'trash', label: t('employees.trash_bin', 'ធុងសំរាម'), icon: Trash2 },
+  ]
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'trash') {
+      setRecycleBinMode(true)
+    } else {
+      setRecycleBinMode(false)
+      setActiveTab(tabId as Tab)
+    }
+    setSelectedRows([])
+  }
+
   return (
     <div className="space-y-5 print:p-0">
       <Breadcrumb
         items={[
-          { label: 'Dashboard', path: '/dashboard' },
-          { label: 'Employee Management' },
+          { label: t('nav.dashboard', 'ផ្ទាំងគ្រប់គ្រង'), path: '/dashboard' },
+          { label: t('nav.employees', 'គ្រប់គ្រងបុគ្គលិក') },
         ]}
       />
 
       {/* Header Card */}
-      <div className="bg-card border border-border p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
+      <div className="bg-card border border-border/80 p-5 sm:p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
@@ -641,7 +661,7 @@ const EmployeesPage: React.FC = () => {
           {activeTab === 'attendance' && (
             <button
               onClick={() => setKioskModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-colors shadow-xs"
+              className="h-9 flex items-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-xs cursor-pointer"
             >
               <QrCode size={15} />
               <span>{t('employees.launch_qr_kiosk', 'Launch QR Kiosk')}</span>
@@ -649,21 +669,21 @@ const EmployeesPage: React.FC = () => {
           )}
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-xs"
+            className="h-9 flex items-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold rounded-lg border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shadow-2xs cursor-pointer"
           >
             <Upload size={15} />
             <span>{t('employees.import_csv', 'Import CSV')}</span>
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-xs"
+            className="h-9 flex items-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold rounded-lg border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shadow-2xs cursor-pointer"
           >
             <Download size={15} />
             <span>{t('employees.export_csv', 'Export CSV')}</span>
           </button>
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
+            className="h-9 flex items-center gap-1.5 px-4 text-xs sm:text-[13px] font-bold text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-all shadow-xs cursor-pointer"
           >
             <Plus size={16} />
             <span>{activeTab === 'attendance' ? t('employees.add_attendance', 'Add Attendance') : t('employees.add_employee', 'Add Employee')}</span>
@@ -682,114 +702,91 @@ const EmployeesPage: React.FC = () => {
         branchCount={branchesList?.length ?? 0}
       />
 
-      {/* Workspace Navigation Tabs */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex border border-border bg-card rounded-2xl p-1 overflow-x-auto gap-1 shadow-xs w-full md:w-auto">
-          {[
-            { id: 'employees', label: t('employees.employees', 'Employees'), icon: <Users size={15} /> },
-            { id: 'departments', label: t('employees.departments', 'Departments'), icon: <Briefcase size={15} /> },
-            { id: 'positions', label: t('employees.positions', 'Positions'), icon: <UserCheck size={15} /> },
-            { id: 'attendance', label: t('employees.attendance', 'Attendance'), icon: <Calendar size={15} /> },
-            { id: 'payrolls', label: t('employees.payrolls', 'Payrolls'), icon: <DollarSign size={15} /> },
-          ].map(tabItem => (
-            <button
-              key={tabItem.id}
-              onClick={() => setActiveTab(tabItem.id as Tab)}
-              className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === tabItem.id
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+      {/* ─── Global Sub-tabs Navigation (Full-width long bar like Customer) ─── */}
+      <WorkspaceTabs
+        tabs={workspaceTabs}
+        activeTab={recycleBinMode ? 'trash' : activeTab}
+        onChange={handleTabChange}
+        size="md"
+        variant="pill"
+        rightContent={
+          activeTab === 'attendance' && !recycleBinMode ? (
+            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/60">
+              <button
+                onClick={() => setAttendanceSubTab('logs')}
+                className={`px-3 py-1 text-xs sm:text-[13px] font-semibold rounded-lg transition-all cursor-pointer ${
+                  attendanceSubTab === 'logs' ? 'bg-card text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground'
                 }`}
-            >
-              {tabItem.icon}
-              <span>{tabItem.label}</span>
-            </button>
-          ))}
-        </div>
+              >
+                {t('employees.attendance_logs', 'Attendance Logs')}
+              </button>
+              <button
+                onClick={() => setAttendanceSubTab('shifts')}
+                className={`px-3 py-1 text-xs sm:text-[13px] font-semibold rounded-lg transition-all cursor-pointer ${
+                  attendanceSubTab === 'shifts' ? 'bg-card text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t('employees.shift_schedules', 'Shift Schedules')}
+              </button>
+            </div>
+          ) : undefined
+        }
+      />
 
-        {activeTab === 'attendance' && (
-          <div className="flex items-center bg-muted/40 p-1 rounded-2xl border border-border/60">
-            <button
-              onClick={() => setAttendanceSubTab('logs')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
-                attendanceSubTab === 'logs' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Attendance Logs
-            </button>
-            <button
-              onClick={() => setAttendanceSubTab('shifts')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
-                attendanceSubTab === 'shifts' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Shift Schedules
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Search + Action Toolbar */}
-      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      {/* ─── Search + Action Toolbar (Matching Customer Page Pattern) ─── */}
+      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
+          <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder={t('employees.search_placeholder', 'Search Employee Name, ID, Email, Phone, Department, Position...')}
-              className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
+              className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
             />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); setPage(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                type="button"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <button
+            type="button"
             onClick={() => setFilterDrawerOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all duration-200 shadow-xs
-                       ${activeFiltersCount > 0
-                ? 'bg-primary/10 border-primary/30 text-primary font-semibold'
-                : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+            className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
+              activeFiltersCount > 0
+                ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
+                : 'border-border bg-card hover:bg-muted/80 text-foreground'
+            }`}
           >
-            <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+            <Filter size={15} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
             <span>{t('employees.filter', 'Filter')}</span>
             {activeFiltersCount > 0 && (
-              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-full leading-none">
-                {activeFiltersCount}
-              </span>
+              <span className="w-2 h-2 rounded-full bg-primary" />
             )}
           </button>
-
-          {['employees', 'departments', 'positions'].includes(activeTab) && (
-            <button
-              onClick={() => {
-                setRecycleBinMode(!recycleBinMode)
-                setSelectedRows([])
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors shadow-xs
-                         ${recycleBinMode
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 font-semibold'
-                  : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
-              title="Recycle Bin Trashed Items"
-            >
-              <Trash2 size={14} />
-              <span>{recycleBinMode ? t('employees.exit_trash', 'Exit Trash') : t('employees.trash_bin', 'Trash Bin')}</span>
-            </button>
-          )}
 
           <ResetButton onClick={handleResetFilters} />
         </div>
 
         <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
           {selectedRows.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-muted/40 p-1 px-2 rounded-xl border border-border mr-1">
-              <span className="text-[10px] text-muted-foreground font-semibold px-1">{selectedRows.length} Selected</span>
+            <div className="flex items-center gap-1.5 bg-muted/50 p-1 px-2.5 rounded-xl border border-border mr-1">
+              <span className="text-[11px] text-muted-foreground font-semibold px-1">{selectedRows.length} {t('common.selected', 'Selected')}</span>
               {recycleBinMode ? (
                 <>
                   <button
                     onClick={() => bulkRestoreMutation.mutate(selectedRows)}
-                    className="p-1.5 hover:bg-green-50 dark:hover:bg-green-950/20 text-green-500 rounded-lg transition-colors"
-                    title="Bulk Restore"
+                    className="p-1.5 hover:bg-green-50 dark:hover:bg-green-950/20 text-green-500 rounded-lg transition-colors cursor-pointer"
+                    title={t('employees.restore', 'Restore')}
                   >
-                    <RotateCcw size={13} />
+                    <RotateCcw size={14} />
                   </button>
                   <button
                     onClick={() => {
@@ -797,10 +794,10 @@ const EmployeesPage: React.FC = () => {
                         selectedRows.forEach(id => deleteMutation.mutate({ id, force: true }))
                       }
                     }}
-                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors"
-                    title="Bulk Permanent Delete"
+                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors cursor-pointer"
+                    title={t('employees.force_delete', 'Force Delete')}
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={14} />
                   </button>
                 </>
               ) : (
@@ -810,31 +807,33 @@ const EmployeesPage: React.FC = () => {
                       bulkDeleteMutation.mutate(selectedRows)
                     }
                   }}
-                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors"
-                  title="Bulk Delete"
+                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors cursor-pointer"
+                  title={t('common.delete', 'Delete')}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </button>
               )}
             </div>
           )}
 
           <button
+            type="button"
             onClick={() => qc.invalidateQueries({ queryKey: [activeTab] })}
-            className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-            title="Refresh"
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+            title={t('common.refresh', 'Refresh')}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={15} />
           </button>
 
           {/* Column Visibility settings */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setShowColSettings(!showColSettings)}
-              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
+              className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
               title={t('employees.column_settings', 'Column Settings')}
             >
-              <Settings size={14} />
+              <Settings size={15} />
             </button>
             <AnimatePresence>
               {showColSettings && (

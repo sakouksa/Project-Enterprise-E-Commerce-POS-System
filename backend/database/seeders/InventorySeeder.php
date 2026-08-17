@@ -12,7 +12,14 @@ class InventorySeeder extends Seeder
 {
     public function run(): void
     {
-        DB::statement('TRUNCATE TABLE stock_opname_items, stock_opnames, stock_transfer_items, stock_transfers, stock_adjustment_items, stock_adjustments, inventory_movements, inventories RESTART IDENTITY CASCADE;');
+        DB::table('stock_opname_items')->delete();
+        DB::table('stock_opnames')->delete();
+        DB::table('stock_transfer_items')->delete();
+        DB::table('stock_transfers')->delete();
+        DB::table('stock_adjustment_items')->delete();
+        DB::table('stock_adjustments')->delete();
+        DB::table('inventory_movements')->delete();
+        DB::table('inventories')->delete();
 
         $companyId = Company::value('id') ?? 1;
 
@@ -113,7 +120,38 @@ class InventorySeeder extends Seeder
             }
         }
 
-        DB::table('inventories')->insert($inventories);
+        // Seed inventories for all product variants
+        $variants = DB::table('product_variants')->get();
+        foreach ($variants as $v) {
+            $inventories[] = [
+                'company_id' => $companyId,
+                'warehouse_id' => 1,
+                'product_id' => $v->product_id,
+                'product_variant_id' => $v->id,
+                'quantity' => rand(30, 80),
+                'reserved_quantity' => 0,
+                'reorder_point' => 5,
+                'reorder_qty' => 20,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+            $inventories[] = [
+                'company_id' => $companyId,
+                'warehouse_id' => 2,
+                'product_id' => $v->product_id,
+                'product_variant_id' => $v->id,
+                'quantity' => rand(20, 50),
+                'reserved_quantity' => 0,
+                'reorder_point' => 5,
+                'reorder_qty' => 20,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        foreach (array_chunk($inventories, 100) as $chunk) {
+            DB::table('inventories')->insert($chunk);
+        }
 
         // 2. Stock Adjustments (at least 15 records)
         $adjustments = [];

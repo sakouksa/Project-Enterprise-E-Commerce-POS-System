@@ -24,6 +24,7 @@ class CategoryController extends BaseApiController
         $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
 
         $categories = Category::with('parent')
+            ->withCount('products')
             ->when($request->status === 'deleted', function ($q) {
                 $q->onlyTrashed();
             })
@@ -42,7 +43,7 @@ class CategoryController extends BaseApiController
      */
     public function show(int $id): JsonResponse
     {
-        $category = Category::findOrFail($id);
+        $category = Category::with('parent')->withCount('products')->findOrFail($id);
         return $this->successResponse($category);
     }
 

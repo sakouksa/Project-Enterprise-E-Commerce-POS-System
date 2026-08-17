@@ -108,7 +108,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         height: navbar?.height ? `${navbar.height}px` : undefined,
         opacity: navbar?.transparency !== undefined ? navbar.transparency : 1,
       }}
-      className={`sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 border-b backdrop-blur-md transition-all duration-300 ${shadowClass} ${
+      className={`sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 border-b backdrop-blur-md transition-all duration-300 print:hidden ${shadowClass} ${
         !navbar?.bgColor ? 'bg-white/70 dark:bg-slate-900/70 border-border/40' : ''
       }`}
     >
@@ -138,8 +138,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </Link>
           
           {pathSegments.map((segment, idx) => {
-            // Don't duplicate dashboard
-            if (segment === 'dashboard') return null
+            // Don't duplicate dashboard or show raw numeric IDs (e.g. /suppliers/2/edit)
+            if (segment === 'dashboard' || /^\d+$/.test(segment)) return null
             
             const isLast = idx === pathSegments.length - 1
             const path = `/${pathSegments.slice(0, idx + 1).join('/')}`

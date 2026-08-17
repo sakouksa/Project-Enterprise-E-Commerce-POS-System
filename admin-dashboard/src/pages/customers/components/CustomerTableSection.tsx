@@ -3,6 +3,9 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
+import { getAbsoluteImageUrl } from '@/utils/image'
 import type { Customer } from '../types'
 
 interface CustomerTableSectionProps {
@@ -24,41 +27,62 @@ export const CustomerTableSection: React.FC<CustomerTableSectionProps> = ({
   setViewCustomer,
   setDeleteTarget,
 }) => {
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['customers', 'common'])
+
   return (
     <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden print:hidden">
       <TableWrapper isFetching={isFetching}>
         <div className="overflow-x-auto">
           <table className="w-full data-table border-collapse">
-            <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
+            <thead className="bg-muted/40 sticky top-0 border-b border-border z-10 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               <tr>
-                {visibleColumns.name && <th>Customer Name</th>}
-                {visibleColumns.email && <th>Email</th>}
-                {visibleColumns.phone && <th>Phone</th>}
-                {visibleColumns.group && <th>Group</th>}
-                {visibleColumns.totalSpent && <th>Total Spent</th>}
-                {visibleColumns.orderCount && <th>Orders</th>}
-                {visibleColumns.loyaltyPoints && <th>Loyalty Points</th>}
-                {visibleColumns.status && <th>Status</th>}
-                {visibleColumns.actions && <th className="text-right">Actions</th>}
+                {visibleColumns.name !== false && <th>{t('customers.name', 'Customer Name')}</th>}
+                {visibleColumns.email !== false && <th>{t('customers.email', 'Email')}</th>}
+                {visibleColumns.phone !== false && <th>{t('customers.phone', 'Phone')}</th>}
+                {visibleColumns.group !== false && <th>{t('customers.customerGroup', 'Group')}</th>}
+                {visibleColumns.totalSpent !== false && <th>{t('customers.totalSpent', 'Total Spent')}</th>}
+                {visibleColumns.orderCount !== false && <th>{t('customers.ordersCount', 'Orders')}</th>}
+                {visibleColumns.loyaltyPoints !== false && <th>{t('customers.loyaltyPoints', 'Loyalty Points')}</th>}
+                {visibleColumns.status !== false && <th>{t('common.status', 'Status')}</th>}
+                {visibleColumns.actions !== false && <th className="text-right pr-4">{t('common.actions', 'Actions')}</th>}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <LoadingSkeleton cols={9} />
               ) : customers.length === 0 ? (
-                <EmptyState cols={9} message="No customer records found matching query." />
+                <EmptyState cols={9} message={t('customers.noCustomersFound', 'No customer records found matching query.')} />
               ) : (
                 customers.map((cust) => (
-                  <tr key={cust.id} className="hover:bg-muted/40 transition-colors">
-                    {visibleColumns.name && (
-                      <td>
+                  <tr key={cust.id} className="hover:bg-muted/40 transition-colors border-b border-border/40">
+                    {visibleColumns.name !== false && (
+                      <td className="py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center border border-primary/20 shrink-0 overflow-hidden">
-                            {cust.photo ? (
-                              <img src={cust.photo} alt={cust.name} className="w-full h-full object-cover" />
-                            ) : (
-                              cust.name[0]?.toUpperCase()
-                            )}
+                            {(() => {
+                              const photoUrl = getAbsoluteImageUrl(cust.photo)
+                              return photoUrl ? (
+                                <img
+                                  src={photoUrl}
+                                  alt={cust.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none'
+                                    const parent = e.currentTarget.parentElement
+                                    if (parent && !parent.querySelector('.cust-initial')) {
+                                      const span = document.createElement('span')
+                                      span.className = 'cust-initial text-xs font-bold text-primary'
+                                      span.innerText = cust.name[0]?.toUpperCase() || 'C'
+                                      parent.appendChild(span)
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-xs font-bold">{cust.name[0]?.toUpperCase() || 'C'}</span>
+                              )
+                            })()}
                           </div>
                           <p onClick={() => setViewCustomer(cust)} className="font-bold text-foreground hover:text-primary cursor-pointer text-sm">
                             {cust.name}
@@ -66,35 +90,46 @@ export const CustomerTableSection: React.FC<CustomerTableSectionProps> = ({
                         </div>
                       </td>
                     )}
-                    {visibleColumns.email && (
-                      <td className="text-xs text-muted-foreground">{cust.email || '-'}</td>
+                    {visibleColumns.email !== false && (
+                      <td className="text-xs text-muted-foreground">{cust.email || '—'}</td>
                     )}
-                    {visibleColumns.phone && (
-                      <td className="text-xs font-mono">{cust.phone || '-'}</td>
+                    {visibleColumns.phone !== false && (
+                      <td className="text-xs font-mono">{cust.phone || '—'}</td>
                     )}
-                    {visibleColumns.group && (
+                    {visibleColumns.group !== false && (
                       <td className="text-xs font-semibold text-foreground">
-                        {cust.group?.name || 'Standard'}
+                        {cust.group?.name || t('customers.standardGroup', 'Standard')}
                       </td>
                     )}
-                    {visibleColumns.totalSpent && (
-                      <td className="font-mono text-xs font-bold text-emerald-600">${cust.total_spent || 0}</td>
+                    {visibleColumns.totalSpent !== false && (
+                      <td className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        ${Number(cust.total_spent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
                     )}
-                    {visibleColumns.orderCount && (
-                      <td className="font-mono text-xs font-bold text-foreground">{cust.order_count || 0}</td>
+                    {visibleColumns.orderCount !== false && (
+                      <td className="font-mono text-xs font-bold text-foreground">
+                        {Number(cust.order_count || 0).toLocaleString('en-US')}
+                      </td>
                     )}
-                    {visibleColumns.loyaltyPoints && (
-                      <td className="font-mono text-xs font-bold text-amber-500">{cust.loyalty_points || 0} PTS</td>
+                    {visibleColumns.loyaltyPoints !== false && (
+                      <td className="font-mono text-xs font-bold text-amber-500">
+                        {Number(cust.loyalty_points || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {t('customers.pts', 'PTS')}
+                      </td>
                     )}
-                    {visibleColumns.status && (
+                    {visibleColumns.status !== false && (
                       <td>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${cust.is_active ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
-                          {cust.is_active ? 'Active' : 'Inactive'}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          cust.is_active 
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${cust.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          {cust.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                         </span>
                       </td>
                     )}
-                    {visibleColumns.actions && (
-                      <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                    {visibleColumns.actions !== false && (
+                      <td className="text-right pr-4" onClick={(e) => e.stopPropagation()}>
                         <TableActionMenu
                           onView={() => setViewCustomer(cust)}
                           onEdit={() => openEditModal(cust)}

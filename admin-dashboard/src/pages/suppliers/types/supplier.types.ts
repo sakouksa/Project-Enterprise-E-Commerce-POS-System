@@ -25,8 +25,16 @@ export interface Supplier {
   bank_name?:          string
   bank_account_number?: string
   bank_account_name?:   string
+  swift_code?:          string
   notes?:              string
   is_active:           boolean
+  logo?:                string
+  website?:             string
+  hotline?:             string
+  support_email?:       string
+  currency?:            string
+  payment_terms?:       string
+  supplier_type?:       string
   contacts?:           SupplierContact[]
   purchases_count?:    number
   total_purchased?:    number

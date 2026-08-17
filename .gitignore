@@ -1,0 +1,28 @@
+.DS_Store
+*.backup
+*.log
+*.tmp
+
+# Dependencies
+node_modules/
+vendor/
+
+# Flutter & Mobile builds
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+**/android/build/
+**/android/.gradle/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/.last_build_id
+**/macos/Pods/
+**/macos/.symlinks/
+**/macos/Flutter/ephemeral/
+
+# IDE
+.idea/
+.vscode/

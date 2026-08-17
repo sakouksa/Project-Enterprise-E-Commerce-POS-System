@@ -43,6 +43,24 @@ class Product extends Model
         'rating_avg'          => 'decimal:2',
     ];
 
+    protected $appends = ['discount_percent', 'stock'];
+
+    public function getStockAttribute(): float
+    {
+        if (array_key_exists('stock', $this->attributes) && $this->attributes['stock'] !== null) {
+            return (float) $this->attributes['stock'];
+        }
+        if ($this->has_variants && $this->relationLoaded('variants') && $this->variants->count() > 0) {
+            return (float) $this->variants->sum(function ($v) {
+                return $v->relationLoaded('inventories') ? (float) $v->inventories->sum('quantity') : (float) ($v->stock ?? 0);
+            });
+        }
+        if ($this->relationLoaded('inventories')) {
+            return (float) $this->inventories->sum('quantity');
+        }
+        return 0.0;
+    }
+
     // ─── Relationships ────────────────────────────────────────────────────────
 
     public function company(): BelongsTo

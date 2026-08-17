@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, MapPin, Loader2,
-  ChevronUp, ChevronDown, Download, Settings, CheckCircle2
+  ChevronUp, ChevronDown, Download, Settings, CheckCircle2,
+  User, Home, Building2, Phone, UserCheck, Navigation, Globe, Compass, Check, Tag
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -14,7 +15,10 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import ModernSelect from '@/components/shared/ModernSelect'
+import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import ResetButton from '@/components/shared/ResetButton'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface CustomerAddress {
   id: number
@@ -51,11 +55,12 @@ interface AddressFormData {
 
 interface CustomerAddressesPageProps {
   isTab?: boolean
-  setActions?: (actions: { onExport: () => void; onAdd: () => void }) => void
+  onRegisterActions?: (actions: { openAdd: () => void; exportData: () => void }) => void
 }
 
-const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = false, setActions }) => {
-  const { t } = useTranslation()
+const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = false, onRegisterActions }) => {
+  const { language } = useThemeStore()
+  const { t } = useTranslation(['customers', 'common'])
   const toast = useToast()
   const qc = useQueryClient()
 
@@ -363,13 +368,13 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
   }
 
   useEffect(() => {
-    if (setActions) {
-      setActions({
-        onExport: handleExport,
-        onAdd: openCreateModal
+    if (onRegisterActions) {
+      onRegisterActions({
+        openAdd: openCreateModal,
+        exportData: handleExport,
       })
     }
-  }, [setActions, addresses])
+  }, [onRegisterActions, addresses])
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null
@@ -410,12 +415,12 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <div className="relative flex-1 min-w-56 max-w-md">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder={t('customers.searchAddresses')}
-                className="form-input pl-9"
+                className="form-input pl-9 pr-3 w-full h-9 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
 
@@ -442,65 +447,33 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
               className="w-48"
             />
 
-            <button
-              onClick={handleResetFilters}
-              className="btn-secondary px-3 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              {t('common.reset')}
-            </button>
+            <ResetButton onClick={handleResetFilters} />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-addresses'] })}
-              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm"
+              className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
               title={t('common.refresh')}
             >
               <RefreshCw size={14} />
             </button>
-            <div className="relative">
-              <button
-                onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
-                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-sm cursor-pointer select-none"
-                title={t('products.toggleColumns', 'Columns')}
-              >
-                <Settings size={14} />
-              </button>
-              {columnDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
-                    <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('products.toggleColumns', 'Toggle Columns')}</p>
-                    {Object.keys(visibleColumns).map(col => {
-                      const colLabels: Record<string, string> = {
-                        id: t('customers.id', 'ID'),
-                        customer: t('customers.title', 'Customer'),
-                        label: t('customers.addressLabel', 'Label'),
-                        recipient: t('customers.recipient', 'Recipient'),
-                        phone: t('common.phone', 'Phone'),
-                        address: t('customers.addresses', 'Address'),
-                        region: t('customers.region', 'Region'),
-                        postalCode: t('customers.postalCode', 'Postal Code'),
-                        coordinates: t('customers.coordinates', 'Coordinates'),
-                        status: t('common.status', 'Status'),
-                        actions: t('common.actions', 'Actions')
-                      }
-                      return (
-                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                          <input
-                            type="checkbox"
-                            checked={visibleColumns[col as keyof typeof visibleColumns]}
-                            onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
-                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                          />
-                          <span>{colLabels[col] || col}</span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'id', label: t('customers.id', 'ID') },
+                { key: 'customer', label: t('customers.title', 'Customer') },
+                { key: 'label', label: t('customers.addressLabel', 'Label') },
+                { key: 'recipient', label: t('customers.recipient', 'Recipient') },
+                { key: 'phone', label: t('common.phone', 'Phone') },
+                { key: 'address', label: t('customers.addresses', 'Address') },
+                { key: 'region', label: t('customers.region', 'Region') },
+                { key: 'postalCode', label: t('customers.postalCode', 'Postal Code') },
+                { key: 'coordinates', label: t('customers.coordinates', 'Coordinates') },
+                { key: 'status', label: t('common.status', 'Status') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={(cols: Record<string, boolean>) => setVisibleColumns(cols as any)}
+            />
           </div>
         </div>
       </div>
@@ -594,8 +567,8 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                     )}
                     {visibleColumns.label && (
                       <td className="p-4 text-sm">
-                        <span className="px-2.5 py-0.5 rounded bg-muted text-muted-foreground text-xs font-bold border border-border">
-                          {addr.label}
+                        <span className="px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground text-xs font-semibold border border-border/80">
+                          {addr.label ? t(`customers.label${addr.label.charAt(0).toUpperCase() + addr.label.slice(1).toLowerCase()}`, addr.label) : '—'}
                         </span>
                       </td>
                     )}
@@ -622,11 +595,11 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
                         {addr.is_default ? (
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap shadow-2xs">
                             <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-                            <span>{t('customers.defaultAddress', 'Default Address')}</span>
+                            <span>{t('customers.defaultAddress', 'អាសយដ្ឋានលំនាំដើម')}</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60 whitespace-nowrap">
-                            Secondary
+                            {t('customers.secondaryAddress', 'អាសយដ្ឋានរង')}
                           </span>
                         )}
                       </td>
@@ -662,196 +635,289 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         {modalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl my-auto flex flex-col max-h-[85vh]"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="bg-card border border-border/80 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl my-auto flex flex-col max-h-[90vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                <h3 className="font-bold text-lg text-foreground">
-                  {editingAddress ? t('customers.editAddress', 'Edit Address') : t('customers.addAddress', 'Add Address')}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground cursor-pointer">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border/80 bg-muted/20 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
+                      {editingAddress
+                        ? t('customers.editAddressTitle', t('customers.editAddress', 'កែសម្រួលអាសយដ្ឋានដឹកជញ្ជូន'))
+                        : t('customers.addAddressTitle', t('customers.addAddress', 'បន្ថែមអាសយដ្ឋានដឹកជញ្ជូន'))}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {t('customers.addressModalSubtitle', 'គ្រប់គ្រងអាសយដ្ឋាន ទីតាំង និងព័ត៌មានអ្នកទទួលទំនិញ')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                >
                   <X size={18} />
                 </button>
               </div>
 
+              {/* Modal Body */}
               <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
                 <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Customer & Address Type */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <ModernSelect
-                        label={`${t('customers.customer', 'Customer')} *`}
-                        value={watchCustomerId || ''}
-                        onChange={(val) => setValue('customer_id', val, { shouldValidate: true })}
-                        options={[
-                          { value: '', label: t('customers.selectCustomer', '-- Select Customer --') },
-                          ...(customers ?? []).map((c: any) => ({ value: String(c.id), label: c.name }))
-                        ]}
-                      />
-                      {errors.customer_id && <p className="text-rose-500 text-xs mt-1">{errors.customer_id.message}</p>}
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.customer', 'អតិថិជន')} <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <User size={15} />
+                        </div>
+                        <select
+                          {...register('customer_id', { required: t('customers.validation.customerRequired', 'សូមជ្រើសរើសអតិថិជន') })}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                        >
+                          <option value="">{t('customers.selectCustomer', '-- ជ្រើសរើសអតិថិជន --')}</option>
+                          {(customers ?? []).map((c: any) => (
+                            <option key={c.id} value={String(c.id)}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {errors.customer_id && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.customer_id.message}</p>}
                     </div>
+
                     <div>
-                      <ModernSelect
-                        label={`${t('customers.addressLabel', 'Address Label')} *`}
-                        value={watchLabel || 'Home'}
-                        onChange={(val) => setValue('label', val as any)}
-                        options={[
-                          { value: 'Home', label: t('customers.labelHome', 'Home') },
-                          { value: 'Office', label: t('customers.labelOffice', 'Office') },
-                          { value: 'Warehouse', label: t('customers.labelWarehouse', 'Warehouse') },
-                          { value: 'Other', label: t('customers.labelOther', 'Other') }
-                        ]}
-                      />
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.addressLabel', 'ប្រភេទអាសយដ្ឋាន')} <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Tag size={15} />
+                        </div>
+                        <select
+                          {...register('label')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                        >
+                          <option value="Home">{t('customers.labelHome', 'ផ្ទះ')}</option>
+                          <option value="Office">{t('customers.labelOffice', 'ការិយាល័យ')}</option>
+                          <option value="Warehouse">{t('customers.labelWarehouse', 'ឃ្លាំង')}</option>
+                          <option value="Other">{t('customers.labelOther', 'ផ្សេងៗ')}</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Recipient Name & Phone Number */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.receiverName', 'Recipient Name')} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.receiverName', 'ឈ្មោះអ្នកទទួល')} <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        {...register('name', { required: t('customers.validation.receiverNameRequired', 'Recipient name is required') })}
-                        placeholder={t('customers.receiverNamePlaceholder', 'e.g. Jane Doe')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                      />
-                      {errors.name && <p className="text-rose-500 text-xs mt-1">{errors.name.message}</p>}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <UserCheck size={15} />
+                        </div>
+                        <input
+                          {...register('name', { required: t('customers.validation.receiverNameRequired', 'តម្រូវឱ្យបញ្ចូលឈ្មោះអ្នកទទួល') })}
+                          placeholder={t('customers.receiverNamePlaceholder', 'ឧ. សុខ ចាន់ដារ៉ា')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                        />
+                      </div>
+                      {errors.name && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.name.message}</p>}
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.phone', 'Phone Number')} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.phone', 'លេខទូរស័ព្ទ')} <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        {...register('phone', { required: t('customers.validation.phoneRequired', 'Phone number is required') })}
-                        placeholder={t('customers.phonePlaceholder', 'e.g. +855 12 345 678')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                      />
-                      {errors.phone && <p className="text-rose-500 text-xs mt-1">{errors.phone.message}</p>}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Phone size={15} />
+                        </div>
+                        <input
+                          {...register('phone', { required: t('customers.validation.phoneRequired', 'តម្រូវឱ្យបញ្ចូលលេខទូរស័ព្ទ') })}
+                          placeholder={t('customers.phonePlaceholder', '012 345 678')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
+                        />
+                      </div>
+                      {errors.phone && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.phone.message}</p>}
                     </div>
                   </div>
 
+                  {/* Street Address */}
                   <div>
-                    <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                      {t('customers.streetAddress', 'Street Address')} <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                      {t('customers.streetAddress', 'អាសយដ្ឋានផ្លូវ / ទីតាំង')} <span className="text-rose-500">*</span>
                     </label>
-                    <input
-                      {...register('address', { required: t('customers.validation.addressRequired', 'Street address is required') })}
-                      placeholder={t('customers.streetAddressPlaceholder', 'e.g. No. 123, St. 456')}
-                      className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                    />
-                    {errors.address && <p className="text-rose-500 text-xs mt-1">{errors.address.message}</p>}
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                        <MapPin size={15} />
+                      </div>
+                      <input
+                        {...register('address', { required: t('customers.validation.addressRequired', 'តម្រូវឱ្យបញ្ចូលអាសយដ្ឋានផ្លូវ') })}
+                        placeholder={t('customers.streetAddressPlaceholder', 'ឧ. ផ្ទះលេខ ១២៣ ផ្លូវ ៤៥៦')}
+                        className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                      />
+                    </div>
+                    {errors.address && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.address.message}</p>}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* City, Province, Country */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.city', 'City')} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.city', 'រាជធានី/ក្រុង')} <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        {...register('city', { required: t('customers.validation.cityRequired', 'City is required') })}
-                        placeholder={t('customers.cityPlaceholder', 'e.g. Phnom Penh')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                      />
-                      {errors.city && <p className="text-rose-500 text-xs mt-1">{errors.city.message}</p>}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Navigation size={14} />
+                        </div>
+                        <input
+                          {...register('city', { required: t('customers.validation.cityRequired', 'តម្រូវឱ្យបញ្ចូលរាជធានី/ក្រុង') })}
+                          placeholder={t('customers.cityPlaceholder', 'ឧ. ភ្នំពេញ')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                        />
+                      </div>
+                      {errors.city && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.city.message}</p>}
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.province', 'Province')} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.province', 'ខេត្ត/រដ្ឋ')} <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        {...register('province', { required: t('customers.validation.provinceRequired', 'Province is required') })}
-                        placeholder={t('customers.provincePlaceholder', 'e.g. Phnom Penh')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                      />
-                      {errors.province && <p className="text-rose-500 text-xs mt-1">{errors.province.message}</p>}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Building2 size={14} />
+                        </div>
+                        <input
+                          {...register('province', { required: t('customers.validation.provinceRequired', 'តម្រូវឱ្យបញ្ចូលខេត្ត/រដ្ឋ') })}
+                          placeholder={t('customers.provincePlaceholder', 'ឧ. ភ្នំពេញ')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                        />
+                      </div>
+                      {errors.province && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.province.message}</p>}
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.country', 'Country')} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.country', 'ប្រទេស')} <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        {...register('country', { required: t('customers.validation.countryRequired', 'Country is required') })}
-                        placeholder={t('customers.countryPlaceholder', 'Cambodia')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                      />
-                      {errors.country && <p className="text-rose-500 text-xs mt-1">{errors.country.message}</p>}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Globe size={14} />
+                        </div>
+                        <input
+                          {...register('country', { required: t('customers.validation.countryRequired', 'តម្រូវឱ្យបញ្ចូលប្រទេស') })}
+                          placeholder={t('customers.countryPlaceholder', 'កម្ពុជា')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                        />
+                      </div>
+                      {errors.country && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.country.message}</p>}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* Postal Code, Latitude, Longitude */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.postalCode', 'Postal Code')} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.postalCode', 'លេខកូដប្រៃសណីយ៍')} <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        {...register('postal_code', { required: t('customers.validation.postalCodeRequired', 'Postal code is required') })}
-                        placeholder={t('customers.postalCodePlaceholder', '12000')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
-                      />
-                      {errors.postal_code && <p className="text-rose-500 text-xs mt-1">{errors.postal_code.message}</p>}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                          <Compass size={14} />
+                        </div>
+                        <input
+                          {...register('postal_code', { required: t('customers.validation.postalCodeRequired', 'តម្រូវឱ្យបញ្ចូលលេខកូដប្រៃសណីយ៍') })}
+                          placeholder={t('customers.postalCodePlaceholder', '12000')}
+                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
+                        />
+                      </div>
+                      {errors.postal_code && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.postal_code.message}</p>}
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.latitude', 'Latitude')}
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.latitude', 'រយៈទទឹង (Latitude)')}
                       </label>
                       <input
                         step="any"
                         {...register('latitude', {
-                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.latitudeNumeric', 'Latitude must be numeric')
+                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.latitudeNumeric', 'រយៈទទឹងត្រូវតែជាលេខ')
                         })}
                         placeholder={t('customers.latitudePlaceholder', '11.5564')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                        className="form-input w-full h-9 px-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
                       />
-                      {errors.latitude && <p className="text-rose-500 text-xs mt-1">{errors.latitude.message}</p>}
+                      {errors.latitude && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.latitude.message}</p>}
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-foreground uppercase mb-1.5">
-                        {t('customers.longitude', 'Longitude')}
+                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                        {t('customers.longitude', 'រយៈបណ្តោយ (Longitude)')}
                       </label>
                       <input
                         step="any"
                         {...register('longitude', {
-                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.longitudeNumeric', 'Longitude must be numeric')
+                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.longitudeNumeric', 'រយៈបណ្តោយត្រូវតែជាលេខ')
                         })}
                         placeholder={t('customers.longitudePlaceholder', '104.9282')}
-                        className="form-input w-full border border-border rounded-xl p-2.5 bg-background text-foreground text-xs font-medium dark:[color-scheme:dark]"
+                        className="form-input w-full h-9 px-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
                       />
-                      {errors.longitude && <p className="text-rose-500 text-xs mt-1">{errors.longitude.message}</p>}
+                      {errors.longitude && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.longitude.message}</p>}
                     </div>
                   </div>
 
-                  <div className="pt-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="isDefaultCheckbox"
-                        {...register('is_default')}
-                        className="rounded border-border text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                      />
-                      <label htmlFor="isDefaultCheckbox" className="text-sm text-foreground font-semibold cursor-pointer select-none">
-                        {t('customers.setDefault', 'Set as Default Address')}
+                  {/* Set as Default Address Card */}
+                  <div className="p-3.5 bg-muted/15 border border-border/80 rounded-xl flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label htmlFor="isDefaultCheckbox" className="text-xs sm:text-[13px] font-bold text-foreground cursor-pointer select-none">
+                        {t('customers.setDefault', 'កំណត់ជាអាសយដ្ឋានលំនាំដើម')}
                       </label>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t('customers.defaultAddressHelp', 'ប្រើប្រាស់អាសយដ្ឋាននេះជាអាទិភាពដំបូងលើការបញ្ជាទិញ និងវិក្កយបត្រ POS')}
+                      </p>
                     </div>
+                    <input
+                      type="checkbox"
+                      id="isDefaultCheckbox"
+                      {...register('is_default')}
+                      className="form-checkbox h-4.5 w-4.5 text-primary rounded border-border focus:ring-primary cursor-pointer"
+                    />
                   </div>
                 </div>
 
-                {/* PINNED FOOTER (ALWAYS VISIBLE WITHOUT SCROLLING!) */}
-                <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-card shrink-0 z-10">
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-border/80 bg-muted/20 shrink-0">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted border border-border rounded-xl transition-colors cursor-pointer"
+                    className="h-9 px-4 text-xs sm:text-[13px] font-bold border border-border/80 bg-card rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-xs active:scale-95"
                   >
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel', 'បោះបង់')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="px-5 py-2 text-sm font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                    className="h-9 px-5 text-xs sm:text-[13px] bg-primary text-primary-foreground rounded-lg font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
                   >
-                    {(isSubmitting || createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {editingAddress ? t('customers.saveChanges', 'Save Changes') : t('customers.addAddress', 'Add Address')}
+                    {(isSubmitting || createMutation.isPending || updateMutation.isPending) ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} />
+                    )}
+                    <span>
+                      {editingAddress
+                        ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
+                        : t('customers.saveAddress', 'រក្សាទុកអាសយដ្ឋាន')}
+                    </span>
                   </button>
                 </div>
               </form>
@@ -862,8 +928,10 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('confirm.deleteTitle', { item: t('customers.customerAddresses') })}
-        message={t('confirm.deleteMessage', { item: t('customers.customerAddresses'), name: deleteTarget?.label })}
+        title="customers.deleteAddressTitle"
+        itemName={deleteTarget?.label ? `${deleteTarget.label} (${deleteTarget.address || deleteTarget.name || ''})` : deleteTarget?.name || deleteTarget?.address}
+        confirmText="common.confirmDelete"
+        cancelText="common.cancel"
         loading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}

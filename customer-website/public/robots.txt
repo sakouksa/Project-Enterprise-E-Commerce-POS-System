@@ -1,5 +1,5 @@
-# robots.txt for Enterprise Store
-# https://enterprise-pos-api.onrender.com
+# robots.txt for OptaPOS Customer Storefront
+# https://enterprise-customer-store.vercel.app
 
 User-agent: *
 Allow: /
@@ -11,13 +11,16 @@ Allow: /blog
 Allow: /blog/*
 Allow: /about
 Allow: /contact
-Allow: /faq
+Allow: /faqs
 Allow: /terms
 Allow: /privacy
 Allow: /shipping
 Allow: /returns
+Allow: /assets/
+Allow: /images/
+Allow: /logo.png
 
-# Disallow private user flows, search filter permutations, cart and checkout
+# Disallow private user flows, cart, checkout, customer account & API
 Disallow: /search
 Disallow: /search/*
 Disallow: /cart
@@ -33,7 +36,6 @@ Disallow: /auth/
 Disallow: /auth/*
 Disallow: /api/
 
-# Host & Sitemaps
-Host: https://enterprise-pos-api.onrender.com
+# Sitemaps
+Sitemap: https://enterprise-customer-store.vercel.app/sitemap.xml
 Sitemap: https://enterprise-pos-api.onrender.com/sitemap.xml
-Sitemap: https://enterprise-pos-api.onrender.com/api/v1/seo/sitemap.xml

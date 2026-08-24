@@ -22,9 +22,7 @@ import { useWishlist } from '@/hooks/useWishlist'
 import { useAddToCart } from '@/hooks/useAddToCart'
 import { cn, getImageUrl } from '@/lib/utils'
 import productService from '@/services/productService'
-
-const SITE_URL =
-  import.meta.env.VITE_SITE_URL || 'https://enterprise-pos-api.onrender.com'
+import { SITE_NAME, SITE_URL } from '@/config/seo'
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams()
@@ -148,7 +146,7 @@ export const ProductDetailPage: React.FC = () => {
       url: `${SITE_URL}${canonicalPath}`,
       seller: {
         '@type': 'Organization',
-        name: 'Enterprise Store',
+        name: SITE_NAME,
       },
     },
     ...(product.rating_avg && product.rating_count

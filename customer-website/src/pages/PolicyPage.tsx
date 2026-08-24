@@ -5,6 +5,7 @@ import SEOHead from '@/components/seo/SEOHead'
 import PageTransition from '@/components/common/PageTransition'
 import Spinner from '@/components/ui/Spinner'
 import api from '@/lib/api'
+import { SITE_NAME, SITE_URL } from '@/config/seo'
 
 interface PolicyConfig {
   title: string
@@ -142,10 +143,11 @@ export const PolicyPage: React.FC = () => {
     '@type': 'WebPage',
     name: title,
     description: metaDesc,
-    url: `https://enterprise-pos-api.onrender.com/${policyKey}`,
+    url: `${SITE_URL}/${policyKey}`,
     publisher: {
       '@type': 'Organization',
-      name: 'Enterprise Store',
+      name: SITE_NAME,
+      url: SITE_URL,
     },
   }
 

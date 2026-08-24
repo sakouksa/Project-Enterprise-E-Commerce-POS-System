@@ -80,7 +80,7 @@ export const HomePage: React.FC = () => {
 
   const seoElement = (
     <SEOHead
-      title="Enterprise Tech Store — Genuine Laptops, Gaming, Audio & POS Systems"
+      title="OptaPOS Store — Genuine Laptops, Smartphones, Audio & POS Hardware"
       description="Shop authentic flagship laptops, gaming gear, smartwatches, audio accessories, and enterprise POS hardware with fast nationwide delivery in Cambodia."
       canonical="/"
     />

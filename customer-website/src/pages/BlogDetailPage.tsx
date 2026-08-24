@@ -6,8 +6,7 @@ import Spinner from '@/components/ui/Spinner'
 import PageTransition from '@/components/common/PageTransition'
 import { getImageUrl } from '@/lib/utils'
 import api from '@/lib/api'
-
-const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://enterprise-pos-api.onrender.com'
+import { SITE_NAME, SITE_URL } from '@/config/seo'
 
 const BlogDetailPage: React.FC = () => {
   const { slug } = useParams()
@@ -62,13 +61,13 @@ const BlogDetailPage: React.FC = () => {
     url: `${SITE_URL}${canonicalPath}`,
     datePublished: post.published_at,
     dateModified: post.updated_at || post.published_at,
-    ...(post.author ? { author: { '@type': 'Person', name: typeof post.author === 'string' ? post.author : post.author?.name || 'Enterprise Team' } } : {
-      author: { '@type': 'Organization', name: 'Enterprise Store' },
+    ...(post.author ? { author: { '@type': 'Person', name: typeof post.author === 'string' ? post.author : post.author?.name || `${SITE_NAME} Team` } } : {
+      author: { '@type': 'Organization', name: SITE_NAME },
     }),
     publisher: {
       '@type': 'Organization',
-      name: 'Enterprise Store',
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/favicon.svg` },
+      name: SITE_NAME,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
     },
   }
 

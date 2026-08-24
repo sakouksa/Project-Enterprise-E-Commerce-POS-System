@@ -1,6 +1,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import i18n from '@/lib/i18n'
+import { SEO_CONFIG } from '@/config/seo'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,39 +28,18 @@ export interface SEOHeadProps {
   modifiedTime?: string
   author?: string
 
-  // Structured data
+  // Structured data (JSON-LD)
   schema?: Record<string, any> | Record<string, any>[]
 
   // Breadcrumbs (auto-generates BreadcrumbList schema)
   breadcrumbs?: BreadcrumbItem[]
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-export const SITE_NAME = 'NexTech Enterprise'
-
-export const getSiteUrl = (): string => {
-  if (import.meta.env.VITE_SITE_URL) {
-    return import.meta.env.VITE_SITE_URL.replace(/\/$/, '')
-  }
-  if (typeof window !== 'undefined' && window.location.origin) {
-    return window.location.origin
-  }
-  return 'https://enterprise-pos-api.onrender.com'
-}
-
-export const SITE_URL = getSiteUrl()
-export const DEFAULT_IMG = `${SITE_URL}/logo.png`
-
-// ─── Locale Mapping ───────────────────────────────────────────────────────────
-
-const LOCALE_MAP: Record<string, string> = {
-  en: 'en_US',
-  km: 'km_KH',
-  th: 'th_TH',
-  vi: 'vi_VN',
-  zh: 'zh_CN',
-}
+// ─── Re-export config constants for backwards compatibility ───────────────────
+export const SITE_NAME = SEO_CONFIG.siteName
+export const SITE_URL = SEO_CONFIG.siteUrl
+export const DEFAULT_IMG = SEO_CONFIG.defaultOgImage
+export { getSiteUrl } from '@/config/seo'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,13 +48,13 @@ function stripHtml(html?: string | null): string {
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
 }
 
-function truncateDesc(str: string, max = 160): string {
+function truncateDesc(str?: string | null, max = 160): string {
   if (!str) return ''
-  str = str.trim()
-  return str.length > max ? str.slice(0, max - 1) + '…' : str
+  const cleaned = str.trim()
+  return cleaned.length > max ? cleaned.slice(0, max - 1) + '…' : cleaned
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Main SEOHead Component ───────────────────────────────────────────────────
 
 export const SEOHead: React.FC<SEOHeadProps> = ({
   title,
@@ -91,49 +71,52 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   schema,
   breadcrumbs,
 }) => {
-  const currentLang = i18n.language || 'en'
-  const activeLocale = ogLocale || LOCALE_MAP[currentLang] || 'en_US'
+  const currentLang = i18n.language || 'km'
+  const activeLocale = ogLocale || SEO_CONFIG.supportedLocales[currentLang] || SEO_CONFIG.defaultLocale
 
-  // ── Title composition ──────────────────────────────────────────────────────
-  const rawTitle = title?.trim() || ''
-  const fullTitle = rawTitle
-    ? rawTitle.includes(SITE_NAME)
-      ? rawTitle
-      : `${rawTitle} | ${SITE_NAME}`
-    : `${SITE_NAME} | Electronics, Computers, POS & E-Commerce Cambodia`
+  // ── 1. Title composition with anti-duplicate logic ──────────────────────────
+  const fullTitle = SEO_CONFIG.titleTemplate(title)
 
-  // ── Description cleanup ────────────────────────────────────────────────────
-  const cleanDesc = truncateDesc(
-    stripHtml(description) ||
-    'Shop authentic electronics, computers, smartphones, gaming gear, and enterprise POS hardware with fast nationwide delivery in Cambodia.'
-  )
+  // ── 2. Description cleanup with fallback ────────────────────────────────────
+  const cleanDesc =
+    truncateDesc(stripHtml(description)) || SEO_CONFIG.defaultDescription
 
-  // ── Canonical URL Normalization ────────────────────────────────────────────
-  let canonicalUrl = SITE_URL
+  // ── 3. Canonical URL Normalization ──────────────────────────────────────────
+  let canonicalUrl = SEO_CONFIG.siteUrl
   if (canonical) {
-    canonicalUrl = canonical.startsWith('http') ? canonical : `${SITE_URL}${canonical}`
-  } else if (typeof window !== 'undefined') {
-    canonicalUrl = `${window.location.origin}${window.location.pathname}`
+    canonicalUrl = canonical.startsWith('http')
+      ? canonical
+      : `${SEO_CONFIG.siteUrl}${canonical.startsWith('/') ? canonical : `/${canonical}`}`
+  } else if (typeof window !== 'undefined' && window.location?.pathname) {
+    canonicalUrl = `${SEO_CONFIG.siteUrl}${window.location.pathname}`
   }
 
-  // ── OG Image ──────────────────────────────────────────────────────────────
-  const ogImg = ogImage || DEFAULT_IMG
+  // Strip trailing slash if not root
+  if (canonicalUrl.length > SEO_CONFIG.siteUrl.length && canonicalUrl.endsWith('/')) {
+    canonicalUrl = canonicalUrl.slice(0, -1)
+  }
 
-  // ── Breadcrumb structured data ─────────────────────────────────────────────
-  const breadcrumbSchema = breadcrumbs && breadcrumbs.length > 0
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: breadcrumbs.map((item, idx) => ({
-          '@type': 'ListItem',
-          position: idx + 1,
-          name: item.name,
-          item: item.url.startsWith('http') ? item.url : `${SITE_URL}${item.url}`,
-        })),
-      }
-    : null
+  // ── 4. OG Image with fallback ───────────────────────────────────────────────
+  const ogImg = ogImage || SEO_CONFIG.defaultOgImage
 
-  // ── Schema output ──────────────────────────────────────────────────────────
+  // ── 5. Breadcrumb structured data ───────────────────────────────────────────
+  const breadcrumbSchema =
+    breadcrumbs && breadcrumbs.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: breadcrumbs.map((item, idx) => ({
+            '@type': 'ListItem',
+            position: idx + 1,
+            name: item.name,
+            item: item.url.startsWith('http')
+              ? item.url
+              : `${SEO_CONFIG.siteUrl}${item.url.startsWith('/') ? item.url : `/${item.url}`}`,
+          })),
+        }
+      : null
+
+  // ── 6. Schema output collection ─────────────────────────────────────────────
   const schemaItems: Record<string, any>[] = []
   if (breadcrumbSchema) schemaItems.push(breadcrumbSchema)
   if (schema) {
@@ -146,31 +129,29 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       {/* HTML Lang sync */}
       <html lang={currentLang} />
 
-      {/* Core Meta */}
+      {/* Core Meta Tags */}
       <title>{fullTitle}</title>
+      <meta name="title" content={fullTitle} />
       <meta name="description" content={cleanDesc} />
       <meta name="robots" content={robots} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={canonicalUrl} />
 
       {/* Favicons & App Icons */}
-      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-      <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-      <link rel="shortcut icon" href="/favicon.ico" />
+      <link rel="icon" type="image/png" href="/logo.png" />
+      <link rel="apple-touch-icon" href="/logo.png" />
+      <meta name="theme-color" content={SEO_CONFIG.themeColor} />
 
-      {/* Open Graph */}
+      {/* Open Graph / Facebook / Messenger / Telegram */}
       <meta property="og:type" content={ogType} />
-      <meta property="og:site_name" content={SITE_NAME} />
+      <meta property="og:site_name" content={SEO_CONFIG.siteName} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={cleanDesc} />
       <meta property="og:image" content={ogImg} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:locale" content={activeLocale} />
 
-      {/* Article-specific OG */}
+      {/* Article-specific Open Graph */}
       {ogType === 'article' && publishedTime && (
         <meta property="article:published_time" content={publishedTime} />
       )}
@@ -181,8 +162,9 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
         <meta property="article:author" content={author} />
       )}
 
-      {/* Twitter Card */}
+      {/* Twitter Cards */}
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content={SEO_CONFIG.twitterHandle} />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={cleanDesc} />
       <meta name="twitter:image" content={ogImg} />
@@ -197,18 +179,19 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   )
 }
 
-// ─── Root WebSite + Organization schema (injected once in StorefrontLayout) ───
+// ─── Global Schemas for Storefront Root ───────────────────────────────────────
 
 export const WEBSITE_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: SITE_NAME,
-  url: SITE_URL,
+  name: SEO_CONFIG.siteName,
+  url: SEO_CONFIG.siteUrl,
+  inLanguage: ['km', 'en', 'th', 'vi', 'zh'],
   potentialAction: {
     '@type': 'SearchAction',
     target: {
       '@type': 'EntryPoint',
-      urlTemplate: `${SITE_URL}/products?search={search_term_string}`,
+      urlTemplate: `${SEO_CONFIG.siteUrl}/products?search={search_term_string}`,
     },
     'query-input': 'required name=search_term_string',
   },
@@ -217,53 +200,60 @@ export const WEBSITE_SCHEMA = {
 export const ORGANIZATION_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: SITE_NAME,
-  url: SITE_URL,
+  name: SEO_CONFIG.organization.name,
+  legalName: SEO_CONFIG.organization.legalName,
+  url: SEO_CONFIG.organization.url,
   logo: {
     '@type': 'ImageObject',
-    url: `${SITE_URL}/logo.png`,
+    url: SEO_CONFIG.organization.logo,
   },
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer service',
     areaServed: 'KH',
-    telephone: '+855-12-220-152',
-    availableLanguage: ['English', 'Khmer', 'Thai', 'Vietnamese', 'Chinese'],
+    telephone: SEO_CONFIG.organization.telephone,
+    email: SEO_CONFIG.organization.email,
+    availableLanguage: ['Khmer', 'English', 'Thai', 'Vietnamese', 'Chinese'],
   },
   address: {
     '@type': 'PostalAddress',
-    addressCountry: 'KH',
-    addressLocality: 'Phnom Penh',
+    streetAddress: SEO_CONFIG.organization.address.street,
+    addressLocality: SEO_CONFIG.organization.address.city,
+    addressRegion: SEO_CONFIG.organization.address.region,
+    postalCode: SEO_CONFIG.organization.address.postalCode,
+    addressCountry: SEO_CONFIG.organization.address.country,
   },
 }
 
 export const LOCAL_BUSINESS_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'Store',
-  name: SITE_NAME,
-  image: `${SITE_URL}/logo.png`,
-  url: SITE_URL,
-  telephone: '+855 12 220 152',
-  priceRange: '$$',
+  name: SEO_CONFIG.organization.name,
+  image: SEO_CONFIG.organization.logo,
+  url: SEO_CONFIG.organization.url,
+  telephone: SEO_CONFIG.organization.telephone,
+  priceRange: SEO_CONFIG.organization.priceRange,
+  currenciesAccepted: SEO_CONFIG.organization.currenciesAccepted.join(', '),
+  paymentAccepted: SEO_CONFIG.organization.paymentAccepted.join(', '),
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Russian Federation Blvd (110)',
-    addressLocality: 'Phnom Penh',
-    addressRegion: 'Phnom Penh',
-    postalCode: '12000',
-    addressCountry: 'KH',
+    streetAddress: SEO_CONFIG.organization.address.street,
+    addressLocality: SEO_CONFIG.organization.address.city,
+    addressRegion: SEO_CONFIG.organization.address.region,
+    postalCode: SEO_CONFIG.organization.address.postalCode,
+    addressCountry: SEO_CONFIG.organization.address.country,
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: 11.5564,
-    longitude: 104.9282,
+    latitude: SEO_CONFIG.organization.geo.latitude,
+    longitude: SEO_CONFIG.organization.geo.longitude,
   },
   openingHoursSpecification: [
     {
       '@type': 'OpeningHoursSpecification',
       dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
       opens: '08:00',
-      closes: '18:00',
+      closes: '20:00',
     },
   ],
 }

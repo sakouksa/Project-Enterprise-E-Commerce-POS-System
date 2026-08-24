@@ -2,13 +2,17 @@ import React from 'react'
 import { ShieldCheck, Award, Truck } from 'lucide-react'
 import PageTransition from '@/components/common/PageTransition'
 import SEOHead from '@/components/seo/SEOHead'
+import { useStoreSettings } from '@/hooks'
 
 const AboutPage: React.FC = () => {
+  const { data: storeSettings } = useStoreSettings()
+  const siteName = storeSettings?.site_name || 'NexTech Tbong Khmum'
+
   return (
     <>
       <SEOHead
-        title="About Us | Enterprise Store"
-        description="Learn about Enterprise Store — Cambodia's leading e-commerce and POS platform. We deliver authentic electronics, fashion, and home goods across Cambodia and Southeast Asia."
+        title={`About Us | ${siteName}`}
+        description={`Learn about ${siteName} — Cambodia's leading e-commerce and POS platform. We deliver authentic electronics, fashion, and home goods across Cambodia and Southeast Asia.`}
         canonical="/about"
         breadcrumbs={[
           { name: 'Home', url: '/' },
@@ -18,7 +22,7 @@ const AboutPage: React.FC = () => {
       <PageTransition className="container-site py-12 space-y-12">
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white font-display">
-            About Enterprise E-Commerce Platform
+            About {siteName}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">
             We are Cambodia's leading omnichannel retail and POS platform delivering premium authentic electronics, laptops, smartphones, gaming accessories, and POS hardware across all 25 provinces.

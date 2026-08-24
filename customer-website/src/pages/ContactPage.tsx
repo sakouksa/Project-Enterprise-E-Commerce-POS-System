@@ -2,9 +2,16 @@ import React, { useState } from 'react'
 import { Mail, Phone, MapPin, Send } from 'lucide-react'
 import PageTransition from '@/components/common/PageTransition'
 import SEOHead, { LOCAL_BUSINESS_SCHEMA } from '@/components/seo/SEOHead'
+import { useStoreSettings } from '@/hooks'
 
 const ContactPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false)
+  const { data: storeSettings } = useStoreSettings()
+
+  const storeName = storeSettings?.site_name || 'NexTech Tbong Khmum'
+  const storePhone = storeSettings?.company_phone || '+855 71 888 999'
+  const storeEmail = storeSettings?.site_email || 'tbongkhmum@enterprise-pos.com'
+  const storeAddress = storeSettings?.company_address || 'ក្រុងសួង, ខេត្តត្បូងឃ្មុំ, ព្រះរាជាណាចក្រកម្ពុជា'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -15,7 +22,7 @@ const ContactPage: React.FC = () => {
     <>
       <SEOHead
         title="Contact Us"
-        description="Get in touch with Enterprise Store for product inquiries, sales showroom consultations, and order support. Located in Phnom Penh, Cambodia. Hotlines: 012 220 152 | 093 456 747."
+        description={`Get in touch with ${storeName} for product inquiries, sales showroom consultations, and order support. Located in ${storeAddress}. Contact: ${storePhone} | ${storeEmail}.`}
         canonical="/contact"
         schema={LOCAL_BUSINESS_SCHEMA}
         breadcrumbs={[
@@ -36,24 +43,24 @@ const ContactPage: React.FC = () => {
           <div className="card p-5 flex items-center gap-4">
             <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0" />
             <div className="text-xs">
-              <div className="font-bold text-gray-900 dark:text-white">Head Office</div>
-              <div className="text-gray-500">Phnom Penh, Cambodia</div>
+              <div className="font-bold text-gray-900 dark:text-white">Store Address / អាសយដ្ឋាន</div>
+              <div className="text-gray-500">{storeAddress}</div>
             </div>
           </div>
 
           <div className="card p-5 flex items-center gap-4">
             <Phone className="w-6 h-6 text-emerald-600 flex-shrink-0" />
             <div className="text-xs">
-              <div className="font-bold text-gray-900 dark:text-white">Customer Support</div>
-              <div className="text-gray-500">+855 12 345 6789</div>
+              <div className="font-bold text-gray-900 dark:text-white">Customer Support / ទូរស័ព្ទ</div>
+              <div className="text-gray-500">{storePhone}</div>
             </div>
           </div>
 
           <div className="card p-5 flex items-center gap-4">
             <Mail className="w-6 h-6 text-purple-600 flex-shrink-0" />
             <div className="text-xs">
-              <div className="font-bold text-gray-900 dark:text-white">Email Address</div>
-              <div className="text-gray-500">support@shopkh.com</div>
+              <div className="font-bold text-gray-900 dark:text-white">Email Address / អ៉ីមែល</div>
+              <div className="text-gray-500">{storeEmail}</div>
             </div>
           </div>
         </div>

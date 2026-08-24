@@ -29,6 +29,12 @@ export const FaviconProvider: React.FC<FaviconProviderProps> = ({ children }) =>
     }
   }, [storeSettings?.favicon, storeSettings?.site_logo])
 
+  useEffect(() => {
+    if (storeSettings?.site_name && document.title.includes('Enterprise')) {
+      document.title = `${storeSettings.site_name} | ${storeSettings.site_subtitle || 'Tech Store & POS'}`
+    }
+  }, [storeSettings?.site_name, storeSettings?.site_subtitle])
+
   return <>{children}</>
 }
 

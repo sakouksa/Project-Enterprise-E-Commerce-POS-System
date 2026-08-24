@@ -9,7 +9,8 @@ export const useStoreSettings = () => {
   return useQuery<StoreSettings>({
     queryKey: ['storefront', 'settings'],
     queryFn: () => storeSettingsService.getSettings(),
-    staleTime: 10 * 60 * 1000, // 10 minutes cache
+    staleTime: 30 * 1000, // 30 seconds (reactive to Admin Dashboard changes)
+    refetchOnWindowFocus: true,
   })
 }
 

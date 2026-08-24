@@ -33,6 +33,7 @@ export interface StoreSettings {
   site_subtitle?: string
   site_logo?: string | null
   favicon?: string | null
+  site_email?: string
   company_phone?: string
   company_email?: string
   company_address?: string

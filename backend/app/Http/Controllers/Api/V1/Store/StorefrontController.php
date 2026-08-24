@@ -1145,11 +1145,11 @@ class StorefrontController extends BaseApiController
 
     private function getStoreSettings(): array
     {
-        return Cache::remember('storefront_settings_v4', 600, function () {
+        return Cache::remember('storefront_settings_v5', 15, function () {
             $settings = DB::table('settings')->pluck('value', 'key')->toArray();
             $company = DB::table('companies')->first();
 
-            $siteName = $settings['site_name'] ?? $company?->name ?? 'Enterprise Store';
+            $siteName = $settings['site_name'] ?? $company?->name ?? 'NexTech Enterprise';
             $siteLogo = $settings['site_logo'] ?? $settings['logo_light'] ?? $company?->logo ?? null;
             if ($siteLogo && !str_starts_with($siteLogo, 'http')) {
                 $siteLogo = url(ltrim($siteLogo, '/'));
@@ -1160,25 +1160,31 @@ class StorefrontController extends BaseApiController
                 $favicon = url(ltrim($favicon, '/'));
             }
 
+            $siteSubtitle = $settings['site_subtitle'] ?? 'Tech Store & POS';
+            $siteEmail = $settings['site_email'] ?? $company?->email ?? 'tbongkhmum@enterprise-pos.com';
+            $companyPhone = $settings['company_phone'] ?? $company?->phone ?? '+855 71 888 999';
+            $companyAddress = $settings['company_address'] ?? $company?->address ?? 'ក្រុងសួង, ខេត្តត្បូងឃ្មុំ, ព្រះរាជាណាចក្រកម្ពុជា';
+            $announcement = $settings['announcement_text'] ?? $settings['pos_receipt_header'] ?? '⚡ Free express shipping across Cambodia on orders over $50.';
+
             return [
                 'site_name'         => $siteName,
-                'site_subtitle'     => 'Tech Store & POS',
-                'site_email'        => $settings['site_email'] ?? $company?->email ?? 'support@enterprise-store.com',
+                'site_subtitle'     => $siteSubtitle,
+                'site_email'        => $siteEmail,
                 'site_logo'         => $siteLogo,
                 'favicon'           => $favicon,
-                'company_phone'     => $settings['company_phone'] ?? $company?->phone ?? '012 220 152',
-                'hotlines'          => ['012 220 152', '093 456 747', '071 5777 378'],
+                'company_phone'     => $companyPhone,
+                'hotlines'          => [$companyPhone, '012 220 152', '071 5777 378'],
                 'delivery_headline' => 'Delivery within 1 hour / Delivery 25 Provinces',
                 'store_hours'       => 'Mon - Sun: 8:00 AM - 8:00 PM',
-                'company_address'   => $settings['company_address'] ?? $company?->address ?? 'Phnom Penh, Cambodia',
+                'company_address'   => $companyAddress,
                 'currency_base'     => $settings['currency_base'] ?? 'USD',
-                'announcement_text' => $settings['pos_receipt_header'] ?? '⚡ Free express shipping across Cambodia on orders over $50.',
+                'announcement_text' => $announcement,
                 'socials'           => [
-                    'facebook'  => 'https://facebook.com',
-                    'telegram'  => 'https://t.me',
-                    'tiktok'    => 'https://tiktok.com',
-                    'youtube'   => 'https://youtube.com',
-                    'instagram' => 'https://instagram.com',
+                    'facebook'  => $settings['social_facebook'] ?? 'https://facebook.com',
+                    'telegram'  => $settings['social_telegram'] ?? 'https://t.me',
+                    'tiktok'    => $settings['social_tiktok'] ?? 'https://tiktok.com',
+                    'youtube'   => $settings['social_youtube'] ?? 'https://youtube.com',
+                    'instagram' => $settings['social_instagram'] ?? 'https://instagram.com',
                 ],
             ];
         });

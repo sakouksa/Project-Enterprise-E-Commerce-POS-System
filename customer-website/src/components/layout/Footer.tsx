@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next'
 import BrandPartnersMarquee from '@/components/storefront/BrandPartnersMarquee'
 import api from '@/lib/api'
 
+import { useStoreSettings } from '@/hooks'
+
 interface FooterProps {
   storeInfo?: {
     name?: string
@@ -31,28 +33,17 @@ export const Footer: React.FC<FooterProps> = ({ storeInfo }) => {
   const { t } = useTranslation()
   const [logoError, setLogoError] = useState(false)
 
-  // Fetch real store settings from backend API
-  const { data: storeSettings } = useQuery<{
-    site_name?: string
-    site_subtitle?: string
-    site_logo?: string | null
-    site_email?: string
-    company_phone?: string
-    company_address?: string
-    hotlines?: string[]
-  }>({
-    queryKey: ['storefront', 'settings'],
-    queryFn: async () => {
-      const res = await api.get('/settings')
-      return res.data?.data || {}
-    },
-    staleTime: 10 * 60 * 1000,
-  })
+  // Fetch real-time reactive store settings from backend API
+  const { data: storeSettings } = useStoreSettings()
 
-  const name = storeInfo?.name || storeSettings?.site_name || 'NexTech Enterprise'
-  const email = storeInfo?.email || storeSettings?.site_email || 'support@nextech.com.kh'
-  const phone = storeInfo?.phone || storeSettings?.company_phone || '012 220 152'
-  const address = storeInfo?.address || storeSettings?.company_address || 'Phnom Penh, Kingdom of Cambodia'
+  React.useEffect(() => {
+    setLogoError(false)
+  }, [storeSettings?.site_logo])
+
+  const name = storeInfo?.name || storeSettings?.site_name || 'NexTech Tbong Khmum'
+  const email = storeInfo?.email || storeSettings?.site_email || 'tbongkhmum@enterprise-pos.com'
+  const phone = storeInfo?.phone || storeSettings?.company_phone || '+855 71 888 999'
+  const address = storeInfo?.address || storeSettings?.company_address || 'ក្រុងសួង, ខេត្តត្បូងឃ្មុំ, ព្រះរាជាណាចក្រកម្ពុជា'
   const logo = storeSettings?.site_logo
 
   return (

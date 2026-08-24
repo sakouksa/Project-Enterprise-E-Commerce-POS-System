@@ -52,6 +52,10 @@ export const Header: React.FC<{ announcement?: any }> = ({ announcement }) => {
     setMobileOpen(false)
   }, [location.pathname])
 
+  useEffect(() => {
+    setLogoError(false)
+  }, [storeSettings?.site_logo])
+
   const siteName = storeSettings?.site_name || 'Enterprise'
   const siteSubtitle = storeSettings?.site_subtitle || 'Tech Store & POS'
 

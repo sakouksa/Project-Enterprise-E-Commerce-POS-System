@@ -49,7 +49,21 @@ class SettingController extends BaseApiController
             Company::query()->update(['logo' => $logo]);
         }
 
+        // Clear Storefront cache so customer website reflects changes immediately
+        $this->clearStorefrontCache();
+
         return $this->successResponse(Setting::all(), 'Settings updated successfully');
+    }
+
+    /**
+     * Helper to clear storefront cache
+     */
+    protected function clearStorefrontCache(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('storefront_settings_v4');
+        \Illuminate\Support\Facades\Cache::forget('storefront_settings_v5');
+        \Illuminate\Support\Facades\Cache::forget('storefront_home_data_v4');
+        \Illuminate\Support\Facades\Cache::forget('storefront_stats_v2');
     }
 
     /**
@@ -155,6 +169,8 @@ class SettingController extends BaseApiController
             ['value' => $path, 'type' => 'string', 'group' => 'general']
         );
 
+        $this->clearStorefrontCache();
+
         return $this->successResponse([
             'logo_url'     => $path,
             'company_id'   => $company?->id,
@@ -186,6 +202,8 @@ class SettingController extends BaseApiController
             ['company_id' => $company?->id ?? 1, 'key' => 'site_logo'],
             ['value' => $defaultLogo, 'type' => 'string', 'group' => 'general']
         );
+
+        $this->clearStorefrontCache();
 
         return $this->successResponse([
             'logo_url'     => $defaultLogo,

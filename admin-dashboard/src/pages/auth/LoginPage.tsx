@@ -676,22 +676,22 @@ const LoginPage: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* ─── RIGHT LOGIN CARD SECTION (Spacious, Ergonomic, Modern Form UX) ─── */}
+          {/* ─── RIGHT LOGIN CARD SECTION (Ultra-Clean, Minimalist & Modern UX) ─── */}
           <div className="w-full lg:col-span-6 xl:col-span-5 flex items-center justify-center lg:justify-end">
             <motion.div
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
-              className="w-full max-w-[460px] sm:max-w-[490px] lg:max-w-[480px] xl:max-w-[500px] mx-auto lg:mr-0"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="w-full max-w-[420px] sm:max-w-[440px] mx-auto lg:mr-0"
             >
-              {/* Clean, Modern Spacious Card Container */}
-              <div className="relative rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-400/10 dark:shadow-black/50 p-7 sm:p-9 lg:p-10 overflow-hidden text-left">
+              {/* Ultra-Clean Card Container */}
+              <div className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none p-6 sm:p-8 overflow-hidden text-left">
                 
                 {/* Progress Bar during loading */}
                 {isSubmitting && (
-                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-100 dark:bg-slate-800 overflow-hidden z-20">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden z-20">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                      className="h-full bg-blue-600"
                       initial={{ width: '0%' }}
                       animate={{ width: `${loginProgress}%` }}
                       transition={{ duration: 0.3 }}
@@ -700,12 +700,14 @@ const LoginPage: React.FC = () => {
                 )}
 
                 {/* Header inside Login Card */}
-                <div className="text-center mb-7 sm:mb-8 flex flex-col items-center">
-                  <BrandLogo size="lg" animated className="mb-3.5" />
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+                <div className="text-center mb-6 sm:mb-7 flex flex-col items-center">
+                  <div className="mb-3 flex items-center justify-center">
+                    <BrandLogo size="md" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                     {t('auth.loginTitle')}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-normal max-w-sm">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-normal max-w-xs leading-relaxed">
                     {t('auth.loginSubtitle')}
                   </p>
                 </div>
@@ -717,35 +719,35 @@ const LoginPage: React.FC = () => {
                       initial={{ opacity: 0, scale: 0.96, y: -6 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.96, y: -6 }}
-                      className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200 text-xs sm:text-sm flex items-start gap-3 shadow-xs"
+                      className="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 shadow-xs"
                     >
-                      <ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-rose-900 dark:text-rose-100 text-xs sm:text-sm">{serverError.title}</div>
-                        <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 leading-relaxed">{serverError.message}</p>
+                        <div className="font-semibold text-rose-900 dark:text-rose-100">{serverError.title}</div>
+                        <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">{serverError.message}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setServerError(null)}
-                        className="text-rose-400 hover:text-rose-700 dark:hover:text-rose-200 p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors cursor-pointer shrink-0"
+                        className="text-rose-400 hover:text-rose-700 p-0.5 rounded cursor-pointer shrink-0"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* ─── ULTRA CLEAN SPACIOUS LOGIN FORM ──────────────────────── */}
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-5.5" onKeyDown={handleKeyDown}>
+                {/* ─── ULTRA CLEAN LOGIN FORM ──────────────────────────────── */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-4.5" onKeyDown={handleKeyDown}>
                   
                   {/* Identifier Input */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                       {t('auth.identifierLabel')}
                     </label>
                     <div className="relative">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
-                        <UserCheck className="w-5 h-5" />
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
+                        <UserCheck className="w-4 h-4" />
                       </div>
                       <input
                         {...usernameRegisterProps}
@@ -756,8 +758,8 @@ const LoginPage: React.FC = () => {
                         type="text"
                         autoComplete="username"
                         placeholder={t('auth.identifierPlaceholder')}
-                        className={`w-full pl-12 pr-4 py-3.5 sm:py-4 bg-slate-50/80 dark:bg-slate-950/60 border rounded-2xl text-slate-900 dark:text-white text-sm sm:text-base
-                                   placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                        className={`w-full pl-10 pr-4 py-2.5 sm:py-3 bg-slate-50/60 dark:bg-slate-950/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
+                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
                                      errors.username
                                        ? 'border-rose-400 bg-rose-50/20'
                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
@@ -765,8 +767,8 @@ const LoginPage: React.FC = () => {
                       />
                     </div>
                     {errors.username && (
-                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 shrink-0" />
+                      <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
+                        <Info className="w-3 h-3 shrink-0" />
                         <span>{errors.username.message === 'identifierRequired' ? t('auth.validation.identifierRequired', 'Please enter your username, employee code or phone') : errors.username.message}</span>
                       </p>
                     )}
@@ -774,31 +776,31 @@ const LoginPage: React.FC = () => {
 
                   {/* Password Input */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                         {t('auth.password')}
                       </label>
 
                       {/* Caps Lock Indicator */}
                       {capsLockActive && (
-                        <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-amber-500" />
                           {t('auth.capsLockOn')}
                         </span>
                       )}
                     </div>
 
                     <div className="relative">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
-                        <Lock className="w-5 h-5" />
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
+                        <Lock className="w-4 h-4" />
                       </div>
                       <input
                         {...register('password')}
                         type={showPassword ? 'text' : 'password'}
                         autoComplete="current-password"
                         placeholder={t('auth.passwordPlaceholder')}
-                        className={`w-full pl-12 pr-12 py-3.5 sm:py-4 bg-slate-50/80 dark:bg-slate-950/60 border rounded-2xl text-slate-900 dark:text-white text-sm sm:text-base
-                                   placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                        className={`w-full pl-10 pr-10 py-2.5 sm:py-3 bg-slate-50/60 dark:bg-slate-950/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
+                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
                                      errors.password
                                        ? 'border-rose-400 bg-rose-50/20'
                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
@@ -807,30 +809,30 @@ const LoginPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors cursor-pointer"
                         tabIndex={-1}
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
 
                     {errors.password && (
-                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 shrink-0" />
+                      <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
+                        <Info className="w-3 h-3 shrink-0" />
                         <span>{errors.password.message === 'passwordRequired' ? t('auth.validation.passwordRequired', 'Please enter your password') : errors.password.message}</span>
                       </p>
                     )}
                   </div>
 
                   {/* Remember Me & Forgot Password */}
-                  <div className="flex items-center justify-between gap-3 pt-1">
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <label className="flex items-center gap-2 cursor-pointer select-none group">
                       <input
                         {...register('remember')}
                         type="checkbox"
-                        className="w-4.5 h-4.5 rounded-lg border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 accent-blue-600 transition-all cursor-pointer"
                       />
-                      <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
                         {t('auth.rememberMe')}
                       </span>
                     </label>
@@ -841,7 +843,7 @@ const LoginPage: React.FC = () => {
                         resetForgotState()
                         setActiveModal('forgot')
                       }}
-                      className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer"
+                      className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer"
                     >
                       {t('auth.forgotPassword')}
                     </button>
@@ -851,26 +853,26 @@ const LoginPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || isSuccessState}
-                    className={`w-full py-3.5 sm:py-4 px-6 rounded-2xl font-bold text-sm sm:text-base text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200
-                              flex items-center justify-center gap-2.5 cursor-pointer ${
+                    className={`w-full py-2.5 sm:py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm text-white shadow-sm hover:shadow transition-all duration-200
+                              flex items-center justify-center gap-2 cursor-pointer ${
                                 isSuccessState
-                                  ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25'
-                                  : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-700 active:scale-[0.99]'
+                                  ? 'bg-emerald-600 hover:bg-emerald-500'
+                                  : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99]'
                               } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     {isSuccessState ? (
-                      <div className="flex items-center gap-2.5 text-white font-bold">
-                        <CheckCircle2 className="w-5 h-5 text-white" />
+                      <div className="flex items-center gap-2 text-white font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-white" />
                         <span>{t('auth.loginSuccess')}</span>
                       </div>
                     ) : isSubmitting ? (
-                      <div className="flex items-center gap-2.5">
-                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
                         <span>{t('auth.loggingIn')}</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2.5 font-bold tracking-wide">
-                        <LogIn className="w-5 h-5" />
+                      <div className="flex items-center gap-2 font-semibold">
+                        <LogIn className="w-4 h-4" />
                         <span>{t('auth.loginButton')}</span>
                       </div>
                     )}
@@ -878,8 +880,8 @@ const LoginPage: React.FC = () => {
                 </form>
 
                 {/* ─── Trust & Security Badge ─────────────────────────────── */}
-                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-2 text-center text-xs text-slate-400 dark:text-slate-500">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-1.5 text-center text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span>{t('auth.securityNote')}</span>
                 </div>
 

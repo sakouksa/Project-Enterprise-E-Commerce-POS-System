@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CheckCircle2, Package, ArrowRight, Home } from 'lucide-react'
 import { useSettingsStore } from '@/stores'
+import SEOHead from '@/components/seo/SEOHead'
 
 const CheckoutSuccessPage: React.FC = () => {
   const location = useLocation()
@@ -9,7 +10,14 @@ const CheckoutSuccessPage: React.FC = () => {
   const order = location.state?.order
 
   return (
-    <div className="container-site py-16 flex flex-col items-center justify-center text-center max-w-lg mx-auto space-y-6">
+    <>
+      <SEOHead
+        title="Order Placed Successfully"
+        description="Thank you for your order at Enterprise Store."
+        canonical="/checkout/success"
+        robots="noindex, nofollow"
+      />
+      <div className="container-site py-16 flex flex-col items-center justify-center text-center max-w-lg mx-auto space-y-6">
       <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center shadow-lg">
         <CheckCircle2 className="w-12 h-12" />
       </div>
@@ -49,6 +57,7 @@ const CheckoutSuccessPage: React.FC = () => {
         </Link>
       </div>
     </div>
+    </>
   )
 }
 

@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  ShieldCheck, CreditCard, Truck, Check, Lock,
-  QrCode, Building2, Banknote, ArrowRight
+  ShieldCheck, CreditCard, Truck, Lock,
+  QrCode, Building2, Banknote
 } from 'lucide-react'
 import { useCartStore } from '@/stores/cartStore'
 import { useSettingsStore, useAuthStore } from '@/stores'
 import api from '@/lib/api'
 import Spinner from '@/components/ui/Spinner'
 import PageTransition from '@/components/common/PageTransition'
+import SEOHead from '@/components/seo/SEOHead'
 import { cn } from '@/lib/utils'
 
 const CheckoutPage: React.FC = () => {
@@ -76,7 +77,14 @@ const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <PageTransition className="container-site py-8 space-y-8">
+    <>
+      <SEOHead
+        title="Secure Checkout"
+        description="Complete your order details and checkout securely."
+        canonical="/checkout"
+        robots="noindex, nofollow"
+      />
+      <PageTransition className="container-site py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Checkout
@@ -321,6 +329,7 @@ const CheckoutPage: React.FC = () => {
 
       </form>
     </PageTransition>
+    </>
   )
 }
 

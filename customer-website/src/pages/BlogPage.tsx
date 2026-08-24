@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 import Spinner from '@/components/ui/Spinner'
 import PageTransition from '@/components/common/PageTransition'
+import SEOHead from '@/components/seo/SEOHead'
 
 const BlogPage: React.FC = () => {
   const [blogs, setBlogs]     = useState<any[]>([])
@@ -15,9 +16,32 @@ const BlogPage: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+  const seoElement = (
+    <SEOHead
+      title="Blog | Tech Articles, Product Guides & Store News"
+      description="Explore technology articles, product guides, and store updates from Enterprise Store. Stay informed on the latest electronics and tech trends in Cambodia."
+      canonical="/blog"
+      breadcrumbs={[
+        { name: 'Home', url: '/' },
+        { name: 'Blog', url: '/blog' },
+      ]}
+    />
+  )
+
+  if (loading) {
+    return (
+      <>
+        {seoElement}
+        <div className="flex justify-center py-16">
+          <Spinner size="lg" />
+        </div>
+      </>
+    )
+  }
 
   return (
+    <>
+      {seoElement}
     <PageTransition className="container-site py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
@@ -46,6 +70,7 @@ const BlogPage: React.FC = () => {
         </div>
       )}
     </PageTransition>
+    </>
   )
 }
 

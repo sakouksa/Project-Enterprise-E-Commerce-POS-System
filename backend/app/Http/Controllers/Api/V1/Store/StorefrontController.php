@@ -11,6 +11,8 @@ use App\Models\Marketing\FlashSale;
 use App\Models\Marketing\Coupon;
 use App\Models\Review\ProductReview;
 use App\Models\CMS\Blog;
+use App\Models\CMS\Page;
+use App\Models\CMS\Faq;
 use App\Models\Setting\Setting;
 use App\Models\Customer\Customer;
 use App\Models\Order\Order;
@@ -589,6 +591,128 @@ class StorefrontController extends BaseApiController
 
             return $this->paginatedResponse($blogs);
         } catch (\Exception) {
+            return $this->successResponse([]);
+        }
+    }
+
+    // ─── GET /api/v1/store/blog/{slug} ───────────────────────────────────────
+
+    public function blogDetail(Request $request, string $slug): JsonResponse
+    {
+        try {
+            $post = Blog::where('slug', $slug)
+                ->where('status', 'published')
+                ->with(['category', 'author', 'tags'])
+                ->firstOrFail();
+
+            // Increment views safely if column exists
+            try {
+                $post->increment('view_count');
+            } catch (\Throwable) {}
+
+            $related = Blog::where('status', 'published')
+                ->where('id', '!=', $post->id)
+                ->when($post->blog_category_id, fn($q) => $q->where('blog_category_id', $post->blog_category_id))
+                ->orderBy('published_at', 'desc')
+                ->limit(4)
+                ->get();
+
+            return $this->successResponse([
+                'id'               => $post->id,
+                'title'            => $post->title,
+                'slug'             => $post->slug,
+                'excerpt'          => $post->summary ?? $post->excerpt,
+                'content'          => $post->content,
+                'featured_image'   => $post->featured_image,
+                'meta_title'       => $post->meta_title ?? $post->title,
+                'meta_description' => $post->meta_description ?? $post->summary ?? $post->excerpt,
+                'published_at'     => $post->published_at?->toISOString(),
+                'updated_at'       => $post->updated_at?->toISOString(),
+                'view_count'       => $post->view_count ?? 0,
+                'category'         => $post->category ? [
+                    'id'   => $post->category->id,
+                    'name' => $post->category->name,
+                    'slug' => $post->category->slug,
+                ] : null,
+                'author'           => $post->author?->name ?? 'Enterprise Team',
+                'tags'             => $post->tags->map(fn($t) => [
+                    'id'   => $t->id,
+                    'name' => $t->name,
+                    'slug' => $t->slug,
+                ]),
+                'related_posts'    => $related,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Blog article not found', null, 404);
+        }
+    }
+
+    // ─── GET /api/v1/store/pages/{slug} ──────────────────────────────────────
+
+    public function pageDetail(Request $request, string $slug): JsonResponse
+    {
+        try {
+            $page = Page::where('slug', $slug)
+                ->where('status', 'published')
+                ->first();
+
+            // Support alternate slug patterns (e.g., 'privacy' -> 'privacy-policy', 'terms' -> 'terms-of-service', 'returns' -> 'refund-policy')
+            if (!$page) {
+                $alternateSlugs = match ($slug) {
+                    'privacy'  => ['privacy-policy'],
+                    'terms'    => ['terms-of-service', 'terms-and-conditions'],
+                    'returns'  => ['refund-policy', 'return-policy', 'returns-and-refunds'],
+                    'shipping' => ['shipping-policy', 'delivery-policy'],
+                    'about'    => ['about-us'],
+                    'contact'  => ['contact-us'],
+                    default    => [],
+                };
+                if (!empty($alternateSlugs)) {
+                    $page = Page::whereIn('slug', $alternateSlugs)->where('status', 'published')->first();
+                }
+            }
+
+            if (!$page) {
+                return $this->errorResponse('Page not found', null, 404);
+            }
+
+            return $this->successResponse([
+                'id'               => $page->id,
+                'title'            => $page->title,
+                'slug'             => $page->slug,
+                'content'          => $page->content,
+                'meta_title'       => $page->meta_title ?? $page->title,
+                'meta_description' => $page->meta_description,
+                'updated_at'       => $page->updated_at?->toISOString(),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Page not found', null, 404);
+        }
+    }
+
+    // ─── GET /api/v1/store/faqs ──────────────────────────────────────────────
+
+    public function faqs(Request $request): JsonResponse
+    {
+        try {
+            $faqs = Faq::where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('category')
+                ->map(fn($items, $cat) => [
+                    'category' => $cat ?: 'General',
+                    'items'    => $items->map(fn($f) => [
+                        'id'       => $f->id,
+                        'question' => $f->question,
+                        'answer'   => $f->answer,
+                        'category' => $f->category,
+                    ]),
+                ])
+                ->values();
+
+            return $this->successResponse($faqs);
+        } catch (\Throwable) {
             return $this->successResponse([]);
         }
     }

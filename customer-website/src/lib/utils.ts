@@ -17,20 +17,54 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
   return `${symbol}${formatted}`
 }
 
-export function formatDate(date: string | Date, format = 'MMM d, yyyy'): string {
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('en-US').format(num)
+}
+
+export function formatDate(date: string | Date): string {
+  if (!date) return ''
   const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+export function formatDateTime(date: string | Date): string {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+export function formatRelativeTime(date: string | Date): string {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  const diffInSeconds = Math.floor((Date.now() - d.getTime()) / 1000)
+
+  if (diffInSeconds < 60) return 'Just now'
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
+  return formatDate(d)
+}
+
 export function truncate(str: string, n: number): string {
+  if (!str) return ''
   return str.length > n ? str.slice(0, n - 1) + '…' : str
 }
 
 export function slugify(str: string): string {
+  if (!str) return ''
   return str.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
 }
 
-export function calculateDiscountPercent(price: number, comparePrice: number): number {
+export function calculateDiscountPercent(price: number, comparePrice?: number): number {
   if (!comparePrice || comparePrice <= price) return 0
   return Math.round(((comparePrice - price) / comparePrice) * 100)
 }
@@ -40,7 +74,6 @@ export function getImageUrl(path?: string | null): string {
 
   // If already an absolute URL
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    // Upgrade http to https for Render backend
     return path.replace(/^http:\/\/enterprise-pos-api\.onrender\.com/, 'https://enterprise-pos-api.onrender.com')
   }
 

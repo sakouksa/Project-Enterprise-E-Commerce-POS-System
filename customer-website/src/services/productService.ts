@@ -1,6 +1,5 @@
 import api from '@/api'
-import type { Product, SearchSuggestion, Banner, InfinitePaginatedResponse } from '@/types/store'
-import type { ProductItem } from '@/components/storefront/CustomerProductCard'
+import type { Product, ProductItem, SearchSuggestion, Banner, InfinitePaginatedResponse } from '@/types/store'
 
 export interface ProductQueryParams {
   category?: string
@@ -69,8 +68,16 @@ export const productService = {
   /**
    * Fetch single product detail by slug
    */
-  async getProductBySlug(slug: string): Promise<Product | null> {
+  async getProductBySlug(slug: string): Promise<any> {
     const res = await api.get(`/products/${slug}`)
+    return res.data?.data || null
+  },
+
+  /**
+   * Alias for getProductBySlug
+   */
+  async getProduct(slugOrId: string | number): Promise<any> {
+    const res = await api.get(`/products/${slugOrId}`)
     return res.data?.data || null
   },
 

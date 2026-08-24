@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from '@/stores'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import SEOHead from '@/components/seo/SEOHead'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -28,7 +29,14 @@ const AccountLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+    <>
+      <SEOHead
+        title="My Account Dashboard"
+        description="Manage your orders, wishlist, addresses, and account security."
+        canonical="/account"
+        robots="noindex, nofollow"
+      />
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Header />
 
       <main className="flex-1 py-8">
@@ -101,6 +109,7 @@ const AccountLayout: React.FC = () => {
 
       <Footer />
     </div>
+    </>
   )
 }
 

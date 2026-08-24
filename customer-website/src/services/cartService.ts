@@ -1,58 +1,75 @@
-import api from '@/api'
+import api from '@/lib/api'
+import type { CartItem } from '@/types/store'
 
 export interface CartPayloadItem {
   product_id: number
-  variant_id?: number | null
+  product_variant_id?: number | null
   quantity: number
+}
+
+export interface CartResponse {
+  items: CartItem[]
+  subtotal: number
+  total: number
+  item_count: number
+  discount?: number
+  coupon_code?: string
 }
 
 export const cartService = {
   /**
-   * Fetch current active cart
+   * Fetch current active cart from server
    */
-  async getCart(): Promise<any> {
+  async getCart(): Promise<CartResponse> {
     const res = await api.get('/cart')
-    return res.data?.data || {}
+    return res.data?.data || { items: [], subtotal: 0, total: 0, item_count: 0 }
   },
 
   /**
-   * Add or sync items into cart
+   * Add product or variant to cart
    */
-  async addItem(item: CartPayloadItem): Promise<any> {
-    const res = await api.post('/cart/items', item)
-    return res.data?.data || {}
+  async addItem(item: CartPayloadItem): Promise<CartResponse> {
+    const res = await api.post('/cart/add', item)
+    return res.data?.data || { items: [], subtotal: 0, total: 0, item_count: 0 }
   },
 
   /**
-   * Update quantity of an item
+   * Update quantity of a cart item
    */
-  async updateQuantity(itemId: number, quantity: number): Promise<any> {
-    const res = await api.put(`/cart/items/${itemId}`, { quantity })
-    return res.data?.data || {}
+  async updateQuantity(itemId: number, quantity: number): Promise<CartResponse> {
+    const res = await api.put('/cart/update', { item_id: itemId, quantity })
+    return res.data?.data || { items: [], subtotal: 0, total: 0, item_count: 0 }
   },
 
   /**
-   * Remove item from cart
+   * Remove specific item from cart
    */
-  async removeItem(itemId: number): Promise<any> {
-    const res = await api.delete(`/cart/items/${itemId}`)
-    return res.data?.data || {}
+  async removeItem(itemId: number): Promise<CartResponse> {
+    const res = await api.delete('/cart/remove', { data: { item_id: itemId } })
+    return res.data?.data || { items: [], subtotal: 0, total: 0, item_count: 0 }
   },
 
   /**
-   * Apply coupon code
+   * Clear all items in cart
    */
-  async applyCoupon(code: string): Promise<any> {
-    const res = await api.post('/cart/coupon', { code })
-    return res.data?.data || {}
+  async clearCart(): Promise<void> {
+    await api.delete('/cart/clear')
   },
 
   /**
-   * Clear applied coupon
+   * Apply promotional coupon code
    */
-  async removeCoupon(): Promise<any> {
-    const res = await api.delete('/cart/coupon')
-    return res.data?.data || {}
+  async applyCoupon(code: string): Promise<CartResponse> {
+    const res = await api.post('/cart/apply-coupon', { code })
+    return res.data?.data || { items: [], subtotal: 0, total: 0, item_count: 0 }
+  },
+
+  /**
+   * Validate coupon eligibility
+   */
+  async validateCoupon(code: string, subtotal: number): Promise<any> {
+    const res = await api.post('/coupons/validate', { code, subtotal })
+    return res.data?.data || null
   },
 }
 

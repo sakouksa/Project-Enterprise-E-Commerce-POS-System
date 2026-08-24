@@ -4,12 +4,13 @@ import { Search, Sparkles, Tag, Barcode, SlidersHorizontal, ArrowLeft } from 'lu
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearch } from '@/hooks'
-import CustomerProductCard from '@/components/storefront/CustomerProductCard'
+import ProductCard from '@/components/ecommerce/ProductCard'
 import InfiniteScrollSentinel from '@/components/common/InfiniteScrollSentinel'
 import PageTransition from '@/components/common/PageTransition'
 import useInfiniteProducts from '@/hooks/useInfiniteProducts'
 import LoadingSkeleton from '@/components/storefront/LoadingSkeleton'
-import EmptyState from '@/components/storefront/EmptyState'
+import EmptyState from '@/components/common/EmptyState'
+import SEOHead from '@/components/seo/SEOHead'
 
 export const SearchPage: React.FC = () => {
   const { t } = useTranslation()
@@ -80,7 +81,14 @@ export const SearchPage: React.FC = () => {
   const displayQuery = activeQuery
 
   return (
-    <PageTransition className="container-site py-8 space-y-6">
+    <>
+      <SEOHead
+        title={displayQuery ? `Search: "${displayQuery}"` : 'Search Products'}
+        description="Search genuine laptops, smartphones, gaming accessories, and POS systems in Enterprise Store Cambodia."
+        canonical="/search"
+        robots="noindex, follow"
+      />
+      <PageTransition className="container-site py-8 space-y-6">
       {/* ── Breadcrumb & Search Header ───────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
@@ -158,7 +166,7 @@ export const SearchPage: React.FC = () => {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <CustomerProductCard product={product} />
+                  <ProductCard product={product} />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -178,7 +186,8 @@ export const SearchPage: React.FC = () => {
           />
         </div>
       )}
-    </PageTransition>
+      </PageTransition>
+    </>
   )
 }
 

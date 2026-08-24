@@ -1,0 +1,39 @@
+# robots.txt for Enterprise Store
+# https://enterprise-pos-api.onrender.com
+
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /products/*
+Allow: /category/*
+Allow: /brand/*
+Allow: /blog
+Allow: /blog/*
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /shipping
+Allow: /returns
+
+# Disallow private user flows, search filter permutations, cart and checkout
+Disallow: /search
+Disallow: /search/*
+Disallow: /cart
+Disallow: /cart/*
+Disallow: /checkout
+Disallow: /checkout/*
+Disallow: /track
+Disallow: /track/*
+Disallow: /wishlist
+Disallow: /account
+Disallow: /account/*
+Disallow: /auth/
+Disallow: /auth/*
+Disallow: /api/
+
+# Host & Sitemaps
+Host: https://enterprise-pos-api.onrender.com
+Sitemap: https://enterprise-pos-api.onrender.com/sitemap.xml
+Sitemap: https://enterprise-pos-api.onrender.com/api/v1/seo/sitemap.xml

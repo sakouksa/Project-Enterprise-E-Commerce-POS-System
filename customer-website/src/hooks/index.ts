@@ -4,4 +4,5 @@ export * from './useDebounce'
 export * from './useScrollPosition'
 export * from './useSearch'
 export * from './useInfiniteProducts'
-
+export * from './useWishlist'
+export * from './useAddToCart'

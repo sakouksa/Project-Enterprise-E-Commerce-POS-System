@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Api\SeoController;
 
 Route::get('/', function () {
     return response()->json([
@@ -14,6 +15,10 @@ Route::get('/', function () {
         'store_api' => url('/api/v1/store'),
     ]);
 });
+
+// ─── SEO: robots.txt & sitemap.xml ─────────────────────────────────────────
+Route::get('/robots.txt', [SeoController::class, 'robots']);
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap']);
 
 // Storage File Streamer (Supports PDFs, Images, and dynamic fallbacks with 0 403 errors)
 Route::get('/storage/{path}', function (string $path) {

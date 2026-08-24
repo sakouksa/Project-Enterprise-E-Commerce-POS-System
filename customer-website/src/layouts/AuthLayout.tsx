@@ -1,10 +1,16 @@
 import React from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import { ShieldCheck, ShoppingBag } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
+import { ShieldCheck } from 'lucide-react'
 
 const AuthLayout: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gray-50 dark:bg-gray-950 font-sans antialiased">
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Account | Enterprise Store</title>
+      </Helmet>
+      <div className="min-h-screen flex flex-col justify-between bg-gray-50 dark:bg-gray-950 font-sans antialiased">
       {/* Auth Header */}
       <header className="py-6 px-4">
         <div className="container-site flex items-center justify-between">
@@ -36,6 +42,7 @@ const AuthLayout: React.FC = () => {
         <p>© {new Date().getFullYear()} ShopKh Enterprise Platform. All rights reserved.</p>
       </footer>
     </div>
+    </>
   )
 }
 

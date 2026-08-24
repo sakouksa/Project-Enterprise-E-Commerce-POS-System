@@ -3,6 +3,7 @@ import { Search, Package, Clock, CheckCircle2 } from 'lucide-react'
 import api from '@/lib/api'
 import Spinner from '@/components/ui/Spinner'
 import PageTransition from '@/components/common/PageTransition'
+import SEOHead from '@/components/seo/SEOHead'
 
 const TrackOrderPage: React.FC = () => {
   const [number, setNumber]   = useState('')
@@ -29,7 +30,14 @@ const TrackOrderPage: React.FC = () => {
   }
 
   return (
-    <PageTransition className="container-site py-12 max-w-xl mx-auto space-y-8">
+    <>
+      <SEOHead
+        title="Track Your Order"
+        description="Check live shipping status and delivery updates for your Enterprise Store order in Cambodia."
+        canonical="/track"
+        robots="noindex, follow"
+      />
+      <PageTransition className="container-site py-12 max-w-xl mx-auto space-y-8">
       <div className="text-center space-y-2">
         <div className="w-16 h-16 rounded-3xl bg-blue-100 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center mx-auto">
           <Package className="w-8 h-8" />
@@ -115,6 +123,7 @@ const TrackOrderPage: React.FC = () => {
         </div>
       )}
     </PageTransition>
+    </>
   )
 }
 

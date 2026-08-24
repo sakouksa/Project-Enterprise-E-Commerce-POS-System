@@ -26,3 +26,12 @@ build/
 # IDE
 .idea/
 .vscode/
+
+# Database dumps (exceeding 100MB GitHub limit)
+database/
+*.sql
+
+# GitHub Actions workflows (requires workflow PAT scope)
+.github/
+
+

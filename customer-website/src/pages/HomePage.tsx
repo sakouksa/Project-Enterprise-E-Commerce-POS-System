@@ -1,7 +1,8 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
-import SEOHead from '@/components/storefront/SEOHead'
+import queryKeys from '@/constants/queryKeys'
+import SEOHead from '@/components/seo/SEOHead'
 import AnimatedSection from '@/components/common/AnimatedSection'
 import HeroRetailGrid from '@/components/storefront/HeroRetailGrid'
 import SpotlightBannersGrid, { type SpotlightItem } from '@/components/storefront/SpotlightBannersGrid'
@@ -23,12 +24,9 @@ import TestimonialsSection, { type TestimonialItem } from '@/components/storefro
 import BlogSection, { type BlogPostItem } from '@/components/storefront/BlogSection'
 import NewsletterSection from '@/components/storefront/NewsletterSection'
 import LoadingSkeleton from '@/components/storefront/LoadingSkeleton'
-import EmptyState from '@/components/storefront/EmptyState'
+import EmptyState from '@/components/common/EmptyState'
 import type { BannerItem } from '@/components/storefront/HeroBannerSlider'
-import type { ProductItem } from '@/components/storefront/CustomerProductCard'
-import type { CategoryItem } from '@/components/storefront/CategoryCard'
-import type { BrandItem } from '@/components/storefront/BrandCard'
-import type { CouponItem } from '@/components/storefront/CouponCard'
+import type { ProductItem, CategoryItem, BrandItem, CouponItem } from '@/types/store'
 
 interface HomepageApiResponse {
   announcement?: {
@@ -72,7 +70,7 @@ interface HomepageApiResponse {
 
 export const HomePage: React.FC = () => {
   const { data, isLoading, error, refetch } = useQuery<HomepageApiResponse>({
-    queryKey: ['storefront', 'homepage'],
+    queryKey: queryKeys.store.homepage,
     queryFn: async () => {
       const res = await api.get('/homepage')
       return res.data?.data
@@ -80,35 +78,46 @@ export const HomePage: React.FC = () => {
     staleTime: 3 * 60 * 1000,
   })
 
+  const seoElement = (
+    <SEOHead
+      title="Enterprise Tech Store — Genuine Laptops, Gaming, Audio & POS Systems"
+      description="Shop authentic flagship laptops, gaming gear, smartwatches, audio accessories, and enterprise POS hardware with fast nationwide delivery in Cambodia."
+      canonical="/"
+    />
+  )
+
   if (isLoading) {
     return (
-      <div className="space-y-6 pb-16 pt-4">
-        <LoadingSkeleton type="banner" />
-        <LoadingSkeleton type="categories" />
-        <LoadingSkeleton type="grid" count={6} />
-      </div>
+      <>
+        {seoElement}
+        <div className="space-y-6 pb-16 pt-4">
+          <LoadingSkeleton type="banner" />
+          <LoadingSkeleton type="categories" />
+          <LoadingSkeleton type="grid" count={6} />
+        </div>
+      </>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="container-site py-16">
-        <EmptyState
-          title="Unable to load catalog"
-          description="A network or server error occurred while retrieving live product data."
-          actionLabel="Retry Connection"
-          onAction={() => refetch()}
-        />
-      </div>
+      <>
+        {seoElement}
+        <div className="container-site py-16">
+          <EmptyState
+            title="Unable to load catalog"
+            description="A network or server error occurred while retrieving live product data."
+            actionLabel="Retry Connection"
+            onAction={() => refetch()}
+          />
+        </div>
+      </>
     )
   }
 
   return (
     <>
-      <SEOHead
-        title="Enterprise Tech Store — Genuine Laptops, Gaming, Audio & POS Systems"
-        description="Shop authentic flagship laptops, gaming gear, smartwatches, audio accessories, and enterprise POS hardware with 1-hour fast delivery in Cambodia."
-      />
+      {seoElement}
 
       <div className="space-y-4 sm:space-y-8 pb-16 overflow-hidden">
         {/* 1. Hero Retail Grid (Category Sidebar + Hero Slider) */}

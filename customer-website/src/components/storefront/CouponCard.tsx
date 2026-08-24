@@ -4,16 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/stores'
 
-export interface CouponItem {
-  id: number
-  code: string
-  name: string
-  type: string
-  value: number
-  min_purchase?: number
-  max_discount?: number
-  expires_at?: string
-}
+import type { CouponItem } from '@/types/store'
+
+export type { CouponItem }
 
 interface CouponCardProps {
   coupon: CouponItem

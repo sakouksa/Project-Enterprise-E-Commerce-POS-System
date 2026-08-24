@@ -16,10 +16,10 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import CustomerProductCard from '@/components/storefront/CustomerProductCard'
-import SEOHead from '@/components/storefront/SEOHead'
+import ProductCard from '@/components/ecommerce/ProductCard'
+import SEOHead from '@/components/seo/SEOHead'
 import LoadingSkeleton from '@/components/storefront/LoadingSkeleton'
-import EmptyState from '@/components/storefront/EmptyState'
+import EmptyState from '@/components/common/EmptyState'
 import InfiniteScrollSentinel from '@/components/common/InfiniteScrollSentinel'
 import PageTransition from '@/components/common/PageTransition'
 import useInfiniteProducts from '@/hooks/useInfiniteProducts'
@@ -111,22 +111,61 @@ export const ProductListPage: React.FC = () => {
     setSearchParams({})
   }
 
-  const activeCategory = categories.find((c) => c.slug === category || String(c.id) === category)
-  const activeBrand = brands.find((b) => b.slug === brand || String(b.id) === brand)
+  const activeCategory = categories.find((c: any) => c.slug === category || String(c.id) === category)
+  const activeBrand = brands.find((b: any) => b.slug === brand || String(b.id) === brand)
+
+  // ── SEO Composition ──────────────────────────────────────────────────────
+  const isSearchPage = !!search
+  const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://enterprise-pos-api.onrender.com'
 
   const pageTitle = activeCategory
-    ? `${activeCategory.name} - Products`
+    ? activeCategory.name
     : activeBrand
-    ? `${activeBrand.name} - Products`
+    ? `${activeBrand.name} Products`
     : search
     ? `Search: "${search}"`
-    : 'All Products & Tech Catalog'
+    : 'All Products'
+
+  const pageDescription = activeCategory
+    ? activeCategory.description
+      ? `${activeCategory.description.slice(0, 140)}`
+      : `Shop ${activeCategory.name} products — authentic items with fast shipping across Cambodia.`
+    : activeBrand
+    ? activeBrand.description
+      ? `${activeBrand.description.slice(0, 140)}`
+      : `Explore genuine ${activeBrand.name} products. Buy ${activeBrand.name} with confidence and fast delivery.`
+    : 'Shop authentic electronics, computers, smartphones and accessories with fast delivery across Cambodia.'
+
+  const canonicalPath = activeCategory
+    ? `/category/${activeCategory.slug}`
+    : activeBrand
+    ? `/brand/${activeBrand.slug}`
+    : '/products'
+
+  const pageBreadcrumbs = [
+    { name: 'Home', url: '/' },
+    ...(activeCategory ? [{ name: 'Products', url: '/products' }, { name: activeCategory.name, url: `/category/${activeCategory.slug}` }] : []),
+    ...(activeBrand ? [{ name: 'Brands', url: '/products' }, { name: activeBrand.name, url: `/brand/${activeBrand.slug}` }] : []),
+    ...(!activeCategory && !activeBrand ? [{ name: 'All Products', url: '/products' }] : []),
+  ]
+
+  const collectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: pageTitle,
+    description: pageDescription,
+    url: `${SITE_URL}${canonicalPath}`,
+  }
 
   return (
     <>
       <SEOHead
         title={pageTitle}
-        description={`Explore genuine electronics, gadgets and tech deals at NexTech Store. Free shipping on orders over $50.`}
+        description={pageDescription}
+        canonical={canonicalPath}
+        robots={isSearchPage ? 'noindex, follow' : 'index, follow'}
+        schema={collectionSchema}
+        breadcrumbs={pageBreadcrumbs}
       />
 
       <PageTransition className="container-site py-6 space-y-6">
@@ -428,7 +467,11 @@ export const ProductListPage: React.FC = () => {
                   }
                 >
                   {products.map((product) => (
-                    <CustomerProductCard key={product.id} product={product} />
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      variant={viewMode === 'list' ? 'horizontal' : 'default'}
+                    />
                   ))}
                 </div>
 

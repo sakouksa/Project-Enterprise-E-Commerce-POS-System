@@ -606,6 +606,11 @@ Route::prefix('v1')->group(function () {
 
         // ── Blog ────────────────────────────────────────────────────────────
         Route::get('blog',                 [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'blog']);
+        Route::get('blog/{slug}',          [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'blogDetail']);
+
+        // ── CMS Pages & FAQs ────────────────────────────────────────────────
+        Route::get('pages/{slug}',         [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'pageDetail']);
+        Route::get('faqs',                 [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'faqs']);
 
         // ── Customer Auth ───────────────────────────────────────────────────
         Route::prefix('auth')->group(function () {

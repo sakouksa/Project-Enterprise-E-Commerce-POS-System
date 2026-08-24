@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Mail, Phone, MapPin, Send } from 'lucide-react'
 import PageTransition from '@/components/common/PageTransition'
+import SEOHead, { LOCAL_BUSINESS_SCHEMA } from '@/components/seo/SEOHead'
 
 const ContactPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false)
@@ -11,7 +12,18 @@ const ContactPage: React.FC = () => {
   }
 
   return (
-    <PageTransition className="container-site py-12 space-y-12">
+    <>
+      <SEOHead
+        title="Contact Us"
+        description="Get in touch with Enterprise Store for product inquiries, sales showroom consultations, and order support. Located in Phnom Penh, Cambodia. Hotlines: 012 220 152 | 093 456 747."
+        canonical="/contact"
+        schema={LOCAL_BUSINESS_SCHEMA}
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Contact', url: '/contact' },
+        ]}
+      />
+      <PageTransition className="container-site py-12 space-y-12">
       <div className="max-w-xl mx-auto text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Contact Us
@@ -82,6 +94,7 @@ const ContactPage: React.FC = () => {
         </div>
       </div>
     </PageTransition>
+    </>
   )
 }
 

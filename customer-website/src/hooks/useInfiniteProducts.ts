@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import productService, { type ProductQueryParams } from '@/services/productService'
-import type { ProductItem } from '@/components/storefront/CustomerProductCard'
+import type { ProductItem } from '@/types/store'
 import type { InfinitePaginatedResponse } from '@/types/store'
 
 export interface UseInfiniteProductsOptions {

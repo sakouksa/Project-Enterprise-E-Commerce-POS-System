@@ -18,7 +18,12 @@ class ExpenseCategoryController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $records = $this->service->getPaginated($request->get('per_page', 15));
+        $filters = $request->only(['search', 'status', 'sort_by', 'sort_order']);
+        $records = $this->service->getPaginated(
+            perPage: (int) $request->get('per_page', 15),
+            filters: $filters
+        );
+
         return $this->successResponse(
             ExpenseCategoryResource::collection($records),
             'ExpenseCategory list retrieved successfully'
@@ -59,6 +64,20 @@ class ExpenseCategoryController extends BaseApiController
         return $this->successResponse(
             null,
             'ExpenseCategory deleted successfully'
+        );
+    }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids) || !is_array($ids)) {
+            return $this->errorResponse('Please provide category IDs to delete', 422);
+        }
+
+        $count = $this->service->bulkDelete($ids);
+        return $this->successResponse(
+            ['deleted_count' => $count],
+            "{$count} expense categories deleted successfully"
         );
     }
 }

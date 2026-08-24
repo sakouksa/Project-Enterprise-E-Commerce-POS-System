@@ -16,6 +16,7 @@ import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface WarehouseItem {
   id:          number
@@ -280,9 +281,7 @@ const WarehousesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                         )}
                       </td>
                       <td>
-                        <span className={w.is_active ? 'badge-success' : 'badge-muted'}>
-                          {w.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        <StatusBadge status={w.is_active} />
                       </td>
                       <td className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
@@ -525,11 +524,9 @@ const WarehousesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                       <span className="text-muted-foreground">Main Storage Unit:</span>
                       <span className="font-medium">{viewWarehouse.is_main ? 'Yes' : 'No'}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Status:</span>
-                      <span className={viewWarehouse.is_active ? 'text-green-500 font-medium' : 'text-muted-foreground'}>
-                        {viewWarehouse.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                      <StatusBadge status={viewWarehouse.is_active} />
                     </div>
                   </div>
                 </div>

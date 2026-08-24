@@ -4,11 +4,17 @@ namespace App\Http\Controllers\Api\V1\Customer;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Customer\CustomerGroup;
+use App\Services\Support\CsvService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerGroupController extends BaseApiController
 {
+    public function __construct(
+        protected CsvService $csvService
+    ) {}
+
     /**
      * GET /api/v1/customer-groups
      */
@@ -22,7 +28,7 @@ class CustomerGroupController extends BaseApiController
                 $q->where('is_active', $request->status === 'active' || $request->status === '1');
             })
             ->when($request->search, function ($q, $search) {
-                $q->where(function($sub) use ($search) {
+                $q->where(function ($sub) use ($search) {
                     $sub->where('name', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%");
                 });
@@ -89,10 +95,7 @@ class CustomerGroupController extends BaseApiController
             $group->delete();
             return $this->successResponse(null, 'Customer group deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -106,10 +109,7 @@ class CustomerGroupController extends BaseApiController
             $group->restore();
             return $this->successResponse(null, 'Customer group restored successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -123,85 +123,52 @@ class CustomerGroupController extends BaseApiController
             $group->forceDelete();
             return $this->successResponse(null, 'Customer group permanently deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    /**
+     * GET /api/v1/customer-groups/export
+     */
+    public function export(Request $request): StreamedResponse
     {
-        $headers = [
-            'Content-type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename=customer_groups_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
-        ];
+        $headers = ['ID', 'Name', 'Description', 'Discount Percent', 'Is Active'];
+        $groups = CustomerGroup::withTrashed()->get();
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, [
-                'ID', 'Name', 'Description', 'Discount Percent', 'Is Active'
-            ]);
-
-            $groups = CustomerGroup::withTrashed()->get();
-
-            foreach ($groups as $g) {
-                fputcsv($file, [
-                    $g->id,
-                    $g->name,
-                    $g->description ?? '',
-                    $g->discount_percent,
-                    $g->is_active ? '1' : '0'
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'customer_groups_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $groups,
+            rowMapper: fn(CustomerGroup $g) => [
+                $g->id,
+                $g->name,
+                $g->description ?? '',
+                $g->discount_percent,
+                $g->is_active ? '1' : '0',
+            ]
+        );
     }
 
+    /**
+     * POST /api/v1/customer-groups/import
+     */
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        if ($handle === false) {
-            return response()->json(['success' => false, 'message' => 'Cannot open file'], 400);
+        $result = $this->csvService->parseCsv($request->file('file'), ['name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return response()->json(['success' => false, 'message' => 'Empty CSV'], 400);
-        }
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } else {
-                $row = array_slice($row, 0, count($headers));
-            }
-            $data = array_combine($headers, $row);
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
             if (!$name) {
@@ -210,25 +177,25 @@ class CustomerGroupController extends BaseApiController
             }
 
             CustomerGroup::create([
-                'company_id' => 1,
-                'name' => $name,
-                'description' => trim($data['description'] ?? '') ?: null,
-                'discount_percent' => floatval($data['discount percent'] ?? $data['discount_percent'] ?? 0),
-                'is_active' => ($data['is active'] ?? $data['is_active'] ?? '1') === '1',
+                'company_id'       => 1,
+                'name'             => $name,
+                'description'      => trim($data['description'] ?? '') ?: null,
+                'discount_percent' => (float) ($data['discount_percent'] ?? $data['discount percent'] ?? 0),
+                'is_active'        => ($data['is_active'] ?? $data['is active'] ?? '1') === '1',
             ]);
 
             $successCount++;
         }
 
-        fclose($handle);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Imported {$successCount} customer groups successfully. " . count($errors) . " errors.",
-            'errors' => $errors
-        ]);
+        return $this->successResponse([
+            'imported_count' => $successCount,
+            'errors'         => $errors,
+        ], "Imported {$successCount} customer groups successfully. " . count($errors) . " errors.");
     }
 
+    /**
+     * POST /api/v1/customer-groups/bulk-delete
+     */
     public function bulkDelete(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
@@ -236,6 +203,9 @@ class CustomerGroupController extends BaseApiController
         return $this->successResponse(null, 'Selected customer groups deleted successfully');
     }
 
+    /**
+     * POST /api/v1/customer-groups/bulk-restore
+     */
     public function bulkRestore(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);

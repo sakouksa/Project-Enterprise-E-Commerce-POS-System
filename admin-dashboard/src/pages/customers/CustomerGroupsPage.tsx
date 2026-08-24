@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, Search, Edit2, Trash2, RefreshCw, X, Users, Loader2,
-  ChevronUp, ChevronDown, Download, Award, Building2, Percent,
-  Check, Sparkles, FileText, Info
+  Plus, Search, Trash2, RefreshCw, Users,
+  ChevronUp, ChevronDown, Download, Award,
+  AlertCircle
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -18,27 +16,7 @@ import ModernSelect from '@/components/shared/ModernSelect'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import ResetButton from '@/components/shared/ResetButton'
 import { useTranslation } from 'react-i18next'
-import { useThemeStore } from '@/stores/themeStore'
-
-interface CustomerGroup {
-  id: number
-  company_id: number
-  company?: { name: string }
-  name: string
-  description?: string
-  discount_percent: number
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-interface GroupFormData {
-  company_id: string
-  name: string
-  discount_percent: number
-  description: string
-  is_active: boolean
-}
+import { CustomerGroupModal, PercentBadge, StatusBadge, type CustomerGroup } from '@/components/common'
 
 interface CustomerGroupsPageProps {
   isTab?: boolean
@@ -46,7 +24,6 @@ interface CustomerGroupsPageProps {
 }
 
 const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, onRegisterActions }) => {
-  const { language } = useThemeStore()
   const { t } = useTranslation(['customers', 'common'])
   const toast = useToast()
   const qc = useQueryClient()
@@ -63,10 +40,13 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'customergroups' })
 
+  // Bulk selection states
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+
   const [modalOpen, setModalOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<CustomerGroup | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CustomerGroup | null>(null)
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState({
     id: true,
     name: true,
@@ -76,42 +56,10 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
     actions: true,
   })
 
-  const toggleColumn = (col: keyof typeof visibleColumns) => {
-    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))
-  }
-
   // Filters & Sorting state
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-
-  // React Hook Form
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting }
-  } = useForm<GroupFormData>({
-    defaultValues: {
-      company_id: '1',
-      name: '',
-      discount_percent: 0,
-      description: '',
-      is_active: true
-    }
-  })
-
-  const formIsActive = watch('is_active')
-  const watchCompanyId = watch('company_id')
-  const watchDiscount = watch('discount_percent')
-
-  // Queries
-  const { data: companies } = useQuery({
-    queryKey: ['companies-dropdown'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
-  })
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['customer-groups', page, debouncedSearch, perPage, statusFilter, sortBy, sortOrder],
@@ -128,31 +76,6 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
     placeholderData: (prev) => prev,
   })
 
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: (newGroup: any) => api.post('/customer-groups', newGroup),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['customer-groups'] })
-      toast.success(t('toast.created', { item: t('customers.customerGroups') }))
-      closeModal()
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('toast.error'))
-    },
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/customer-groups/${id}`, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['customer-groups'] })
-      toast.success(t('toast.updated', { item: t('customers.customerGroups') }))
-      closeModal()
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('toast.error'))
-    },
-  })
-
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/customer-groups/${id}`),
     onSuccess: () => {
@@ -167,30 +90,47 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
     },
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => api.post('/customer-groups/bulk-delete', { ids }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customer-groups'] })
+      toast.success(t('toast.deleted', { item: `${selectedRows.length} ${t('customers.customerGroups', 'Customer Groups')}` }))
+      setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
+      adjustAfterDelete(selectedRows.length)
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to delete selected customer groups.'))
+      setBulkDeleteConfirmOpen(false)
+    }
+  })
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(groups.map((g) => g.id))
+    } else {
+      setSelectedRows([])
+    }
+  }
+
+  const handleSelectRow = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedRows((prev) => [...prev, id])
+    } else {
+      setSelectedRows((prev) => prev.filter((i) => i !== id))
+    }
+  }
+
   const groups: CustomerGroup[] = data?.data ?? []
   const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
 
-  const openCreateModal = () => {
+  const openCreateModal = React.useCallback(() => {
     setEditingGroup(null)
-    reset({
-      company_id: '1',
-      name: '',
-      discount_percent: 0,
-      description: '',
-      is_active: true
-    })
     setModalOpen(true)
-  }
+  }, [])
 
   const openEditModal = (group: CustomerGroup) => {
     setEditingGroup(group)
-    reset({
-      company_id: group.company_id.toString(),
-      name: group.name,
-      discount_percent: Number(group.discount_percent),
-      description: group.description ?? '',
-      is_active: group.is_active
-    })
     setModalOpen(true)
   }
 
@@ -199,28 +139,11 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
     setEditingGroup(null)
   }
 
-  const onFormSubmit = (formData: GroupFormData) => {
-    const payload = {
-      company_id: parseInt(formData.company_id),
-      name: formData.name,
-      discount_percent: Number(formData.discount_percent),
-      description: formData.description || null,
-      is_active: formData.is_active
-    }
-
-    if (editingGroup) {
-      updateMutation.mutate({ id: editingGroup.id, data: payload })
-    } else {
-      createMutation.mutate(payload)
-    }
-  }
-
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrder('asc')
     }
     setPage(1)
   }
@@ -298,7 +221,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      toast.success(t('customers.toast.exportSuccessGroups', 'នាំចេញបញ្ជីក្រុមអតិថិជនបានជោគជ័យ!'))
+      toast.success(t('customers.toast.exportSuccessGroups', 'Customer groups exported successfully.'))
     }, 800)
   }
 
@@ -306,6 +229,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
     setStatusFilter('all')
     setSortBy('created_at')
     setSortOrder('desc')
+    setSelectedRows([])
     resetPagination()
   }
 
@@ -328,7 +252,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
       {!isTab && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{t('customers.customerGroups', 'ក្រុមអតិថិជន')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('customers.customerGroups', 'Customer Groups')}</h1>
             <p className="text-muted-foreground text-sm">
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
@@ -339,14 +263,14 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in cursor-pointer"
             >
               <Download size={15} />
-              {t('common.export', 'នាំចេញ')}
+              {t('common.export', 'Export')}
             </button>
             <button
               onClick={openCreateModal}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in cursor-pointer"
             >
               <Plus size={16} />
-              {t('customers.addGroup', 'បន្ថែមក្រុម')}
+              {t('customers.addGroup', 'Add Group')}
             </button>
           </div>
         </div>
@@ -360,7 +284,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
               <input
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                placeholder={t('customers.searchGroups', 'ស្វែងរកក្រុម...')}
+                placeholder={t('customers.searchGroups', 'Search groups...')}
                 className="form-input pl-9 pr-3 w-full h-9 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
@@ -370,10 +294,10 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
               value={statusFilter}
               onChange={val => { setStatusFilter(val); setPage(1); }}
               options={[
-                { value: 'all', label: `${t('common.status', 'ស្ថានភាព')}: ${t('common.active', 'សកម្ម')} / ${t('common.inactive', 'អសកម្ម')}` },
-                { value: 'active', label: t('common.active', 'សកម្ម') },
-                { value: 'inactive', label: t('common.inactive', 'អសកម្ម') },
-                { value: 'deleted', label: t('common.archived', 'ទុកក្នុងប័ណ្ណសារ') }
+                { value: 'all', label: `${t('common.status', 'Status')}: ${t('common.active', 'Active')} / ${t('common.inactive', 'Inactive')}` },
+                { value: 'active', label: t('common.active', 'Active') },
+                { value: 'inactive', label: t('common.inactive', 'Inactive') },
+                { value: 'deleted', label: t('common.archived', 'Archived') }
               ]}
               className="w-52"
             />
@@ -385,17 +309,17 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-groups'] })}
               className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
-              title={t('common.refresh', 'ផ្ទុកឡើងវិញ')}
+              title={t('common.refresh', 'Refresh')}
             >
               <RefreshCw size={14} />
             </button>
             <ColumnSettingsPopover
               columns={[
                 { key: 'id', label: t('customers.id', 'ID') },
-                { key: 'name', label: t('customers.groupName', 'ឈ្មោះក្រុម') },
-                { key: 'description', label: t('customers.description', 'ការពិពណ៌នា') },
-                { key: 'discount', label: t('customers.discount', 'ការបញ្ចុះតម្លៃ') },
-                { key: 'status', label: t('common.status', 'ស្ថានភាព') },
+                { key: 'name', label: t('customers.groupName', 'Group Name') },
+                { key: 'description', label: t('customers.description', 'Description') },
+                { key: 'discount', label: t('customers.discount', 'Discount') },
+                { key: 'status', label: t('common.status', 'Status') },
               ]}
               visibleColumns={visibleColumns}
               onChange={(cols: Record<string, boolean>) => setVisibleColumns(cols as any)}
@@ -404,12 +328,45 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
         </div>
       </div>
 
+      {/* Bulk actions panel */}
+      {selectedRows.length > 0 && (
+        <div className="flex items-center justify-between p-3.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 rounded-2xl shadow-xs animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+            <AlertCircle size={16} />
+            <span>{selectedRows.length} {t('customers.selectedCount', t('common.selected', 'Selected'))}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setBulkDeleteConfirmOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-500 cursor-pointer transition-colors shadow-xs"
+            >
+              <Trash2 size={13} />
+              <span>{t('customers.deleteSelected', t('common.deleteSelected', 'Delete Selected'))}</span>
+            </button>
+            <button
+              onClick={() => setSelectedRows([])}
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 cursor-pointer"
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
         <TableWrapper isFetching={isFetching}>
           <div className="overflow-x-auto">
             <table className="w-full data-table min-w-[800px]">
               <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
                 <tr>
+                  <th className="w-10 text-center !px-3">
+                    <input
+                      type="checkbox"
+                      className="checkbox h-4 w-4 rounded border-border"
+                      checked={groups.length > 0 && selectedRows.length === groups.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </th>
                   {visibleColumns.id && (
                     <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
                       {t('customers.id', 'ID')} {renderSortIcon('id')}
@@ -417,26 +374,26 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                   )}
                   {visibleColumns.name && (
                     <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.groupName', 'ឈ្មោះក្រុម')} {renderSortIcon('name')}
+                      {t('customers.groupName', 'Group Name')} {renderSortIcon('name')}
                     </th>
                   )}
                   {visibleColumns.description && (
                     <th onClick={() => handleSort('description')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.description', 'ការពិពណ៌នា')} {renderSortIcon('description')}
+                      {t('customers.description', t('common.description', 'Description'))} {renderSortIcon('description')}
                     </th>
                   )}
                   {visibleColumns.discount && (
                     <th onClick={() => handleSort('discount_percent')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.discount', 'ការបញ្ចុះតម្លៃ')} {renderSortIcon('discount_percent')}
+                      {t('customers.discount', 'Discount')} {renderSortIcon('discount_percent')}
                     </th>
                   )}
                   {visibleColumns.status && (
                     <th onClick={() => handleSort('is_active')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.status', 'ស្ថានភាព')} {renderSortIcon('is_active')}
+                      {t('common.status', 'Status')} {renderSortIcon('is_active')}
                     </th>
                   )}
                   {visibleColumns.actions && (
-                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions', 'សកម្មភាព')}</th>
+                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('customers.actions', t('common.actions', 'Actions'))}</th>
                   )}
                 </tr>
               </thead>
@@ -444,34 +401,38 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="hover:bg-muted/5">
+                      <td className="w-10 text-center !px-3"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
                       {visibleColumns.id && <td className="p-4"><div className="skeleton h-4 w-8 rounded" /></td>}
                       {visibleColumns.name && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
                       {visibleColumns.description && <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>}
-                      {visibleColumns.discount && <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>}
-                      {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                      {visibleColumns.discount && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                      {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
                       {visibleColumns.actions && <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>}
                     </tr>
                   ))
-                ) : (
-                  groups.map((group) => (
-                    <tr key={group.id} className="hover:bg-muted/10 transition-colors">
+                ) : groups.map((group) => {
+                  const isSelected = selectedRows.includes(group.id)
+                  return (
+                    <tr key={group.id} className={`hover:bg-muted/10 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
+                      <td className="w-10 text-center !px-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="checkbox h-4 w-4 rounded border-border"
+                          checked={isSelected}
+                          onChange={(e) => handleSelectRow(group.id, e.target.checked)}
+                        />
+                      </td>
                       {visibleColumns.id && <td className="p-4 text-sm font-mono text-muted-foreground">{group.id}</td>}
-                      {visibleColumns.name && <td className="p-4 font-semibold text-foreground text-sm">{group.name}</td>}
-                      {visibleColumns.description && (
-                        <td className="p-4 text-muted-foreground text-sm max-w-[250px] truncate" title={group.description}>
-                          {group.description || '-'}
-                        </td>
-                      )}
+                      {visibleColumns.name && <td className="p-4 font-semibold text-sm text-foreground">{group.name}</td>}
+                      {visibleColumns.description && <td className="p-4 text-sm text-muted-foreground">{group.description || '—'}</td>}
                       {visibleColumns.discount && (
-                        <td className="p-4 text-sm font-medium text-primary">
-                          {Number(group.discount_percent)}%
+                        <td className="p-4 text-sm font-semibold text-foreground">
+                          <PercentBadge value={group.discount_percent} />
                         </td>
                       )}
                       {visibleColumns.status && (
                         <td className="p-4 text-sm">
-                          <span className={group.is_active ? 'badge-success text-xs font-semibold' : 'badge-muted text-xs'}>
-                            {group.is_active ? t('common.active', 'សកម្ម') : t('common.inactive', 'អសកម្ម')}
-                          </span>
+                          <StatusBadge status={group.is_active ? 'active' : 'inactive'} />
                         </td>
                       )}
                       {visibleColumns.actions && (
@@ -483,210 +444,38 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                         </td>
                       )}
                     </tr>
-                  ))
-                )}
+                  )
+                })}
                 {!isLoading && groups.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <Users size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                      <p className="text-muted-foreground">{t('common.noData', 'គ្មានទិន្នន័យ')}</p>
+                    <td colSpan={7} className="py-16 text-center">
+                      <Users size={36} className="mx-auto text-muted-foreground mb-3 opacity-30" />
+                      <p className="text-muted-foreground">{t('common.noData', 'No data available')}</p>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={pagination.current_page}
+            lastPage={pagination.last_page}
+            total={pagination.total}
+            perPage={perPage}
+            onPageChange={setPage}
+            onPerPageChange={setPerPage}
+          />
         </TableWrapper>
-        <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
       </div>
 
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="bg-card w-full max-w-lg border border-border/80 rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh]"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border/80 bg-muted/20 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                    <Award size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
-                      {editingGroup
-                        ? t('customers.editGroupTitle', t('customers.editGroup', 'កែសម្រួលក្រុមអតិថិជន'))
-                        : t('customers.addGroupTitle', t('customers.addGroup', 'បន្ថែមក្រុមអតិថិជន'))}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {t('customers.groupModalSubtitle', 'កំណត់ព័ត៌មានក្រុម និងអត្រាភាគរយបញ្ចុះតម្លៃសម្រាប់អតិថិជន')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+      {/* ─── Global Customer Group Modal ─── */}
+      <CustomerGroupModal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        initialData={editingGroup}
+      />
 
-              {/* Modal Body */}
-              <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                  {/* Company Select */}
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                      {t('customers.company', 'ក្រុមហ៊ុន / សាខាប្រតិបត្តិការ')} <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                        <Building2 size={15} />
-                      </div>
-                      <select
-                        {...register('company_id', { required: t('customers.validation.companyRequired', 'សូមជ្រើសរើសក្រុមហ៊ុន') })}
-                        className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
-                      >
-                        <option value="">{t('customers.selectCompany', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
-                        {(companies ?? []).map((c: any) => (
-                          <option key={c.id} value={String(c.id)}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {errors.company_id && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.company_id.message}</p>}
-                  </div>
-
-                  {/* Group Name & Discount Percent Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.groupName', 'ឈ្មោះក្រុម')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Award size={15} />
-                        </div>
-                        <input
-                          {...register('name', { required: t('customers.validation.nameRequired', 'តម្រូវឱ្យបញ្ចូលឈ្មោះក្រុម') })}
-                          placeholder={t('customers.groupNamePlaceholder', 'ឧ. អតិថិជន VIP / ដៃគូលក់ដុំ')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        />
-                      </div>
-                      {errors.name && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.name.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.discountPercent', 'អត្រាបញ្ចុះតម្លៃ (%)')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Percent size={15} />
-                        </div>
-                        <input
-                          type="number"
-                          step="0.01"
-                          {...register('discount_percent', {
-                            required: t('customers.validation.discountNumeric', 'តម្រូវឱ្យបញ្ចូលអត្រាបញ្ចុះតម្លៃ'),
-                            valueAsNumber: true,
-                            min: { value: 0, message: t('customers.validation.discountMin', 'អត្រាត្រូវតែធំជាង ឬស្មើ 0') },
-                            max: { value: 100, message: t('customers.validation.discountMax', 'អត្រាមិនអាចលើសពី 100% បានឡើយ') }
-                          })}
-                          placeholder="0.00"
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
-                        />
-                      </div>
-                      {errors.discount_percent && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.discount_percent.message}</p>}
-                    </div>
-                  </div>
-
-                  {/* Group Benefits Information Preview Card */}
-                  <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex items-start gap-2.5">
-                    <Sparkles size={16} className="text-primary shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold text-primary block">
-                        {t('customers.groupBenefits', 'អត្ថប្រយោជន៍សមាជិកភាព')}
-                      </span>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        {Number(watchDiscount || 0) > 0
-                          ? t('customers.discountPreviewNotice', 'អតិថិជនក្នុងក្រុមនេះនឹងទទួលបានការបញ្ចុះតម្លៃ {{discount}}% ស្វ័យប្រវត្តិនៅលើ POS & ការលក់។', { discount: watchDiscount })
-                          : t('customers.groupStandardNotice', 'អតិថិជនក្នុងក្រុមទូទៅ នឹងទទួលបានតម្លៃលក់ស្តង់ដារ និងអាចសន្ំពិន្ទុភក្តីភាពបានធម្មតា។')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                      {t('customers.description', 'ការពិពណ៌នា & កំណត់ចំណាំ')}
-                    </label>
-                    <textarea
-                      {...register('description')}
-                      placeholder={t('customers.groupDescriptionPlaceholder', 'កំណត់ចំណាំបន្ថែម ឬលក្ខខណ្ឌកំណត់សម្រាប់ក្រុមអតិថិជននេះ...')}
-                      rows={3}
-                      className="form-input w-full p-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium leading-relaxed"
-                    />
-                  </div>
-
-                  {/* Active Status Switch Card */}
-                  <div className="p-3.5 bg-muted/15 border border-border/80 rounded-xl flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <label htmlFor="groupActiveToggle" className="text-xs sm:text-[13px] font-bold text-foreground cursor-pointer select-none">
-                        {t('customers.activeGroupStatus', 'ស្ថានភាពក្រុមសកម្ម')}
-                      </label>
-                      <p className="text-[11px] text-muted-foreground">
-                        {t('customers.activeGroupHelp', 'អនុញ្ញាតឱ្យប្រើប្រាស់ក្រុមនេះសម្រាប់ការលក់ និងអតិថិជន')}
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      id="groupActiveToggle"
-                      checked={formIsActive}
-                      onChange={(e) => setValue('is_active', e.target.checked)}
-                      className="form-checkbox h-4.5 w-4.5 text-primary rounded border-border focus:ring-primary cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-border/80 bg-muted/20 shrink-0">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="h-9 px-4 text-xs sm:text-[13px] font-bold border border-border/80 bg-card rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-xs active:scale-95"
-                  >
-                    {t('common.cancel', 'បោះបង់')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="h-9 px-5 text-xs sm:text-[13px] bg-primary text-primary-foreground rounded-lg font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                  >
-                    {(isSubmitting || createMutation.isPending || updateMutation.isPending) ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Check size={14} />
-                    )}
-                    <span>
-                      {editingGroup
-                        ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
-                        : t('customers.saveGroup', 'រក្សាទុកក្រុម')}
-                    </span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
+      {/* Single Delete Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
         title="customers.deleteGroupTitle"
@@ -696,6 +485,21 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
         loading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('customers.bulkDeleteGroupsTitle', 'Delete Selected Customer Groups')}
+        message={t('customers.confirmBulkDeleteGroupsMessage', {
+          count: selectedRows.length,
+          defaultValue: `Are you sure you want to delete ${selectedRows.length} selected customer groups? This action cannot be undone.`
+        }).replace('{{count}}', String(selectedRows.length))}
+        confirmText={t('common.confirmDelete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
       />
     </div>
   )

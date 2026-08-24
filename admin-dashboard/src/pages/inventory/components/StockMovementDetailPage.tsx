@@ -5,18 +5,7 @@ import { motion } from 'framer-motion'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
-
-const formatShortDate = (dateStr: string | null | undefined): string => {
-  if (!dateStr) return '—'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return '—'
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const min = String(date.getMinutes()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`
-}
+import { formatShortDate } from '@/utils/formatters'
 
 interface StockMovementDetailPageProps {
   movementId: number
@@ -130,8 +119,8 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
                   <h3 className="text-sm font-bold text-foreground truncate">{detail.product?.name || 'Product'}</h3>
                   <p className="text-xs font-mono text-muted-foreground truncate">{detail.product?.sku || `SKU-${detail.product_id}`}</p>
                   <div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      isPlus ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase ${
+                      isPlus ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                     }`}>
                       {formatMovementTypeLabel(detail.type)}
                     </span>

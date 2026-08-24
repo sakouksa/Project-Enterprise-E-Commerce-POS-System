@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { LineChart, BarChart3, PieChart as PieIcon, CreditCard, Building2, TrendingUp, DollarSign, Package, CheckCircle2 } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 interface DashboardChartsProps {
   salesData: any[]
@@ -19,14 +20,7 @@ const BRANCH_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#
 export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, chartsData, isLoading }) => {
   const { t, i18n } = useTranslation()
   const [activeChartTab, setActiveChartTab] = useState<'sales' | 'expenses' | 'category' | 'payments' | 'branches'>('sales')
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(val || 0)
-  }
+  const locale = i18n.language === 'km' ? 'km-KH' : 'en-US'
 
   // 1. Sales & Revenue Trend Dataset
   const salesTrend = useMemo(() => {

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import { downloadBlob } from '@/utils/export'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -18,6 +19,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import EmptyState from '@/components/shared/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import StatusBadge from '@/components/common/StatusBadge'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
@@ -318,14 +320,8 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     api.get('/brands/export', { responseType: 'blob' })
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', `brands_export_${new Date().toISOString().split('T')[0]}.csv`)
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
+        const dateStamp = new Date().toISOString().split('T')[0]
+        downloadBlob(blob, `brands_export_${dateStamp}.csv`)
         toast.success(t('toast.exportSuccess'))
       })
       .catch(() => toast.error(t('toast.exportError')))
@@ -572,21 +568,26 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
                         <td className="py-3.5 pr-4">
                           <div className="flex items-center gap-3.5">
                             {/* Logo Avatar */}
-                            <div className="relative w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 overflow-hidden shrink-0 shadow-2xs group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300">
+                            <div className="relative w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 overflow-hidden shrink-0 shadow-2xs group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300 flex items-center justify-center">
                               {brand.logo ? (
                                 <img 
                                   src={getAbsoluteImageUrl(brand.logo)} 
                                   alt={brand.name} 
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-115"
+                                  className="w-full h-full object-contain p-1.5 transition-transform duration-500 group-hover:scale-110 bg-white dark:bg-slate-900"
                                   onError={(e) => {
-                                    e.currentTarget.style.display = 'none'
+                                    const target = e.currentTarget
+                                    target.style.display = 'none'
+                                    if (target.nextElementSibling) {
+                                      (target.nextElementSibling as HTMLElement).style.display = 'flex'
+                                    }
                                   }}
                                 />
-                              ) : (
-                                <div className={`w-full h-full flex items-center justify-center font-bold text-xs border ${visuals.style}`}>
-                                  {visuals.initial}
-                                </div>
-                              )}
+                              ) : null}
+                              <div 
+                                className={`w-full h-full flex items-center justify-center font-bold text-xs border ${visuals.style} ${brand.logo ? 'hidden' : 'flex'}`}
+                              >
+                                {visuals.initial}
+                              </div>
                             </div>
 
                             {/* Brand Info */}
@@ -638,14 +639,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
                       {/* Status */}
                       {visibleColumns.status !== false && (
                         <td className="py-3.5 px-3">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            brand.is_active 
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${brand.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                            {brand.is_active ? t('products.active') : t('products.inactive')}
-                          </span>
+                          <StatusBadge status={brand.is_active} />
                         </td>
                       )}
 

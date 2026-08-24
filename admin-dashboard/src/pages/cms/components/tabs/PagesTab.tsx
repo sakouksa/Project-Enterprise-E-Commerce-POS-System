@@ -3,6 +3,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface PagesTabProps {
   records: any[]
@@ -58,11 +59,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                     )}
                     {visibleColumns.status && (
                       <td>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                          r.status === 'published' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                        }`}>
-                          {r.status || 'published'}
-                        </span>
+                        <StatusBadge status={r.status || 'published'} />
                       </td>
                     )}
                     {visibleColumns.actions && (

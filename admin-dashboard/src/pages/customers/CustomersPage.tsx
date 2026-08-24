@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { AnimatePresence } from 'framer-motion'
 import {
-  Users, Plus, Search, Filter, RefreshCw, Download, Settings, X, UsersRound, MapPin
+  Users, Plus, Search, Filter, RefreshCw, Download, Settings, X, UsersRound, MapPin, Trash2, AlertCircle
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -15,8 +15,10 @@ import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { downloadCsv } from '@/utils/export'
 
 import CustomerGroupsPage from './CustomerGroupsPage'
 import CustomerAddressesPage from './CustomerAddressesPage'
@@ -39,6 +41,7 @@ const CustomersPage: React.FC = () => {
   const activeTab = (searchParams.get('workspaceTab') as 'customers' | 'groups' | 'addresses') || 'customers'
 
   const setActiveTab = (tab: string) => {
+    setSelectedRows([])
     if (tab === 'customers') {
       setSearchParams({})
     } else {
@@ -57,6 +60,10 @@ const CustomersPage: React.FC = () => {
     reset: resetPagination,
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'customers' })
+
+  // Bulk selection states
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
 
   // Modals & Drawers
   const [modalOpen, setModalOpen] = useState(false)
@@ -205,6 +212,38 @@ const CustomersPage: React.FC = () => {
     }
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => api.post('/customers/bulk-delete', { ids }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
+      toast.success(t('customers.bulkDeleteSuccess', 'Selected customers deleted successfully'))
+      setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
+      adjustAfterDelete(selectedRows.length)
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to delete selected customers.'))
+      setBulkDeleteConfirmOpen(false)
+    }
+  })
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(customers.map((c) => c.id))
+    } else {
+      setSelectedRows([])
+    }
+  }
+
+  const handleSelectRow = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedRows((prev) => [...prev, id])
+    } else {
+      setSelectedRows((prev) => prev.filter((i) => i !== id))
+    }
+  }
+
   const openCreateModal = () => {
     navigate('/customers/create')
   }
@@ -279,24 +318,16 @@ const CustomersPage: React.FC = () => {
         ]
         const rows = (customers || []).map((c: any) => [
           c.id,
-          `"${(c.name || '').replace(/"/g, '""')}"`,
-          `"${(c.email || '').replace(/"/g, '""')}"`,
-          `"${(c.phone || '').replace(/"/g, '""')}"`,
-          `"${(c.group?.name || t('customers.standardGroup', 'Standard')).replace(/"/g, '""')}"`,
+          c.name || '',
+          c.email || '',
+          c.phone || '',
+          c.group?.name || t('customers.standardGroup', 'Standard'),
           c.total_spent || 0,
           c.order_count || 0,
           c.loyalty_points || 0,
-          c.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')
+          c.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
         ])
-        const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.setAttribute('href', url)
-        link.setAttribute('download', `customers_export_${new Date().toISOString().slice(0, 10)}.csv`)
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        downloadCsv('customers', headers, rows)
         toast.dismiss(infoId)
         toast.success(t('customers.toast.exportSuccess', 'Customer list exported successfully.'))
       } catch (e) {
@@ -310,6 +341,7 @@ const CustomersPage: React.FC = () => {
     setStatusFilter('all')
     setGroupIdFilter('')
     setGenderFilter('')
+    setSelectedRows([])
     resetPagination()
   }
 
@@ -420,6 +452,15 @@ const CustomersPage: React.FC = () => {
         <CustomerAddressesPage isTab={true} onRegisterActions={setAddressesActions} />
       ) : (
         <>
+          {/* Bulk actions panel */}
+          <BulkSelectionBanner
+            selectedCount={selectedRows.length}
+            onDelete={() => setBulkDeleteConfirmOpen(true)}
+            onClear={() => setSelectedRows([])}
+            deleteLabel={t('customers.deleteSelected', t('common.deleteSelected', 'Delete Selected'))}
+            deleteLoading={bulkDeleteMutation.isPending}
+          />
+
           {/* Toolbar */}
           <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
             <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
@@ -509,6 +550,9 @@ const CustomersPage: React.FC = () => {
             isLoading={isLoading}
             isFetching={isFetching}
             visibleColumns={visibleColumns}
+            selectedRows={selectedRows}
+            handleSelectAll={handleSelectAll}
+            handleSelectRow={handleSelectRow}
             openEditModal={openEditModal}
             setViewCustomer={setViewCustomer}
             setDeleteTarget={setDeleteTarget}
@@ -549,7 +593,7 @@ const CustomersPage: React.FC = () => {
             setValue={setValue}
           />
 
-          {/* Delete Dialog */}
+          {/* Single Delete Dialog */}
           <ConfirmDialog
             open={!!deleteTarget}
             title="customers.deleteTitle"
@@ -559,6 +603,21 @@ const CustomersPage: React.FC = () => {
             loading={deleteMutation.isPending}
             onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             onCancel={() => setDeleteTarget(null)}
+          />
+
+          {/* Bulk Delete Dialog */}
+          <ConfirmDialog
+            open={bulkDeleteConfirmOpen}
+            title={t('customers.bulkDeleteTitle', 'Delete Selected Customers')}
+            message={t('customers.confirmBulkDeleteMessage', {
+              count: selectedRows.length,
+              defaultValue: `Are you sure you want to delete ${selectedRows.length} selected customers? This action cannot be undone.`
+            }).replace('{{count}}', String(selectedRows.length))}
+            confirmText={t('common.confirmDelete', 'Delete')}
+            cancelText={t('common.cancel', 'Cancel')}
+            loading={bulkDeleteMutation.isPending}
+            onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+            onCancel={() => setBulkDeleteConfirmOpen(false)}
           />
         </>
       )}

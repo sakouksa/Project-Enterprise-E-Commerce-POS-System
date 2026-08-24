@@ -19,6 +19,7 @@ import {
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { downloadBlob } from '@/utils/export'
 
 import PurchaseFilters, { type PurchaseFilterState } from '../../components/reports/purchase/PurchaseFilters'
 import PurchaseSummaryCards from '../../components/reports/purchase/PurchaseSummaryCards'
@@ -162,14 +163,9 @@ export const PurchaseReportPage: React.FC = () => {
         responseType: 'blob'
       })
 
-      const url = window.URL.createObjectURL(new Blob([response.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `Purchase_Report_${new Date().toISOString().split('T')[0]}.csv`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
+      const blob = new Blob([response.data])
+      const dateStamp = new Date().toISOString().split('T')[0]
+      downloadBlob(blob, `Purchase_Report_${dateStamp}.csv`)
 
       toast.success(t('purchase.toast.exportExcelSuccess', 'Purchase report exported to Excel successfully!'))
     } catch (err) {

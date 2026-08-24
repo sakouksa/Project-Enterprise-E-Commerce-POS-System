@@ -373,20 +373,20 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
       <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Company Management' }]} />
 
       {/* Hero Header */}
-      <div className="bg-card border border-border/80 p-6 rounded-[24px] flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm print:hidden">
+      <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-6 rounded-[24px] flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm print:hidden">
         <div className="space-y-1.5 flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground dark:text-slate-100 flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
             <span>Company Management</span>
           </h1>
-          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+          <p className="text-xs text-muted-foreground dark:text-slate-400 max-w-3xl leading-relaxed">
             Manage companies, branches, retail stores, warehouses, and enterprise topology from one dashboard.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shadow-2xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-800 transition-all shadow-2xs cursor-pointer"
           >
             <Download size={15} />
             <span>Export CSV</span>
@@ -394,7 +394,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
           {currentTab === 'companies' && (
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-all shadow-md"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-all shadow-md cursor-pointer"
             >
               <Plus size={16} />
               <span>Add Company</span>
@@ -407,7 +407,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
       <CompanyStatsCards analytics={analytics} />
 
       {/* Workspace Tabs */}
-      <div className="flex border border-border bg-card rounded-2xl p-1 overflow-x-auto gap-1 shadow-xs w-full md:w-auto">
+      <div className="flex border border-border/80 dark:border-slate-800 bg-card dark:bg-slate-900 rounded-2xl p-1 overflow-x-auto gap-1 shadow-xs w-full md:w-auto">
         {[
           { id: 'companies', label: 'Companies', icon: <Building2 size={15} /> },
           { id: 'branches', label: 'Branches', icon: <MapPin size={15} /> },
@@ -418,8 +418,8 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
           <button
             key={tabItem.id}
             onClick={() => setActiveTab(tabItem.id as TabType)}
-            className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${
-              currentTab === tabItem.id ? 'bg-primary text-white shadow-xs' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              currentTab === tabItem.id ? 'bg-primary text-white shadow-xs' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100 hover:bg-muted/50 dark:hover:bg-slate-800/60'
             }`}
           >
             {tabItem.icon}
@@ -445,7 +445,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
       ) : (
         <>
           {/* Toolbar for Companies */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card dark:bg-slate-900 p-3 rounded-2xl border border-border/80 dark:border-slate-800 shadow-xs print:hidden">
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
               <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

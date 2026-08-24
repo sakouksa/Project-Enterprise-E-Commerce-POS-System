@@ -1,27 +1,11 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X,
-  User,
-  Phone,
-  Award,
-  CreditCard,
-  FileText,
-  Camera,
-  Trash2,
-  UploadCloud,
-  Check,
-  Loader2,
-  Building2,
-  Shield,
-  DollarSign,
-  Calendar,
-  Mail,
-  Receipt,
-  Sparkles,
-  Info
+  User, Phone, Award, CreditCard, FileText, Camera,
+  Trash2, UploadCloud, Building2, Shield, DollarSign,
+  Calendar, Mail, Receipt, Sparkles, Info
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { EnterpriseModal, ModalFooter } from '@/components/common'
 import type { Customer } from '../types'
 
 interface CustomerFormModalProps {
@@ -65,54 +49,41 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const selectedGroup = groups.find((g: any) => String(g.id) === String(selectedGroupId))
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className="bg-card border border-border/80 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
-          >
-            {/* ─── MODAL HEADER ─── */}
-            <div className="px-5 py-3.5 border-b border-border/80 flex items-center justify-between bg-muted/20 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs">
-                  <User size={18} />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                    <span>
-                      {editingCustomer
-                        ? t('customers.editCustomerProfile', 'កែសម្រួលប្រវត្តិរូបអតិថិជន')
-                        : t('customers.registerCustomer', 'ចុះឈ្មោះអតិថិជនថ្មី')}
-                    </span>
-                    {editingCustomer && (
-                      <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
-                        #{editingCustomer.id}
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t('customers.formSubtitle', 'គ្រប់គ្រង និងបំពេញព័ត៌មានអតិថិជនតាម ៥ ផ្នែកក្នុងប្រព័ន្ធ CRM')}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center cursor-pointer"
-                title={t('common.close', 'បិទ')}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* ─── SCROLLABLE 5-SECTION FORM BODY ─── */}
-            <form onSubmit={onSubmit} className="flex-1 flex flex-col justify-between overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+    <EnterpriseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        editingCustomer
+          ? t('customers.editCustomerProfile', 'កែសម្រួលប្រវត្តិរូបអតិថិជន')
+          : t('customers.registerCustomer', 'ចុះឈ្មោះអតិថិជនថ្មី')
+      }
+      subtitle={t('customers.formSubtitle', 'គ្រប់គ្រង និងបំពេញព័ត៌មានអតិថិជនតាម ៥ ផ្នែកក្នុងប្រព័ន្ធ CRM')}
+      icon={<User size={20} />}
+      iconVariant="blue"
+      size="2xl"
+      badge={
+        editingCustomer ? (
+          <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400 border border-border/60 dark:border-slate-700">
+            #{editingCustomer.id}
+          </span>
+        ) : undefined
+      }
+      footer={
+        <ModalFooter
+          onCancel={onClose}
+          isSubmitting={isSubmitting}
+          isEdit={Boolean(editingCustomer)}
+          submitLabel={
+            editingCustomer
+              ? t('customers.saveChanges', t('saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ'))
+              : t('customers.saveCustomer', t('saveCustomer', 'រក្សាទុកអតិថិជន'))
+          }
+          onSubmit={(e) => onSubmit(e || ({ preventDefault: () => {} } as any))}
+        />
+      }
+    >
+      <form onSubmit={onSubmit} className="flex-1 flex flex-col justify-between overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
                 
                 {/* ══════════════════════════════════════════════════
                     ផ្នែកទី ១: ព័ត៌មានទូទៅ & រូបថត (SECTION 1)
@@ -502,36 +473,9 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   </div>
                 </div>
 
-              </div>
-
-              {/* ─── MODAL FOOTER ─── */}
-              <div className="px-5 py-3.5 border-t border-border/80 bg-muted/20 flex items-center justify-end gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="h-9 px-4 text-xs sm:text-[13px] font-bold border border-border/80 bg-card rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  {t('common.cancel', 'បោះបង់')}
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="h-9 px-5 text-xs sm:text-[13px] bg-primary text-primary-foreground rounded-lg font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                >
-                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  <span>
-                    {editingCustomer
-                      ? t('customers.saveChanges', t('saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ'))
-                      : t('customers.saveCustomer', t('saveCustomer', 'រក្សាទុកអតិថិជន'))}
-                  </span>
-                </button>
-              </div>
-            </form>
-          </motion.div>
         </div>
-      )}
-    </AnimatePresence>
+      </form>
+    </EnterpriseModal>
   )
 }
 

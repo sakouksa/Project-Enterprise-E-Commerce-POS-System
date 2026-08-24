@@ -16,7 +16,7 @@ interface CMSFilterDrawerProps {
 
 const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    <label className="block text-[11px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
     {children}
   </div>
 )

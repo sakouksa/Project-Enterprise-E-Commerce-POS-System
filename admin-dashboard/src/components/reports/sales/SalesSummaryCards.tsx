@@ -5,6 +5,7 @@ import {
   DollarSign, ShoppingBag, TrendingUp, CircleDollarSign,
   Users, PackageCheck, ArrowUpRight, ArrowDownRight
 } from 'lucide-react'
+import { formatCurrency, formatNumber } from '@/utils/formatters'
 
 export interface DashboardStatsData {
   total_revenue: number
@@ -25,18 +26,6 @@ interface SalesSummaryCardsProps {
 
 export const SalesSummaryCards: React.FC<SalesSummaryCardsProps> = ({ data, isLoading }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val?: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(val ?? 0)
-  }
-
-  const formatNumber = (val?: number) => {
-    return new Intl.NumberFormat('en-US').format(val ?? 0)
-  }
 
   const cards = [
     {

@@ -18,10 +18,31 @@ class ExpenseController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->only([
+            'search',
+            'status',
+            'expense_category_id',
+            'category_id',
+            'branch_id',
+            'user_id',
+            'start_date',
+            'end_date',
+            'from_date',
+            'to_date',
+            'date_start',
+            'date_end',
+            'min_amount',
+            'max_amount',
+            'amount_min',
+            'amount_max',
+            'sort_by',
+            'sort_order',
+        ]);
+
         $records = $this->service->getPaginated(
-            $request->integer('per_page', 10),
-            $request->only(['search', 'status']),
-            ['category']
+            $request->integer('per_page', 15),
+            $filters,
+            ['category', 'branch', 'user']
         );
         
         $resourceCollection = ExpenseResource::collection($records);
@@ -41,6 +62,12 @@ class ExpenseController extends BaseApiController
         ]);
     }
 
+    public function stats(Request $request): JsonResponse
+    {
+        $stats = $this->service->getStats($request->all());
+        return $this->successResponse($stats, 'Expense statistics retrieved successfully');
+    }
+
     public function store(CreateExpenseRequest $request): JsonResponse
     {
         $record = $this->service->create($request->validated());
@@ -53,7 +80,7 @@ class ExpenseController extends BaseApiController
 
     public function show(int $id): JsonResponse
     {
-        $record = $this->service->getById($id);
+        $record = $this->service->getById($id, ['category', 'branch', 'user']);
         return $this->successResponse(
             new ExpenseResource($record),
             'Expense details retrieved successfully'
@@ -74,6 +101,42 @@ class ExpenseController extends BaseApiController
         try {
             $this->service->delete($id);
             return $this->successResponse(null, 'Expense deleted successfully');
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:expenses,id',
+        ]);
+
+        try {
+            $count = $this->service->bulkDelete($request->input('ids', []));
+            return $this->successResponse(['deleted_count' => $count], "Successfully deleted {$count} expenses");
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+
+        try {
+            $count = $this->service->bulkRestore($request->input('ids', []));
+            return $this->successResponse(['restored_count' => $count], "Successfully restored {$count} expenses");
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

@@ -4,6 +4,7 @@ import { Package, Eye, Sliders, ArrowLeftRight } from 'lucide-react'
 import TableWrapper from '@/components/shared/TableWrapper'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import Pagination from '@/components/shared/Pagination'
+import StatusBadge from '@/components/common/StatusBadge'
 import { getAbsoluteImageUrl } from '@/utils/image'
 
 interface InventoryStockLevelsTableProps {
@@ -170,15 +171,7 @@ export const InventoryStockLevelsTable: React.FC<InventoryStockLevelsTableProps>
                     )}
                     {visibleColumns.status !== false && (
                       <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          isOut
-                            ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                            : isLow
-                            ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                            : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                        }`}>
-                          {isOut ? t('outOfStock', 'Out of Stock') : isLow ? t('lowStock', 'Low Stock') : t('inStock', 'In Stock')}
-                        </span>
+                        <StatusBadge status={isOut ? 'out_of_stock' : isLow ? 'low_stock' : 'in_stock'} />
                       </td>
                     )}
                     <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[80px]" onClick={(e) => e.stopPropagation()}>

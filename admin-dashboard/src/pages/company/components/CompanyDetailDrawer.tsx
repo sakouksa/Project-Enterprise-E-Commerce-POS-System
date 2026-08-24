@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Building2, Globe, Mail, Phone, MapPin, FileText, CheckCircle2 } from 'lucide-react'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface CompanyDetailDrawerProps {
   item: any | null
@@ -40,13 +41,7 @@ export const CompanyDetailDrawer: React.FC<CompanyDetailDrawerProps> = ({ item, 
                   <h2 className="text-xl font-extrabold text-foreground tracking-tight">{item.name}</h2>
                   <p className="text-xs text-muted-foreground font-mono">{item.code || item.slug || 'N/A'}</p>
                   <div className="flex items-center gap-2 pt-1 flex-wrap">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      item.is_active
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                    }`}>
-                      {item.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    <StatusBadge status={item.is_active} />
                     {item.is_main && (
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                         Primary HQ

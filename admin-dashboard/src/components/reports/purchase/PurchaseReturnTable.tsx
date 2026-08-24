@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { RotateCcw } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface PurchaseReturnRow {
   id: number
@@ -24,11 +25,6 @@ export const PurchaseReturnTable: React.FC<PurchaseReturnTableProps> = ({
   isLoading = false
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val?: number) => {
-    if (val === undefined || val === null) return '$0.00'
-    return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
 
   return (
     <div className="bg-card border border-border/80 rounded-[24px] p-6 shadow-sm space-y-4">

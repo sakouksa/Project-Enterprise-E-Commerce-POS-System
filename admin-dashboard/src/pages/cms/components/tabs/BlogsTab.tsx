@@ -3,6 +3,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface BlogsTabProps {
   records: any[]
@@ -69,13 +70,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       )}
                       {visibleColumns.status && (
                         <td>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                            st === 'published' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
-                            st === 'draft' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
-                            'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                          }`}>
-                            {st}
-                          </span>
+                          <StatusBadge status={st} />
                         </td>
                       )}
                       {visibleColumns.actions && (

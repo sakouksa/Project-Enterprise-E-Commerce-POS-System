@@ -17,6 +17,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import StatusBadge from '@/components/common/StatusBadge'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 
 // Types & Sub-components
@@ -419,13 +420,7 @@ const SuppliersPage: React.FC = () => {
                       )}
                       {visibleColumns.status !== false && (
                         <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            supplier.is_active
-                              ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                              : 'bg-muted text-muted-foreground border border-border'
-                          }`}>
-                            {supplier.is_active ? t('suppliers.active', 'Active') : t('suppliers.inactive', 'Inactive')}
-                          </span>
+                          <StatusBadge status={supplier.is_active} />
                         </td>
                       )}
                       <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]" onClick={(e) => e.stopPropagation()}>

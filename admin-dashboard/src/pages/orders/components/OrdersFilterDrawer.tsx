@@ -1,8 +1,11 @@
 import React from 'react'
-import { Drawer } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Filter, X, RotateCcw, Calendar, DollarSign, Truck, Shield, Layers } from 'lucide-react'
-import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import {
+  Calendar, DollarSign, Truck, Shield, Layers,
+  CheckCircle2, Clock, CornerUpLeft, XCircle, AlertCircle
+} from 'lucide-react'
+import ModernSelect from '@/components/shared/ModernSelect'
+import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
 
 interface OrdersFilterDrawerProps {
   open: boolean
@@ -26,6 +29,15 @@ interface OrdersFilterDrawerProps {
   activeFiltersCount: number
 }
 
+const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1.5">
+    <label className="block text-[11px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">{label}</label>
+    {children}
+  </div>
+)
+
+const inputCls = "w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
+
 export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
   open,
   onClose,
@@ -47,183 +59,130 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
   onApply,
   activeFiltersCount,
 }) => {
-  const { t } = useTranslation('orders')
+  const { t } = useTranslation(['orders', 'common'])
 
   const statusOptions = [
-    { value: '', label: t('allOrderStatuses') },
-    { value: 'pending', label: t('pending') },
-    { value: 'confirmed', label: t('confirmed') },
-    { value: 'processing', label: t('processing') },
-    { value: 'shipped', label: t('shipped') },
-    { value: 'delivered', label: t('delivered') },
-    { value: 'completed', label: t('completed') },
-    { value: 'cancelled', label: t('cancelled') },
-    { value: 'refunded', label: t('refunded') },
+    { value: '', label: t('allOrderStatuses', 'All Order Statuses'), icon: <Layers size={14} className="text-muted-foreground" /> },
+    { value: 'pending', label: t('pending', 'Pending'), icon: <Clock size={14} className="text-amber-500" /> },
+    { value: 'confirmed', label: t('confirmed', 'Confirmed'), icon: <CheckCircle2 size={14} className="text-blue-500" /> },
+    { value: 'processing', label: t('processing', 'Processing'), icon: <Clock size={14} className="text-indigo-500" /> },
+    { value: 'shipped', label: t('shipped', 'Shipped'), icon: <Truck size={14} className="text-sky-500" /> },
+    { value: 'delivered', label: t('delivered', 'Delivered'), icon: <CheckCircle2 size={14} className="text-emerald-500" /> },
+    { value: 'completed', label: t('completed', 'Completed'), icon: <CheckCircle2 size={14} className="text-emerald-500" /> },
+    { value: 'cancelled', label: t('cancelled', 'Cancelled'), icon: <XCircle size={14} className="text-rose-500" /> },
+    { value: 'refunded', label: t('refunded', 'Refunded'), icon: <CornerUpLeft size={14} className="text-purple-500" /> },
   ]
 
   const paymentStatusOptions = [
-    { value: '', label: t('allPaymentStatuses') },
-    { value: 'paid', label: t('paid') },
-    { value: 'unpaid', label: t('unpaid') },
-    { value: 'partial', label: t('partial') },
-    { value: 'refunded', label: t('refunded') },
+    { value: '', label: t('allPaymentStatuses', 'All Payment Statuses'), icon: <Shield size={14} className="text-muted-foreground" /> },
+    { value: 'paid', label: t('paid', 'Paid'), icon: <CheckCircle2 size={14} className="text-emerald-500" /> },
+    { value: 'unpaid', label: t('unpaid', 'Unpaid'), icon: <XCircle size={14} className="text-rose-500" /> },
+    { value: 'partial', label: t('partial', 'Partial'), icon: <Clock size={14} className="text-amber-500" /> },
+    { value: 'refunded', label: t('refunded', 'Refunded'), icon: <CornerUpLeft size={14} className="text-purple-500" /> },
   ]
 
   const fulfillmentStatusOptions = [
-    { value: '', label: t('allFulfillmentStatuses') },
-    { value: 'fulfilled', label: t('fulfilled') },
-    { value: 'unfulfilled', label: t('unfulfilled') },
-    { value: 'partial', label: t('partial') },
+    { value: '', label: t('allFulfillmentStatuses', 'All Fulfillment Statuses'), icon: <Truck size={14} className="text-muted-foreground" /> },
+    { value: 'fulfilled', label: t('fulfilled', 'Fulfilled'), icon: <CheckCircle2 size={14} className="text-emerald-500" /> },
+    { value: 'unfulfilled', label: t('unfulfilled', 'Unfulfilled'), icon: <AlertCircle size={14} className="text-amber-500" /> },
+    { value: 'partial', label: t('partial', 'Partial'), icon: <Clock size={14} className="text-blue-500" /> },
   ]
 
   return (
-    <Drawer
-      open={open}
+    <FilterDrawerShell
+      isOpen={open}
       onClose={onClose}
-      width={420}
-      closeIcon={false}
-      title={
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-primary/10 text-primary rounded-xl">
-              <Filter className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-base text-foreground leading-none">{t('filterWebOrders')}</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{t('refineOrdersFulfillment')}</p>
-            </div>
-          </div>
-          {activeFiltersCount > 0 && (
-            <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
-              {activeFiltersCount} {t('active')}
-            </span>
-          )}
-        </div>
-      }
-      extra={
-        <button
-          onClick={onClose}
-          className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      }
-      footer={
-        <div className="flex items-center justify-between gap-3 py-2">
-          <button
-            type="button"
-            onClick={onReset}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-muted-foreground border border-border bg-card rounded-xl hover:bg-muted transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>{t('resetAll')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onApply()
-              onClose()
-            }}
-            className="flex-1 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-md cursor-pointer text-center"
-          >
-            {t('applyFilters')} ({activeFiltersCount})
-          </button>
-        </div>
-      }
-      className="enterprise-drawer"
+      onReset={onReset}
+      title={t('filterWebOrders', 'Filter Web E-Commerce Orders')}
+      activeCount={activeFiltersCount}
+      applyLabel={`${t('applyFilters', 'Apply Filters')} (${activeFiltersCount})`}
+      resetLabel={t('resetAll', 'Reset All')}
     >
-      <div className="space-y-4">
-        {/* 1. Order Status */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block">{t('orderStatus')}</label>
-          <ModernSelect
-            value={statusFilter || ''}
-            onChange={(val) => setStatusFilter(String(val || '') || undefined)}
-            options={statusOptions}
-            placeholder={t('allOrderStatuses')}
-            icon={<Layers className="w-3.5 h-3.5 text-primary" />}
-            size="sm"
-          />
-        </div>
+      {/* 1. Order Status */}
+      <FL label={t('orderStatus', 'Order Status')}>
+        <ModernSelect
+          value={statusFilter || ''}
+          onChange={(val) => setStatusFilter(String(val || '') || undefined)}
+          options={statusOptions}
+          placeholder={t('allOrderStatuses', 'All Order Statuses')}
+        />
+      </FL>
 
-        {/* 2. Payment Status */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block">{t('paymentStatus')}</label>
-          <ModernSelect
-            value={paymentStatusFilter || ''}
-            onChange={(val) => setPaymentStatusFilter(String(val || '') || undefined)}
-            options={paymentStatusOptions}
-            placeholder={t('allPaymentStatuses')}
-            icon={<Shield className="w-3.5 h-3.5 text-emerald-500" />}
-            size="sm"
-          />
-        </div>
+      {/* 2. Payment Status */}
+      <FL label={t('paymentStatus', 'Payment Status')}>
+        <ModernSelect
+          value={paymentStatusFilter || ''}
+          onChange={(val) => setPaymentStatusFilter(String(val || '') || undefined)}
+          options={paymentStatusOptions}
+          placeholder={t('allPaymentStatuses', 'All Payment Statuses')}
+        />
+      </FL>
 
-        {/* 3. Fulfillment Status */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block">{t('fulfillmentStatus')}</label>
-          <ModernSelect
-            value={fulfillmentStatusFilter || ''}
-            onChange={(val) => setFulfillmentStatusFilter(String(val || '') || undefined)}
-            options={fulfillmentStatusOptions}
-            placeholder={t('allFulfillmentStatuses')}
-            icon={<Truck className="w-3.5 h-3.5 text-sky-500" />}
-            size="sm"
-          />
-        </div>
+      {/* 3. Fulfillment Status */}
+      <FL label={t('fulfillmentStatus', 'Fulfillment Status')}>
+        <ModernSelect
+          value={fulfillmentStatusFilter || ''}
+          onChange={(val) => setFulfillmentStatusFilter(String(val || '') || undefined)}
+          options={fulfillmentStatusOptions}
+          placeholder={t('allFulfillmentStatuses', 'All Fulfillment Statuses')}
+        />
+      </FL>
 
-        {/* 4. Date Range */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>{t('orderDateRange')}</span>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-[10px] text-muted-foreground block mb-1">{t('fromDate')}</span>
+      {/* 4. Date Range */}
+      <FL label={t('orderDateRange', 'Order Date Range')}>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <span className="text-[10px] font-semibold text-muted-foreground dark:text-slate-400 block mb-1">{t('fromDate', 'From Date')}</span>
+            <div className="relative">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+                className={inputCls}
               />
             </div>
-            <div>
-              <span className="text-[10px] text-muted-foreground block mb-1">{t('toDate')}</span>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold text-muted-foreground dark:text-slate-400 block mb-1">{t('toDate', 'To Date')}</span>
+            <div className="relative">
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+                className={inputCls}
               />
             </div>
           </div>
         </div>
+      </FL>
 
-        {/* 5. Order Value Range */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-foreground block flex items-center gap-1.5">
-            <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>{t('orderTotalRange')}</span>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
+      {/* 5. Total Amount Range */}
+      <FL label={t('orderTotalRange', 'Order Total Range ($)')}>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground dark:text-slate-400">$</span>
             <input
               type="number"
               placeholder={t('minPricePlaceholder', 'Min $ (e.g. 10)')}
               value={minTotal}
               onChange={(e) => setMinTotal(e.target.value)}
-              className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+              className={`${inputCls} pl-7`}
             />
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground dark:text-slate-400">$</span>
             <input
               type="number"
               placeholder={t('maxPricePlaceholder', 'Max $ (e.g. 500)')}
               value={maxTotal}
               onChange={(e) => setMaxTotal(e.target.value)}
-              className="w-full h-[34px] text-xs px-3 bg-card border border-border rounded-xl focus:outline-none focus:border-primary text-foreground"
+              className={`${inputCls} pl-7`}
             />
           </div>
         </div>
-      </div>
-    </Drawer>
+      </FL>
+    </FilterDrawerShell>
   )
 }
+
+export default OrdersFilterDrawer

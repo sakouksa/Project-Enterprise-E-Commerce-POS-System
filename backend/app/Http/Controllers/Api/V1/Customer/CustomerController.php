@@ -4,75 +4,32 @@ namespace App\Http\Controllers\Api\V1\Customer;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Customer\Customer;
-use App\Models\Customer\CustomerGroup;
-use App\Models\Order\Order;
-use App\Models\Sales\Sale;
-use Illuminate\Support\Facades\DB;
+use App\Services\Customer\CustomerService;
+use App\Services\Support\CsvService;
+use App\Services\Support\FileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerController extends BaseApiController
 {
+    public function __construct(
+        protected CustomerService $customerService,
+        protected FileService $fileService,
+        protected CsvService $csvService
+    ) {}
+
     /**
      * GET /api/v1/customers
      */
     public function index(Request $request): JsonResponse
     {
-        $customers = Customer::with(['group', 'user'])
-            ->when($request->status === 'deleted', function ($q) {
-                $q->onlyTrashed();
-            })
-            ->when($request->status && $request->status !== 'deleted' && $request->status !== 'all', function ($q) use ($request) {
-                $q->where('is_active', $request->status === 'active' || $request->status === '1');
-            })
-            ->when($request->customer_group_id, function ($q, $groupId) {
-                $q->where('customer_group_id', $groupId);
-            })
-            ->when($request->gender, function ($q, $gender) {
-                $q->where('gender', $gender);
-            })
-            ->when($request->search, function ($q, $search) {
-                $q->where(function($sub) use ($search) {
-                    $sub->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('tax_number', 'like', "%{$search}%")
-                        ->orWhere('notes', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->start_date, function ($q, $date) {
-                $q->whereDate('created_at', '>=', $date);
-            })
-            ->when($request->end_date, function ($q, $date) {
-                $q->whereDate('created_at', '<=', $date);
-            })
-            ->when($request->has_address, function ($q, $val) {
-                if ($val === 'yes' || $val === '1') {
-                    $q->has('addresses');
-                } elseif ($val === 'no' || $val === '0') {
-                    $q->doesntHave('addresses');
-                }
-            })
-            ->when($request->has_user, function ($q, $val) {
-                if ($val === 'yes' || $val === '1') {
-                    $q->whereNotNull('user_id');
-                } elseif ($val === 'no' || $val === '0') {
-                    $q->whereNull('user_id');
-                }
-            })
-            ->when($request->birthday_month, function ($q, $month) {
-                $q->whereMonth('birth_date', $month);
-            });
-
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        if (!in_array($sortBy, ['id', 'name', 'phone', 'email', 'gender', 'birth_date', 'total_spent', 'loyalty_points', 'order_count', 'is_active', 'created_at'])) {
-            $sortBy = 'created_at';
-        }
-
-        $customers = $customers->orderBy($sortBy, $sortOrder)
-            ->paginate($request->integer('per_page', 10));
+        $customers = $this->customerService->getPaginated(
+            filters: $request->all(),
+            perPage: $request->integer('per_page', 10),
+            sortBy: $request->get('sort_by', 'created_at'),
+            sortOrder: $request->get('sort_order', 'desc')
+        );
 
         return $this->paginatedResponse($customers);
     }
@@ -82,135 +39,9 @@ class CustomerController extends BaseApiController
      */
     public function stats(Request $request): JsonResponse
     {
-        $query = Customer::query()
-            ->when($request->status === 'deleted', function ($q) {
-                $q->onlyTrashed();
-            })
-            ->when($request->status && $request->status !== 'deleted' && $request->status !== 'all', function ($q) use ($request) {
-                $q->where('is_active', $request->status === 'active' || $request->status === '1');
-            })
-            ->when($request->customer_group_id, function ($q, $groupId) {
-                $q->where('customer_group_id', $groupId);
-            })
-            ->when($request->gender, function ($q, $gender) {
-                $q->where('gender', $gender);
-            })
-            ->when($request->search, function ($q, $search) {
-                $q->where(function($sub) use ($search) {
-                    $sub->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('tax_number', 'like', "%{$search}%")
-                        ->orWhere('notes', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->start_date, function ($q, $date) {
-                $q->whereDate('created_at', '>=', $date);
-            })
-            ->when($request->end_date, function ($q, $date) {
-                $q->whereDate('created_at', '<=', $date);
-            })
-            ->when($request->has_address, function ($q, $val) {
-                if ($val === 'yes' || $val === '1') {
-                    $q->has('addresses');
-                } elseif ($val === 'no' || $val === '0') {
-                    $q->doesntHave('addresses');
-                }
-            })
-            ->when($request->has_user, function ($q, $val) {
-                if ($val === 'yes' || $val === '1') {
-                    $q->whereNotNull('user_id');
-                } elseif ($val === 'no' || $val === '0') {
-                    $q->whereNull('user_id');
-                }
-            })
-            ->when($request->birthday_month, function ($q, $month) {
-                $q->whereMonth('birth_date', $month);
-            });
+        $stats = $this->customerService->getStats($request->all());
 
-        $totalCustomers = (clone $query)->count();
-        $activeCustomers = (clone $query)->where('is_active', true)->count();
-        $inactiveCustomers = (clone $query)->where('is_active', false)->count();
-
-        $vipCustomers = (clone $query)->where(function($q) {
-            $q->where('total_spent', '>=', 1000)
-              ->orWhereHas('group', function($sub) {
-                  $sub->where('name', 'like', '%VIP%');
-              });
-        })->count();
-
-        $newCustomersThisMonth = (clone $query)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-
-        $totalSpent = (clone $query)->sum('total_spent');
-        $totalPoints = (clone $query)->sum('loyalty_points');
-        $totalOrders = (clone $query)->sum('order_count');
-
-        $avgSpent = $totalCustomers > 0 ? ($totalSpent / $totalCustomers) : 0;
-
-        $totalGroups = CustomerGroup::count();
-        $totalAddresses = DB::table('customer_addresses')->count();
-
-        // ── Mini KPI Stats ────────────────────────────────────────────────
-        // Customers registered today
-        $todayCustomers = (clone $query)
-            ->whereDate('created_at', now()->toDateString())
-            ->count();
-
-        // Orders & Sales placed today that belong to any customer
-        $todayOrders = Sale::whereDate('date', now()->toDateString())
-            ->whereNotNull('customer_id')
-            ->count() + Order::whereDate('created_at', now()->toDateString())
-            ->whereNotNull('customer_id')
-            ->count();
-
-        // Revenue from today's customer sales and orders
-        $todayRevenue = (float) Sale::whereDate('date', now()->toDateString())
-            ->whereNotNull('customer_id')
-            ->where('status', 'completed')
-            ->sum('grand_total') + (float) Order::whereDate('created_at', now()->toDateString())
-            ->whereNotNull('customer_id')
-            ->where('status', 'completed')
-            ->sum('grand_total');
-
-        // Orders/Sales with pending payment status
-        $pendingPayments = Sale::where('status', 'pending')
-            ->whereNotNull('customer_id')
-            ->count() + Order::where('payment_status', 'pending')
-            ->whereNotNull('customer_id')
-            ->count();
-
-        // Customers who have an outstanding balance (paid less than total)
-        $creditCustomerIds = array_unique(array_merge(
-            Sale::whereNotNull('customer_id')->whereColumn('paid_amount', '<', 'grand_total')->pluck('customer_id')->toArray(),
-            Order::whereNotNull('customer_id')->whereColumn('paid_amount', '<', 'grand_total')->pluck('customer_id')->toArray()
-        ));
-        $creditCustomers = count($creditCustomerIds);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total_customers'        => $totalCustomers,
-                'active_customers'       => $activeCustomers,
-                'inactive_customers'     => $inactiveCustomers,
-                'vip_customers'          => $vipCustomers,
-                'new_customers_this_month' => $newCustomersThisMonth,
-                'total_spent'            => $totalSpent,
-                'total_loyalty_points'   => $totalPoints,
-                'total_orders'           => $totalOrders,
-                'avg_spent_per_customer' => round($avgSpent, 2),
-                'total_groups'           => $totalGroups,
-                'total_addresses'        => $totalAddresses,
-                // Mini KPI
-                'today_customers'        => $todayCustomers,
-                'today_orders'           => $todayOrders,
-                'today_revenue'          => $todayRevenue,
-                'pending_payments'       => $pendingPayments,
-                'credit_customers'       => $creditCustomers,
-            ]
-        ]);
+        return $this->successResponse($stats);
     }
 
     /**
@@ -222,10 +53,9 @@ class CustomerController extends BaseApiController
             'group',
             'user',
             'addresses',
-            'sales' => function ($q) {
-                $q->latest()->limit(15)->with(['items']);
-            }
+            'sales' => fn($q) => $q->latest()->limit(15)->with(['items']),
         ])->findOrFail($id);
+
         return $this->successResponse($customer);
     }
 
@@ -250,11 +80,11 @@ class CustomerController extends BaseApiController
         ]);
 
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('customers', 'public');
-            $data['photo'] = Storage::url($path);
+            $path = $this->fileService->upload($request->file('photo'), 'customers');
+            $data['photo'] = $this->fileService->getUrl($path);
         }
 
-        $customer = Customer::create($data);
+        $customer = $this->customerService->create($data);
 
         return $this->successResponse($customer, 'Customer created successfully', 201);
     }
@@ -282,30 +112,21 @@ class CustomerController extends BaseApiController
 
         if ($request->hasFile('photo')) {
             $request->validate([
-                'photo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+                'photo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
 
-            if ($customer->photo) {
-                $oldPath = str_replace(Storage::url(''), '', $customer->photo);
-                Storage::disk('public')->delete($oldPath);
-            }
-
-            $path = $request->file('photo')->store('customers', 'public');
-            $data['photo'] = Storage::url($path);
+            $path = $this->fileService->replace($request->file('photo'), $customer->photo, 'customers');
+            $data['photo'] = $this->fileService->getUrl($path);
         } elseif ($request->exists('photo') && $request->photo === null) {
-            if ($customer->photo) {
-                $oldPath = str_replace(Storage::url(''), '', $customer->photo);
-                Storage::disk('public')->delete($oldPath);
-            }
+            $this->fileService->delete($customer->photo);
             $data['photo'] = null;
         } else {
-            // Remove photo from data if it's a string (URL) to avoid overwriting with the URL string
             unset($data['photo']);
         }
 
-        $customer->update($data);
+        $updated = $this->customerService->update($id, $data);
 
-        return $this->successResponse($customer, 'Customer updated successfully');
+        return $this->successResponse($updated, 'Customer updated successfully');
     }
 
     /**
@@ -314,14 +135,10 @@ class CustomerController extends BaseApiController
     public function destroy(int $id): JsonResponse
     {
         try {
-            $customer = Customer::findOrFail($id);
-            $customer->delete();
+            $this->customerService->delete($id);
             return $this->successResponse(null, 'Customer deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -335,10 +152,7 @@ class CustomerController extends BaseApiController
             $customer->restore();
             return $this->successResponse(null, 'Customer restored successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -350,16 +164,12 @@ class CustomerController extends BaseApiController
         try {
             $customer = Customer::withTrashed()->findOrFail($id);
             if ($customer->photo) {
-                $oldPath = str_replace(Storage::url(''), '', $customer->photo);
-                Storage::disk('public')->delete($oldPath);
+                $this->fileService->delete($customer->photo);
             }
             $customer->forceDelete();
             return $this->successResponse(null, 'Customer permanently deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -368,90 +178,63 @@ class CustomerController extends BaseApiController
      */
     public function orders(int $id): JsonResponse
     {
-        $customer = Customer::findOrFail($id);
         $orders = \App\Models\Order\Order::where('customer_id', $id)->latest()->paginate(10);
         return $this->paginatedResponse($orders);
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    /**
+     * GET /api/v1/customers/export
+     */
+    public function export(Request $request): StreamedResponse
     {
         $headers = [
-            'Content-type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename=customers_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
+            'ID', 'Name', 'Email', 'Phone', 'Gender', 'Birth Date',
+            'Total Spent', 'Order Count', 'Loyalty Points', 'Tax Number', 'Notes', 'Is Active',
         ];
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+        $customers = Customer::withTrashed()->get();
 
-            fputcsv($file, [
-                'ID', 'Name', 'Email', 'Phone', 'Gender', 'Birth Date', 'Total Spent', 'Order Count', 'Loyalty Points', 'Tax Number', 'Notes', 'Is Active'
-            ]);
-
-            $customers = Customer::withTrashed()->get();
-
-            foreach ($customers as $c) {
-                fputcsv($file, [
-                    $c->id,
-                    $c->name,
-                    $c->email ?? '',
-                    $c->phone ?? '',
-                    $c->gender ?? '',
-                    $c->birth_date ?? '',
-                    $c->total_spent,
-                    $c->order_count,
-                    $c->loyalty_points,
-                    $c->tax_number ?? '',
-                    $c->notes ?? '',
-                    $c->is_active ? '1' : '0'
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'customers_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $customers,
+            rowMapper: fn(Customer $c) => [
+                $c->id,
+                $c->name,
+                $c->email ?? '',
+                $c->phone ?? '',
+                $c->gender ?? '',
+                $c->birth_date ?? '',
+                $c->total_spent,
+                $c->order_count,
+                $c->loyalty_points,
+                $c->tax_number ?? '',
+                $c->notes ?? '',
+                $c->is_active ? '1' : '0',
+            ]
+        );
     }
 
+    /**
+     * POST /api/v1/customers/import
+     */
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        if ($handle === false) {
-            return response()->json(['success' => false, 'message' => 'Cannot open file'], 400);
+        $result = $this->csvService->parseCsv($request->file('file'), ['name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return response()->json(['success' => false, 'message' => 'Empty CSV'], 400);
-        }
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } else {
-                $row = array_slice($row, 0, count($headers));
-            }
-            $data = array_combine($headers, $row);
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
             if (!$name) {
@@ -466,46 +249,52 @@ class CustomerController extends BaseApiController
             }
 
             Customer::create([
-                'company_id' => 1,
-                'name' => $name,
-                'email' => $email ?: null,
-                'phone' => trim($data['phone'] ?? '') ?: null,
-                'gender' => in_array(strtolower(trim($data['gender'] ?? '')), ['male', 'female', 'other']) ? strtolower(trim($data['gender'] ?? '')) : null,
-                'birth_date' => trim($data['birth date'] ?? $data['birth_date'] ?? '') ?: null,
-                'total_spent' => floatval($data['total spent'] ?? $data['total_spent'] ?? 0),
-                'order_count' => intval($data['order count'] ?? $data['order_count'] ?? 0),
-                'loyalty_points' => floatval($data['loyalty points'] ?? $data['loyalty_points'] ?? 0),
-                'tax_number' => trim($data['tax number'] ?? $data['tax_number'] ?? '') ?: null,
-                'notes' => trim($data['notes'] ?? '') ?: null,
-                'is_active' => ($data['is active'] ?? $data['is_active'] ?? '1') === '1',
+                'company_id'     => 1,
+                'name'           => $name,
+                'email'          => $email ?: null,
+                'phone'          => trim($data['phone'] ?? '') ?: null,
+                'gender'         => in_array(strtolower(trim($data['gender'] ?? '')), ['male', 'female', 'other']) ? strtolower(trim($data['gender'] ?? '')) : null,
+                'birth_date'     => trim($data['birth_date'] ?? $data['birth date'] ?? '') ?: null,
+                'total_spent'    => (float) ($data['total_spent'] ?? $data['total spent'] ?? 0),
+                'order_count'    => (int) ($data['order_count'] ?? $data['order count'] ?? 0),
+                'loyalty_points' => (float) ($data['loyalty_points'] ?? $data['loyalty points'] ?? 0),
+                'tax_number'     => trim($data['tax_number'] ?? $data['tax number'] ?? '') ?: null,
+                'notes'          => trim($data['notes'] ?? '') ?: null,
+                'is_active'      => ($data['is_active'] ?? $data['is active'] ?? '1') === '1',
             ]);
 
             $successCount++;
         }
 
-        fclose($handle);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Imported {$successCount} customers successfully. " . count($errors) . " errors.",
-            'errors' => $errors
-        ]);
+        return $this->successResponse([
+            'imported_count' => $successCount,
+            'errors'         => $errors,
+        ], "Imported {$successCount} customers successfully. " . count($errors) . " errors.");
     }
 
+    /**
+     * POST /api/v1/customers/bulk-delete
+     */
     public function bulkDelete(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
-        Customer::whereIn('id', $ids)->delete();
+        $this->customerService->bulkDelete($ids);
         return $this->successResponse(null, 'Selected customers deleted successfully');
     }
 
+    /**
+     * POST /api/v1/customers/bulk-restore
+     */
     public function bulkRestore(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
-        Customer::onlyTrashed()->whereIn('id', $ids)->restore();
+        $this->customerService->bulkRestore($ids);
         return $this->successResponse(null, 'Selected customers restored successfully');
     }
 
+    /**
+     * POST /api/v1/customers/bulk-activate
+     */
     public function bulkActivate(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
@@ -513,6 +302,9 @@ class CustomerController extends BaseApiController
         return $this->successResponse(null, 'Selected customers activated successfully');
     }
 
+    /**
+     * POST /api/v1/customers/bulk-deactivate
+     */
     public function bulkDeactivate(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
@@ -520,6 +312,9 @@ class CustomerController extends BaseApiController
         return $this->successResponse(null, 'Selected customers deactivated successfully');
     }
 
+    /**
+     * POST /api/v1/customers/bulk-assign-group
+     */
     public function bulkAssignGroup(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);

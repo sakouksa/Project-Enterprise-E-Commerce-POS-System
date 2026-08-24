@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Mail, Phone, MapPin, Send } from 'lucide-react'
+import PageTransition from '@/components/common/PageTransition'
 
 const ContactPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false)
@@ -10,7 +11,7 @@ const ContactPage: React.FC = () => {
   }
 
   return (
-    <div className="container-site py-12 space-y-12">
+    <PageTransition className="container-site py-12 space-y-12">
       <div className="max-w-xl mx-auto text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Contact Us
@@ -80,7 +81,7 @@ const ContactPage: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }
 

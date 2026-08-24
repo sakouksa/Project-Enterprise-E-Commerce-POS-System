@@ -6,18 +6,8 @@ import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import StockTransferPrintVoucher from './StockTransferPrintVoucher'
-
-const formatShortDate = (dateStr: string | null | undefined): string => {
-  if (!dateStr) return '—'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return '—'
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const min = String(date.getMinutes()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`
-}
+import StatusBadge from '@/components/common/StatusBadge'
+import { formatShortDate } from '@/utils/formatters'
 
 interface StockTransferDetailPageProps {
   transferId: number
@@ -143,15 +133,7 @@ export const StockTransferDetailPage: React.FC<StockTransferDetailPageProps> = (
               <div className="bg-gradient-to-br from-card via-muted/20 to-muted/40 border border-border/80 rounded-2xl p-4 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border shadow-2xs ${
-                      isReceived ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
-                      isInTransit ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' :
-                      isCancelled ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' :
-                      'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                    }`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                      {getStatusLabel(status)}
-                    </span>
+                    <StatusBadge status={status} />
                   </div>
                   <span className="text-[11px] font-medium text-muted-foreground">
                     {t('inventory.itemsCount', '{{count}} items', { count: detail.items?.length || 0 })}

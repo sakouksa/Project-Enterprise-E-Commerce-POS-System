@@ -15,7 +15,6 @@
   "refreshDashboard": "Refresh Dashboard",
   "globalSearch": "Global Search",
   "searchPlaceholder": "Search sales, orders, products, customers...",
-
   "todaySales": "Today Sales",
   "todayRevenue": "Today Gross Revenue",
   "grossProfit": "Gross Profit",
@@ -24,7 +23,6 @@
   "todayPurchases": "Today Purchases",
   "inventoryValue": "Total Inventory Value",
   "cashBalance": "Cash Balance",
-
   "totalCustomers": "Total Customers",
   "totalEmployees": "Total Employees",
   "totalProducts": "Total Products",
@@ -33,7 +31,6 @@
   "totalBranches": "Total Branches",
   "totalCompanies": "Total Companies",
   "pendingOrders": "Pending Orders",
-
   "lowStock": "Low Stock Items",
   "outOfStock": "Out of Stock Items",
   "pendingPurchase": "Pending Purchases",
@@ -42,7 +39,6 @@
   "pendingDelivery": "Pending Deliveries",
   "attendanceToday": "Today Attendance",
   "payrollDraft": "Payroll Draft",
-
   "todayExpenses": "Today Expenses",
   "todayIncome": "Collected Income",
   "todayReturns": "Sales Returns",
@@ -54,7 +50,6 @@
   "loginCount": "Login Count",
   "failedLogin": "Failed Logins",
   "backupStatus": "Backup Status",
-
   "salesTrend": "Sales & Revenue Trends",
   "revenueTrend": "Revenue Trend",
   "profitTrend": "Profit Margin Trend",
@@ -72,7 +67,6 @@
   "revenueByMonth": "Monthly Revenue",
   "ordersByStatus": "Orders by Status",
   "returnsTrend": "Returns Trend",
-
   "recentSales": "Recent Sales",
   "recentPurchases": "Recent Purchases",
   "latestCustomers": "Latest Customers",
@@ -81,7 +75,6 @@
   "recentNotifications": "Notifications",
   "activityTimeline": "Activity Timeline",
   "auditLogs": "Audit Logs",
-
   "createSale": "Create Sale",
   "createPurchase": "Create Purchase",
   "addProduct": "Add Product",
@@ -92,7 +85,6 @@
   "addEmployee": "Add Employee",
   "openPOS": "Open POS Terminal",
   "generateReport": "Generate Report",
-
   "businessAlerts": "Business Alerts",
   "lowStockAlert": "Low Stock Warning",
   "expiredProductAlert": "Product Expiration Alert",
@@ -105,7 +97,6 @@
   "databaseWarningAlert": "Database Performance Alert",
   "apiOfflineAlert": "API Offline",
   "jwtExpiredAlert": "Session Expired",
-
   "systemHealth": "System Health",
   "systemHealthTitle": "System Health & Diagnostics",
   "allSystemsOperational": "All Systems Operational",
@@ -132,7 +123,6 @@
   "operational": "Operational",
   "degraded": "Degraded",
   "error": "Error",
-
   "loadingDashboard": "Syncing dashboard telemetry...",
   "errorLoading": "Failed to fetch data from the server",
   "retry": "Retry Connection",
@@ -179,7 +169,6 @@
   "newRegistrations": "New Customer Registrations",
   "customers": "Customers",
   "retentionRate": "Retention Rate",
-  "newCustomers": "New Customers",
   "returningCustomers": "Returning Customers",
   "salesInsight": "Total Sales Insights",
   "periodTotalSales": "Period Total Sales",
@@ -196,7 +185,6 @@
   "branchInsight": "Multi-Branch Sales Insights",
   "multiBranchVolume": "Total Branch Revenue",
   "topPerformingBranch": "Top Performing Branch",
-
   "warehouseStockStatus": "Warehouse Stock Status",
   "stockHealthAlerts": "Stock Health Alerts",
   "todayTransfers": "Today's Transfers",

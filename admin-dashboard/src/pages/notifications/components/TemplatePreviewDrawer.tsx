@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import type { NotificationTemplateItem } from '@/types/notification'
+import { formatShortDate } from '@/utils/formatters'
 
 interface TemplatePreviewDrawerProps {
   open: boolean
@@ -28,18 +29,6 @@ const SAMPLE_DATA: Record<string, string> = {
   amount: '$2,450.00',
   check_in_time: '08:45 AM',
   date: '2026-07-25',
-}
-
-const formatShortDate = (dateStr?: string | null): string => {
-  if (!dateStr) return '2026-07-25 08:30'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return dateStr
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const min = String(date.getMinutes()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`
 }
 
 const getCategoryIcon = (type?: string) => {

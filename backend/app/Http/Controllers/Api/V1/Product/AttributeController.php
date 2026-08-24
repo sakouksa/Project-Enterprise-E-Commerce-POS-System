@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Api\V1\Product;
 
 use App\Http\Controllers\Api\BaseApiController;
-use App\Models\Product\Attribute;
 use App\Http\Requests\Product\StoreAttributeRequest;
 use App\Http\Requests\Product\UpdateAttributeRequest;
+use App\Models\Product\Attribute;
+use App\Services\Support\CsvService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttributeController extends BaseApiController
 {
+    public function __construct(
+        protected CsvService $csvService
+    ) {}
+
     /**
      * GET /api/v1/attributes
      */
@@ -19,8 +25,8 @@ class AttributeController extends BaseApiController
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedSorts = ['id', 'name', 'type', 'is_active', 'created_at'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
+        $sortBy = in_array($sortBy, $allowedSorts, true) ? $sortBy : 'id';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc'], true) ? $sortOrder : 'desc';
 
         $attributes = Attribute::with(['values' => fn($q) => $q->orderBy('sort_order')->orderBy('id')])
             ->when($request->status === 'deleted', function ($q) {
@@ -102,98 +108,51 @@ class AttributeController extends BaseApiController
     public function bulkDelete(Request $request): JsonResponse
     {
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
-        $count = 0;
-        foreach ($ids as $id) {
-            $attribute = Attribute::find($id);
-            if ($attribute) {
-                $attribute->delete();
-                $count++;
-            }
-        }
+        $count = Attribute::whereIn('id', $ids)->delete();
         return $this->successResponse(null, "{$count} attributes deleted successfully");
     }
 
     public function bulkRestore(Request $request): JsonResponse
     {
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
-        $count = 0;
-        foreach ($ids as $id) {
-            $attribute = Attribute::onlyTrashed()->find($id);
-            if ($attribute) {
-                $attribute->restore();
-                $count++;
-            }
-        }
+        $count = Attribute::onlyTrashed()->whereIn('id', $ids)->restore();
         return $this->successResponse(null, "{$count} attributes restored successfully");
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
-        $headers = [
-            'Content-type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename=attributes_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
-        ];
+        $headers = ['Name', 'Type', 'Active'];
+        $attributes = Attribute::all();
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, ['Name', 'Type', 'Active']);
-
-            $attributes = Attribute::all();
-
-            foreach ($attributes as $attr) {
-                fputcsv($file, [
-                    $attr->name,
-                    $attr->type,
-                    $attr->is_active ? '1' : '0'
-                ]);
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'attributes_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $attributes,
+            rowMapper: fn(Attribute $attr) => [
+                $attr->name,
+                $attr->type,
+                $attr->is_active ? '1' : '0',
+            ]
+        );
     }
 
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        if ($handle === false) {
-            return response()->json(['success' => false, 'message' => 'Cannot open file'], 400);
+        $result = $this->csvService->parseCsv($request->file('file'), ['name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return response()->json(['success' => false, 'message' => 'Empty CSV'], 400);
-        }
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } else {
-                $row = array_slice($row, 0, count($headers));
-            }
-            $data = array_combine($headers, $row);
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
             if (!$name) {
@@ -202,22 +161,18 @@ class AttributeController extends BaseApiController
             }
 
             Attribute::create([
-                'company_id' => $request->user()->company_id ?? 1,
+                'company_id' => $request->user()?->company_id ?? 1,
                 'name'       => $name,
                 'type'       => trim($data['type'] ?? 'select'),
-                'is_active'  => filter_var($data['active'] ?? $data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                'is_active'  => filter_var($data['active'] ?? $data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ]);
+
             $successCount++;
         }
-        fclose($handle);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Import completed',
-            'data' => [
-                'success_count' => $successCount,
-                'errors' => $errors
-            ]
-        ]);
+        return $this->successResponse([
+            'success_count' => $successCount,
+            'errors'        => $errors,
+        ], 'Import completed');
     }
 }

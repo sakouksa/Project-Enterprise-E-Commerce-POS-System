@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
+import { formatCurrency, formatNumber } from '@/utils/formatters'
 
 const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316', '#a855f7']
 
@@ -97,21 +98,6 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
       return `Warehouse ${num}`
     }
     return whName
-  }
-
-  // Strictly format in USD ($)
-  const formatCurrency = (val: number | undefined | null) => {
-    const num = Number(val || 0)
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(num)
-  }
-
-  const formatNumber = (val: number | undefined | null) => {
-    return Number(val || 0).toLocaleString()
   }
 
   const totalItems = Number(summary.total_items ?? summary.total_products ?? 0)

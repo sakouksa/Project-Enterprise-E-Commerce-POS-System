@@ -20,7 +20,18 @@ class Category extends Model
         'description', 'image', 'sort_order', 'is_active',
     ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts   = ['is_active' => 'boolean'];
+    protected $appends = ['image_url'];
+
+    /** Return a full, publicly accessible URL for the category image. */
+    public function getImageUrlAttribute(): ?string
+    {
+        $img = $this->attributes['image'] ?? null;
+        if (!$img) return null;
+        if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://')) return $img;
+        $clean = ltrim(preg_replace('#^storage/#', '', $img), '/');
+        return url('api/v1/storage/' . $clean);
+    }
 
     public function company(): BelongsTo
     {

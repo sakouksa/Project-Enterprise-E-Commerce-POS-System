@@ -13,7 +13,6 @@
   "last_login": "Last Login:",
   "loading_specs": "Loading profile details...",
   "logout_other_devices": "Revoke Other Sessions",
-
   "avatar": {
     "upload": "Upload Avatar",
     "remove": "Remove Avatar",
@@ -22,7 +21,6 @@
     "remove_success": "Avatar removed successfully!",
     "remove_fail": "Failed to remove avatar."
   },
-
   "overview_tab": {
     "account_status": "Account Status",
     "active": "Active",
@@ -35,7 +33,6 @@
     "recent_timeline": "Recent Activity Timeline",
     "no_recent_actions": "No recent actions logged"
   },
-
   "personal_tab": {
     "title": "Personal Information",
     "subtitle": "Update your account details such as full name, email, phone number, and location address",
@@ -70,7 +67,6 @@
     "success_update": "Personal details updated successfully!",
     "fail_update": "Failed to update personal details."
   },
-
   "security_tab": {
     "title": "Account Security",
     "credentials_title": "Update Security Credentials",
@@ -99,7 +95,6 @@
     "strength_strong": "Strong",
     "strength_very_strong": "Very Strong"
   },
-
   "permissions_tab": {
     "title": "System Permissions",
     "assigned_roles": "Assigned Roles",
@@ -113,7 +108,6 @@
     "th_guard": "Guard",
     "th_action": "Action Scope"
   },
-
   "activities_tab": {
     "title": "Security & Audit Activity Logs",
     "subtitle": "A history of administrative and critical operations performed by your session",
@@ -125,7 +119,6 @@
     "th_ua": "User Agent / Device",
     "th_date": "Date & Time"
   },
-
   "logins_tab": {
     "title": "Session Login History",
     "subtitle": "A comprehensive list of authentication attempts on your account",
@@ -139,7 +132,6 @@
     "status_success": "Success",
     "status_failed": "Failed"
   },
-
   "settings_tab": {
     "ui_title": "General UI & System Preferences",
     "subtitle": "Customize system language, primary accent color, visual theme, and notification channels",

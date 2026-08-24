@@ -36,21 +36,19 @@ services:
     depends_on:
       - app
 
-  # ─── MySQL 8 ─────────────────────────────────────────────────────────────────
+  # ─── PostgreSQL 16 ───────────────────────────────────────────────────────────
   db:
-    image: mysql:8.0
+    image: postgres:16-alpine
     container_name: enterprise_pos_db
     restart: unless-stopped
     ports:
-      - "3306:3306"
+      - "5432:5432"
     environment:
-      MYSQL_DATABASE: enterprise_pos
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_USER: ${DB_USERNAME:-pos_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_DATABASE:-enterprise_pos}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-12345678}
     volumes:
-      - enterprise_pos_db_data:/var/lib/mysql
-      - ./backend/docker/mysql.cnf:/etc/mysql/conf.d/custom.cnf
+      - enterprise_pos_db_data:/var/lib/postgresql/data
     networks:
       - enterprise_pos_net
 

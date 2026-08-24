@@ -3,7 +3,7 @@ import { translateString } from '@/lib/i18n'
 
 export type ToastParam = string | (Omit<ToastOptions, 'type'> & { message: string })
 
-function normalizeToastOptions(
+export function normalizeToastOptions(
   param: ToastParam,
   type: 'success' | 'error' | 'warning' | 'info',
   duration?: number

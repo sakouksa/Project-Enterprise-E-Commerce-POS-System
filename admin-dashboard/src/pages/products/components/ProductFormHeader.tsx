@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye } from 'lucide-react'
+import { Eye, Package } from 'lucide-react'
 import { FormHeader } from '@/components/common'
 
 interface ProductFormHeaderProps {
@@ -44,7 +44,7 @@ export const ProductFormHeader: React.FC<ProductFormHeaderProps> = ({
     <button
       type="button"
       onClick={onOpenLivePreview}
-      className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer active:scale-95"
+      className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 dark:border-slate-700 bg-background dark:bg-slate-800/80 text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted/80 dark:hover:bg-slate-700 text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer active:scale-95"
       title={t('products.livePreview', t('common.livePreview', 'ពិនិត្យមើលផ្ទាល់'))}
     >
       <Eye size={14} />

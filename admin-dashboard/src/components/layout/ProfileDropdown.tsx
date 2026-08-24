@@ -11,6 +11,7 @@ import api from '@/api/client'
 import SwitchAccountModal from './SwitchAccountModal'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { sound } from '@/utils/sound'
+import UserAvatar from '@/components/common/UserAvatar'
 
 interface LanguageOption {
   code: 'km' | 'en' | 'zh' | 'th' | 'vi'
@@ -292,15 +293,13 @@ export const ProfileDropdown: React.FC = () => {
         }}
         className="flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full cursor-pointer transition-transform active:scale-95"
       >
-        <div className="relative w-9 h-9 rounded-full bg-gradient-primary flex items-center justify-center overflow-hidden border-2 border-border/80 hover:border-primary transition-all shadow-xs">
-          {user?.avatar ? (
-            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-white text-xs font-bold">{user?.name?.[0] ?? 'U'}</span>
-          )}
-          {/* Online Indicator */}
-          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-card ring-1 ring-black/10" />
-        </div>
+        <UserAvatar
+          src={user?.avatar}
+          name={user?.name || 'Super Admin'}
+          sizeClassName="w-9 h-9"
+          showOnlineStatus={true}
+          isOnline={true}
+        />
       </button>
 
       {/* Dropdown Card */}
@@ -316,13 +315,12 @@ export const ProfileDropdown: React.FC = () => {
             {/* Header user identity */}
             <div className="p-4 border-b border-border/60 bg-muted/25">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center text-white font-black text-lg overflow-hidden shrink-0 shadow-xs">
-                  {user?.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    user?.name?.[0] ?? 'U'
-                  )}
-                </div>
+                <UserAvatar
+                  src={user?.avatar}
+                  name={user?.name || 'Super Admin'}
+                  sizeClassName="w-12 h-12"
+                  className="rounded-2xl shadow-xs"
+                />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-extrabold text-sm text-foreground truncate">{user?.name || 'Super Admin'}</h4>
                   <p className="text-[11px] text-muted-foreground truncate font-mono">{user?.email || 'superadmin@enterprise-pos.com'}</p>

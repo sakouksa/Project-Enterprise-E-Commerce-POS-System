@@ -3,19 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
   Loader2,
-  Upload,
   User,
   Briefcase,
   DollarSign,
   Building2,
   Calendar,
-  Phone,
-  Mail,
-  Shield,
-  FileText,
-  Trash2,
-  Sparkles,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Tab } from '../types'
@@ -122,7 +116,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   branchesList = [],
   deptList = [],
   posList = [],
-  usersList = [],
   empList = [],
   formCompanyId,
   setFormCompanyId,
@@ -132,8 +125,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   setFormDeptId,
   formPosId,
   setFormPosId,
-  formUserId,
-  setFormUserId,
   formEmployeeNumber,
   setFormEmployeeNumber,
   formName,
@@ -151,14 +142,11 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   formAddress,
   setFormAddress,
   formPhoto,
-  setFormPhoto,
   uploadingPhoto,
   handlePhotoFileChange,
   getPhotoUrl,
   formJoinDate,
   setFormJoinDate,
-  formResignDate,
-  setFormResignDate,
   formStatus,
   setFormStatus,
   formBasicSalary,
@@ -179,10 +167,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   setPayEmployeeId,
   payPeriodMonth,
   setPayPeriodMonth,
-  payWorkingDays,
-  setPayWorkingDays,
-  payPresentDays,
-  setPayPresentDays,
   payAllowances,
   setPayAllowances,
   payDeductions,
@@ -201,38 +185,62 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
   if (!isOpen) return null
 
+  // Unified h-10 Input and Select style matching Enterprise standard
   const inputCls =
-    'w-full text-xs font-semibold rounded-xl bg-background border border-border/80 text-foreground px-3.5 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all'
+    'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
   const labelCls =
-    'block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5'
+    'block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5'
 
   const getModalTitle = () => {
-    if (activeTab === 'employees') {
-      return selectedItem
-        ? t('employees.edit_employee', 'Edit Employee')
-        : t('employees.create_employee', 'Create Employee')
-    }
     if (activeTab === 'departments') {
       return selectedItem
-        ? `${t('common.edit', 'Edit')} ${t('employees.department', 'Department')}`
-        : `${t('common.add', 'Add')} ${t('employees.department', 'Department')}`
+        ? t('employees.edit_department_title', 'កែសម្រួលដេប៉ាតឺម៉ង់')
+        : t('employees.add_department_title', 'បន្ថែមដេប៉ាតឺម៉ង់ថ្មី')
     }
     if (activeTab === 'positions') {
       return selectedItem
-        ? `${t('common.edit', 'Edit')} ${t('employees.position', 'Position')}`
-        : `${t('common.add', 'Add')} ${t('employees.position', 'Position')}`
+        ? t('employees.edit_position_title', 'កែសម្រួលមុខតំណែង')
+        : t('employees.add_position_title', 'បន្ថែមមុខតំណែងថ្មី')
     }
     if (activeTab === 'attendance') {
       return selectedItem
-        ? `${t('common.edit', 'Edit')} ${t('employees.attendance', 'Attendance')}`
-        : `${t('employees.add_attendance', 'Add Attendance')}`
+        ? t('employees.edit_attendance_title', 'កែសម្រួលកំណត់ត្រាវត្តមាន')
+        : t('employees.add_attendance_title', 'កត់ត្រាវត្តមានថ្មី')
     }
     if (activeTab === 'payrolls') {
       return selectedItem
-        ? `${t('common.edit', 'Edit')} ${t('employees.payrolls', 'Payroll')}`
-        : `${t('common.add', 'Add')} ${t('employees.payrolls', 'Payroll')}`
+        ? t('employees.edit_payroll_title', 'កែសម្រួលប័ណ្ណបើកប្រាក់ខែ')
+        : t('employees.add_payroll_title', 'បង្កើតប័ណ្ណបើកប្រាក់ខែ')
     }
-    return t('employees.addEmployee', 'Add Employee')
+    return selectedItem
+      ? t('employees.editEmployee', 'កែសម្រួលបុគ្គលិក')
+      : t('employees.createEmployeeTitle', 'បង្កើតបុគ្គលិកថ្មី')
+  }
+
+  const getModalSubtitle = () => {
+    if (activeTab === 'departments') {
+      return t('employees.dept_subtitle', 'គ្រប់គ្រង និងកំណត់រចនាសម្ព័ន្ធដេប៉ាតឺម៉ង់របស់ក្រុមហ៊ុន')
+    }
+    if (activeTab === 'positions') {
+      return t('employees.pos_subtitle', 'គ្រប់គ្រង និងកំណត់តួនាទី និងមុខតំណែងការងារក្នុងអង្គភាព')
+    }
+    if (activeTab === 'attendance') {
+      return t('employees.att_subtitle', 'កត់ត្រា ឬកែសម្រួលម៉ោងចូលធ្វើការ និងម៉ោងចេញរបស់បុគ្គលិក')
+    }
+    if (activeTab === 'payrolls') {
+      return t('employees.pay_subtitle', 'គណនា និងកែសម្រួលប្រាក់បៀវត្សរ៍ ប្រាក់ឧបត្ថម្ភ និងការកាត់កងប្រចាំខែ')
+    }
+    return t('employees.createSubtitle', 'បំពេញព័ត៌មានបុគ្គលិក ដេប៉ាតឺម៉ង់ តួនាទី ប្រាក់បៀវត្សរ៍ និងព័ត៌មានទំនាក់ទំនង')
+  }
+
+  const generateDeptCode = () => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000)
+    setFormEmployeeNumber(`DEPT-${randomNum}`)
+  }
+
+  const generatePosCode = () => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000)
+    setFormEmployeeNumber(`POS-${randomNum}`)
   }
 
   return (
@@ -243,12 +251,12 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 12 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="bg-card w-full max-w-4xl border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]"
+          className="bg-card dark:bg-slate-900 w-full max-w-3xl border border-border/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20 shrink-0">
+          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-900/50 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
                 {activeTab === 'employees' && <User size={20} />}
                 {activeTab === 'departments' && <Building2 size={20} />}
                 {activeTab === 'positions' && <Briefcase size={20} />}
@@ -256,20 +264,18 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 {activeTab === 'payrolls' && <DollarSign size={20} />}
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-foreground leading-tight">
+                <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-slate-100 leading-tight">
                   {getModalTitle()}
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  {selectedItem
-                    ? `${selectedItem.employee_number || selectedItem.code || '#' + selectedItem.id} • ${t('common.lastUpdated', 'Update system records')}`
-                    : t('employees.subtitle_desc', 'Fill in the information below to save records.')}
+                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5 max-w-xl line-clamp-1">
+                  {getModalSubtitle()}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
               type="button"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -277,47 +283,47 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
           {/* Form Content */}
           <form onSubmit={onSubmit} className="flex-1 overflow-y-auto flex flex-col justify-between">
-            <div className="p-5 sm:p-6 space-y-6">
+            <div className="p-5 sm:p-6 space-y-5">
               {/* ─── EMPLOYEES TAB (Segmented Multi-Section Form) ─────────── */}
               {activeTab === 'employees' && (
                 <div className="space-y-5">
                   {/* Segmented Section Navigator */}
-                  <div className="grid grid-cols-3 gap-2 p-1 bg-muted/40 rounded-2xl border border-border/80">
+                  <div className="grid grid-cols-3 gap-2 p-1 bg-muted/40 dark:bg-slate-800/60 rounded-xl border border-border/80 dark:border-slate-700">
                     <button
                       type="button"
                       onClick={() => setFormSection('personal')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         formSection === 'personal'
-                          ? 'bg-card text-primary shadow-xs border border-border/60'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                          ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
+                          : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
                       }`}
                     >
                       <User size={14} />
-                      <span className="truncate">{t('employees.tab_personal', 'Personal Info')}</span>
+                      <span className="truncate">{t('employees.tab_personal', 'ព័ត៌មានផ្ទាល់ខ្លួន')}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormSection('job')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         formSection === 'job'
-                          ? 'bg-card text-primary shadow-xs border border-border/60'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                          ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
+                          : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
                       }`}
                     >
                       <Briefcase size={14} />
-                      <span className="truncate">{t('employees.tab_job', 'Job & Employment')}</span>
+                      <span className="truncate">{t('employees.tab_job', 'ការងារ & តួនាទី')}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormSection('salary')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         formSection === 'salary'
-                          ? 'bg-card text-primary shadow-xs border border-border/60'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                          ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
+                          : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
                       }`}
                     >
                       <DollarSign size={14} />
-                      <span className="truncate">{t('employees.tab_salary', 'Salary & Photo')}</span>
+                      <span className="truncate">{t('employees.tab_salary', 'ប្រាក់បៀវត្សរ៍ & រូបថត')}</span>
                     </button>
                   </div>
 
@@ -331,20 +337,20 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className={labelCls}>
-                            {t('employees.full_name', 'Full Name')} <span className="text-rose-500">*</span>
+                            {t('employees.full_name', 'ឈ្មោះពេញ')} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="text"
                             required
                             value={formName}
                             onChange={(e) => setFormName(e.target.value)}
-                            placeholder="e.g. John Doe / សុខ សាន"
+                            placeholder={t('employees.namePlaceholder', 'ឧ. សុខ ចិន្តា / Sok Chenda')}
                             className={inputCls}
                           />
                         </div>
                         <div>
                           <label className={labelCls}>
-                            {t('employees.employee_number', 'Employee Number')}{' '}
+                            {t('employees.employee_number', 'លេខសម្គាល់បុគ្គលិក')}{' '}
                             <span className="text-rose-500">*</span>
                           </label>
                           <input
@@ -352,59 +358,27 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                             required
                             value={formEmployeeNumber}
                             onChange={(e) => setFormEmployeeNumber(e.target.value)}
-                            placeholder="EMP-0001"
                             className={`${inputCls} font-mono`}
+                            placeholder="e.g. EMP12345"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className={labelCls}>{t('employees.email', 'Email')}</label>
-                          <input
-                            type="email"
-                            value={formEmail}
-                            onChange={(e) => setFormEmail(e.target.value)}
-                            placeholder="employee@enterprise-pos.com"
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.phone', 'Phone')}</label>
-                          <input
-                            type="text"
-                            value={formPhone}
-                            onChange={(e) => setFormPhone(e.target.value)}
-                            placeholder="012 345 678"
-                            className={inputCls}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                          <label className={labelCls}>{t('employees.nik', 'National ID (NIK)')}</label>
-                          <input
-                            type="text"
-                            value={formNik}
-                            onChange={(e) => setFormNik(e.target.value)}
-                            placeholder="3273010203040001"
-                            className={`${inputCls} font-mono`}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.gender', 'Gender')}</label>
+                          <label className={labelCls}>{t('employees.gender', 'ភេទ')}</label>
                           <select
                             value={formGender}
                             onChange={(e) => setFormGender(e.target.value)}
                             className={inputCls}
                           >
-                            <option value="male">{t('employees.male', 'Male (ប្រុស)')}</option>
-                            <option value="female">{t('employees.female', 'Female (ស្រី)')}</option>
+                            <option value="male">{t('employees.male', 'ប្រុស')}</option>
+                            <option value="female">{t('employees.female', 'ស្រី')}</option>
+                            <option value="other">{t('employees.other', 'ផ្សេងទៀត')}</option>
                           </select>
                         </div>
                         <div>
-                          <label className={labelCls}>{t('employees.birth_date', 'Birth Date')}</label>
+                          <label className={labelCls}>{t('employees.birth_date', 'ថ្ងៃខែឆ្នាំកំណើត')}</label>
                           <input
                             type="date"
                             value={formBirthDate}
@@ -414,30 +388,53 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>{t('employees.nik', 'លេខអត្តសញ្ញាណប័ណ្ណ (NIK)')}</label>
+                          <input
+                            type="text"
+                            value={formNik}
+                            onChange={(e) => setFormNik(e.target.value)}
+                            placeholder={t('employees.nikPlaceholder', 'ឧ. 32010203040001')}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div>
+                          <label className={labelCls}>{t('employees.phone', 'ទូរស័ព្ទ')}</label>
+                          <input
+                            type="tel"
+                            value={formPhone}
+                            onChange={(e) => setFormPhone(e.target.value)}
+                            placeholder="012 345 678"
+                            className={inputCls}
+                          />
+                        </div>
+                      </div>
+
                       <div>
-                        <label className={labelCls}>{t('employees.address', 'Address')}</label>
-                        <textarea
-                          rows={2}
-                          value={formAddress}
-                          onChange={(e) => setFormAddress(e.target.value)}
-                          placeholder="Current residential address..."
-                          className={`${inputCls} resize-none`}
+                        <label className={labelCls}>{t('employees.email', 'អ៊ីមែល')}</label>
+                        <input
+                          type="email"
+                          value={formEmail}
+                          onChange={(e) => setFormEmail(e.target.value)}
+                          placeholder="employee@example.com"
+                          className={inputCls}
                         />
                       </div>
                     </motion.div>
                   )}
 
-                  {/* Section 2: Job & Employment Details */}
+                  {/* Section 2: Job */}
                   {formSection === 'job' && (
                     <motion.div
-                      initial={{ opacity: 0, x: -8 }}
+                      initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
                       className="space-y-4"
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className={labelCls}>
-                            {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
+                            {t('employees.company', 'ក្រុមហ៊ុន')} <span className="text-rose-500">*</span>
                           </label>
                           <select
                             required
@@ -445,7 +442,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                             onChange={(e) => setFormCompanyId(e.target.value)}
                             className={inputCls}
                           >
-                            <option value="">{t('employees.select_company', 'Select Company')}</option>
+                            <option value="">{t('employees.select_company', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
                             {companiesList.map((c: any) => (
                               <option key={c.id} value={c.id}>
                                 {c.name}
@@ -455,7 +452,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         </div>
                         <div>
                           <label className={labelCls}>
-                            {t('employees.branch', 'Branch')} <span className="text-rose-500">*</span>
+                            {t('employees.branch', 'សាខា')} <span className="text-rose-500">*</span>
                           </label>
                           <select
                             required
@@ -463,25 +460,10 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                             onChange={(e) => setFormBranchId(e.target.value)}
                             className={inputCls}
                           >
-                            <option value="">{t('employees.select_branch', 'Select Branch')}</option>
+                            <option value="">{t('employees.select_branch', '-- ជ្រើសរើសសាខា --')}</option>
                             {branchesList.map((b: any) => (
                               <option key={b.id} value={b.id}>
                                 {b.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.user_mapping', 'User Account Mapping')}</label>
-                          <select
-                            value={formUserId}
-                            onChange={(e) => setFormUserId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">{t('employees.no_user_mapping', 'No user mapping')}</option>
-                            {usersList.map((u: any) => (
-                              <option key={u.id} value={u.id}>
-                                {u.name} ({u.email})
                               </option>
                             ))}
                           </select>
@@ -490,13 +472,16 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className={labelCls}>{t('employees.department', 'Department')}</label>
+                          <label className={labelCls}>
+                            {t('employees.department', 'ដេប៉ាតឺម៉ង់')} <span className="text-rose-500">*</span>
+                          </label>
                           <select
+                            required
                             value={formDeptId}
                             onChange={(e) => setFormDeptId(e.target.value)}
                             className={inputCls}
                           >
-                            <option value="">{t('employees.select_department', 'Select Department')}</option>
+                            <option value="">{t('employees.select_department', '-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --')}</option>
                             {deptList.map((d: any) => (
                               <option key={d.id} value={d.id}>
                                 {d.name}
@@ -505,13 +490,16 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                           </select>
                         </div>
                         <div>
-                          <label className={labelCls}>{t('employees.position', 'Position')}</label>
+                          <label className={labelCls}>
+                            {t('employees.position', 'តួនាទី')} <span className="text-rose-500">*</span>
+                          </label>
                           <select
+                            required
                             value={formPosId}
                             onChange={(e) => setFormPosId(e.target.value)}
                             className={inputCls}
                           >
-                            <option value="">{t('employees.select_position', 'Select Position')}</option>
+                            <option value="">{t('employees.select_position', '-- ជ្រើសរើសតួនាទី --')}</option>
                             {posList.map((p: any) => (
                               <option key={p.id} value={p.id}>
                                 {p.name}
@@ -521,9 +509,9 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className={labelCls}>{t('employees.join_date', 'Join Date')}</label>
+                          <label className={labelCls}>{t('employees.join_date', 'ថ្ងៃចូលការងារ')}</label>
                           <input
                             type="date"
                             value={formJoinDate}
@@ -532,24 +520,15 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className={labelCls}>{t('employees.resign_date', 'Resign Date')}</label>
-                          <input
-                            type="date"
-                            value={formResignDate}
-                            onChange={(e) => setFormResignDate(e.target.value)}
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                          <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
                           <select
                             value={formStatus}
                             onChange={(e) => setFormStatus(e.target.value)}
                             className={inputCls}
                           >
-                            <option value="active">{t('employees.active', 'Active (សកម្ម)')}</option>
-                            <option value="inactive">{t('employees.inactive', 'Inactive (អសកម្ម)')}</option>
-                            <option value="resigned">{t('employees.resigned', 'Resigned (លាឈប់)')}</option>
+                            <option value="active">{t('employees.active', 'សកម្ម')}</option>
+                            <option value="inactive">{t('employees.inactive', 'អសកម្ម')}</option>
+                            <option value="resigned">{t('employees.resigned', 'លាឈប់')}</option>
                           </select>
                         </div>
                       </div>
@@ -559,83 +538,54 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   {/* Section 3: Salary & Photo */}
                   {formSection === 'salary' && (
                     <motion.div
-                      initial={{ opacity: 0, x: -8 }}
+                      initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="space-y-5"
+                      className="space-y-4"
                     >
-                      <div>
-                        <label className={labelCls}>
-                          {t('employees.basic_salary', 'Basic Salary ($)')}{' '}
-                          <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">
-                            $
-                          </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>{t('employees.basic_salary', 'ប្រាក់ខែគោល ($)')}</label>
                           <input
                             type="number"
-                            required
-                            step="0.01"
                             value={formBasicSalary}
                             onChange={(e) => setFormBasicSalary(e.target.value)}
-                            placeholder="0.00"
-                            className={`${inputCls} pl-8 font-mono text-sm font-bold`}
+                            placeholder="850.00"
+                            className={inputCls}
+                          />
+                        </div>
+                        <div>
+                          <label className={labelCls}>{t('employees.address', 'អាសយដ្ឋានបច្ចុប្បន្ន')}</label>
+                          <input
+                            type="text"
+                            value={formAddress}
+                            onChange={(e) => setFormAddress(e.target.value)}
+                            placeholder={t('employees.addressPlaceholder', 'ផ្ទះលេខ..., ផ្លូវ..., សង្កាត់...')}
+                            className={inputCls}
                           />
                         </div>
                       </div>
 
-                      {/* Photo Section with Live Avatar Preview */}
-                      <div>
-                        <label className={labelCls}>{t('employees.employee_photo', 'Employee Photo')}</label>
-                        <div className="flex flex-col sm:flex-row items-center gap-4 bg-muted/30 p-4 rounded-2xl border border-border/80">
+                      {/* Photo Upload Box */}
+                      <div className="p-4 rounded-2xl border border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-800/40">
+                        <label className={labelCls}>{t('employees.profilePhoto', 'រូបថតបុគ្គលិក')}</label>
+                        <div className="flex items-center gap-4 mt-2">
                           <EmployeeAvatar
+                            name={formName}
                             photo={formPhoto}
-                            name={formName || 'New Employee'}
-                            size="xl"
                             getPhotoUrl={getPhotoUrl}
+                            size="lg"
                           />
-
-                          <div className="space-y-2 flex-1 w-full text-center sm:text-left">
-                            <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
-                              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs">
-                                {uploadingPhoto ? (
-                                  <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                  <Upload size={14} />
-                                )}
-                                <span>
-                                  {uploadingPhoto
-                                    ? t('employees.uploading', 'Uploading...')
-                                    : t('employees.upload_photo', 'Upload Photo')}
-                                </span>
-                                <input
-                                  type="file"
-                                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                                  onChange={handlePhotoFileChange}
-                                  disabled={uploadingPhoto}
-                                  className="hidden"
-                                />
-                              </label>
-
-                              {formPhoto && (
-                                <button
-                                  type="button"
-                                  onClick={() => setFormPhoto('')}
-                                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-500/10 rounded-xl border border-rose-500/20 transition-colors cursor-pointer"
-                                >
-                                  <Trash2 size={13} />
-                                  <span>{t('employees.remove_photo', 'Remove Photo')}</span>
-                                </button>
-                              )}
-                            </div>
-
+                          <div className="space-y-1.5 flex-1">
                             <input
-                              type="text"
-                              value={formPhoto}
-                              onChange={(e) => setFormPhoto(e.target.value)}
-                              className={`${inputCls} text-xs font-mono py-1.5 text-muted-foreground`}
-                              placeholder={t('employees.or_photo_url', 'Or enter image URL / storage path...')}
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoFileChange}
+                              disabled={uploadingPhoto}
+                              className="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                             />
+                            <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                              {t('employees.photoNote', 'PNG, JPG, WEBP (អតិបរមា 5MB)')}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -650,7 +600,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelCls}>
-                        {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
+                        {t('employees.company', 'ក្រុមហ៊ុន')} <span className="text-rose-500">*</span>
                       </label>
                       <select
                         required
@@ -658,7 +608,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         onChange={(e) => setFormCompanyId(e.target.value)}
                         className={inputCls}
                       >
-                        <option value="">{t('employees.select_company', 'Select Company')}</option>
+                        <option value="">{t('employees.select_company', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
                         {companiesList.map((c: any) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
@@ -668,7 +618,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </div>
                     <div>
                       <label className={labelCls}>
-                        {t('employees.branch', 'Branch')} <span className="text-rose-500">*</span>
+                        {t('employees.branch', 'សាខា')} <span className="text-rose-500">*</span>
                       </label>
                       <select
                         required
@@ -676,7 +626,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         onChange={(e) => setFormBranchId(e.target.value)}
                         className={inputCls}
                       >
-                        <option value="">{t('employees.select_branch', 'Select Branch')}</option>
+                        <option value="">{t('employees.select_branch', '-- ជ្រើសរើសសាខា --')}</option>
                         {branchesList.map((b: any) => (
                           <option key={b.id} value={b.id}>
                             {b.name}
@@ -688,46 +638,61 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelCls}>
-                        {t('employees.department', 'Department Name')} <span className="text-rose-500">*</span>
+                        {t('employees.department_name', 'ឈ្មោះដេប៉ាតឺម៉ង់')} <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Information Technology"
+                        placeholder={t('employees.dept_placeholder', 'ឧ. បច្ចេកវិទ្យាព័ត៌មានវិទ្យា (IT)')}
                         className={inputCls}
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Department Code</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-foreground/90 dark:text-slate-200">
+                          {t('employees.department_code', 'លេខកូដដេប៉ាតឺម៉ង់')}
+                        </label>
+                        {!selectedItem && (
+                          <button
+                            type="button"
+                            onClick={generateDeptCode}
+                            className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Sparkles size={12} />
+                            <span>{t('employees.autoGenerate', 'ស្វ័យប្រវត្តិ')}</span>
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={formEmployeeNumber}
                         onChange={(e) => setFormEmployeeNumber(e.target.value)}
                         className={`${inputCls} font-mono`}
-                        placeholder="e.g. DEPT-IT"
+                        placeholder={t('employees.dept_code_placeholder', 'ឧ. DEPT-IT')}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                    <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
                     <select
                       value={formStatus}
                       onChange={(e) => setFormStatus(e.target.value)}
                       className={inputCls}
                     >
-                      <option value="active">{t('employees.active', 'Active (សកម្ម)')}</option>
-                      <option value="inactive">{t('employees.inactive', 'Inactive (អសកម្ម)')}</option>
+                      <option value="active">{t('employees.active', 'សកម្ម')}</option>
+                      <option value="inactive">{t('employees.inactive', 'អសកម្ម')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>Description</label>
+                    <label className={labelCls}>{t('employees.description', 'ការពិពណ៌នា / ចំណាំ')}</label>
                     <textarea
                       rows={2}
                       value={formAddress}
                       onChange={(e) => setFormAddress(e.target.value)}
-                      className={`${inputCls} resize-none`}
+                      placeholder={t('employees.description_placeholder', 'បញ្ចូលព័ត៌មានលម្អិតបន្ថែម ឬចំណាំ...')}
+                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
                     />
                   </div>
                 </div>
@@ -739,7 +704,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelCls}>
-                        {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
+                        {t('employees.company', 'ក្រុមហ៊ុន')} <span className="text-rose-500">*</span>
                       </label>
                       <select
                         required
@@ -747,7 +712,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         onChange={(e) => setFormCompanyId(e.target.value)}
                         className={inputCls}
                       >
-                        <option value="">{t('employees.select_company', 'Select Company')}</option>
+                        <option value="">{t('employees.select_company', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
                         {companiesList.map((c: any) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
@@ -757,7 +722,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </div>
                     <div>
                       <label className={labelCls}>
-                        {t('employees.department', 'Department')} <span className="text-rose-500">*</span>
+                        {t('employees.department', 'ដេប៉ាតឺម៉ង់')} <span className="text-rose-500">*</span>
                       </label>
                       <select
                         required
@@ -765,7 +730,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         onChange={(e) => setFormDeptId(e.target.value)}
                         className={inputCls}
                       >
-                        <option value="">{t('employees.select_department', 'Select Department')}</option>
+                        <option value="">{t('employees.select_department', '-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --')}</option>
                         {deptList.map((d: any) => (
                           <option key={d.id} value={d.id}>
                             {d.name}
@@ -777,46 +742,61 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelCls}>
-                        {t('employees.position', 'Position Name')} <span className="text-rose-500">*</span>
+                        {t('employees.position_name', 'ឈ្មោះមុខតំណែង')} <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Senior Software Engineer"
+                        placeholder={t('employees.pos_placeholder', 'ឧ. ប្រធានផ្នែកអភិវឌ្ឍន៍ (Senior Dev)')}
                         className={inputCls}
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Position Code</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-foreground/90 dark:text-slate-200">
+                          {t('employees.position_code', 'លេខកូដមុខតំណែង')}
+                        </label>
+                        {!selectedItem && (
+                          <button
+                            type="button"
+                            onClick={generatePosCode}
+                            className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Sparkles size={12} />
+                            <span>{t('employees.autoGenerate', 'ស្វ័យប្រវត្តិ')}</span>
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={formEmployeeNumber}
                         onChange={(e) => setFormEmployeeNumber(e.target.value)}
                         className={`${inputCls} font-mono`}
-                        placeholder="e.g. POS-ENG"
+                        placeholder={t('employees.pos_code_placeholder', 'ឧ. POS-ENG')}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                    <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
                     <select
                       value={formStatus}
                       onChange={(e) => setFormStatus(e.target.value)}
                       className={inputCls}
                     >
-                      <option value="active">{t('employees.active', 'Active (សកម្ម)')}</option>
-                      <option value="inactive">{t('employees.inactive', 'Inactive (អសកម្ម)')}</option>
+                      <option value="active">{t('employees.active', 'សកម្ម')}</option>
+                      <option value="inactive">{t('employees.inactive', 'អសកម្ម')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>Description</label>
+                    <label className={labelCls}>{t('employees.description', 'ការពិពណ៌នា / ចំណាំ')}</label>
                     <textarea
                       rows={2}
                       value={formAddress}
                       onChange={(e) => setFormAddress(e.target.value)}
-                      className={`${inputCls} resize-none`}
+                      placeholder={t('employees.description_placeholder', 'បញ្ចូលព័ត៌មានលម្អិតបន្ថែម ឬចំណាំ...')}
+                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
                     />
                   </div>
                 </div>
@@ -827,7 +807,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className={labelCls}>
-                      {t('employees.employees', 'Employee')} <span className="text-rose-500">*</span>
+                      {t('employees.employee', 'បុគ្គលិក')} <span className="text-rose-500">*</span>
                     </label>
                     <select
                       required
@@ -835,7 +815,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                       onChange={(e) => setAttEmployeeId(e.target.value)}
                       className={inputCls}
                     >
-                      <option value="">Select Employee</option>
+                      <option value="">{t('employees.select_employee', '-- ជ្រើសរើសបុគ្គលិក --')}</option>
                       {empList.map((emp: any) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.name} ({emp.employee_number})
@@ -846,7 +826,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className={labelCls}>
-                        Date <span className="text-rose-500">*</span>
+                        {t('employees.date', 'កាលបរិច្ឆេទ')} <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="date"
@@ -857,7 +837,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Check In</label>
+                      <label className={labelCls}>{t('employees.check_in_time', 'ម៉ោងចូលធ្វើការ')}</label>
                       <input
                         type="time"
                         value={attCheckIn}
@@ -866,7 +846,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Check Out</label>
+                      <label className={labelCls}>{t('employees.check_out_time', 'ម៉ោងចេញពីធ្វើការ')}</label>
                       <input
                         type="time"
                         value={attCheckOut}
@@ -876,25 +856,26 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                    <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
                     <select
                       value={attStatus}
                       onChange={(e) => setAttStatus(e.target.value)}
                       className={inputCls}
                     >
-                      <option value="present">{t('employees.present', 'Present (វត្តមាន)')}</option>
-                      <option value="late">{t('employees.late', 'Late (មកយឺត)')}</option>
-                      <option value="absent">{t('employees.absent', 'Absent (អវត្តមាន)')}</option>
-                      <option value="leave">{t('employees.leave', 'Leave (ច្បាប់សម្រាក)')}</option>
+                      <option value="present">{t('employees.present', 'វត្តមាន')}</option>
+                      <option value="late">{t('employees.late', 'មកយឺត')}</option>
+                      <option value="absent">{t('employees.absent', 'អវត្តមាន')}</option>
+                      <option value="leave">{t('employees.leave', 'ច្បាប់សម្រាក')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>Notes</label>
+                    <label className={labelCls}>{t('employees.notes', 'កំណត់ចំណាំ')}</label>
                     <textarea
                       rows={2}
                       value={attNotes}
                       onChange={(e) => setAttNotes(e.target.value)}
-                      className={`${inputCls} resize-none`}
+                      placeholder={t('employees.notes_placeholder', 'បញ្ចូលមូលហេតុ ឬកំណត់ចំណាំ...')}
+                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
                     />
                   </div>
                 </div>
@@ -906,7 +887,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={labelCls}>
-                        {t('employees.employees', 'Employee')} <span className="text-rose-500">*</span>
+                        {t('employees.employee', 'បុគ្គលិក')} <span className="text-rose-500">*</span>
                       </label>
                       <select
                         required
@@ -914,7 +895,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         onChange={(e) => setPayEmployeeId(e.target.value)}
                         className={inputCls}
                       >
-                        <option value="">Select Employee</option>
+                        <option value="">{t('employees.select_employee', '-- ជ្រើសរើសបុគ្គលិក --')}</option>
                         {empList.map((emp: any) => (
                           <option key={emp.id} value={emp.id}>
                             {emp.name} ({emp.employee_number})
@@ -924,7 +905,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </div>
                     <div>
                       <label className={labelCls}>
-                        {t('employees.period_month', 'Period Month')} <span className="text-rose-500">*</span>
+                        {t('employees.period_month', 'រយៈពេលខែ')} <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="month"
@@ -937,58 +918,62 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelCls}>{t('employees.basic_salary', 'Basic Salary ($)')}</label>
+                      <label className={labelCls}>{t('employees.basic_salary', 'ប្រាក់ខែគោល ($)')}</label>
                       <input
                         type="number"
                         value={formBasicSalary}
                         onChange={(e) => setFormBasicSalary(e.target.value)}
+                        placeholder="850.00"
                         className={inputCls}
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>{t('employees.allowances', 'Allowances ($)')}</label>
+                      <label className={labelCls}>{t('employees.allowances', 'ប្រាក់ឧបត្ថម្ភ ($)')}</label>
                       <input
                         type="number"
                         value={payAllowances}
                         onChange={(e) => setPayAllowances(e.target.value)}
+                        placeholder="50.00"
                         className={inputCls}
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelCls}>{t('employees.deductions', 'Deductions ($)')}</label>
+                      <label className={labelCls}>{t('employees.deductions', 'ការកាត់កង ($)')}</label>
                       <input
                         type="number"
                         value={payDeductions}
                         onChange={(e) => setPayDeductions(e.target.value)}
+                        placeholder="0.00"
                         className={inputCls}
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Overtime Pay ($)</label>
+                      <label className={labelCls}>{t('employees.overtime_pay', 'ប្រាក់ម៉ោងបន្ថែម ($)')}</label>
                       <input
                         type="number"
                         value={payOvertimePay}
                         onChange={(e) => setPayOvertimePay(e.target.value)}
+                        placeholder="0.00"
                         className={inputCls}
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                      <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
                       <select
                         value={payStatus}
                         onChange={(e) => setPayStatus(e.target.value)}
                         className={inputCls}
                       >
-                        <option value="pending">{t('employees.pending', 'Pending (រង់ចាំ)')}</option>
-                        <option value="paid">{t('employees.paid', 'Paid (បានបើកប្រាក់)')}</option>
+                        <option value="pending">{t('employees.pending', 'រង់ចាំ')}</option>
+                        <option value="paid">{t('employees.paid', 'បានបើកប្រាក់')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className={labelCls}>Paid Date</label>
+                      <label className={labelCls}>{t('employees.paid_date', 'កាលបរិច្ឆេទបើកប្រាក់')}</label>
                       <input
                         type="date"
                         value={payPaidAt}
@@ -998,12 +983,13 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Notes</label>
+                    <label className={labelCls}>{t('employees.notes', 'កំណត់ចំណាំ')}</label>
                     <textarea
                       rows={2}
                       value={payNotes}
                       onChange={(e) => setPayNotes(e.target.value)}
-                      className={`${inputCls} resize-none`}
+                      placeholder={t('employees.notes_placeholder', 'បញ្ចូលមូលហេតុ ឬកំណត់ចំណាំ...')}
+                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
                     />
                   </div>
                 </div>
@@ -1011,28 +997,28 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted/20 shrink-0">
+            <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-900/50 shrink-0">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                className="h-10 px-5 rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-800/80 text-xs sm:text-[13px] font-bold text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
-                {t('employees.cancel', 'Cancel')}
+                {t('employees.cancel', 'បោះបង់')}
               </button>
               <button
                 type="submit"
                 disabled={isPending || uploadingPhoto}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
+                className="h-10 inline-flex items-center gap-2 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs sm:text-[13px] font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer active:scale-95"
               >
                 {isPending ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>{t('common.saving', 'Saving...')}</span>
+                    <span>{t('common.saving', 'កំពុងរក្សាទុក...')}</span>
                   </>
                 ) : (
                   <>
-                    <Check size={14} />
-                    <span>{t('employees.save_changes', 'Save Changes')}</span>
+                    <Check size={14} strokeWidth={2.5} />
+                    <span>{selectedItem ? t('employees.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ') : t('common.save', 'រក្សាទុក')}</span>
                   </>
                 )}
               </button>

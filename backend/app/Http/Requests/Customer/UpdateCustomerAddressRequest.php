@@ -15,7 +15,7 @@ class UpdateCustomerAddressRequest extends FormRequest
     {
         return [
             'customer_id' => ['sometimes', 'required', 'integer', 'exists:customers,id'],
-            'label'       => ['sometimes', 'required', 'string', 'in:Home,Office,Warehouse,Other'],
+            'label'       => ['sometimes', 'required', 'string', 'max:100'],
             'name'        => ['sometimes', 'required', 'string', 'max:255'],
             'phone'       => ['sometimes', 'required', 'string', 'max:50'],
             'address'     => ['sometimes', 'required', 'string'],

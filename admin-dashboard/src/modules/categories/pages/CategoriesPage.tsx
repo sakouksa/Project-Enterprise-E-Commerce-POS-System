@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import { downloadBlob } from '@/utils/export'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useToast } from '@/hooks/useToast'
@@ -20,6 +21,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import EmptyState from '@/components/shared/EmptyState'
+import StatusBadge from '@/components/common/StatusBadge'
 import { useTranslation } from 'react-i18next'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
@@ -394,14 +396,8 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     api.get('/categories/export', { responseType: 'blob' })
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', `categories_export_${new Date().toISOString().split('T')[0]}.csv`)
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
+        const dateStamp = new Date().toISOString().split('T')[0]
+        downloadBlob(blob, `categories_export_${dateStamp}.csv`)
         toast.success(t('toast.exportSuccess'))
       })
       .catch(() => toast.error(t('toast.exportError')))
@@ -584,14 +580,7 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
         {/* Status */}
         {visibleColumns.status !== false && (
           <td className="py-3.5 px-3">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-              node.is_active 
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${node.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-              {node.is_active ? t('products.active') : t('products.inactive')}
-            </span>
+            <StatusBadge status={node.is_active} />
           </td>
         )}
 

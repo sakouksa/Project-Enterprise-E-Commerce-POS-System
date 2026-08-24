@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Package, Clock, Users, ArrowUpRight } from 'lucide-react'
 import StatusBadge from '@/components/common/StatusBadge'
+import { formatCurrency } from '@/utils/formatters'
 
 interface DashboardRow3Props {
   topProducts: any[]
@@ -13,14 +14,7 @@ interface DashboardRow3Props {
 export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recentOrders, latestCustomers }) => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2,
-    }).format(val || 0)
-  }
+  const locale = i18n.language === 'km' ? 'km-KH' : 'en-US'
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -49,7 +43,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
               </div>
               <div className="text-right flex-shrink-0">
                 <span className="text-xs font-black text-foreground">
-                  {formatCurrency(p.total_revenue || p.price || 0)}
+                  {formatCurrency(p.total_revenue || p.price || 0, { locale })}
                 </span>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   {p.value || p.total_qty || 0} {t('dashboard.sold', 'sold')}
@@ -95,7 +89,7 @@ export const DashboardRow3: React.FC<DashboardRow3Props> = ({ topProducts, recen
                     {order.customer_name || t('dashboard.walkInCustomer', 'Walk-in')}
                   </td>
                   <td className="py-2.5 text-right font-bold text-foreground">
-                    {formatCurrency(order.grand_total)}
+                    {formatCurrency(order.grand_total, { locale })}
                   </td>
                   <td className="py-2.5 text-right">
                     <StatusBadge status={order.status} />

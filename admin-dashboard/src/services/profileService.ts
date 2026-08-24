@@ -93,3 +93,5 @@ export const profileService = {
     await api.post('/profile/logout-devices')
   },
 }
+
+export default profileService

@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'nav', 'finance'])
   const location = useLocation()
   const { navbar } = useThemeStore()
 
@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const getBreadcrumbLabel = (segment: string) => {
     switch (segment) {
       case 'dashboard':
-        return t('Dashboard', 'Dashboard')
+        return t('nav.dashboard', 'Dashboard')
       case 'products':
         return t('nav.productManagement', 'Products')
       case 'create':

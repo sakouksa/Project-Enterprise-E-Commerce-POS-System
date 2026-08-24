@@ -1,8 +1,11 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
+import { formatCurrency } from '@/utils/formatters'
 
 interface RegistersTabProps {
   registers: any[]
@@ -10,7 +13,7 @@ interface RegistersTabProps {
   isFetching: boolean
   visibleColumns: Record<string, boolean>
   openEditDrawer: (row: any) => void
-  handleDelete: (id: number) => void
+  handleDelete: (id: number, name?: string) => void
 }
 
 export const RegistersTab: React.FC<RegistersTabProps> = ({
@@ -21,6 +24,9 @@ export const RegistersTab: React.FC<RegistersTabProps> = ({
   openEditDrawer,
   handleDelete,
 }) => {
+  const { t, i18n } = useTranslation(['finance', 'common'])
+  const currentLocale = i18n.language === 'km' ? 'km-KH' : i18n.language
+
   return (
     <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden print:hidden">
       <TableWrapper isFetching={isFetching}>
@@ -28,17 +34,17 @@ export const RegistersTab: React.FC<RegistersTabProps> = ({
           <table className="w-full data-table border-collapse">
             <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
               <tr>
-                {visibleColumns.register_title && <th>Register Title</th>}
-                {visibleColumns.register_balance && <th>Current Balance</th>}
-                {visibleColumns.register_status && <th>Till Status</th>}
-                <th className="text-right">Actions</th>
+                {visibleColumns.register_title && <th>{t('finance.register_title', 'Register Title')}</th>}
+                {visibleColumns.register_balance && <th>{t('finance.current_balance', 'Current Balance')}</th>}
+                {visibleColumns.register_status && <th>{t('finance.status_col', 'Status')}</th>}
+                <th className="text-right">{t('finance.actions_col', t('common.actions', 'Actions'))}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <LoadingSkeleton cols={4} />
               ) : registers.length === 0 ? (
-                <EmptyState cols={4} message="No cash registers found." />
+                <EmptyState cols={4} message={t('finance.no_data_registers', 'No cash registers found.')} />
               ) : (
                 registers.map((row: any) => (
                   <tr key={row.id} className="hover:bg-muted/40 transition-colors">
@@ -47,22 +53,18 @@ export const RegistersTab: React.FC<RegistersTabProps> = ({
                     )}
                     {visibleColumns.register_balance && (
                       <td className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                        ${Number(row.closing_balance ?? row.opening_balance ?? row.balance ?? 0).toFixed(2)}
+                        {formatCurrency(row.closing_balance ?? row.opening_balance ?? row.balance ?? 0, { locale: currentLocale })}
                       </td>
                     )}
                     {visibleColumns.register_status && (
                       <td>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase ${
-                          row.status === 'open' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-600 border border-slate-500/20'
-                        }`}>
-                          {row.status || 'closed'}
-                        </span>
+                        <StatusBadge status={row.status || 'closed'} />
                       </td>
                     )}
                     <td className="text-right">
                       <TableActionMenu
                         onEdit={() => openEditDrawer(row)}
-                        onDelete={() => handleDelete(row.id)}
+                        onDelete={() => handleDelete(row.id, row.title || row.name)}
                       />
                     </td>
                   </tr>

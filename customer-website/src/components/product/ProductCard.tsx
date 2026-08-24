@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, ShoppingBag, Eye, Star, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { cn, getImageUrl } from '@/lib/utils'
 import { useSettingsStore, useWishlistStore } from '@/stores'
 import { useCartStore } from '@/stores/cartStore'
 import api from '@/lib/api'
@@ -82,10 +82,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
       <div className="product-card-image relative aspect-square bg-gray-50 dark:bg-gray-900 overflow-hidden">
         <Link to={`/products/${product.slug}`} className="block w-full h-full">
           <img
-            src={product.image || '/images/placeholder-product.png'}
+            src={getImageUrl(product.image)}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
+            onError={(e) => { e.currentTarget.src = '/images/placeholder-product.png' }}
           />
         </Link>
 

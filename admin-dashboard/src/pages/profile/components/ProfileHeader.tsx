@@ -1,8 +1,9 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { Mail, Phone, Shield, Building2, Calendar, Camera, Trash2, Edit3, KeyRound, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { UserProfile } from '@/services/profileService'
 import { useThemeStore } from '@/stores/themeStore'
+import { getAbsoluteImageUrl } from '@/utils/image'
 
 interface ProfileHeaderProps {
   profile: UserProfile
@@ -70,6 +71,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const { t } = useTranslation('profile')
   const { language } = useThemeStore()
   const langKey = language || 'km'
+  const [imgError, setImgError] = useState(false)
+
+  useEffect(() => {
+    setImgError(false)
+  }, [profile.avatar])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -86,9 +92,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         
         {/* Avatar Section with Glowing Ring */}
         <div className="relative group shrink-0">
-          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-2 border-primary/30 bg-gradient-primary flex items-center justify-center shadow-lg relative ring-4 ring-primary/10">
-            {profile.avatar ? (
-              <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-2 border-primary/30 bg-gradient-primary flex items-center justify-center shadow-lg relative ring-4 ring-primary/10 select-none">
+            {profile.avatar && !imgError ? (
+              <img
+                src={getAbsoluteImageUrl(profile.avatar)}
+                alt={profile.name}
+                className="w-full h-full object-cover"
+                onError={() => setImgError(true)}
+              />
             ) : (
               <span className="text-white text-4xl font-black">{profile.name?.[0] ?? 'U'}</span>
             )}

@@ -6,7 +6,7 @@ import {
   Warehouse, Save, User, Building, Phone, Mail, Loader2,
   AlertTriangle, Tag, Clock, PackagePlus, ShieldAlert
 } from 'lucide-react'
-import { FormHeader, FormFooter } from '@/components/common'
+import { FormHeader, FormFooter, EnterpriseSelect } from '@/components/common'
 import { formatCurrency } from '../utils/purchaseCurrency'
 
 interface PurchaseReturnFormSectionProps {
@@ -126,9 +126,9 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
         {/* Left Column (8 / 12) - Main Form Inputs */}
         <div className="lg:col-span-8 space-y-6">
           {/* 1. PO Selection & General Info Card */}
-          <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3.5">
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground uppercase tracking-wider">
+          <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-border/60 dark:border-slate-800 pb-3.5">
+              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 uppercase tracking-wider">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <ShoppingBag size={15} />
                 </div>
@@ -142,29 +142,31 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                 {t('purchases.selectPurchaseOrder', 'ជ្រើសរើសការបញ្ជាទិញទំនិញ')} <span className="text-destructive">*</span>
               </label>
-              <select
+              <EnterpriseSelect
                 value={purchaseId}
-                onChange={(e) => setPurchaseId(e.target.value)}
-                required
-                className="h-9 w-full px-3 py-1.5 text-xs sm:text-[13px] bg-background border border-border/80 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-              >
-                <option value="">{t('purchases.choosePOToReturn', 'ជ្រើសរើសការបញ្ជាទិញដែលត្រូវបង្វិលសងទំនិញ...')}</option>
-                {(purchasesData ?? [])
+                onChange={(val) => setPurchaseId(val ? String(val) : '')}
+                placeholder={t('purchases.choosePOToReturn', 'ជ្រើសរើសការបញ្ជាទិញដែលត្រូវបង្វិលសងទំនិញ...')}
+                searchPlaceholder={t('purchases.searchPOPlaceholder', 'ស្វែងរកលេខកូដបញ្ជាទិញ (PO), អ្នកផ្គត់ផ្គង់...')}
+                options={(purchasesData ?? [])
                   .filter((p: any) => p.status === 'received' || p.status === 'completed' || p.status === 'partial' || p.status === 'ordered')
-                  .map((p: any) => (
-                    <option key={p.id} value={p.id}>
-                      {p.reference_number} — {p.supplier?.name} (${Number(p.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                    </option>
-                  ))}
-              </select>
+                  .map((p: any) => ({
+                    value: String(p.id),
+                    label: `${p.reference_number} — ${p.supplier?.name || ''} ($${Number(p.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`,
+                    title: p.reference_number,
+                    subtitle: `${p.supplier?.name ? `${p.supplier.name} • ` : ''}${p.warehouse?.name ? `${p.warehouse.name} • ` : ''}$${Number(p.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    code: p.reference_number,
+                    badge: p.status,
+                    raw: p,
+                  }))}
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('purchases.returnDate', 'កាលបរិច្ឆេទបង្វិលសង')} <span className="text-destructive">*</span>
                 </label>
                 <input
@@ -172,29 +174,29 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
                   value={returnDate}
                   onChange={(e) => setReturnDate(e.target.value)}
                   required
-                  className="h-9 w-full px-3 py-1.5 text-xs sm:text-[13px] bg-background border border-border/80 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
+                  className="h-10 min-h-[40px] w-full px-3.5 py-2 text-xs sm:text-[13px] bg-background dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 rounded-lg text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium dark:[color-scheme:dark]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('purchases.status', 'ស្ថានភាព')} <span className="text-destructive">*</span>
                 </label>
-                <select
+                <EnterpriseSelect
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  required
-                  className="h-9 w-full px-3 py-1.5 text-xs sm:text-[13px] bg-background border border-border/80 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                >
-                  <option value="draft">{t('purchases.draft', 'សេចក្តីព្រាង (រង់ចាំត្រួតពិនិត្យ)')}</option>
-                  <option value="approved">{t('purchases.approved', 'បានអនុម័ត (កាត់ស្តុកចេញភ្លាមៗ)')}</option>
-                </select>
+                  onChange={(val) => setStatus(val ? String(val) : 'draft')}
+                  options={[
+                    { value: 'draft', label: t('purchases.draft', 'សេចក្តីព្រាង (រង់ចាំត្រួតពិនិត្យ)'), badge: 'draft' },
+                    { value: 'approved', label: t('purchases.approved', 'បានអនុម័ត (កាត់ស្តុកចេញភ្លាមៗ)'), badge: 'approved' },
+                  ]}
+                  placeholder={t('purchases.status', 'ស្ថានភាព')}
+                />
               </div>
             </div>
           </div>
 
           {/* Loading Indicator */}
           {loadingPurchaseDetails && (
-            <div className="flex items-center justify-center py-12 bg-card rounded-2xl border border-dashed border-border text-muted-foreground">
+            <div className="flex items-center justify-center py-12 bg-card dark:bg-slate-900 rounded-2xl border border-dashed border-border dark:border-slate-800 text-muted-foreground dark:text-slate-400">
               <Loader2 className="animate-spin text-primary mr-2.5" size={20} />
               <span className="font-medium text-xs">{t('purchases.loadingPOItems', 'កំពុងទាញយកទិន្នន័យទំនិញពីការបញ្ជាទិញ...')}</span>
             </div>
@@ -202,9 +204,9 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
 
           {/* 2. Items Breakdown Table Card */}
           {returnItems.length > 0 && (
-            <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
-                <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground uppercase tracking-wider">
+            <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 dark:border-slate-800 pb-3.5">
+                <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 uppercase tracking-wider">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                     <Package size={15} />
                   </div>
@@ -409,15 +411,15 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
           )}
 
           {/* 3. Reason for Return Card */}
-          <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3.5">
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground uppercase tracking-wider">
+          <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-border/60 dark:border-slate-800 pb-3.5">
+              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 uppercase tracking-wider">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <FileText size={15} />
                 </div>
                 <span>{t('purchases.reasonForReturn', 'មូលហេតុនៃការបង្វិលសង')}</span>
               </div>
-              <span className="text-[11px] text-muted-foreground font-medium">
+              <span className="text-[11px] text-muted-foreground dark:text-slate-400 font-medium">
                 {t('purchases.quickReasons', 'ចុចជ្រើសរើសមូលហេតុរហ័ស')}
               </span>
             </div>
@@ -429,7 +431,7 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
                   key={i}
                   type="button"
                   onClick={() => handleChipClick(chip.label)}
-                  className="px-3 py-1.5 text-xs font-medium bg-muted/60 hover:bg-primary/10 hover:text-primary hover:border-primary/30 border border-border/80 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                  className="px-3 py-1.5 text-xs font-medium bg-muted/60 dark:bg-slate-800/80 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/50 border border-border/80 dark:border-slate-700 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 text-foreground dark:text-slate-200"
                 >
                   {chip.icon}
                   <span>{chip.label}</span>
@@ -442,7 +444,7 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
               onChange={(e) => setReason(e.target.value)}
               placeholder={t('purchases.returnReasonPlaceholder', 'បញ្ចូលមូលហេតុនៃការបង្វិលសង (ឧ. ទំនិញខូចគុណភាព, បញ្ជូនខុសម៉ូដែល, លើសចំនួន)...')}
               rows={3}
-              className="w-full resize-none p-3 text-xs sm:text-[13px] bg-background border border-border/80 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium leading-relaxed"
+              className="w-full resize-none p-3 text-xs sm:text-[13px] bg-background dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 rounded-xl text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium leading-relaxed"
             />
           </div>
         </div>
@@ -450,7 +452,7 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
         {/* Right Column (4 / 12) - Summary & Metadata Cards */}
         <div className="lg:col-span-4 space-y-6">
           {/* Estimated Return Value Card */}
-          <div className="bg-gradient-to-br from-card to-rose-500/5 border border-rose-500/20 rounded-2xl p-5 shadow-xs space-y-3.5">
+          <div className="bg-gradient-to-br from-card to-rose-500/5 dark:from-slate-900 dark:to-rose-950/20 border border-rose-500/20 dark:border-rose-500/30 rounded-2xl p-5 shadow-xs space-y-3.5">
             <div className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
               <AlertCircle size={15} />
               <span>{t('purchases.estimatedReturnValue', 'តម្លៃប៉ាន់ស្មានសរុបត្រូវបង្វិលសង')}</span>
@@ -460,14 +462,14 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
               <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 font-mono tracking-tight">
                 {formatCurrency(returnTotalUSD, 'USD')}
               </div>
-              <div className="text-xs text-muted-foreground font-mono mt-0.5">
+              <div className="text-xs text-muted-foreground dark:text-slate-400 font-mono mt-0.5">
                 {formatCurrency(returnTotalKHR, 'KHR')}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+            <div className="pt-3 border-t border-border/60 dark:border-slate-800 flex items-center justify-between text-xs text-muted-foreground dark:text-slate-400">
               <span>{t('purchases.itemsAvailable', 'មុខទំនិញ')}:</span>
-              <span className="font-bold text-foreground font-mono">
+              <span className="font-bold text-foreground dark:text-slate-200 font-mono">
                 {activeItemsCount} {t('purchases.itemsAvailable', 'មុខទំនិញ')} ({totalUnitsSelected} {t('purchases.unitsSelected', 'ឯកតាត្រូវបានជ្រើសរើស')})
               </span>
             </div>
@@ -475,31 +477,31 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
 
           {/* Supplier & Warehouse Metadata Card */}
           {selectedPO && (
-            <div className="bg-card border border-border/80 rounded-2xl p-5 shadow-xs space-y-3.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider border-b border-border/60 pb-3">
+            <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground dark:text-slate-100 uppercase tracking-wider border-b border-border/60 dark:border-slate-800 pb-3">
                 <Building size={15} className="text-primary" />
                 <span>{t('purchases.supplierDetails', 'ព័ត៌មានអ្នកផ្គត់ផ្គង់')}</span>
               </div>
 
               <div className="space-y-2.5 text-xs">
-                <div className="flex items-center gap-2 text-foreground font-bold">
-                  <User size={14} className="text-muted-foreground shrink-0" />
+                <div className="flex items-center gap-2 text-foreground dark:text-slate-100 font-bold">
+                  <User size={14} className="text-muted-foreground dark:text-slate-400 shrink-0" />
                   <span>{selectedPO.supplier?.name}</span>
                 </div>
                 {selectedPO.supplier?.phone && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone size={14} className="text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400">
+                    <Phone size={14} className="text-muted-foreground dark:text-slate-400 shrink-0" />
                     <span>{selectedPO.supplier.phone}</span>
                   </div>
                 )}
                 {selectedPO.supplier?.email && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail size={14} className="text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400">
+                    <Mail size={14} className="text-muted-foreground dark:text-slate-400 shrink-0" />
                     <span>{selectedPO.supplier.email}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-muted-foreground pt-1.5 border-t border-border/60">
-                  <Warehouse size={14} className="text-muted-foreground shrink-0" />
+                <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 pt-1.5 border-t border-border/60 dark:border-slate-800">
+                  <Warehouse size={14} className="text-muted-foreground dark:text-slate-400 shrink-0" />
                   <span>{selectedPO.warehouse?.name || 'Main Warehouse'}</span>
                 </div>
               </div>
@@ -507,13 +509,13 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
           )}
 
           {/* Automated System Operations Card */}
-          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 shadow-xs space-y-3">
+          <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-2xl p-5 shadow-xs space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
               <ShieldCheck size={15} />
               <span>{t('purchases.impactTitle', 'ដំណើរការដោយស្វ័យប្រវត្តិនឹងកើតឡើង')}</span>
             </div>
 
-            <div className="space-y-2.5 text-xs text-muted-foreground">
+            <div className="space-y-2.5 text-xs text-muted-foreground dark:text-slate-300">
               <div className="flex items-start gap-2">
                 <Warehouse size={14} className="text-primary shrink-0 mt-0.5" />
                 <span>{t('purchases.impactStock', 'ឃ្លាំងកាត់បន្ថយសន្និធិពីស្តុកភ្លាមៗ')}</span>
@@ -540,7 +542,7 @@ export const PurchaseReturnFormSection: React.FC<PurchaseReturnFormSectionProps>
             type="submit"
             onClick={() => setStatus('draft')}
             disabled={isSubmitting || (!!purchaseId && returnItems.length === 0)}
-            className="h-9 px-4 text-xs sm:text-[13px] font-semibold border border-border/80 bg-muted/80 hover:bg-muted text-foreground rounded-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-2xs active:scale-95"
+            className="h-10 min-h-[40px] px-4 text-xs sm:text-[13px] font-semibold border border-border/80 dark:border-slate-700 bg-muted/80 dark:bg-slate-800 hover:bg-muted dark:hover:bg-slate-700 text-foreground dark:text-slate-200 rounded-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-2xs active:scale-95"
           >
             <Save size={14} />
             <span>{t('purchases.saveDraftReturn', 'រក្សាទុកជាសេចក្តីព្រាង')}</span>

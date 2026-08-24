@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { getAbsoluteImageUrl } from '@/utils/image'
 
 interface EmployeeAvatarProps {
   photo?: string | null
@@ -72,7 +73,7 @@ export const EmployeeAvatar: React.FC<EmployeeAvatarProps> = ({
     xl: 'w-20 h-20 text-xl font-bold',
   }[size]
 
-  const rawUrl = photo ? (getPhotoUrl ? getPhotoUrl(photo) : photo) : null
+  const rawUrl = photo ? (getPhotoUrl ? getPhotoUrl(photo) : getAbsoluteImageUrl(photo)) : null
   const hasValidPhoto = Boolean(rawUrl) && !imgError
 
   return (

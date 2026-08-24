@@ -16,6 +16,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { formatCurrency } from '@/utils/formatters'
 
 import CategoriesPage from '@/modules/categories/pages/CategoriesPage'
 import BrandsPage from '@/pages/brands/BrandsPage'
@@ -38,15 +39,8 @@ const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const qc = useQueryClient()
   const toast = useToast()
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount || 0)
-  }
+  const locale = i18n.language === 'km' ? 'km-KH' : 'en-US'
+  const formatMoney = (amount: number) => formatCurrency(amount, { locale })
 
   const activeTabParam = searchParams.get('tab') || 'products'
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<string>(activeTabParam)
@@ -205,12 +199,21 @@ const ProductsPage: React.FC = () => {
     mutationFn: (ids: number[]) => api.post('/products/bulk-delete', { ids }),
     onSuccess: (_, ids) => {
       qc.invalidateQueries({ queryKey: ['products'] })
-      toast.success(`${ids.length} products deleted.`)
+      toast.success(
+        t('products.bulkDeleteSuccess', {
+          count: ids.length,
+          defaultValue: `${ids.length} products deleted.`
+        }).replace('{{count}}', String(ids.length))
+      )
       setSelectedRows([])
       setBulkDeleteConfirmOpen(false)
       adjustAfterDelete(products.length - ids.length)
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to delete selected products.')
+    onError: (err: any) =>
+      toast.error(
+        err?.response?.data?.message ??
+          t('products.bulkDeleteError', t('toast.error', 'Failed to delete selected products.'))
+      )
   })
 
   const handleExport = () => toast.info('Downloading products CSV export...')
@@ -308,7 +311,7 @@ const ProductsPage: React.FC = () => {
       </div>
 
       {/* KPI Overview Cards */}
-      <ProductStatsCards analytics={analytics} formatCurrency={formatCurrency} />
+      <ProductStatsCards analytics={analytics} formatCurrency={formatMoney} />
 
       {/* Workspace Tabs Navigation */}
       <WorkspaceTabs
@@ -385,7 +388,7 @@ const ProductsPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 h-10 px-3.5 text-xs sm:text-sm font-semibold bg-rose-500/10 text-rose-600 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 active:scale-[0.98] transition-all cursor-pointer shrink-0"
                 >
                   <Trash2 size={14} />
-                  <span>{t('common:delete', 'Delete')} ({selectedRows.length})</span>
+                  <span>{t('products.deleteSelected', t('common.deleteSelected', 'Delete Selected'))} ({selectedRows.length})</span>
                 </button>
               )}
             </div>
@@ -451,7 +454,7 @@ const ProductsPage: React.FC = () => {
             onDelete={(p) => setDeleteConfirm({ open: true, id: p.id, force: false, name: p.name })}
             onRestore={() => {}}
             onForceDelete={() => {}}
-            formatCurrency={formatCurrency}
+            formatCurrency={formatMoney}
           />
 
           <Pagination
@@ -468,7 +471,7 @@ const ProductsPage: React.FC = () => {
             product={viewProduct}
             onClose={() => setViewProduct(null)}
             onEdit={(p) => navigate(`/products/${p.id}/edit`)}
-            formatCurrency={formatCurrency}
+            formatCurrency={formatMoney}
           />
 
           {/* CSV Import Modal */}
@@ -496,10 +499,10 @@ const ProductsPage: React.FC = () => {
           {/* Bulk Delete Dialog */}
           <ConfirmDialog
             open={bulkDeleteConfirmOpen}
-            title="products.bulkDeleteTitle"
+            title={t('products.bulkDeleteTitle', 'Delete Selected Products')}
             message={t('products.confirmBulkDeleteMessage', {
               count: selectedRows.length,
-              defaultValue: `តើអ្នកប្រាកដជាចង់លុបទិន្នន័យទំនិញទាំង ${selectedRows.length} ដែលបានជ្រើសរើសនេះមែនទេ?`
+              defaultValue: `Are you sure you want to delete all ${selectedRows.length} selected products? This action cannot be undone.`
             }).replace('{{count}}', String(selectedRows.length))}
             confirmText="common.confirmDelete"
             cancelText="common.cancel"

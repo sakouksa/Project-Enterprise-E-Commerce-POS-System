@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 import Spinner from '@/components/ui/Spinner'
+import PageTransition from '@/components/common/PageTransition'
 
 const BlogPage: React.FC = () => {
   const [blogs, setBlogs]     = useState<any[]>([])
@@ -17,7 +18,7 @@ const BlogPage: React.FC = () => {
   if (loading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
 
   return (
-    <div className="container-site py-8 space-y-8">
+    <PageTransition className="container-site py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Latest News & Tech Articles
@@ -44,7 +45,7 @@ const BlogPage: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageTransition>
   )
 }
 

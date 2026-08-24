@@ -6,6 +6,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 import type { Tab } from '../types'
 
 interface EmployeeTableSectionProps {
@@ -24,9 +25,7 @@ interface EmployeeTableSectionProps {
   openViewDrawer: (item: any) => void
   setSelectedAttendanceDetail: (item: any) => void
   openEditModal: (item: any) => void
-  confirmDelete: (id: number, force?: boolean) => void
-  recycleBinMode: boolean
-  restoreRecord: (id: number) => void
+  confirmDelete: (itemOrId: any, force?: boolean) => void
 }
 
 export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
@@ -46,8 +45,6 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
   setSelectedAttendanceDetail,
   openEditModal,
   confirmDelete,
-  recycleBinMode,
-  restoreRecord,
 }) => {
   const { t } = useTranslation(['employees', 'common'])
 
@@ -111,17 +108,17 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                 )}
                 {activeTab === 'attendance' && (
                   <>
-                    {visibleColumns.date && <th className="w-[12%] cursor-pointer select-none" onClick={() => handleSort('attendance_date')}>{t('employees.date', 'Date')} {renderSortIcon('attendance_date')}</th>}
-                    {visibleColumns.employee && <th className="w-[18%]">{t('employees.employee', 'Employee')}</th>}
-                    {visibleColumns.dept_pos && <th className="w-[14%]">{t('employees.dept_pos', 'Department / Position')}</th>}
-                    {visibleColumns.shift && <th className="w-[10%]">{t('employees.shift', 'Shift')}</th>}
-                    {visibleColumns.check_in && <th className="w-[10%] cursor-pointer select-none" onClick={() => handleSort('check_in')}>{t('employees.check_in', 'Check In')} {renderSortIcon('check_in')}</th>}
-                    {visibleColumns.check_out && <th className="w-[10%] cursor-pointer select-none" onClick={() => handleSort('check_out')}>{t('employees.check_out', 'Check Out')} {renderSortIcon('check_out')}</th>}
-                    {visibleColumns.worked_hours && <th className="w-[10%]">{t('employees.worked_hours', 'Worked Hours')}</th>}
-                    {visibleColumns.late && <th className="w-[8%]">{t('employees.late', 'Late')}</th>}
-                    {visibleColumns.overtime && <th className="w-[8%]">{t('employees.overtime', 'Overtime')}</th>}
-                    {visibleColumns.status && <th className="w-[10%] cursor-pointer select-none" onClick={() => handleSort('status')}>{t('employees.status', 'Status')} {renderSortIcon('status')}</th>}
-                    {visibleColumns.device_method && <th className="w-[12%]">{t('employees.device_method', 'Device & Method')}</th>}
+                    {visibleColumns.date && <th className="cursor-pointer select-none" onClick={() => handleSort('attendance_date')}>{t('employees.date', 'Date')} {renderSortIcon('attendance_date')}</th>}
+                    {visibleColumns.employee && <th>{t('employees.employee', 'Employee')}</th>}
+                    {visibleColumns.dept_pos && <th>{t('employees.dept_pos', 'Department / Position')}</th>}
+                    {visibleColumns.shift && <th>{t('employees.shift', 'Shift')}</th>}
+                    {visibleColumns.check_in && <th className="cursor-pointer select-none" onClick={() => handleSort('check_in')}>{t('employees.check_in', 'Check In')} {renderSortIcon('check_in')}</th>}
+                    {visibleColumns.check_out && <th className="cursor-pointer select-none" onClick={() => handleSort('check_out')}>{t('employees.check_out', 'Check Out')} {renderSortIcon('check_out')}</th>}
+                    {visibleColumns.worked_hours && <th>{t('employees.worked_hours', 'Worked Hours')}</th>}
+                    {visibleColumns.late && <th>{t('employees.late', 'Late')}</th>}
+                    {visibleColumns.overtime && <th>{t('employees.overtime', 'Overtime')}</th>}
+                    {visibleColumns.status && <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>{t('employees.status', 'Status')} {renderSortIcon('status')}</th>}
+                    {visibleColumns.device_method && <th>{t('employees.device_method', 'Device & Method')}</th>}
                   </>
                 )}
                 {activeTab === 'payrolls' && (
@@ -146,16 +143,25 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
               ) : records.length === 0 ? (
                 <EmptyState cols={50} message={t('employees.no_records', 'No employee module records found')} />
               ) : (
-                records.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="!px-3">
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        checked={selectedRows.includes(r.id)}
-                        onChange={e => handleSelectRow(r.id, e.target.checked)}
-                      />
-                    </td>
+                records.map((r: any) => {
+                  const isSelected = selectedRows.includes(r.id)
+                  return (
+                    <tr
+                      key={r.id}
+                      className={`transition-colors ${
+                        isSelected
+                          ? 'bg-primary/8 dark:bg-primary/15'
+                          : 'hover:bg-muted/40'
+                      }`}
+                    >
+                      <td className="!px-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleSelectRow(r.id, e.target.checked)}
+                        />
+                      </td>
                     {activeTab === 'employees' && (
                       <>
                         {visibleColumns.id && <td>{r.id}</td>}
@@ -193,23 +199,7 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                         {visibleColumns.created_at && <td className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>}
                         {visibleColumns.status && (
                           <td>
-                            {r.status === 'active' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 capitalize">
-                                {t('employees.active', 'Active')}
-                              </span>
-                            ) : r.status === 'on_leave' || r.status === 'leave' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 capitalize">
-                                {t('employees.on_leave', 'On Leave')}
-                              </span>
-                            ) : r.status === 'resigned' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 capitalize">
-                                {t('employees.resigned', 'Resigned')}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 capitalize">
-                                {t('employees.inactive', 'Inactive')}
-                              </span>
-                            )}
+                            <StatusBadge status={r.status} />
                           </td>
                         )}
                       </>
@@ -237,9 +227,7 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                         )}
                         {visibleColumns.status && (
                           <td>
-                            <span className={`badge ${r.is_active ? 'badge-success' : 'badge-muted'}`}>
-                              {r.is_active ? t('employees.active', 'Active') : t('employees.inactive', 'Inactive')}
-                            </span>
+                            <StatusBadge status={r.is_active} />
                           </td>
                         )}
                       </>
@@ -260,9 +248,7 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                         )}
                         {visibleColumns.status && (
                           <td>
-                            <span className={`badge ${r.is_active ? 'badge-success' : 'badge-muted'}`}>
-                              {r.is_active ? t('employees.active', 'Active') : t('employees.inactive', 'Inactive')}
-                            </span>
+                            <StatusBadge status={r.is_active} />
                           </td>
                         )}
                       </>
@@ -301,16 +287,7 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                         {visibleColumns.overtime && <td className="text-xs font-semibold text-emerald-500">{r.overtime_formatted ?? '0m'}</td>}
                         {visibleColumns.status && (
                           <td>
-                            <span className={`badge ${
-                              r.status === 'present' ? 'badge-success' :
-                              r.status === 'absent' ? 'badge-danger' :
-                              r.status === 'late' ? 'badge-warning' : 'badge-info'
-                            }`}>
-                              {r.status === 'present' ? t('employees.present', 'Present') :
-                               r.status === 'absent' ? t('employees.absent', 'Absent') :
-                               r.status === 'late' ? t('employees.late', 'Late') :
-                               r.status === 'leave' || r.status === 'on_leave' ? t('employees.leave', 'On Leave') : r.status}
-                            </span>
+                            <StatusBadge status={r.status} />
                           </td>
                         )}
                         {visibleColumns.device_method && (
@@ -332,12 +309,7 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                         {visibleColumns.net_salary && <td className="font-bold text-primary font-mono">${Number(r.net_salary).toLocaleString()}</td>}
                         {visibleColumns.status && (
                           <td>
-                            <span className={`badge ${r.status === 'paid' ? 'badge-success' : r.status === 'approved' ? 'badge-info' : 'badge-warning'
-                              }`}>
-                              {r.status === 'paid' ? t('employees.paid', 'Paid') :
-                               r.status === 'approved' ? t('employees.approved', 'Approved') :
-                               t('employees.pending', 'Pending')}
-                            </span>
+                            <StatusBadge status={r.status} />
                           </td>
                         )}
                         {visibleColumns.paid_at && <td className="text-xs">{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '-'}</td>}
@@ -352,31 +324,13 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                             ? () => setSelectedAttendanceDetail(r)
                             : undefined
                         }
-                        onEdit={!recycleBinMode ? () => openEditModal(r) : undefined}
-                        onDelete={!recycleBinMode ? () => confirmDelete(r.id, false) : undefined}
-                        items={
-                          recycleBinMode
-                            ? [
-                                {
-                                  label: 'Restore',
-                                  icon: RotateCcw,
-                                  onClick: () => restoreRecord(r.id),
-                                  variant: 'success',
-                                },
-                                {
-                                  label: 'Delete Permanently',
-                                  icon: Trash2,
-                                  onClick: () => confirmDelete(r.id, true),
-                                  variant: 'danger',
-                                },
-                              ]
-                            : undefined
-                        }
+                        onEdit={() => openEditModal(r)}
+                        onDelete={() => confirmDelete(r, false)}
                       />
                     </td>
                   </tr>
-                ))
-              )}
+                )
+              }))}
             </tbody>
           </table>
         </div>

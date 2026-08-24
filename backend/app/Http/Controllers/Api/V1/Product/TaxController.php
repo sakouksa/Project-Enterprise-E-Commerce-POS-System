@@ -7,24 +7,28 @@ use App\Http\Requests\Product\CreateTaxRequest;
 use App\Http\Requests\Product\UpdateTaxRequest;
 use App\Http\Resources\Product\TaxResource;
 use App\Infrastructure\Services\Product\TaxService;
+use App\Models\Product\Tax;
+use App\Services\Support\CsvService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TaxController extends BaseApiController
 {
-    public function __construct(private readonly TaxService $service)
-    {
-    }
+    public function __construct(
+        private readonly TaxService $service,
+        protected CsvService $csvService
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedSorts = ['id', 'name', 'rate', 'type', 'is_active', 'created_at'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
+        $sortBy = in_array($sortBy, $allowedSorts, true) ? $sortBy : 'id';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc'], true) ? $sortOrder : 'desc';
 
-        $query = \App\Models\Product\Tax::when($request->status === 'deleted', function ($q) {
+        $query = Tax::when($request->status === 'deleted', function ($q) {
                 $q->onlyTrashed();
             })
             ->when($request->status && $request->status !== 'deleted', function ($q) use ($request) {
@@ -35,7 +39,7 @@ class TaxController extends BaseApiController
             });
 
         $records = $query->orderBy($sortBy, $sortOrder)
-                          ->paginate($request->integer('per_page', 10));
+                         ->paginate($request->integer('per_page', 10));
 
         return $this->paginatedResourceResponse(
             TaxResource::collection($records),
@@ -83,14 +87,14 @@ class TaxController extends BaseApiController
 
     public function restore(int $id): JsonResponse
     {
-        $record = \App\Models\Product\Tax::onlyTrashed()->findOrFail($id);
+        $record = Tax::onlyTrashed()->findOrFail($id);
         $record->restore();
         return $this->successResponse(new TaxResource($record), 'Tax restored successfully');
     }
 
     public function forceDelete(int $id): JsonResponse
     {
-        $record = \App\Models\Product\Tax::withTrashed()->findOrFail($id);
+        $record = Tax::withTrashed()->findOrFail($id);
         $record->forceDelete();
         return $this->successResponse(null, 'Tax permanently deleted successfully');
     }
@@ -98,125 +102,74 @@ class TaxController extends BaseApiController
     public function bulkDelete(Request $request): JsonResponse
     {
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
-        $count = 0;
-        foreach ($ids as $id) {
-            $record = \App\Models\Product\Tax::find($id);
-            if ($record) {
-                $record->delete();
-                $count++;
-            }
-        }
+        $count = Tax::whereIn('id', $ids)->delete();
         return $this->successResponse(null, "{$count} taxes deleted successfully");
     }
 
     public function bulkRestore(Request $request): JsonResponse
     {
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
-        $count = 0;
-        foreach ($ids as $id) {
-            $record = \App\Models\Product\Tax::onlyTrashed()->find($id);
-            if ($record) {
-                $record->restore();
-                $count++;
-            }
-        }
+        $count = Tax::onlyTrashed()->whereIn('id', $ids)->restore();
         return $this->successResponse(null, "{$count} taxes restored successfully");
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
-        $headers = [
-            'Content-type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename=taxes_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
-        ];
+        $headers = ['Name', 'Rate', 'Type', 'Active'];
+        $records = Tax::all();
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, ['Name', 'Rate', 'Type', 'Active']);
-
-            $records = \App\Models\Product\Tax::all();
-
-            foreach ($records as $rec) {
-                fputcsv($file, [
-                    $rec->name,
-                    $rec->rate,
-                    $rec->type,
-                    $rec->is_active ? '1' : '0'
-                ]);
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'taxes_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $records,
+            rowMapper: fn(Tax $rec) => [
+                $rec->name,
+                $rec->rate,
+                $rec->type,
+                $rec->is_active ? '1' : '0',
+            ]
+        );
     }
 
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        if ($handle === false) {
-            return response()->json(['success' => false, 'message' => 'Cannot open file'], 400);
+        $result = $this->csvService->parseCsv($request->file('file'), ['name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return response()->json(['success' => false, 'message' => 'Empty CSV'], 400);
-        }
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } else {
-                $row = array_slice($row, 0, count($headers));
-            }
-            $data = array_combine($headers, $row);
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
-            $rate = floatval($data['rate'] ?? 0);
+            $rate = (float) ($data['rate'] ?? 0);
             if (!$name) {
                 $errors[] = "Line {$line}: Name is required.";
                 continue;
             }
 
-            \App\Models\Product\Tax::create([
-                'company_id' => $request->user()->company_id ?? 1,
+            Tax::create([
+                'company_id' => $request->user()?->company_id ?? 1,
                 'name'       => $name,
                 'rate'       => $rate,
                 'type'       => trim($data['type'] ?? 'percentage'),
-                'is_active'  => filter_var($data['active'] ?? $data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                'is_active'  => filter_var($data['active'] ?? $data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ]);
+
             $successCount++;
         }
-        fclose($handle);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Import completed',
-            'data' => [
-                'success_count' => $successCount,
-                'errors' => $errors
-            ]
-        ]);
+        return $this->successResponse([
+            'success_count' => $successCount,
+            'errors'        => $errors,
+        ], 'Import completed');
     }
 }

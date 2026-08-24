@@ -21,7 +21,7 @@ interface SuppliersFilterDrawerProps {
 
 const FieldLabel: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="space-y-1.5">
-    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+    <label className="block text-[11px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
       {label}
     </label>
     {children}
@@ -89,7 +89,7 @@ export const SuppliersFilterDrawer: React.FC<SuppliersFilterDrawerProps> = ({
             setPage(1)
           }}
           placeholder={t('suppliers.countryPlaceholder', 'e.g. Cambodia, China, Thailand, Vietnam...')}
-          className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+          className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400"
         />
       </FieldLabel>
 
@@ -103,7 +103,7 @@ export const SuppliersFilterDrawer: React.FC<SuppliersFilterDrawerProps> = ({
             setPage(1)
           }}
           placeholder={t('suppliers.cityPlaceholder', 'e.g. Phnom Penh, Bangkok, Shanghai, Hanoi...')}
-          className="form-input text-xs w-full rounded-xl border border-border bg-card text-foreground"
+          className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400"
         />
       </FieldLabel>
 

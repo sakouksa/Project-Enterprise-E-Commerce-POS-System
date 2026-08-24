@@ -717,6 +717,227 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         )
       }
 
+      const isEmployeeContext =
+        `${title || ''}`.toLowerCase().includes('employee') ||
+        `${title || ''}`.includes('បុគ្គលិក') ||
+        `${title || ''}`.includes('员工') ||
+        `${title || ''}`.includes('พนักงาน') ||
+        `${title || ''}`.includes('nhân viên')
+
+      if (isEmployeeContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                ព័ត៌មានបុគ្គលិក <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The employee profile <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                员工档案 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                ข้อมูลพนักงาน <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Hồ sơ nhân viên <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The employee profile "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
+      const isDepartmentContext =
+        `${title || ''}`.toLowerCase().includes('department') ||
+        `${title || ''}`.includes('ដេប៉ាតឺម៉ង់') ||
+        `${title || ''}`.includes('ផ្នែក') ||
+        `${title || ''}`.includes('部门') ||
+        `${title || ''}`.includes('แผนก') ||
+        `${title || ''}`.includes('phòng ban')
+
+      if (isDepartmentContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                ដេប៉ាតឺម៉ង់ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The department <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                部门 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                แผนก <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Phòng ban <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The department "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
+      const isPositionContext =
+        `${title || ''}`.toLowerCase().includes('position') ||
+        `${title || ''}`.includes('តួនាទី') ||
+        `${title || ''}`.includes('职位') ||
+        `${title || ''}`.includes('ตำแหน่ง') ||
+        `${title || ''}`.includes('chức vụ')
+
+      if (isPositionContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                តួនាទីការងារ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The position <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                职位 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                ตำแหน่ง <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Chức vụ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The position "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
+      const isAttendanceContext =
+        `${title || ''}`.toLowerCase().includes('attendance') ||
+        `${title || ''}`.includes('វត្តមាន') ||
+        `${title || ''}`.includes('考勤') ||
+        `${title || ''}`.includes('เวลาเข้า-ออกงาน') ||
+        `${title || ''}`.includes('chấm công')
+
+      if (isAttendanceContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                កំណត់ត្រាវត្តមាន <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The attendance record <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                考勤记录 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                บันทึกเวลาทำงาน <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Bản ghi chấm công <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The attendance record "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
+      const isPayrollContext =
+        `${title || ''}`.toLowerCase().includes('payroll') ||
+        `${title || ''}`.includes('ប្រាក់បៀវត្សរ៍') ||
+        `${title || ''}`.includes('薪资') ||
+        `${title || ''}`.includes('เงินเดือน') ||
+        `${title || ''}`.includes('bảng lương')
+
+      if (isPayrollContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                បញ្ជីប្រាក់បៀវត្សរ៍ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The payroll record <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                薪资记录 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                รายการเงินเดือน <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Bảng lương <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The payroll record "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
       return (
         <>
           {language === 'km' && (
@@ -895,7 +1116,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             {/* Optional Custom Message Body */}
             {message && (
               <div className="p-4 py-3 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
-                {typeof message === 'string' ? translateString(t(message, { defaultValue: message })) : message}
+                {typeof message === 'string'
+                  ? (message.includes(' ') || message.includes('\n') || message.includes('?') || message.includes('。') || message.includes('។')
+                      ? message
+                      : translateString(t(message, { defaultValue: message })))
+                  : message}
               </div>
             )}
 

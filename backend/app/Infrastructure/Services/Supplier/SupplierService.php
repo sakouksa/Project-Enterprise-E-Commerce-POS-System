@@ -6,6 +6,7 @@ use App\Infrastructure\Repositories\Supplier\SupplierRepository;
 use App\Models\Supplier\Supplier;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class SupplierService
 {
@@ -30,16 +31,58 @@ class SupplierService
 
     public function create(array $data): Supplier
     {
-        return $this->repository->create($data);
+        return DB::transaction(function () use ($data) {
+            $contacts = $data['contacts'] ?? [];
+            unset($data['contacts']);
+
+            $supplier = $this->repository->create($data);
+
+            foreach ($contacts as $contactData) {
+                $supplier->contacts()->create([
+                    'name'       => $contactData['name'],
+                    'title'      => $contactData['title'] ?? null,
+                    'email'      => $contactData['email'] ?? null,
+                    'phone'      => $contactData['phone'] ?? null,
+                    'is_primary' => (bool) ($contactData['is_primary'] ?? false),
+                ]);
+            }
+
+            return $supplier->load('contacts');
+        });
     }
 
     public function update(int|string $id, array $data): Supplier
     {
-        return $this->repository->update($id, $data);
+        return DB::transaction(function () use ($id, $data) {
+            $contacts = $data['contacts'] ?? null;
+            unset($data['contacts']);
+
+            $supplier = $this->repository->update($id, $data);
+
+            if ($contacts !== null) {
+                $supplier->contacts()->delete();
+                foreach ($contacts as $contactData) {
+                    $supplier->contacts()->create([
+                        'name'       => $contactData['name'],
+                        'title'      => $contactData['title'] ?? null,
+                        'email'      => $contactData['email'] ?? null,
+                        'phone'      => $contactData['phone'] ?? null,
+                        'is_primary' => (bool) ($contactData['is_primary'] ?? false),
+                    ]);
+                }
+            }
+
+            return $supplier->load('contacts');
+        });
     }
 
     public function delete(int|string $id): bool
     {
         return $this->repository->delete($id);
+    }
+
+    public function bulkDelete(array $ids): int
+    {
+        return Supplier::whereIn('id', $ids)->delete();
     }
 }

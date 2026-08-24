@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react'
+import { formatCurrency, formatNumber } from '@/utils/formatters'
 
 export interface PurchaseSummaryData {
   total_purchase_cost?: number
@@ -37,16 +38,6 @@ export const PurchaseSummaryCards: React.FC<PurchaseSummaryCardsProps> = ({
   isLoading = false
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val?: number) => {
-    if (val === undefined || val === null) return '$0.00'
-    return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
-
-  const formatNumber = (val?: number) => {
-    if (val === undefined || val === null) return '0'
-    return val.toLocaleString('en-US')
-  }
 
   const cards = [
     {

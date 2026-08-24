@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { productService } from '@/services/productService'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import StatusBadge from '@/components/common/StatusBadge'
+import { formatDisplayDate } from '@/utils/formatters'
 import type { Product } from '../types/productsPage.types'
 
 interface ProductDetailDrawerProps {
@@ -216,19 +218,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
   // Format date helper
   const formatDate = (isoString?: string) => {
-    if (!isoString) return 'N/A'
-    try {
-      const d = new Date(isoString)
-      return d.toLocaleDateString(i18n.language || 'en', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    } catch {
-      return isoString
-    }
+    return formatDisplayDate(isoString, { locale: i18n.language || 'en', includeTime: true, fallback: 'N/A' })
   }
 
   // Isolated Barcode Print Execution
@@ -555,20 +545,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                         <span>{getCategoryName(product?.category?.name)}</span>
                       </span>
 
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                        product?.status === 'active'
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
-                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-                      }`}>
-                        {product?.status === 'active' ? (
-                          <span className="flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            {t('active', 'Active')}
-                          </span>
-                        ) : (
-                          t('inactive', 'Inactive')
-                        )}
-                      </span>
+                      <StatusBadge status={product?.status === 'active' || product?.is_active} />
 
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-card text-muted-foreground border border-border">
                         {product?.is_digital ? t('digitalProduct', 'Digital') : t('physicalProduct', 'Physical')}

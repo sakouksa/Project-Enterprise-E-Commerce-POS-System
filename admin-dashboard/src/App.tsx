@@ -46,6 +46,7 @@ const CustomerGroupsPage  = React.lazy(() => import('@/pages/customers/CustomerG
 
 // Employees
 const EmployeesPage       = React.lazy(() => import('@/pages/employees/EmployeesPage'))
+const EmployeeFormPage   = React.lazy(() => import('@/pages/employees/EmployeeFormPage'))
 
 // Marketing
 const CouponsPage         = React.lazy(() => import('@/pages/marketing/CouponsPage'))
@@ -61,6 +62,7 @@ const ShippingPage        = React.lazy(() => import('@/pages/shipping/ShippingPa
 
 // Finance
 const ExpensesPage        = React.lazy(() => import('@/pages/expenses/ExpensesPage'))
+const ExpenseFormPage     = React.lazy(() => import('@/pages/finance/ExpenseFormPage'))
 const FinancePage         = React.lazy(() => import('@/pages/finance/FinancePage'))
 const PaymentMethodsPage  = React.lazy(() => import('@/pages/payments/PaymentMethodsPage'))
 const TransactionsPage    = React.lazy(() => import('@/pages/payments/TransactionsPage'))
@@ -217,6 +219,9 @@ const AppContent: React.FC = () => {
 
             {/* ── Employees ─────────────────────────────────────────────── */}
             <Route path="/employees"               element={<ProtectedRoute permission="employees.view"><EmployeesPage /></ProtectedRoute>} />
+            <Route path="/employees/create"        element={<ProtectedRoute permission="employees.create"><EmployeeFormPage /></ProtectedRoute>} />
+            <Route path="/employees/:id/edit"      element={<ProtectedRoute permission="employees.edit"><EmployeeFormPage /></ProtectedRoute>} />
+            <Route path="/employees/edit/:id"      element={<ProtectedRoute permission="employees.edit"><EmployeeFormPage /></ProtectedRoute>} />
 
             {/* ── Marketing ─────────────────────────────────────────────── */}
             <Route path="/marketing"               element={<ProtectedRoute permission="promotions.view"><PromotionsPage /></ProtectedRoute>} />
@@ -233,6 +238,9 @@ const AppContent: React.FC = () => {
 
             {/* ── Finance ───────────────────────────────────────────────── */}
             <Route path="/expenses"                element={<ProtectedRoute permission="expenses.view"><FinancePage /></ProtectedRoute>} />
+            <Route path="/expenses/create"         element={<ProtectedRoute permission="expenses.create"><ExpenseFormPage /></ProtectedRoute>} />
+            <Route path="/expenses/:id/edit"       element={<ProtectedRoute permission="expenses.edit"><ExpenseFormPage /></ProtectedRoute>} />
+            <Route path="/expenses/edit/:id"       element={<ProtectedRoute permission="expenses.edit"><ExpenseFormPage /></ProtectedRoute>} />
             <Route path="/payments/methods"        element={<ProtectedRoute permission="payments.view"><PaymentMethodsPage /></ProtectedRoute>} />
             <Route path="/payments/transactions"   element={<ProtectedRoute permission="payments.view"><TransactionsPage /></ProtectedRoute>} />
             <Route path="/finance"                 element={<ProtectedRoute permission="finance.view"><FinancePage /></ProtectedRoute>} />

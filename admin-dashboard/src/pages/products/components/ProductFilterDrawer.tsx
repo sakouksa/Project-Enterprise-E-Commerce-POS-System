@@ -26,12 +26,12 @@ interface ProductFilterDrawerProps {
 
 const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    <label className="block text-[11px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
     {children}
   </div>
 )
 
-const inputCls = "w-full text-xs font-semibold rounded-xl bg-card border border-border/80 hover:border-primary/40 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all py-2.5 px-3.5 text-foreground shadow-2xs"
+const inputCls = "w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
 
 export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
   isOpen, onClose,
@@ -123,11 +123,11 @@ export const ProductFilterDrawer: React.FC<ProductFilterDrawerProps> = ({
       <FL label={t('filterPriceRange', 'Price Range ($)')}>
         <div className="grid grid-cols-2 gap-2.5">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground dark:text-slate-400">$</span>
             <input type="number" value={priceMinFilter} onChange={e => setPriceMinFilter(e.target.value)} placeholder={t('minPrice', 'Min')} className={`${inputCls} pl-7`} />
           </div>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground dark:text-slate-400">$</span>
             <input type="number" value={priceMaxFilter} onChange={e => setPriceMaxFilter(e.target.value)} placeholder={t('maxPrice', 'Max')} className={`${inputCls} pl-7`} />
           </div>
         </div>

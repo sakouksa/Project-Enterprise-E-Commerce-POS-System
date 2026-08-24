@@ -124,6 +124,70 @@ const ProductFormPage: React.FC = () => {
     queryFn: () => api.get('/taxes', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
   })
 
+  const { data: warehousesData } = useQuery({
+    queryKey: ['warehouses-select'],
+    queryFn: () => api.get('/warehouses', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+  })
+  const warehouses = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data ?? [])
+
+  const { data: movementsData, isLoading: isLoadingMovements } = useQuery({
+    queryKey: ['product-stock-movements', productId],
+    queryFn: () => productId ? api.get('/stock-adjustments', { params: { search: productDetail?.sku || productDetail?.name || String(productId), per_page: 50 } }).then(r => r.data.data ?? []) : [],
+    enabled: !!productId,
+  })
+
+  // Stock Adjustment Mutation
+  const addAdjustmentMutation = useMutation({
+    mutationFn: async (data: {
+      warehouse_id: string
+      variant_id?: string
+      type: string
+      quantity: string
+      reason: string
+    }) => {
+      if (!productId) {
+        throw new Error('Product must be saved before adding stock adjustment')
+      }
+      return api.post('/stock-adjustments', {
+        warehouse_id: data.warehouse_id,
+        type: data.type,
+        reason: data.reason,
+        product_id: productId,
+        variant_id: data.variant_id || undefined,
+        quantity: parseFloat(data.quantity),
+        auto_approve: true,
+      })
+    },
+    onSuccess: () => {
+      toast.success(t('stockAdjustSuccess', 'បានកែប្រែចំនួនស្តុកជោគជ័យ'))
+      qc.invalidateQueries({ queryKey: ['product-detail-page', productId] })
+      qc.invalidateQueries({ queryKey: ['product-stock-movements', productId] })
+      qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('stockAdjustFailed', 'មិនអាចកែប្រែស្តុកបានទេ'))
+    }
+  })
+
+  // Save Inventory Settings Mutation
+  const saveInventorySettingsMutation = useMutation({
+    mutationFn: async () => {
+      if (!productId) return
+      return api.put(`/products/${productId}`, {
+        track_inventory: form.track_inventory,
+        low_stock_threshold: form.low_stock_threshold,
+      })
+    },
+    onSuccess: () => {
+      toast.success(t('inventorySettingsSaved', 'បានរក្សាទុកការកំណត់ស្តុកជោគជ័យ'))
+      qc.invalidateQueries({ queryKey: ['product-detail-page', productId] })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('inventorySettingsFailed', 'មិនអាចរក្សាទុកបានទេ'))
+    }
+  })
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const setField = (field: keyof ProductForm | string, value: any) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -563,7 +627,7 @@ const ProductFormPage: React.FC = () => {
 
       <div className="space-y-5">
         {/* Navigation Tabs Pill Bar */}
-        <div className="bg-card border border-border/80 rounded-xl p-1.5 shadow-2xs overflow-x-auto">
+        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-xl p-1.5 shadow-2xs overflow-x-auto">
           <div className="flex items-center gap-1 min-w-max">
             {tabsList.map((tab) => {
               const Icon = tab.icon
@@ -575,8 +639,8 @@ const ProductFormPage: React.FC = () => {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-primary text-primary-foreground shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100 hover:bg-muted/60 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Icon size={15} />
@@ -584,8 +648,8 @@ const ProductFormPage: React.FC = () => {
                   {tab.badge && (
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
                       isActive
-                        ? 'bg-primary-foreground/20 text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400'
                     }`}>
                       {tab.badge}
                     </span>
@@ -679,6 +743,17 @@ const ProductFormPage: React.FC = () => {
                 onTrackInventoryChange={(val) => setField('track_inventory', val)}
                 onHasVariantsChange={(val) => setField('has_variants', val)}
                 onLowStockThresholdChange={(val) => setField('low_stock_threshold', val)}
+                onSaveSettings={() => saveInventorySettingsMutation.mutate()}
+                isSavingSettings={saveInventorySettingsMutation.isPending}
+                warehouses={warehouses}
+                movements={movementsData || []}
+                isLoadingMovements={isLoadingMovements}
+                currentStock={Number(productDetail?.stock ?? productDetail?.current_stock ?? (productDetail as any)?.quantity ?? 0)}
+                costPrice={String(form.cost_price || '0')}
+                sellingPrice={String(form.selling_price || '0')}
+                variants={productDetail?.variants || []}
+                onAddAdjustment={(adjData) => addAdjustmentMutation.mutate(adjData)}
+                isAddingAdjustment={addAdjustmentMutation.isPending}
               />
             </motion.div>
           )}
@@ -779,13 +854,13 @@ const ProductFormPage: React.FC = () => {
         </AnimatePresence>
 
         {/* Tab Footer Navigation */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/60">
+        <div className="flex items-center justify-between pt-3 border-t border-border/60 dark:border-slate-800">
           <div>
             {tabsList.findIndex(tab => tab.id === activeTab) > 0 && (
               <button
                 type="button"
                 onClick={handlePrevTab}
-                className="h-9 px-3.5 sm:px-4 rounded-lg border border-border/80 bg-card hover:bg-muted text-xs sm:text-[13px] font-bold text-muted-foreground hover:text-foreground flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+                className="h-10 min-h-[40px] px-3.5 sm:px-4 rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 hover:bg-muted dark:hover:bg-slate-800 text-xs sm:text-[13px] font-bold text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
               >
                 <ArrowLeft size={14} />
                 <span>{t('previous', 'Previous')}</span>
@@ -798,7 +873,7 @@ const ProductFormPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleNextTab}
-                className="h-9 px-4 sm:px-5 rounded-lg border border-border/80 bg-muted hover:bg-muted/80 text-xs sm:text-[13px] font-bold text-foreground flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                className="h-10 min-h-[40px] px-4 sm:px-5 rounded-xl border border-border/80 dark:border-slate-700 bg-muted dark:bg-slate-800 hover:bg-muted/80 dark:hover:bg-slate-700 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
               >
                 <span>{t('next', 'Next')}</span>
                 <ArrowRight size={14} />
@@ -808,7 +883,7 @@ const ProductFormPage: React.FC = () => {
               type="button"
               onClick={handleSubmit}
               disabled={saveMutation.isPending}
-              className="h-9 px-4 sm:px-5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-[13px] font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+              className="h-10 min-h-[40px] px-4 sm:px-5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs sm:text-[13px] font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
             >
               {saveMutation.isPending ? (
                 <>
@@ -1064,7 +1139,10 @@ const ProductFormPage: React.FC = () => {
         isOpen={bulkDeleteVariantConfirmOpen}
         title={t('variants.bulkDeleteTitle', 'Delete Selected Variants')}
         itemName={`${selectedVariantIds.length} items`}
-        warningText={`Are you sure you want to delete ${selectedVariantIds.length} selected variants?`}
+        warningText={t('variants.confirmBulkDeleteMessage', {
+          count: selectedVariantIds.length,
+          defaultValue: `Are you sure you want to delete ${selectedVariantIds.length} selected variants?`
+        }).replace('{{count}}', String(selectedVariantIds.length))}
         isPending={bulkDeleteVariantMutation.isPending}
         onCancel={() => setBulkDeleteVariantConfirmOpen(false)}
         onSoftDelete={() => bulkDeleteVariantMutation.mutate(selectedVariantIds)}

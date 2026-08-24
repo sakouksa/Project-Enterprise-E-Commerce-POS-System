@@ -1,4 +1,5 @@
 import React from 'react'
+import PageTransition from '@/components/common/PageTransition'
 
 const FAQPage: React.FC = () => {
   const faqs = [
@@ -9,7 +10,7 @@ const FAQPage: React.FC = () => {
   ]
 
   return (
-    <div className="container-site py-12 max-w-2xl mx-auto space-y-8">
+    <PageTransition className="container-site py-12 max-w-2xl mx-auto space-y-8">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Frequently Asked Questions
@@ -25,7 +26,7 @@ const FAQPage: React.FC = () => {
           </div>
         ))}
       </div>
-    </div>
+    </PageTransition>
   )
 }
 

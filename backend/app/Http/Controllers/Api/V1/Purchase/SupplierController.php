@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Api\V1\Purchase;
 
 use App\Http\Controllers\Api\BaseApiController;
-use App\Models\Supplier\Supplier;
 use App\Http\Resources\Supplier\SupplierResource;
+use App\Infrastructure\Services\Supplier\SupplierService;
+use App\Models\Supplier\Supplier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SupplierController extends BaseApiController
 {
+    public function __construct(
+        protected SupplierService $supplierService
+    ) {}
+
     /**
      * GET /api/v1/suppliers
      */
@@ -17,7 +22,7 @@ class SupplierController extends BaseApiController
     {
         $query = Supplier::with('contacts');
 
-        // Status / is_active filter (supports '1'/'0', 'active'/'inactive', true/false, 'deleted')
+        // Status / is_active filter
         $status = $request->get('status', $request->get('is_active'));
         if ($status !== null && $status !== '' && $status !== 'all') {
             if ($status === 'deleted' || $status === 'trashed') {
@@ -31,7 +36,7 @@ class SupplierController extends BaseApiController
 
         if ($request->filled('country')) {
             $country = $request->country;
-            $query->where(function($q) use ($country) {
+            $query->where(function ($q) use ($country) {
                 $q->where('country', 'like', "%{$country}%")
                   ->orWhere('address', 'like', "%{$country}%");
             });
@@ -39,7 +44,7 @@ class SupplierController extends BaseApiController
 
         if ($request->filled('city')) {
             $city = $request->city;
-            $query->where(function($q) use ($city) {
+            $query->where(function ($q) use ($city) {
                 $q->where('city', 'like', "%{$city}%")
                   ->orWhere('province', 'like', "%{$city}%")
                   ->orWhere('address', 'like', "%{$city}%");
@@ -65,18 +70,18 @@ class SupplierController extends BaseApiController
         }
 
         if ($request->filled('min_orders')) {
-            $query->has('purchases', '>=', (int)$request->min_orders);
+            $query->has('purchases', '>=', (int) $request->min_orders);
         }
         if ($request->filled('max_orders')) {
-            $query->has('purchases', '<=', (int)$request->max_orders);
+            $query->has('purchases', '<=', (int) $request->max_orders);
         }
 
         if ($request->filled('payment_status')) {
-            $status = $request->payment_status;
-            $query->whereHas('purchases', function($q) use ($status) {
-                if ($status === 'paid') {
+            $statusVal = $request->payment_status;
+            $query->whereHas('purchases', function ($q) use ($statusVal) {
+                if ($statusVal === 'paid') {
                     $q->where('payment_status', 'paid');
-                } elseif ($status === 'partial') {
+                } elseif ($statusVal === 'partial') {
                     $q->where('payment_status', 'partial');
                 } else {
                     $q->whereIn('payment_status', ['unpaid', 'due', 'pending']);
@@ -86,7 +91,7 @@ class SupplierController extends BaseApiController
 
         if ($request->search) {
             $search = $request->search;
-            $query->where(function($sub) use ($search) {
+            $query->where(function ($sub) use ($search) {
                 $sub->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
@@ -98,7 +103,7 @@ class SupplierController extends BaseApiController
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedFields = ['id', 'name', 'code', 'email', 'city', 'tax_number', 'is_active', 'created_at'];
-        if (in_array($sortBy, $allowedFields)) {
+        if (in_array($sortBy, $allowedFields, true)) {
             $query->orderBy($sortBy, $sortOrder);
         } else {
             $query->orderBy('created_at', 'desc');
@@ -156,26 +161,7 @@ class SupplierController extends BaseApiController
             $data['company_id'] = $request->user()?->company_id ?? 1;
         }
 
-        $supplier = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $request) {
-            $contacts = $data['contacts'] ?? [];
-            unset($data['contacts']);
-
-            $supplier = Supplier::create($data);
-
-            foreach ($contacts as $contactData) {
-                $supplier->contacts()->create([
-                    'name'       => $contactData['name'],
-                    'title'      => $contactData['title'] ?? null,
-                    'email'      => $contactData['email'] ?? null,
-                    'phone'      => $contactData['phone'] ?? null,
-                    'is_primary' => (bool)($contactData['is_primary'] ?? false),
-                ]);
-            }
-
-            return $supplier;
-        });
-
-        $supplier->load('contacts');
+        $supplier = $this->supplierService->create($data);
 
         return $this->successResponse(new SupplierResource($supplier), 'Supplier created successfully', 201);
     }
@@ -185,8 +171,6 @@ class SupplierController extends BaseApiController
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $supplier = Supplier::findOrFail($id);
-
         $data = $request->validate([
             'name'                => 'sometimes|required|string|max:100',
             'code'                => "sometimes|required|string|unique:suppliers,code,{$id}",
@@ -212,27 +196,7 @@ class SupplierController extends BaseApiController
             'contacts.*.is_primary' => 'sometimes|boolean',
         ]);
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($supplier, $data, $request) {
-            $contacts = $data['contacts'] ?? null;
-            unset($data['contacts']);
-
-            $supplier->update($data);
-
-            if ($contacts !== null) {
-                $supplier->contacts()->delete();
-                foreach ($contacts as $contactData) {
-                    $supplier->contacts()->create([
-                        'name'       => $contactData['name'],
-                        'title'      => $contactData['title'] ?? null,
-                        'email'      => $contactData['email'] ?? null,
-                        'phone'      => $contactData['phone'] ?? null,
-                        'is_primary' => (bool)($contactData['is_primary'] ?? false),
-                    ]);
-                }
-            }
-        });
-
-        $supplier->load('contacts');
+        $supplier = $this->supplierService->update($id, $data);
 
         return $this->successResponse(new SupplierResource($supplier), 'Supplier updated successfully');
     }
@@ -243,14 +207,10 @@ class SupplierController extends BaseApiController
     public function destroy(int $id): JsonResponse
     {
         try {
-            $supplier = Supplier::findOrFail($id);
-            $supplier->delete();
+            $this->supplierService->delete($id);
             return $this->successResponse(null, 'Supplier deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -264,10 +224,7 @@ class SupplierController extends BaseApiController
             $supplier->restore();
             return $this->successResponse(null, 'Supplier restored successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -281,10 +238,7 @@ class SupplierController extends BaseApiController
             $supplier->forceDelete();
             return $this->successResponse(null, 'Supplier permanently deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -295,7 +249,7 @@ class SupplierController extends BaseApiController
     {
         $request->validate(['ids' => 'required|array']);
         try {
-            $count = Supplier::whereIn('id', $request->ids)->delete();
+            $count = $this->supplierService->bulkDelete($request->ids);
             return $this->successResponse(['count' => $count], "{$count} suppliers deleted successfully");
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), null, 400);

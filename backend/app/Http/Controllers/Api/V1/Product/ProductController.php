@@ -6,16 +6,24 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
 use App\Http\Resources\Product\ProductResource;
-use App\Http\Resources\Product\ProductCollection;
 use App\Infrastructure\Services\Product\ProductService;
+use App\Models\Product\Product;
+use App\Models\Product\ProductImage;
+use App\Services\Support\CsvService;
+use App\Services\Support\FileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends BaseApiController
 {
-    public function __construct(private readonly ProductService $productService)
-    {
-    }
+    public function __construct(
+        private readonly ProductService $productService,
+        protected FileService $fileService,
+        protected CsvService $csvService
+    ) {}
 
     /**
      * GET /api/v1/products
@@ -37,19 +45,7 @@ class ProductController extends BaseApiController
 
         $resourceCollection = ProductResource::collection($products);
 
-        return response()->json([
-            'success'    => true,
-            'message'    => 'Success',
-            'data'       => $resourceCollection->resolve(),
-            'pagination' => [
-                'total'        => $products->total(),
-                'per_page'     => $products->perPage(),
-                'current_page' => $products->currentPage(),
-                'last_page'    => $products->lastPage(),
-                'from'         => $products->firstItem(),
-                'to'           => $products->lastItem(),
-            ],
-        ]);
+        return $this->paginatedResourceResponse($resourceCollection, $products, 'Products retrieved successfully');
     }
 
     /**
@@ -94,10 +90,7 @@ class ProductController extends BaseApiController
             $this->clearStatsCache();
             return $this->successResponse(null, 'Product deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -111,10 +104,7 @@ class ProductController extends BaseApiController
             $this->clearStatsCache();
             return $this->successResponse(null, 'Product restored successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -128,10 +118,7 @@ class ProductController extends BaseApiController
             $this->clearStatsCache();
             return $this->successResponse(null, 'Product permanently deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -141,9 +128,9 @@ class ProductController extends BaseApiController
     public function uploadImages(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'images'         => 'required|array|max:10',
-            'images.*'       => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
-            'primary_index'  => 'sometimes|integer|min:0',
+            'images'        => 'required|array|max:10',
+            'images.*'      => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'primary_index' => 'sometimes|integer|min:0',
         ], [
             'images.*.image' => 'Upload failed',
             'images.*.mimes' => 'Invalid image format',
@@ -160,18 +147,12 @@ class ProductController extends BaseApiController
      */
     public function deleteImage(int $productId, int $imageId): JsonResponse
     {
-        $productImage = \App\Models\Product\ProductImage::where('product_id', $productId)->findOrFail($imageId);
+        $productImage = ProductImage::where('product_id', $productId)->findOrFail($imageId);
 
-        // Delete physical file
-        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($productImage->image)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($productImage->image);
-        }
-
-        // Delete thumbnail file
-        $thumbPath = str_replace('products/' . $productId . '/', 'products/' . $productId . '/thumbs/', $productImage->image);
-        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($thumbPath)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($thumbPath);
-        }
+        // Delete physical file and thumbnail
+        $this->fileService->delete($productImage->image);
+        $thumbPath = str_replace("products/{$productId}/", "products/{$productId}/thumbs/", $productImage->image);
+        $this->fileService->delete($thumbPath);
 
         $productImage->delete();
 
@@ -193,7 +174,7 @@ class ProductController extends BaseApiController
      */
     public function showBySlug(string $slug): JsonResponse
     {
-        $product = \App\Models\Product\Product::where('slug', $slug)
+        $product = Product::where('slug', $slug)
             ->with(['category', 'brand', 'unit', 'tax', 'images', 'variants', 'prices'])
             ->firstOrFail();
 
@@ -209,7 +190,7 @@ class ProductController extends BaseApiController
                 $this->productService->deleteProduct($id);
                 $count++;
             } catch (\Exception $e) {
-                // Ignore or log
+                // Ignore
             }
         }
         $this->clearStatsCache();
@@ -225,7 +206,7 @@ class ProductController extends BaseApiController
                 $this->productService->restoreProduct($id);
                 $count++;
             } catch (\Exception $e) {
-                // Ignore or log
+                // Ignore
             }
         }
         $this->clearStatsCache();
@@ -235,59 +216,56 @@ class ProductController extends BaseApiController
     protected function clearStatsCache(): void
     {
         $companyId = auth()->user()?->company_id ?? 1;
-        \Illuminate\Support\Facades\Cache::forget("product_stats_{$companyId}");
+        Cache::forget("product_stats_{$companyId}");
     }
 
     public function stats(Request $request): JsonResponse
     {
         $companyId = auth()->user()?->company_id ?? 1;
 
-        // Cache stats for 5 minutes to reduce DB load
         $cacheKey = "product_stats_{$companyId}";
-        $stats = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($companyId) {
+        $stats = Cache::remember($cacheKey, 300, function () use ($companyId) {
+            $totalProducts        = Product::where('company_id', $companyId)->count();
+            $activeProducts       = Product::where('company_id', $companyId)->where('status', 'active')->count();
+            $inactiveProducts     = Product::where('company_id', $companyId)->where('status', 'inactive')->count();
+            $draftProducts        = Product::where('company_id', $companyId)->where('status', 'draft')->count();
+            $archivedProducts     = Product::where('company_id', $companyId)->where('status', 'archived')->count();
+            $featuredProducts     = Product::where('company_id', $companyId)->where('is_featured', true)->count();
+            $digitalProducts      = Product::where('company_id', $companyId)->where('is_digital', true)->count();
+            $productsWithVariants = Product::where('company_id', $companyId)->where('has_variants', true)->count();
 
-            $totalProducts        = \App\Models\Product\Product::where('company_id', $companyId)->count();
-            $activeProducts       = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'active')->count();
-            $inactiveProducts     = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'inactive')->count();
-            $draftProducts        = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'draft')->count();
-            $archivedProducts     = \App\Models\Product\Product::where('company_id', $companyId)->where('status', 'archived')->count();
-            $featuredProducts     = \App\Models\Product\Product::where('company_id', $companyId)->where('is_featured', true)->count();
-            $digitalProducts      = \App\Models\Product\Product::where('company_id', $companyId)->where('is_digital', true)->count();
-            $productsWithVariants = \App\Models\Product\Product::where('company_id', $companyId)->where('has_variants', true)->count();
-
-            // ── Scoped by company_id ────────────────────────────────────
             $categoriesCount = \App\Models\Product\Category::where('company_id', $companyId)->count();
             $brandsCount     = \App\Models\Product\Brand::where('company_id', $companyId)->count();
             $attributesCount = \App\Models\Product\Attribute::where('company_id', $companyId)->count();
             $variantsCount   = \App\Models\Product\ProductVariant::whereHas('product', fn($q) => $q->where('company_id', $companyId))->count();
 
-            $outOfStock = \App\Models\Product\Product::where('company_id', $companyId)
+            $outOfStock = Product::where('company_id', $companyId)
                 ->where('track_inventory', true)
                 ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= 0')
                 ->count();
 
-            $lowStockProducts = \App\Models\Product\Product::where('company_id', $companyId)
+            $lowStockProducts = Product::where('company_id', $companyId)
                 ->where('track_inventory', true)
                 ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) > 0')
                 ->whereRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id) <= products.low_stock_threshold')
                 ->count();
 
-            $costValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
+            $costValue = (float) (Product::where('company_id', $companyId)
                 ->selectRaw('COALESCE(SUM(cost_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
                 ->value('val') ?? 0);
 
-            $sellingValue = (float) (\App\Models\Product\Product::where('company_id', $companyId)
+            $sellingValue = (float) (Product::where('company_id', $companyId)
                 ->selectRaw('COALESCE(SUM(selling_price * (SELECT COALESCE(SUM(quantity), 0) FROM inventories WHERE inventories.product_id = products.id)), 0) as val')
                 ->value('val') ?? 0);
 
             $potentialProfit = max(0, $sellingValue - $costValue);
-            $avgPrice        = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('selling_price') ?? 0);
-            $averageRating   = (float) (\App\Models\Product\Product::where('company_id', $companyId)->avg('rating_avg') ?? 0);
-            $totalViews      = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('view_count') ?? 0);
-            $totalSold       = (int) (\App\Models\Product\Product::where('company_id', $companyId)->sum('sold_count') ?? 0);
-            $todayNew        = \App\Models\Product\Product::where('company_id', $companyId)->whereDate('created_at', now()->today())->count();
-            $productsOnSale  = \App\Models\Product\Product::where('company_id', $companyId)->whereNotNull('compare_price')->count();
-            $recentlyUpdated = \App\Models\Product\Product::where('company_id', $companyId)->where('updated_at', '>=', now()->subDays(7))->count();
+            $avgPrice        = (float) (Product::where('company_id', $companyId)->avg('selling_price') ?? 0);
+            $averageRating   = (float) (Product::where('company_id', $companyId)->avg('rating_avg') ?? 0);
+            $totalViews      = (int) (Product::where('company_id', $companyId)->sum('view_count') ?? 0);
+            $totalSold       = (int) (Product::where('company_id', $companyId)->sum('sold_count') ?? 0);
+            $todayNew        = Product::where('company_id', $companyId)->whereDate('created_at', now()->today())->count();
+            $productsOnSale  = Product::where('company_id', $companyId)->whereNotNull('compare_price')->count();
+            $recentlyUpdated = Product::where('company_id', $companyId)->where('updated_at', '>=', now()->subDays(7))->count();
 
             return [
                 'total_products'         => $totalProducts,
@@ -326,124 +304,89 @@ class ProductController extends BaseApiController
         return $this->successResponse($stats, 'Product statistics retrieved successfully');
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
         $headers = [
-            'Content-type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename=products_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
+            'SKU', 'Name', 'Slug', 'Barcode', 'Category', 'Brand', 'Unit', 'Tax',
+            'Cost Price', 'Selling Price', 'Compare Price', 'Weight', 'Length', 'Width', 'Height',
+            'Track Inventory', 'Low Stock Threshold', 'Status', 'Featured', 'Digital'
         ];
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+        $query = Product::with(['category', 'brand', 'unit', 'tax']);
 
-            fputcsv($file, [
-                'SKU', 'Name', 'Slug', 'Barcode', 'Category', 'Brand', 'Unit', 'Tax',
-                'Cost Price', 'Selling Price', 'Compare Price', 'Weight', 'Length', 'Width', 'Height',
-                'Track Inventory', 'Low Stock Threshold', 'Status', 'Featured', 'Digital'
-            ]);
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
+            });
+        }
 
-            $query = \App\Models\Product\Product::with(['category', 'brand', 'unit', 'tax']);
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('sku', 'like', "%{$search}%")
-                      ->orWhere('barcode', 'like', "%{$search}%");
-                });
+        if ($request->filled('status')) {
+            if ($request->status === 'deleted') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $request->status);
             }
+        }
 
-            if ($request->filled('status')) {
-                if ($request->status === 'deleted') {
-                    $query->onlyTrashed();
-                } else {
-                    $query->where('status', $request->status);
-                }
-            }
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
 
-            if ($request->filled('category_id')) {
-                $query->where('category_id', $request->category_id);
-            }
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
+        }
 
-            if ($request->filled('brand_id')) {
-                $query->where('brand_id', $request->brand_id);
-            }
+        $products = $query->latest()->get();
 
-            $products = $query->latest()->get();
-
-            foreach ($products as $prod) {
-                // Prevent Excel scientific notation for barcode (e.g. 8.88E+12)
-                $barcode = $prod->barcode ? '="' . $prod->barcode . '"' : '';
-
-                fputcsv($file, [
-                    $prod->sku,
-                    $prod->name,
-                    $prod->slug,
-                    $barcode,
-                    $prod->category?->name ?? '',
-                    $prod->brand?->name ?? '',
-                    $prod->unit?->name ?? '',
-                    $prod->tax?->name ?? '',
-                    number_format((float) $prod->cost_price, 2, '.', ''),
-                    number_format((float) $prod->selling_price, 2, '.', ''),
-                    $prod->compare_price !== null ? number_format((float) $prod->compare_price, 2, '.', '') : '',
-                    $prod->weight !== null ? number_format((float) $prod->weight, 2, '.', '') : '',
-                    $prod->length !== null ? number_format((float) $prod->length, 2, '.', '') : '',
-                    $prod->width !== null ? number_format((float) $prod->width, 2, '.', '') : '',
-                    $prod->height !== null ? number_format((float) $prod->height, 2, '.', '') : '',
-                    $prod->track_inventory ? '1' : '0',
-                    $prod->low_stock_threshold,
-                    $prod->status,
-                    $prod->is_featured ? '1' : '0',
-                    $prod->is_digital ? '1' : '0'
-                ]);
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'products_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $products,
+            rowMapper: fn(Product $prod) => [
+                $prod->sku,
+                $prod->name,
+                $prod->slug,
+                $prod->barcode ? '="' . $prod->barcode . '"' : '',
+                $prod->category?->name ?? '',
+                $prod->brand?->name ?? '',
+                $prod->unit?->name ?? '',
+                $prod->tax?->name ?? '',
+                number_format((float) $prod->cost_price, 2, '.', ''),
+                number_format((float) $prod->selling_price, 2, '.', ''),
+                $prod->compare_price !== null ? number_format((float) $prod->compare_price, 2, '.', '') : '',
+                $prod->weight !== null ? number_format((float) $prod->weight, 2, '.', '') : '',
+                $prod->length !== null ? number_format((float) $prod->length, 2, '.', '') : '',
+                $prod->width !== null ? number_format((float) $prod->width, 2, '.', '') : '',
+                $prod->height !== null ? number_format((float) $prod->height, 2, '.', '') : '',
+                $prod->track_inventory ? '1' : '0',
+                $prod->low_stock_threshold,
+                $prod->status,
+                $prod->is_featured ? '1' : '0',
+                $prod->is_digital ? '1' : '0',
+            ]
+        );
     }
 
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        if ($handle === false) {
-            return response()->json(['success' => false, 'message' => 'Cannot open file'], 400);
+        $result = $this->csvService->parseCsv($request->file('file'), ['sku', 'name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return response()->json(['success' => false, 'message' => 'Empty CSV'], 400);
-        }
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } else {
-                $row = array_slice($row, 0, count($headers));
-            }
-            $data = array_combine($headers, $row);
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $sku = trim($data['sku'] ?? '');
             $name = trim($data['name'] ?? '');
@@ -452,7 +395,7 @@ class ProductController extends BaseApiController
                 continue;
             }
 
-            if (\App\Models\Product\Product::where('sku', $sku)->exists()) {
+            if (Product::where('sku', $sku)->exists()) {
                 $errors[] = "Line {$line}: SKU '{$sku}' already exists.";
                 continue;
             }
@@ -477,40 +420,36 @@ class ProductController extends BaseApiController
             $rawBarcode = trim($data['barcode'] ?? '');
             $barcode = trim(trim($rawBarcode, '="\''));
 
-            \App\Models\Product\Product::create([
-                'company_id'          => $request->user()->company_id ?? 1,
+            Product::create([
+                'company_id'          => $request->user()?->company_id ?? 1,
                 'sku'                 => $sku,
                 'name'                => $name,
-                'slug'                => trim($data['slug'] ?? '') ?: \Illuminate\Support\Str::slug($name),
+                'slug'                => trim($data['slug'] ?? '') ?: Str::slug($name),
                 'barcode'             => $barcode ?: null,
                 'category_id'         => $catId,
                 'brand_id'            => $brandId,
                 'unit_id'             => $unitId,
                 'tax_id'              => $taxId,
-                'cost_price'          => floatval($data['cost_price'] ?? $data['cost price'] ?? 0),
-                'selling_price'       => floatval($data['selling_price'] ?? $data['selling price'] ?? 0),
-                'compare_price'       => floatval($data['compare_price'] ?? $data['compare price'] ?? 0) ?: null,
-                'weight'              => floatval($data['weight'] ?? 0) ?: null,
-                'length'              => floatval($data['length'] ?? 0) ?: null,
-                'width'               => floatval($data['width'] ?? 0) ?: null,
-                'height'              => floatval($data['height'] ?? 0) ?: null,
+                'cost_price'          => (float) ($data['cost_price'] ?? $data['cost price'] ?? 0),
+                'selling_price'       => (float) ($data['selling_price'] ?? $data['selling price'] ?? 0),
+                'compare_price'       => (float) ($data['compare_price'] ?? $data['compare price'] ?? 0) ?: null,
+                'weight'              => (float) ($data['weight'] ?? 0) ?: null,
+                'length'              => (float) ($data['length'] ?? 0) ?: null,
+                'width'               => (float) ($data['width'] ?? 0) ?: null,
+                'height'              => (float) ($data['height'] ?? 0) ?: null,
                 'track_inventory'     => filter_var($data['track_inventory'] ?? $data['track inventory'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                'low_stock_threshold' => intval($data['low_stock_threshold'] ?? $data['low stock threshold'] ?? 5),
+                'low_stock_threshold' => (int) ($data['low_stock_threshold'] ?? $data['low stock threshold'] ?? 5),
                 'status'              => trim($data['status'] ?? 'active'),
                 'is_featured'         => filter_var($data['featured'] ?? $data['is_featured'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                'is_digital'          => filter_var($data['digital'] ?? $data['is_digital'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                'is_digital'          => filter_var($data['digital'] ?? $data['is_digital'] ?? false, FILTER_VALIDATE_BOOLEAN),
             ]);
+
             $successCount++;
         }
-        fclose($handle);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Import completed',
-            'data' => [
-                'success_count' => $successCount,
-                'errors' => $errors
-            ]
-        ]);
+        return $this->successResponse([
+            'success_count' => $successCount,
+            'errors'        => $errors,
+        ], 'Import completed');
     }
 }

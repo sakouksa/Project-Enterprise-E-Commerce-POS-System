@@ -1,0 +1,8 @@
+{
+  "search.ai_search": "ค้นหาด้วย AI",
+  "search.by_name": "ค้นหาตามชื่อ",
+  "search.by_sku": "ค้นหาตาม SKU",
+  "search.placeholder_ai": "ค้นหาด้วย AI (เช่น RTX 4060, แล็ปท็อป, Apple M3)...",
+  "search.placeholder_name": "ค้นหาตามชื่อสินค้า (เช่น MacBook Pro, ASUS ROG)...",
+  "search.placeholder_sku": "ค้นหาตามรหัส SKU หรือ บาร์โค้ด (เช่น LAP-2026-X1)..."
+}

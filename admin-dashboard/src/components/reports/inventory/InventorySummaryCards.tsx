@@ -4,6 +4,7 @@ import {
   DollarSign, Package, Layers, AlertTriangle, XCircle,
   TrendingUp, RefreshCw, ArrowRightLeft, ClipboardCheck, Warehouse
 } from 'lucide-react'
+import { formatCurrency, formatNumber } from '@/utils/formatters'
 
 interface SummaryData {
   total_inventory_value: number
@@ -29,12 +30,6 @@ interface Props {
 
 export const InventorySummaryCards: React.FC<Props> = ({ data, isLoading }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number = 0) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
-
-  const formatNumber = (val: number = 0) =>
-    new Intl.NumberFormat('en-US').format(val)
 
   if (isLoading) {
     return (

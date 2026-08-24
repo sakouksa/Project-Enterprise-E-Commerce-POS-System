@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Trophy, Truck } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface TopSupplierItem {
   rank: number
@@ -23,8 +24,6 @@ export const TopSuppliersTable: React.FC<TopSuppliersTableProps> = ({
   isLoading = false
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 
   const getInitials = (name: string) => {
     if (!name) return 'S'

@@ -14,7 +14,7 @@ class ExpenseCategory extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['company_id', 'name', 'code', 'is_active'];
+    protected $fillable = ['company_id', 'name', 'code', 'icon', 'color', 'description', 'is_active'];
 
     protected $casts = [
         'is_active' => 'boolean',

@@ -15,6 +15,9 @@ export interface ExpenseForm {
 export interface CategoryForm {
   name: string
   code: string
+  icon: string
+  color: string
+  description?: string
   is_active: boolean
 }
 

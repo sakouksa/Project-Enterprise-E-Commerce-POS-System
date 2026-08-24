@@ -28,12 +28,18 @@ import {
   Layers,
   Flag,
   Navigation,
-  Sparkles
+  Sparkles,
+  Upload,
+  Image as ImageIcon,
+  Camera,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import api from '@/api/client'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/hooks/useToast'
+import { useCompanyStore } from '@/stores/companyStore'
+import { getAbsoluteImageUrl } from '@/utils/image'
+import BrandLogo from '@/components/common/BrandLogo'
 import AppearanceSettings from './AppearanceSettings'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
@@ -74,10 +80,17 @@ const SettingsPage: React.FC = () => {
     }, { replace: true })
   }
 
+  const { branding, fetchBranding, updateBranding } = useCompanyStore()
+
   // Store profile fields
   const [success, setSuccess] = useState(false)
   const [siteName, setSiteName] = useState('')
   const [siteEmail, setSiteEmail] = useState('')
+  const [siteLogo, setSiteLogo] = useState('')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [receiptHeader, setReceiptHeader] = useState('')
   const [receiptFooter, setReceiptFooter] = useState('')
 
@@ -259,14 +272,86 @@ const SettingsPage: React.FC = () => {
   })
 
   useEffect(() => {
+    fetchBranding()
+  }, [fetchBranding])
+
+  useEffect(() => {
     if (settingsData) {
       const getVal = (key: string) => settingsData.find((s: SettingItem) => s.key === key)?.value ?? ''
-      setSiteName(getVal('site_name') || 'Enterprise E-Commerce')
-      setSiteEmail(getVal('site_email') || 'info@enterprise-pos.com')
+      setSiteName(getVal('site_name') || branding.brand_name || 'NexPOS')
+      setSiteEmail(getVal('site_email') || branding.email || 'info@enterprise-pos.com')
+      setSiteLogo(getVal('site_logo') || branding.logo || '/logo.svg')
       setReceiptHeader(getVal('pos_receipt_header') || 'Thank you for shopping with us!')
       setReceiptFooter(getVal('pos_receipt_footer') || 'Please visit again.')
     }
-  }, [settingsData])
+  }, [settingsData, branding])
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t('settings.logoTooLarge', 'Logo image file must be less than 10MB.'))
+      return
+    }
+
+    // 1. Show immediate preview
+    const reader = new FileReader()
+    reader.onload = () => {
+      setLogoPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // 2. Automatically upload to backend immediately
+    setIsUploadingLogo(true)
+    try {
+      const formData = new FormData()
+      formData.append('logo', file)
+      formData.append('company_id', '1')
+      const res = await api.post('/settings/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (res.data?.data?.logo_url) {
+        const uploadedPath = res.data.data.logo_url
+        setSiteLogo(uploadedPath)
+        setLogoFile(null)
+        updateBranding({
+          logo: uploadedPath,
+          brand_name: siteName,
+        })
+        qc.invalidateQueries({ queryKey: ['settings'] })
+        qc.invalidateQueries({ queryKey: ['companies'] })
+        toast.success(t('settings.logoUploadSuccess', 'Logo បានផ្លាស់ប្តូរ និងរក្សាទុកដោយជោគជ័យ!'))
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || t('settings.logoUploadFail', 'បរាជ័យក្នុងការ Upload Logo។'))
+    } finally {
+      setIsUploadingLogo(false)
+    }
+  }
+
+  const handleRemoveLogo = async () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    const fallbackLogo = '/nexpos-logo.jpg'
+    setSiteLogo(fallbackLogo)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    updateBranding({ logo: fallbackLogo })
+    try {
+      const res = await api.delete('/settings/logo', {
+        data: { company_id: 1 }
+      })
+      if (res.data?.data?.logo_url) {
+        setSiteLogo(res.data.data.logo_url)
+        updateBranding({ logo: res.data.data.logo_url })
+      }
+      qc.invalidateQueries({ queryKey: ['settings'] })
+      qc.invalidateQueries({ queryKey: ['companies'] })
+      fetchBranding(true)
+      toast.success(t('settings.logoResetSuccess', 'បានលុបរូបចាស់ចេញពី Storage និងកំណត់ Logo ទៅកាន់លំនាំដើមវិញ!'))
+    } catch {
+      // ignore
+    }
+  }
 
   // Mutations
   const updateSettingsMutation = useMutation({
@@ -282,15 +367,49 @@ const SettingsPage: React.FC = () => {
     }
   })
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    let currentLogoPath = siteLogo
+
+    if (logoFile) {
+      setIsUploadingLogo(true)
+      try {
+        const formData = new FormData()
+        formData.append('logo', logoFile)
+        formData.append('company_id', '1')
+        const res = await api.post('/settings/logo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        if (res.data?.data?.logo_url) {
+          currentLogoPath = res.data.data.logo_url
+          setSiteLogo(currentLogoPath)
+          setLogoFile(null)
+        }
+      } catch {
+        toast.error('Failed to upload logo image.')
+      } finally {
+        setIsUploadingLogo(false)
+      }
+    }
+
     updateSettingsMutation.mutate({
       company_id: 1,
       settings: {
         site_name: siteName,
         site_email: siteEmail,
+        site_logo: currentLogoPath,
         pos_receipt_header: receiptHeader,
         pos_receipt_footer: receiptFooter,
+      }
+    }, {
+      onSuccess: () => {
+        updateBranding({
+          brand_name: siteName,
+          company_name: siteName,
+          email: siteEmail,
+          logo: currentLogoPath,
+        })
+        fetchBranding(true)
       }
     })
   }
@@ -469,7 +588,7 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* Top Tab Navigation Bar */}
-        <div className="flex items-center gap-1.5 bg-muted/40 p-1.5 rounded-2xl border border-border/80 shrink-0 overflow-x-auto max-w-full shadow-xs">
+        <div className="flex items-center gap-1.5 bg-muted/40 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-border/80 dark:border-slate-800 shrink-0 overflow-x-auto max-w-full shadow-xs">
           {[
             { id: 'store', label: t('settings.tabStoreProfile', 'Store Profile'), icon: Store },
             { id: 'appearance', label: t('settings.tabAppearance', 'Appearance'), icon: Palette },
@@ -484,11 +603,11 @@ const SettingsPage: React.FC = () => {
                 onClick={() => setActiveTab(tItem.id as MainTab)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   isActiveTab
-                    ? 'bg-card text-primary shadow-sm border border-border/60'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                    ? 'bg-card dark:bg-slate-800 text-primary dark:text-white shadow-sm border border-border/60 dark:border-slate-700'
+                    : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100 hover:bg-muted/60 dark:hover:bg-slate-800/60'
                 }`}
               >
-                <Icon size={14} className={isActiveTab ? 'text-primary' : 'text-muted-foreground'} />
+                <Icon size={14} className={isActiveTab ? 'text-primary dark:text-white' : 'text-muted-foreground dark:text-slate-400'} />
                 <span>{tItem.label}</span>
               </button>
             )
@@ -534,7 +653,89 @@ const SettingsPage: React.FC = () => {
                   <Sparkles className="text-primary/40" size={20} />
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
+                  {/* ─── Flexible Logo Uploader Box ─── */}
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-foreground">
+                          {t('settings.storeLogoLabel', 'LOGO ហាង / BRAND LOGO')}
+                        </label>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {t('settings.storeLogoHint', 'បង្ហាញលើ Header, Sidebar, Login, វិក្កយបត្រ POS និងរបាយការណ៍')}
+                        </p>
+                      </div>
+                      {logoPreview || (siteLogo && siteLogo !== '/logo.svg') ? (
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                          <Check size={11} /> {t('settings.logoActive', 'Active Logo')}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+                      {/* Logo Live Preview Thumbnail */}
+                      <div className="relative group w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-card border-2 border-dashed border-primary/40 dark:border-primary/30 flex items-center justify-center overflow-hidden p-2 shrink-0 shadow-xs">
+                        {isUploadingLogo ? (
+                          <div className="flex flex-col items-center justify-center text-primary gap-1">
+                            <Loader2 className="w-6 h-6 animate-spin" />
+                            <span className="text-[9px] font-bold">Uploading...</span>
+                          </div>
+                        ) : (
+                          <BrandLogo size="lg" customLogo={logoPreview || siteLogo} />
+                        )}
+
+                        {/* Hover change overlay */}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute inset-0 bg-black/65 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold"
+                        >
+                          <Camera className="w-4 h-4 mb-0.5" />
+                          <span>{t('settings.changeLogo', 'ផ្លាស់ប្តូរ')}</span>
+                        </button>
+                      </div>
+
+                      {/* Actions & Specs */}
+                      <div className="flex-1 min-w-0 space-y-2 text-center sm:text-left">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+
+                        <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                          <button
+                            type="button"
+                            disabled={isUploadingLogo}
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            {isUploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            <span>{t('settings.uploadLogoBtn', 'ជ្រើសរើសរូបភាព Logo')}</span>
+                          </button>
+
+                          {(logoPreview || (siteLogo && siteLogo !== '/logo.svg')) && (
+                            <button
+                              type="button"
+                              disabled={isUploadingLogo}
+                              onClick={handleRemoveLogo}
+                              className="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer border border-rose-500/20 disabled:opacity-50"
+                            >
+                              <Trash2 size={13} />
+                              <span>{t('settings.removeLogoBtn', 'ដក Logo')}</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          គាំទ្រទម្រង់ <b>PNG, JPG, WebP, SVG</b> (ទំហំអតិបរមា 10MB)។ ណែនាំរូបភាពមានផ្ទៃថ្លា (Transparent) សម្រាប់ការបង្ហាញស្អាតឥតខ្ចោះ។
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       {t('settings.siteNameLabel', 'SITE / STORE NAME')}
@@ -545,7 +746,7 @@ const SettingsPage: React.FC = () => {
                         value={siteName}
                         onChange={(e) => setSiteName(e.target.value)}
                         required
-                        placeholder="Enterprise E-Commerce"
+                        placeholder="NexPOS"
                         className="form-input pl-10 text-sm font-medium"
                       />
                     </div>
@@ -598,10 +799,10 @@ const SettingsPage: React.FC = () => {
                   </div>
                   <button
                     type="submit"
-                    disabled={updateSettingsMutation.isPending}
+                    disabled={updateSettingsMutation.isPending || isUploadingLogo}
                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-md cursor-pointer disabled:opacity-50"
                   >
-                    {updateSettingsMutation.isPending ? (
+                    {(updateSettingsMutation.isPending || isUploadingLogo) ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
                       <Save size={16} />
@@ -657,8 +858,12 @@ const SettingsPage: React.FC = () => {
                       <span className="text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md font-mono">{t('settings.paperWidth80mm', '80MM PAPER')}</span>
                     </div>
                     <div className="bg-amber-500/5 dark:bg-slate-900 border border-dashed border-amber-500/30 rounded-2xl p-4 font-mono text-[11px] text-foreground space-y-2 shadow-inner">
+                      {/* Thermal Receipt Logo Preview */}
+                      <div className="flex justify-center mb-1">
+                        <BrandLogo size="md" customLogo={logoPreview || siteLogo} className="grayscale" />
+                      </div>
                       <div className="text-center font-bold text-sm tracking-wide">
-                        {siteName || 'ENTERPRISE E-COMMERCE'}
+                        {siteName || 'NEXPOS'}
                       </div>
                       <div className="text-center text-muted-foreground text-[10px]">
                         {receiptHeader || 'Thank you for shopping with us!'}

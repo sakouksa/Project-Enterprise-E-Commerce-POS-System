@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users, User, Calendar } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface TopCustomerItem {
   rank: number
@@ -23,8 +24,6 @@ export const TopCustomersTable: React.FC<TopCustomersTableProps> = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 
   const getInitials = (name: string) => {
     if (!name) return 'C'

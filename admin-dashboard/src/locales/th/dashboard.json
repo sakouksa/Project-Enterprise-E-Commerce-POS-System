@@ -15,7 +15,6 @@
   "refreshDashboard": "รีเฟรชแดชบอร์ด",
   "globalSearch": "ค้นหาทั่วไป",
   "searchPlaceholder": "ค้นหายอดขาย, คำสั่งซื้อ, สินค้า, ลูกค้า...",
-
   "todaySales": "ยอดขายวันนี้",
   "todayRevenue": "รายได้รวมวันนี้",
   "grossProfit": "กำไรขั้นต้น",
@@ -24,7 +23,6 @@
   "todayPurchases": "ยอดสั่งซื้อเข้าวันนี้",
   "inventoryValue": "มูลค่าสต็อกรวม",
   "cashBalance": "ยอดเงินสดคงเหลือ",
-
   "totalCustomers": "ลูกค้าทั้งหมด",
   "totalEmployees": "พนักงานทั้งหมด",
   "totalProducts": "สินค้าทั้งหมด",
@@ -33,7 +31,6 @@
   "totalBranches": "สาขาทั้งหมด",
   "totalCompanies": "บริษัททั้งหมด",
   "pendingOrders": "คำสั่งซื้อรอดำเนินการ",
-
   "lowStock": "สินค้าใกล้หมดสต็อก",
   "outOfStock": "สินค้าหมดสต็อก",
   "pendingPurchase": "การสั่งซื้อรอตรวจสอบ",
@@ -42,7 +39,6 @@
   "pendingDelivery": "การจัดส่งรอดำเนินการ",
   "attendanceToday": "การลงเวลาทำงานวันนี้",
   "payrollDraft": "ร่างเงินเดือน",
-
   "todayExpenses": "ค่าใช้จ่ายวันนี้",
   "todayIncome": "รายได้ที่เก็บได้",
   "todayReturns": "การคืนสินค้าวันนี้",
@@ -54,7 +50,6 @@
   "loginCount": "จำนวนการเข้าสู่ระบบ",
   "failedLogin": "เข้าสู่ระบบล้มเหลว",
   "backupStatus": "สถานะการสำรองข้อมูล",
-
   "salesTrend": "แนวโน้มยอดขายและรายได้",
   "revenueTrend": "แนวโน้มรายได้",
   "profitTrend": "แนวโน้มอัตรากำไร",
@@ -72,7 +67,6 @@
   "revenueByMonth": "รายได้รายเดือน",
   "ordersByStatus": "คำสั่งซื้อตามสถานะ",
   "returnsTrend": "แนวโน้มการคืนสินค้า",
-
   "recentSales": "ยอดขายล่าสุด",
   "recentPurchases": "การสั่งซื้อล่าสุด",
   "latestCustomers": "ลูกค้าล่าสุด",
@@ -81,7 +75,6 @@
   "recentNotifications": "การแจ้งเตือน",
   "activityTimeline": "ไทม์ไลน์กิจกรรม",
   "auditLogs": "บันทึกการตรวจสอบ",
-
   "createSale": "สร้างการขาย",
   "createPurchase": "สร้างการสั่งซื้อ",
   "addProduct": "เพิ่มสินค้า",
@@ -92,7 +85,6 @@
   "addEmployee": "เพิ่มพนักงาน",
   "openPOS": "เปิดหน้าจอขาย POS",
   "generateReport": "สร้างรายงาน",
-
   "businessAlerts": "การแจ้งเตือนทางธุรกิจ",
   "lowStockAlert": "เตือนสินค้าใกล้หมดสต็อก",
   "expiredProductAlert": "เตือนสินค้าหมดอายุ",
@@ -105,7 +97,6 @@
   "databaseWarningAlert": "แจ้งเตือนประสิทธิภาพฐานข้อมูล",
   "apiOfflineAlert": "API ออฟไลน์",
   "jwtExpiredAlert": "เซสชันหมดอายุ",
-
   "systemHealth": "สถานะระบบ",
   "systemHealthTitle": "สุขภาพและสถานะการทำงานของระบบ",
   "allSystemsOperational": "ระบบทั้งหมดทำงานได้ตามปกติ",
@@ -132,7 +123,6 @@
   "operational": "ทำงานปกติ",
   "degraded": "ประสิทธิภาพลดลง",
   "error": "เกิดข้อผิดพลาด",
-
   "loadingDashboard": "กำลังซิงค์ข้อมูลแดชบอร์ด...",
   "errorLoading": "ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้",
   "retry": "ลองเชื่อมต่อใหม่",
@@ -179,7 +169,6 @@
   "newRegistrations": "การลงทะเบียนลูกค้าใหม่",
   "customers": "ลูกค้า",
   "retentionRate": "อัตราการรักษาลูกค้า",
-  "newCustomers": "ลูกค้าใหม่",
   "returningCustomers": "ลูกค้าประจำที่กลับมาซื้อซ้ำ",
   "salesInsight": "การวิเคราะห์ยอดขายรวม",
   "periodTotalSales": "ยอดขายรวม",
@@ -196,7 +185,6 @@
   "branchInsight": "การวิเคราะห์ยอดขายหลายสาขา",
   "multiBranchVolume": "ยอดขายรวมทุกสาขา",
   "topPerformingBranch": "สาขาที่มีผลการดำเนินงานสูงสุด",
-
   "warehouseStockStatus": "สถานะสต็อกคลังสินค้า",
   "stockHealthAlerts": "การแจ้งเตือนสุขภาพสต็อก",
   "todayTransfers": "การโอนย้ายวันนี้",

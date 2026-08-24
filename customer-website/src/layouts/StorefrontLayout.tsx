@@ -3,6 +3,9 @@ import { Outlet } from 'react-router-dom'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CartDrawer from '@/components/layout/CartDrawer'
+import MobileBottomNav from '@/components/layout/MobileBottomNav'
+import ScrollToTop from '@/components/common/ScrollToTop'
+import OfflineBanner from '@/components/common/OfflineBanner'
 import { useCartStore } from '@/stores/cartStore'
 import api from '@/lib/api'
 
@@ -23,13 +26,16 @@ const StorefrontLayout: React.FC = () => {
   }, [setCart])
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50/50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans antialiased">
+    <div className="min-h-screen flex flex-col bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-16 lg:pb-0">
+      <OfflineBanner />
       <Header />
       <main className="flex-1">
         <Outlet />
       </main>
       <Footer />
       <CartDrawer />
+      <MobileBottomNav />
+      <ScrollToTop />
     </div>
   )
 }

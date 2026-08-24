@@ -3,15 +3,23 @@
 namespace App\Http\Controllers\Api\V1\Product;
 
 use App\Http\Controllers\Api\BaseApiController;
-use App\Models\Product\Category;
 use App\Http\Requests\Product\StoreCategoryRequest;
 use App\Http\Requests\Product\UpdateCategoryRequest;
+use App\Models\Product\Category;
+use App\Services\Support\CsvService;
+use App\Services\Support\FileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryController extends BaseApiController
 {
+    public function __construct(
+        protected FileService $fileService,
+        protected CsvService $csvService
+    ) {}
+
     /**
      * GET /api/v1/categories
      */
@@ -20,8 +28,8 @@ class CategoryController extends BaseApiController
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedSorts = ['id', 'name', 'slug', 'description', 'is_active', 'created_at', 'sort_order'];
-        $sortBy = in_array($sortBy, $allowedSorts) ? $sortBy : 'id';
-        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? $sortOrder : 'desc';
+        $sortBy = in_array($sortBy, $allowedSorts, true) ? $sortBy : 'id';
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc'], true) ? $sortOrder : 'desc';
 
         $categories = Category::with('parent')
             ->withCount('products')
@@ -29,7 +37,7 @@ class CategoryController extends BaseApiController
                 $q->onlyTrashed();
             })
             ->when($request->status && $request->status !== 'deleted', function ($q) use ($request) {
-                $q->where('is_active', $request->status === 'active');
+                $q->where('is_active', $request->status === 'active' || $request->status === '1');
             })
             ->when($request->search, fn($q, $v) => $q->where('name', 'like', "%{$v}%"))
             ->orderBy($sortBy, $sortOrder)
@@ -59,8 +67,7 @@ class CategoryController extends BaseApiController
 
         $uploadedImage = $request->file('image_file') ?? $request->file('image');
         if ($uploadedImage) {
-            $path = $uploadedImage->store('categories', 'public');
-            $data['image'] = $path;
+            $data['image'] = $this->fileService->upload($uploadedImage, 'categories');
         }
 
         $category = Category::create($data);
@@ -82,11 +89,7 @@ class CategoryController extends BaseApiController
 
         $uploadedImage = $request->file('image_file') ?? $request->file('image');
         if ($uploadedImage) {
-            if ($category->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($category->image)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->image);
-            }
-            $path = $uploadedImage->store('categories', 'public');
-            $data['image'] = $path;
+            $data['image'] = $this->fileService->replace($uploadedImage, $category->image, 'categories');
         }
 
         $category->update($data);
@@ -104,10 +107,7 @@ class CategoryController extends BaseApiController
             $category->delete();
             return $this->successResponse(null, 'Category deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -121,10 +121,7 @@ class CategoryController extends BaseApiController
             $category->restore();
             return $this->successResponse(null, 'Category restored successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -135,19 +132,13 @@ class CategoryController extends BaseApiController
     {
         try {
             $category = Category::withTrashed()->findOrFail($id);
-            
-            // Clean up physical image file if exists
-            if ($category->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($category->image)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($category->image);
+            if ($category->image) {
+                $this->fileService->delete($category->image);
             }
-            
             $category->forceDelete();
             return $this->successResponse(null, 'Category permanently deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->errorResponse($e->getMessage(), null, 400);
         }
     }
 
@@ -160,105 +151,70 @@ class CategoryController extends BaseApiController
         return $this->successResponse($category);
     }
 
+    /**
+     * POST /api/v1/categories/bulk-delete
+     */
     public function bulkDelete(Request $request): JsonResponse
     {
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
-        $count = 0;
-        foreach ($ids as $id) {
-            $category = Category::find($id);
-            if ($category) {
-                $category->delete();
-                $count++;
-            }
-        }
+        $count = Category::whereIn('id', $ids)->delete();
         return $this->successResponse(null, "{$count} categories deleted successfully");
     }
 
+    /**
+     * POST /api/v1/categories/bulk-restore
+     */
     public function bulkRestore(Request $request): JsonResponse
     {
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
-        $count = 0;
-        foreach ($ids as $id) {
-            $category = Category::onlyTrashed()->find($id);
-            if ($category) {
-                $category->restore();
-                $count++;
-            }
-        }
+        $count = Category::onlyTrashed()->whereIn('id', $ids)->restore();
         return $this->successResponse(null, "{$count} categories restored successfully");
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    /**
+     * GET /api/v1/categories/export
+     */
+    public function export(Request $request): StreamedResponse
     {
-        $headers = [
-            'Content-type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename=categories_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
-        ];
+        $headers = ['Parent Category', 'Name', 'Slug', 'Description', 'Image', 'Sort Order', 'Active'];
+        $categories = Category::with('parent')->get();
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, ['Parent Category', 'Name', 'Slug', 'Description', 'Image', 'Sort Order', 'Active']);
-
-            $categories = Category::with('parent')->get();
-
-            foreach ($categories as $cat) {
-                fputcsv($file, [
-                    $cat->parent?->name ?? '',
-                    $cat->name,
-                    $cat->slug,
-                    $cat->description ?? '',
-                    $cat->image ?? '',
-                    $cat->sort_order,
-                    $cat->is_active ? '1' : '0'
-                ]);
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'categories_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $categories,
+            rowMapper: fn(Category $cat) => [
+                $cat->parent?->name ?? '',
+                $cat->name,
+                $cat->slug,
+                $cat->description ?? '',
+                $cat->image ?? '',
+                $cat->sort_order,
+                $cat->is_active ? '1' : '0',
+            ]
+        );
     }
 
+    /**
+     * POST /api/v1/categories/import
+     */
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        if ($handle === false) {
-            return response()->json(['success' => false, 'message' => 'Cannot open file'], 400);
+        $result = $this->csvService->parseCsv($request->file('file'), ['name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return response()->json(['success' => false, 'message' => 'Empty CSV'], 400);
-        }
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } else {
-                $row = array_slice($row, 0, count($headers));
-            }
-            $data = array_combine($headers, $row);
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
             if (!$name) {
@@ -273,31 +229,28 @@ class CategoryController extends BaseApiController
             }
 
             $parentId = null;
-            if ($parentName = trim($data['parent_category'] ?? $data['parent category'] ?? '')) {
+            $parentName = trim($data['parent_category'] ?? $data['parent category'] ?? '');
+            if ($parentName) {
                 $parentId = Category::where('name', $parentName)->value('id');
             }
 
             Category::create([
-                'company_id'  => $request->user()->company_id ?? 1,
+                'company_id'  => $request->user()?->company_id ?? 1,
                 'parent_id'   => $parentId,
                 'name'        => $name,
                 'slug'        => $slug,
                 'description' => trim($data['description'] ?? '') ?: null,
                 'image'       => trim($data['image'] ?? '') ?: null,
-                'sort_order'  => intval($data['sort_order'] ?? $data['sort order'] ?? 0),
-                'is_active'   => filter_var($data['active'] ?? $data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                'sort_order'  => (int) ($data['sort_order'] ?? $data['sort order'] ?? 0),
+                'is_active'   => filter_var($data['active'] ?? $data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ]);
+
             $successCount++;
         }
-        fclose($handle);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Import completed',
-            'data' => [
-                'success_count' => $successCount,
-                'errors' => $errors
-            ]
-        ]);
+        return $this->successResponse([
+            'success_count' => $successCount,
+            'errors'        => $errors,
+        ], 'Import completed');
     }
 }

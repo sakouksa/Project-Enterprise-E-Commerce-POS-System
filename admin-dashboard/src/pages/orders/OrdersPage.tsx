@@ -15,6 +15,7 @@ import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
+import StatusBadge from '@/components/common/StatusBadge'
 import { OrdersFilterDrawer } from './components/OrdersFilterDrawer'
 import { OrdersDetailDrawer } from './components/OrdersDetailDrawer'
 
@@ -137,175 +138,172 @@ const OrdersPage: React.FC = () => {
     perPage:     data?.per_page     || perPage,
   }
 
-  const getStatusBadge = (st: string) => {
-    switch (st) {
-      case 'completed':
-      case 'delivered':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
-            <CheckCircle2 size={10} /> {t(st as any) || st}
-          </span>
-        )
-      case 'processing':
-      case 'confirmed':
-      case 'shipped':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase">
-            <Truck size={10} /> {t(st as any) || st}
-          </span>
-        )
-      case 'pending':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase">
-            <Clock size={10} /> {t('pending')}
-          </span>
-        )
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 uppercase">
-            {t(st as any) || st}
-          </span>
-        )
-    }
-  }
+  const getStatusBadge = (st: string) => <StatusBadge status={st} />
+
+  const getPaymentStatusBadge = (pst: string) => <StatusBadge status={pst} />
 
   return (
     <div className="space-y-6">
       <Breadcrumb items={[{ label: t('salesOperations'), path: '/dashboard' }, { label: t('salesOperations') }, { label: t('webOrdersRegistry') }]} />
 
-      <PageHeader
-        title={t('title')}
-        description={t('description')}
-      />
+      {/* Hero Header matching Product Catalog design */}
+      <div className="bg-card border border-border p-6 rounded-2xl shadow-xs print:hidden">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <ShoppingBag className="h-6 w-6 text-primary" />
+            <span>{t('title', 'ការបញ្ជាទិញតាមវេបសាយ')}</span>
+          </h1>
+          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+            {t('description', 'គ្រប់គ្រងការបញ្ជាទិញតាមហាងអនឡាញ អាសយដ្ឋានដឹកជញ្ជូន និងការអនុវត្តការដឹកជញ្ជូន')}
+          </p>
+        </div>
+      </div>
 
       {/* ── 1. TOP 4 MODERN SLEEK METRIC CARDS ─────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 print:hidden">
         {/* CARD 1: WEB REVENUE */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent border border-indigo-500/20 bg-card shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          transition={{ duration: 0.25 }}
+          className="relative overflow-hidden rounded-2xl bg-card border border-border/80 hover:border-emerald-500/40 p-4 sm:p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-              <DollarSign size={14} className="text-indigo-500" />
-              {t('webEcommerceRevenue')}
-            </span>
-            <div className="p-2.5 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <DollarSign className="w-5 h-5 text-indigo-500" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-foreground tracking-tight">
-                ${ordersList.reduce((acc, o) => acc + Number(o.grand_total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
+                <DollarSign className="w-4 h-4 text-emerald-500" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
-                {t('onlineStore')}
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t('webEcommerceRevenue', 'ចំណូលលក់តាមវេបសាយ')}
               </span>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1 font-medium">
-              {t('onlineWebStoreSales')}
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              {t('onlineStore', 'ហាងអនឡាញ')}
+            </span>
+          </div>
+
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight font-mono">
+              ${ordersList.reduce((acc, o) => acc + Number(o.grand_total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('onlineWebStoreSales', 'ការលក់ចេញពីហាងអនឡាញ')}
+            </p>
+          </div>
+
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 w-full rounded-full" />
           </div>
         </motion.div>
 
         {/* CARD 2: PENDING & PROCESSING */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.04 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 bg-card shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          transition={{ duration: 0.25, delay: 0.05 }}
+          className="relative overflow-hidden rounded-2xl bg-card border border-border/80 hover:border-amber-500/40 p-4 sm:p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-              <Clock size={14} className="text-amber-500" />
-              {t('pendingAndProcessing')}
-            </span>
-            <div className="p-2.5 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <Clock className="w-5 h-5 text-amber-500" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-foreground tracking-tight">
-                {ordersList.filter((o) => ['pending', 'processing'].includes(o.status)).length} {t('ordersCount')}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-2xs">
+                <Clock className="w-4 h-4 text-amber-500" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                {t('needsAction')}
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t('pendingAndProcessing', 'រង់ចាំ និង កំពុងដំណើរការ')}
               </span>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1 font-medium">
-              {t('awaitingDispatchDelivery')}
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+              {t('needsAction', 'ត្រូវការសកម្មភាព')}
+            </span>
+          </div>
+
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
+              <span className="font-mono">{ordersList.filter((o) => ['pending', 'processing'].includes(o.status)).length}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'ការបញ្ជាទិញ')}</span>
             </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('awaitingDispatchDelivery', 'រង់ចាំការរៀបចំ និង ដឹកជញ្ជូន')}
+            </p>
+          </div>
+
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber-500 to-orange-400 w-full rounded-full" />
           </div>
         </motion.div>
 
         {/* CARD 3: COMPLETED & DELIVERED */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 bg-card shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          transition={{ duration: 0.25, delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl bg-card border border-border/80 hover:border-blue-500/40 p-4 sm:p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-              <PackageCheck size={14} className="text-emerald-500" />
-              {t('completedAndDelivered')}
-            </span>
-            <div className="p-2.5 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <PackageCheck className="w-5 h-5 text-emerald-500" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-foreground tracking-tight">
-                {ordersList.filter((o) => ['completed', 'delivered'].includes(o.status)).length} {t('ordersCount')}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
+                <PackageCheck className="w-4 h-4 text-blue-500" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                {t('onTime')}
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t('completedAndDelivered', 'បានបញ្ចប់ និង ដឹកជញ្ជូនរួច')}
               </span>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1 font-medium">
-              {t('successfullyDelivered')}
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+              {t('onTime', 'ទាន់ពេល 100%')}
+            </span>
+          </div>
+
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
+              <span className="font-mono">{ordersList.filter((o) => ['completed', 'delivered'].includes(o.status)).length}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'ការបញ្ជាទិញ')}</span>
             </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('successfullyDelivered', 'ដឹកជញ្ជូនបានជោគជ័យ')}
+            </p>
+          </div>
+
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 w-full rounded-full" />
           </div>
         </motion.div>
 
         {/* CARD 4: TOTAL WEB ORDERS */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="p-5 rounded-[24px] bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 bg-card shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+          transition={{ duration: 0.25, delay: 0.15 }}
+          className="relative overflow-hidden rounded-2xl bg-card border border-border/80 hover:border-purple-500/40 p-4 sm:p-5 shadow-2xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-              <ShoppingBag size={14} className="text-purple-500" />
-              {t('totalWebOrders')}
-            </span>
-            <div className="p-2.5 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform shadow-2xs">
-              <ShoppingBag className="w-5 h-5 text-purple-500" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-foreground tracking-tight">
-                {pagination.total} {t('ordersCount')}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-2xs">
+                <ShoppingBag className="w-4 h-4 text-purple-500" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20">
-                {t('liveEcommerce')}
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t('totalWebOrders', 'ការបញ្ជាទិញសរុប')}
               </span>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1 font-medium">
-              {t('customerCheckoutRegistry')}
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+              {t('liveEcommerce', 'អនឡាញ')}
+            </span>
+          </div>
+
+          <div className="my-1">
+            <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
+              <span className="font-mono">{pagination.total}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'ការបញ្ជាទិញ')}</span>
             </div>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              {t('customerCheckoutRegistry', 'កំណត់ត្រាការបញ្ជាទិញរបស់អតិថិជន')}
+            </p>
+          </div>
+
+          <div className="mt-3 h-1 w-full bg-muted/60 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-full rounded-full" />
           </div>
         </motion.div>
       </div>
 
       {/* Toolbar & Filter Trigger */}
-      <div className="bg-card rounded-[24px] border border-border/80 p-4 shadow-sm space-y-0">
+      <div className="bg-card rounded-2xl border border-border/80 p-4 shadow-xs space-y-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1 max-w-lg">
             <SearchInput
@@ -363,73 +361,94 @@ const OrdersPage: React.FC = () => {
           ordersList.map((order) => (
             <motion.div
               key={order.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-card border border-border/80 rounded-[24px] p-5 shadow-2xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between group"
+              className="bg-card border border-border/80 rounded-2xl p-4 sm:p-4.5 shadow-2xs hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col justify-between group"
             >
-              <div>
-                {/* Card Header: Order #, Date, and Badges */}
-                <div className="flex items-center justify-between pb-3.5 border-b border-border/60">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-500 font-bold group-hover:scale-110 transition-transform">
-                      <ShoppingBag size={18} />
+              <div className="space-y-3">
+                {/* Header: Reference + Date & Badges */}
+                <div className="flex items-start justify-between gap-2 pb-3 border-b border-border/60">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 border border-primary/20">
+                      <ShoppingBag size={15} />
                     </div>
-                    <div>
-                      <span className="font-mono font-black text-xs text-foreground block tracking-tight">#{order.order_number}</span>
-                      <span className="text-[10px] text-muted-foreground font-medium">{new Date(order.created_at).toLocaleString()}</span>
+                    <div className="min-w-0">
+                      <span className="font-mono font-bold text-xs sm:text-[13px] text-foreground block tracking-tight truncate">
+                        #{order.order_number}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-medium block truncate">
+                        {new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                     {getStatusBadge(order.status)}
-                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground">
-                      {t(order.payment_status as any) || order.payment_status}
-                    </span>
+                    {getPaymentStatusBadge(order.payment_status)}
                   </div>
                 </div>
 
-                {/* Card Body: Customer details & Address */}
-                <div className="py-3.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-border/40">
-                    <span className="flex items-center gap-1.5 text-muted-foreground text-[11px]"><User size={13} /> {t('customer')}:</span>
-                    <span className="font-bold text-foreground">{order.customer?.name || order.shipping_name || t('customer')}</span>
+                {/* Body: Customer & Address */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/40 gap-2">
+                    <span className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium shrink-0">
+                      <User size={12} className="text-primary shrink-0" />
+                      <span>{t('customer', 'អតិថិជន')}:</span>
+                    </span>
+                    <span className="font-bold text-foreground truncate text-right text-xs">
+                      {order.customer?.name || order.shipping_name || t('customer', 'អតិថិជន')}
+                    </span>
                   </div>
+
                   {order.customer?.phone && (
-                    <div className="flex items-center justify-between px-2 text-[11px]">
-                      <span className="flex items-center gap-1.5 text-muted-foreground"><Phone size={13} /> {t('contact')}:</span>
-                      <span className="font-mono font-semibold text-foreground">{order.customer.phone}</span>
+                    <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <Phone size={11} />
+                        <span>{t('contact', 'ទំនាក់ទំនង')}:</span>
+                      </span>
+                      <span className="font-mono font-medium text-foreground">{order.customer.phone}</span>
                     </div>
                   )}
+
                   {order.shipping_address && (
-                    <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground px-2 pt-1">
-                      <MapPin size={13} className="flex-shrink-0 mt-0.5 text-primary" />
+                    <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground px-1 pt-0.5">
+                      <MapPin size={12} className="shrink-0 mt-0.5 text-primary/70" />
                       <span className="line-clamp-1">{order.shipping_address}</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Card Footer: Grand Total & Order Details Button */}
-              <div className="pt-3.5 border-t border-border/60 space-y-3">
-                <div className="flex items-center justify-between">
+              {/* Footer: Grand Total, Breakdown & Button */}
+              <div className="pt-3 mt-3 border-t border-border/60 space-y-2.5">
+                <div className="flex items-baseline justify-between gap-2">
                   <div>
-                    <span className="text-[10px] text-muted-foreground font-semibold block uppercase">{t('grandTotal')}</span>
-                    <span className="text-lg font-black text-primary tracking-tight">${Number(order.grand_total).toFixed(2)}</span>
+                    <span className="text-[10px] text-muted-foreground font-semibold block uppercase tracking-wider">
+                      {t('grandTotal', 'សរុបចុងក្រោយ')}
+                    </span>
+                    <span className="text-base sm:text-lg font-mono font-black text-foreground tracking-tight">
+                      ${Number(order.grand_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                   </div>
-                  <div className="text-right text-[10px] text-muted-foreground font-medium">
-                    <div>{t('shipping')}: ${Number(order.shipping_cost || 0).toFixed(2)}</div>
-                    <div>{t('disc')}: -${Number(order.discount_amount || 0).toFixed(2)}</div>
+                  <div className="text-right text-[10px] text-muted-foreground space-y-0.5">
+                    {Number(order.shipping_cost || 0) > 0 && (
+                      <div>{t('shipping', 'ដឹកជញ្ជូន')}: ${Number(order.shipping_cost).toFixed(2)}</div>
+                    )}
+                    {Number(order.discount_amount || 0) > 0 && (
+                      <div className="text-emerald-600 dark:text-emerald-400">-{t('disc', 'បញ្ចុះ')}: ${Number(order.discount_amount).toFixed(2)}</div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-muted-foreground font-bold uppercase">
-                    {t('statusLabel')}: <strong className="text-foreground">{t(order.fulfillment_status as any) || order.fulfillment_status || t('unfulfilled')}</strong>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground">
+                    {t('fulfillment', 'ការដឹកជញ្ជូន')}: <span className="text-foreground font-bold">{t(order.fulfillment_status as any) || order.fulfillment_status || t('unfulfilled', 'មិនទាន់បំពេញ')}</span>
                   </span>
                   <button
                     onClick={() => setSelectedOrderId(order.id)}
-                    className="px-4 py-2 bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    className="h-8 px-3 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
                   >
-                    <Eye size={13} /> {t('orderDetails')}
+                    <Eye size={12} />
+                    <span>{t('orderDetails', 'ពិនិត្យលម្អិត')}</span>
                   </button>
                 </div>
               </div>

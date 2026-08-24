@@ -13,7 +13,6 @@
   "last_login": "Đăng nhập lần cuối:",
   "loading_specs": "Đang tải thông tin hồ sơ...",
   "logout_other_devices": "Đăng xuất khỏi các thiết bị khác",
-
   "avatar": {
     "upload": "Tải ảnh đại diện",
     "remove": "Xóa ảnh đại diện",
@@ -22,7 +21,6 @@
     "remove_success": "Xóa ảnh đại diện thành công!",
     "remove_fail": "Xóa ảnh đại diện thất bại."
   },
-
   "overview_tab": {
     "account_status": "Trạng thái tài khoản",
     "active": "Đang hoạt động",
@@ -35,7 +33,6 @@
     "recent_timeline": "Dòng thời gian hoạt động gần đây",
     "no_recent_actions": "Không có hoạt động nào gần đây"
   },
-
   "personal_tab": {
     "title": "Thông tin cá nhân",
     "subtitle": "Cập nhật chi tiết tài khoản của bạn như họ tên, email, số điện thoại và địa chỉ",
@@ -70,7 +67,6 @@
     "success_update": "Cập nhật thông tin cá nhân thành công!",
     "fail_update": "Cập nhật thông tin cá nhân thất bại."
   },
-
   "security_tab": {
     "title": "Bảo mật tài khoản",
     "credentials_title": "Cập nhật thông tin đăng nhập",
@@ -99,7 +95,6 @@
     "strength_strong": "Mạnh",
     "strength_very_strong": "Rất mạnh"
   },
-
   "permissions_tab": {
     "title": "Quyền hạn hệ thống",
     "assigned_roles": "Vai trò được phân công",
@@ -113,7 +108,6 @@
     "th_guard": "Guard",
     "th_action": "Phạm vi thao tác"
   },
-
   "activities_tab": {
     "title": "Nhật ký hoạt động & Kiểm toán",
     "subtitle": "Lịch sử các thao tác quản trị quan trọng được thực hiện bởi phiên của bạn",
@@ -125,7 +119,6 @@
     "th_ua": "Trình duyệt / Thiết bị",
     "th_date": "Ngày & Giờ"
   },
-
   "logins_tab": {
     "title": "Lịch sử đăng nhập",
     "subtitle": "Danh sách các lần đăng nhập vào tài khoản của bạn",
@@ -139,7 +132,6 @@
     "status_success": "Thành công",
     "status_failed": "Thất bại"
   },
-
   "settings_tab": {
     "ui_title": "Tùy chọn chung",
     "subtitle": "Tùy chỉnh ngôn ngữ hệ thống, màu sắc chủ đạo, giao diện hiển thị và kênh thông báo",

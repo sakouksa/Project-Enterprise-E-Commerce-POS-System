@@ -46,6 +46,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
+import { useCompanyStore } from '@/stores/companyStore'
+import { BrandLogo } from '@/components/common/BrandLogo'
 import api from '@/api/client'
 
 // ─── Pure Vector SVG Country Flag Component ───────────────────────────────────
@@ -109,27 +111,6 @@ const CountryFlagIcon: React.FC<{ code: string; className?: string }> = ({ code,
   }
 }
 
-// ─── Pure Transparent Vector Logo Badge ───────────────────────────────────────
-const CompanyLogoBadge: React.FC<{ size?: 'sm' | 'lg'; className?: string }> = ({ size = 'sm', className = '' }) => {
-  const isLg = size === 'lg'
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      transition={{ duration: 0.2 }}
-      className={`relative flex items-center justify-center shrink-0 ${
-        isLg ? 'w-14 h-14 sm:w-16 sm:h-16' : 'w-9 h-9 sm:w-10 sm:h-10'
-      } ${className}`}
-    >
-      <img
-        src="/logo.svg"
-        alt="Enterprise POS Logo"
-        className="w-full h-full object-contain filter drop-shadow-sm"
-      />
-    </motion.div>
-  )
-}
-
 // ─── Supported Languages Configuration ───────────────────────────────────────
 const LANGUAGES = [
   { code: 'en', name: 'English', label: 'English' },
@@ -166,7 +147,12 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate()
 
   const { setAuth, darkMode } = useAuthStore()
-  const { setLanguage, language, themeMode, updateThemeMode } = useThemeStore()
+  const { themeMode, language, setLanguage, updateThemeMode } = useThemeStore()
+  const { branding, fetchBranding } = useCompanyStore()
+
+  useEffect(() => {
+    fetchBranding()
+  }, [fetchBranding])
 
   const [showPassword, setShowPassword] = useState(false)
   const [capsLockActive, setCapsLockActive] = useState(false)
@@ -180,7 +166,7 @@ const LoginPage: React.FC = () => {
   const [isSuccessState, setIsSuccessState] = useState(false)
   const [serverError, setServerError] = useState<{
     code?: number
-    title?: string
+    title: string
     message: string
   } | null>(null)
 
@@ -390,38 +376,51 @@ const LoginPage: React.FC = () => {
       const status = err.response?.status
       const backendMsg = err.response?.data?.message
 
-      let errorMessage = t('auth.errors.unknown')
+      let errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
+      let errorMessage = t('auth.errors.unknown', 'មានកំហុសមិនរំពឹងទុកបានកើតឡើង។ សូមព្យាយាមម្តងទៀត។')
 
       if (!err.response) {
         if (!navigator.onLine) {
-          errorMessage = t('auth.errors.offline') || t('auth.errors.networkError')
+          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorMessage = t('auth.errors.offline')
         } else if (err.code === 'ECONNABORTED') {
+          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
           errorMessage = t('auth.errors.timeout')
         } else {
-          errorMessage = t('auth.errors.serverConnectionError') || t('auth.errors.networkError')
+          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorMessage = t('auth.errors.networkError')
         }
       } else if (status === 401) {
-        errorMessage = backendMsg || t('auth.errors.401')
+        errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
+        errorMessage = t('auth.errors.401')
       } else if (status === 403) {
-        errorMessage = backendMsg || t('auth.errors.403')
+        errorTitle = t('auth.errorTitles.accessDenied', 'គណនីគ្មានសិទ្ធិ ឬត្រូវបានផ្អាក')
+        errorMessage = t('auth.errors.403')
       } else if (status === 404) {
-        errorMessage = backendMsg || t('auth.errors.404')
+        errorTitle = t('auth.errorTitles.notFound', 'រកមិនឃើញគណនី')
+        errorMessage = t('auth.errors.404')
       } else if (status === 419) {
-        errorMessage = backendMsg || t('auth.errors.419')
+        errorTitle = t('auth.errorTitles.sessionExpired', 'សេសសិនផុតកំណត់')
+        errorMessage = t('auth.errors.419')
       } else if (status === 422) {
-        errorMessage = backendMsg || t('auth.errors.422')
+        errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានមិនត្រឹមត្រូវ')
+        errorMessage = t('auth.errors.422')
       } else if (status === 429) {
-        errorMessage = backendMsg || t('auth.errors.429')
+        errorTitle = t('auth.errorTitles.locked', 'គណនីត្រូវបានសោរបណ្តោះអាសន្ន')
+        errorMessage = t('auth.errors.429')
       } else if (status === 500) {
-        errorMessage = backendMsg || t('auth.errors.500')
+        errorTitle = t('auth.errorTitles.serverError', 'ប្រព័ន្ធកំពុងជួបបញ្ហា')
+        errorMessage = t('auth.errors.500')
       } else if (status === 503) {
-        errorMessage = backendMsg || t('auth.errors.503')
+        errorTitle = t('auth.errorTitles.maintenance', 'ម៉ាស៊ីនបម្រើកំពុងថែទាំ')
+        errorMessage = t('auth.errors.503')
       } else if (backendMsg) {
         errorMessage = backendMsg
       }
 
       setServerError({
         code: status,
+        title: errorTitle,
         message: errorMessage,
       })
     }
@@ -447,28 +446,26 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* ─── TOP NAVIGATION / HEADER QUICK BAR ─────────────────────────────── */}
-      <header className="relative z-20 w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6 flex flex-wrap items-center justify-between gap-3">
+      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-5 flex items-center justify-between gap-3">
         {/* Brand Logo & Name */}
-        <div className="flex items-center gap-3">
-          <CompanyLogoBadge size="sm" />
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-white">
-                Enterprise <span className="text-blue-600 dark:text-blue-400">POS</span>
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                {t('auth.systemVersion')}
-              </span>
-            </div>
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <BrandLogo size="sm" animated />
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-extrabold text-base sm:text-xl tracking-tight text-slate-900 dark:text-white truncate">
+              {branding.brand_name || 'NexPOS'}
+            </span>
+            <span className="hidden xs:inline-flex text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+              {t('auth.systemVersion', 'v2.5')}
+            </span>
           </div>
         </div>
 
         {/* Quick Actions (Language Switcher with Vector Country Flags) */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* Support Modal Trigger */}
           <button
             onClick={() => setActiveModal('support')}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 transition-all shadow-sm"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 transition-all shadow-xs"
           >
             <Headphones className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>{t('auth.helpSupport')}</span>
@@ -482,10 +479,10 @@ const LoginPage: React.FC = () => {
                 setLangDropdownOpen(!langDropdownOpen)
                 setThemeDropdownOpen(false)
               }}
-              className="flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800 transition-all shadow-sm text-xs font-semibold"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800 transition-all shadow-xs text-xs font-semibold cursor-pointer"
             >
               <CountryFlagIcon code={currentLangObj.code} className="w-5 h-3.5" />
-              <span className="hidden sm:inline">{currentLangObj.label}</span>
+              <span className="hidden sm:inline text-xs">{currentLangObj.label}</span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -501,17 +498,17 @@ const LoginPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-40"
+                    className="absolute right-0 top-full mt-2 w-48 sm:w-52 max-w-[calc(100vw-32px)] rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50"
                   >
                     <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/80 mb-1 flex items-center gap-1.5">
                       <Globe className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Select Language</span>
+                      <span>Language</span>
                     </div>
                     {LANGUAGES.map((lang) => (
                       <button
                         key={lang.code}
                         onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                           language === lang.code
                             ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -539,7 +536,7 @@ const LoginPage: React.FC = () => {
                 setLangDropdownOpen(false)
               }}
               title="Change Appearance Mode"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800 transition-all shadow-sm"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800 transition-all shadow-xs cursor-pointer"
             >
               {darkMode ? (
                 <Moon className="w-4 h-4 text-blue-400" />
@@ -560,7 +557,7 @@ const LoginPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-44 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-40"
+                    className="absolute right-0 top-full mt-2 w-40 sm:w-44 max-w-[calc(100vw-32px)] rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50"
                   >
                     {[
                       { id: 'light', label: t('auth.theme.light', 'Light Mode'), icon: <Sun className="w-4 h-4 text-amber-500" /> },
@@ -572,7 +569,7 @@ const LoginPage: React.FC = () => {
                         <button
                           key={mode.id}
                           onClick={() => handleThemeChange(mode.id as any)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                             isSel
                               ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                               : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -595,16 +592,16 @@ const LoginPage: React.FC = () => {
       </header>
 
       {/* ─── MAIN RESPONSIVE SPLIT LAYOUT ──────────────────────────────────── */}
-      <main className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8 flex-1 flex items-center justify-center">
-        <div className="w-full flex flex-col lg:flex-row items-center justify-between gap-8 xl:gap-16 my-auto">
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 lg:py-8 flex-1 flex items-center justify-center">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-14 items-center my-auto">
 
-          {/* ─── LEFT HERO SECTION (Desktop Only: hidden on mobile/tablet to keep login clean) ── */}
-          <div className="hidden lg:flex w-full lg:w-[45%] xl:w-[48%] flex-col justify-center py-4 lg:py-6">
+          {/* ─── LEFT HERO SECTION (Desktop & Large Screens) ───────────────── */}
+          <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-center py-2 lg:py-4 pr-0 xl:pr-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="space-y-4 sm:space-y-6 max-w-xl mx-auto lg:mx-0 text-center lg:text-left"
+              className="space-y-4 xl:space-y-5 max-w-xl text-left"
             >
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold backdrop-blur-md">
@@ -613,87 +610,89 @@ const LoginPage: React.FC = () => {
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.15]">
-                {t('auth.heroTitle')}
+              <h1 className="text-3xl lg:text-4xl xl:text-[44px] font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
+                {language === 'km' 
+                  ? `ប្រព័ន្ធ ${branding.brand_name || 'NexPOS'} Omni-Commerce` 
+                  : `${branding.brand_name || 'NexPOS'} Enterprise Commerce`}
               </h1>
 
               {/* Subtitle */}
-              <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm lg:text-base leading-relaxed">
-                {t('auth.heroSubtitle')}
+              <p className="text-slate-600 dark:text-slate-400 text-sm xl:text-base leading-relaxed max-w-lg">
+                {language === 'km' ? branding.brand_tagline_km : branding.brand_tagline}
               </p>
 
               {/* ─── Responsive Animated Metric Cards ─────────────────────── */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2.5 sm:gap-3.5 pt-2 sm:pt-4 text-left">
+              <div className="grid grid-cols-2 gap-3 xl:gap-3.5 pt-2 text-left">
                 {/* Sales Card */}
                 <motion.div
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="p-3 sm:p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-md dark:shadow-xl flex items-center gap-2.5 sm:gap-3"
+                  whileHover={{ y: -3, scale: 1.02 }}
+                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
                 >
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.sales')}</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">$128,450.00</div>
-                    <div className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate">{t('auth.cards.salesSub')}</div>
+                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.sales')}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">$128,450.00</div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate">{t('auth.cards.salesSub')}</div>
                   </div>
                 </motion.div>
 
                 {/* Inventory Card */}
                 <motion.div
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="p-3 sm:p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-md dark:shadow-xl flex items-center gap-2.5 sm:gap-3"
+                  whileHover={{ y: -3, scale: 1.02 }}
+                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
                 >
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                    <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                    <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.inventory')}</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">14,250 Items</div>
-                    <div className="text-[9px] sm:text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate">{t('auth.cards.inventorySub')}</div>
+                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.inventory')}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">14,250 Items</div>
+                    <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate">{t('auth.cards.inventorySub')}</div>
                   </div>
                 </motion.div>
 
                 {/* Orders Card */}
                 <motion.div
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="p-3 sm:p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-md dark:shadow-xl flex items-center gap-2.5 sm:gap-3"
+                  whileHover={{ y: -3, scale: 1.02 }}
+                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
                 >
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                    <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                    <ShoppingCart className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.orders')}</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">1,840 Orders</div>
-                    <div className="text-[9px] sm:text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate">{t('auth.cards.ordersSub')}</div>
+                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.orders')}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">1,840 Orders</div>
+                    <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate">{t('auth.cards.ordersSub')}</div>
                   </div>
                 </motion.div>
 
                 {/* Analytics Card */}
                 <motion.div
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="p-3 sm:p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-md dark:shadow-xl flex items-center gap-2.5 sm:gap-3"
+                  whileHover={{ y: -3, scale: 1.02 }}
+                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
                 >
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                    <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.analytics')}</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">Real-Time</div>
-                    <div className="text-[9px] sm:text-[10px] text-purple-600 dark:text-purple-400 font-medium truncate">{t('auth.cards.analyticsSub')}</div>
+                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.analytics')}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">Real-Time</div>
+                    <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium truncate">{t('auth.cards.analyticsSub')}</div>
                   </div>
                 </motion.div>
               </div>
 
               {/* Feature Chips */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1 text-xs text-slate-600 dark:text-slate-400">
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80">
                   <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> {t('auth.cards.warehouse')}
                 </span>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80">
                   <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> {t('auth.cards.employees')}
                 </span>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80">
                   <CreditCard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> {t('auth.cards.finance')}
                 </span>
               </div>
@@ -701,15 +700,15 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* ─── RIGHT LOGIN CARD SECTION ───────────────────────────────────── */}
-          <div className="w-full lg:w-[52%] xl:w-[48%] flex items-center justify-center">
+          <div className="w-full lg:col-span-6 xl:col-span-5 flex items-center justify-center lg:justify-end">
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
-              className="w-full max-w-md sm:max-w-[470px] mx-auto"
+              className="w-full max-w-[430px] sm:max-w-[460px] lg:max-w-[440px] xl:max-w-[460px] mx-auto lg:mr-0"
             >
               {/* Rounded 32px Premium Glass Card Container */}
-              <div className="relative rounded-3xl sm:rounded-[32px] bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-500/10 p-7 sm:p-10 lg:p-11 overflow-hidden">
+              <div className="relative rounded-3xl sm:rounded-[32px] bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-500/10 p-6 sm:p-8 lg:p-8 xl:p-9 overflow-hidden">
                 
                 {/* Progress Bar during loading */}
                 {isSubmitting && (
@@ -724,39 +723,47 @@ const LoginPage: React.FC = () => {
                 )}
 
                 {/* Header inside Login Card */}
-                <div className="text-center mb-7 sm:mb-8 flex flex-col items-center">
-                  <CompanyLogoBadge size="lg" className="mb-3.5 sm:mb-4" />
-                  <h2 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+                <div className="text-center mb-6 sm:mb-7 flex flex-col items-center">
+                  <BrandLogo size="lg" animated className="mb-3 sm:mb-3.5" />
+                  <h2 className="text-xl sm:text-2xl xl:text-[26px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
                     {t('auth.loginTitle')}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-medium">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-medium">
                     {t('auth.loginSubtitle')}
                   </p>
                 </div>
 
-                {/* ─── Server Error Alert Box with Retry Button ────────────── */}
+                {/* ─── Modern Flexible Error Alert Box with Clean Shake Animation ─── */}
                 <AnimatePresence>
                   {serverError && (
                     <motion.div
-                      initial={{ opacity: 0, height: 0, y: -10 }}
-                      animate={{ opacity: 1, height: 'auto', y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: -10 }}
-                      className="mb-5 p-3.5 sm:p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs sm:text-sm flex items-start gap-3 shadow-sm"
+                      initial={{ opacity: 0, scale: 0.96, y: -8 }}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: 1, 
+                        y: 0,
+                        x: [0, -6, 6, -4, 4, -2, 2, 0] 
+                      }}
+                      exit={{ opacity: 0, scale: 0.96, y: -8 }}
+                      transition={{ duration: 0.35, ease: 'easeOut' }}
+                      className="mb-5 p-3.5 sm:p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/25 text-rose-800 dark:text-rose-200 text-xs sm:text-sm flex items-start gap-3 shadow-xs backdrop-blur-md"
                     >
-                      <ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <div className="font-semibold text-rose-800 dark:text-rose-200 text-xs sm:text-sm">
-                          {serverError.code ? `Error ${serverError.code}` : 'Authentication Failure'}
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/20 dark:bg-rose-500/30 flex items-center justify-center shrink-0 mt-0.5 text-rose-600 dark:text-rose-400">
+                        <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-rose-900 dark:text-rose-100 text-xs sm:text-sm tracking-tight">
+                          {serverError.title}
                         </div>
-                        <p className="text-xs text-rose-700/90 dark:text-rose-300/90 mt-0.5 leading-relaxed">
+                        <p className="text-[11px] sm:text-xs text-rose-700/90 dark:text-rose-300/90 mt-1 leading-relaxed font-normal">
                           {serverError.message}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setServerError(null)}
-                        className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 transition-colors p-1"
-                        title={t('auth.retry')}
+                        className="text-rose-400 hover:text-rose-700 dark:hover:text-rose-200 p-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+                        title={t('auth.close', 'បិទ')}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -894,11 +901,11 @@ const LoginPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || isSuccessState}
-                    className={`w-full py-4 px-6 rounded-2xl font-bold text-xs sm:text-sm text-white shadow-xl shadow-blue-500/20 transition-all duration-200
+                    className={`w-full py-3.5 sm:py-4 px-6 rounded-2xl font-bold text-xs sm:text-sm text-white shadow-xl shadow-blue-500/20 transition-all duration-200
                               flex items-center justify-center gap-2 relative overflow-hidden group cursor-pointer ${
                                 isSuccessState
                                   ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
-                                  : 'bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] shadow-blue-500/25'
+                                  : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] shadow-blue-500/25'
                               } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     {isSuccessState ? (
@@ -925,7 +932,7 @@ const LoginPage: React.FC = () => {
                 </form>
 
                 {/* ─── Trust & Security Badge at Bottom of Card ──────────── */}
-                <div className="mt-7 pt-5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-2 text-center text-[11px] sm:text-xs text-slate-400 dark:text-slate-500">
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-1.5 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 leading-normal">
                   <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span className="font-medium">{t('auth.securityNote')}</span>
                 </div>
@@ -938,7 +945,7 @@ const LoginPage: React.FC = () => {
       </main>
 
       {/* ─── FOOTER ───────────────────────────────────────────────────────── */}
-      <footer className="relative z-20 w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-900 text-[11px] sm:text-xs text-slate-500">
+      <footer className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 border-t border-slate-200/70 dark:border-slate-900 text-[11px] sm:text-xs text-slate-500 text-center sm:text-left">
         <div>
           {t('auth.copyright')}
         </div>

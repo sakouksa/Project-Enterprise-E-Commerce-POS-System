@@ -537,12 +537,12 @@ const PurchaseReturnsPage: React.FC = () => {
                     )}
                     {visibleColumns.status !== false && (
                       <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
-                        <span className={RETURN_STATUS_BADGE[ret.status] || 'px-2 py-0.5 rounded text-[11px] bg-muted'}>
+                        <span className={RETURN_STATUS_BADGE[ret.status] || 'inline-flex items-center justify-center px-2 py-0.5 rounded text-xs bg-muted'}>
                           {ret.status === 'completed' || ret.status === 'approved'
-                            ? t('purchases.approved', 'Approved')
+                            ? t('purchases.approved', 'បានអនុម័ត')
                             : ret.status === 'cancelled'
-                            ? t('purchases.cancelled', 'Cancelled')
-                            : t('purchases.draft', 'Draft')}
+                            ? t('purchases.cancelled', 'បានបោះបង់')
+                            : t('purchases.draft', 'សេចក្តីព្រាង')}
                         </span>
                       </td>
                     )}

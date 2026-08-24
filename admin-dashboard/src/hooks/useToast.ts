@@ -1,26 +1,8 @@
 import { useMemo } from 'react'
 import { useToastStore, type ToastOptions } from '@/stores/toastStore'
-import { translateString } from '@/lib/i18n'
+import { normalizeToastOptions, type ToastParam } from '@/utils/toast'
 
-export type ToastParam = string | (Omit<ToastOptions, 'type'> & { message: string })
-
-function normalizeToastOptions(param: ToastParam, type: 'success' | 'error' | 'warning' | 'info', duration?: number): ToastOptions {
-  if (typeof param === 'string') {
-    return {
-      type,
-      message: translateString(param),
-      duration,
-    }
-  }
-  return {
-    ...param,
-    type,
-    title: param.title ? translateString(param.title) : undefined,
-    message: translateString(param.message),
-    description: param.description ? translateString(param.description) : undefined,
-    duration: param.duration ?? duration,
-  }
-}
+export type { ToastParam }
 
 export function useToast() {
   const addToast = useToastStore((s) => s.addToast)

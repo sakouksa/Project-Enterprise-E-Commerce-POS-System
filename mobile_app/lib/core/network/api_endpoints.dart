@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
-  // Dynamic Host resolution: Chrome/Desktop uses localhost (127.0.0.1:8000), Android emulator uses 10.0.2.2:8000
+  // Support compile-time environment injection (e.g., flutter build apk --dart-define=API_BASE_URL=https://api.example.com/api/v1)
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  // Dynamic Host resolution: Production environment variable > Web > Android emulator (10.0.2.2) > Desktop/iOS localhost
   static String get baseUrl {
+    if (_envBaseUrl.isNotEmpty) {
+      return _envBaseUrl;
+    }
     if (kIsWeb) {
       return 'http://localhost:8000/api/v1';
     }
@@ -18,7 +24,7 @@ class ApiEndpoints {
     }
   }
 
-  static const String liveBaseUrl = 'http://127.0.0.1:8000/api/v1';
+  static const String liveBaseUrl = _envBaseUrl.isNotEmpty ? _envBaseUrl : 'http://127.0.0.1:8000/api/v1';
 
   // Auth
   static const String login = '/auth/login';

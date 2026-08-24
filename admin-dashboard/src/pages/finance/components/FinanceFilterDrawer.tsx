@@ -34,35 +34,66 @@ interface FinanceFilterDrawerProps {
 
 const FL = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div>
-    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
+    <label className="block text-[11px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
     {children}
   </div>
 )
 
-const inputCls = "w-full text-xs font-semibold rounded-xl bg-card border border-border/80 hover:border-primary/40 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all py-2.5 px-3.5 text-foreground shadow-2xs"
+const inputCls = "w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
 
 export const FinanceFilterDrawer: React.FC<FinanceFilterDrawerProps> = ({
   isOpen, onClose,
   activeTab, categories = [],
-  filterType, setFilterType,
   filterStatus, setFilterStatus,
-  filterAccount, setFilterAccount,
   filterCategory, setFilterCategory,
-  filterPaymentMethod, setFilterPaymentMethod,
   filterDateStart, setFilterDateStart,
   filterDateEnd, setFilterDateEnd,
   filterAmountMin, setFilterAmountMin,
   filterAmountMax, setFilterAmountMax,
-  filterCreatedBy, setFilterCreatedBy,
   onReset,
 }) => {
   const { t } = useTranslation(['finance', 'common'])
-  const activeCount = [filterStatus, filterCategory, filterDateStart, filterDateEnd, filterAmountMin, filterAmountMax].filter(Boolean).length
+
+  const activeCount = [
+    filterStatus,
+    filterCategory,
+    filterDateStart,
+    filterDateEnd,
+    filterAmountMin,
+    filterAmountMax
+  ].filter(Boolean).length
 
   const categoryOptions = [
     { value: '', label: t('finance.all_categories', 'All Categories') },
     ...categories.map((c) => ({ value: String(c.id), label: c.name }))
   ]
+
+  const getStatusOptions = () => {
+    switch (activeTab) {
+      case 'categories':
+      case 'currencies':
+      case 'taxes':
+        return [
+          { value: '', label: t('finance.all_statuses', 'All Statuses') },
+          { value: 'active', label: t('finance.status_active', 'Active') },
+          { value: 'inactive', label: t('finance.status_inactive', 'Inactive') },
+        ]
+      case 'registers':
+        return [
+          { value: '', label: t('finance.all_statuses', 'All Statuses') },
+          { value: 'open', label: t('finance.status_open', 'Open') },
+          { value: 'closed', label: t('finance.status_closed', 'Closed') },
+        ]
+      case 'expenses':
+      default:
+        return [
+          { value: '', label: t('finance.all_statuses', 'All Statuses') },
+          { value: 'approved', label: t('finance.status_approved', 'Approved') },
+          { value: 'pending', label: t('finance.status_pending', 'Pending') },
+          { value: 'rejected', label: t('finance.status_rejected', 'Rejected') },
+        ]
+    }
+  }
 
   return (
     <FilterDrawerShell
@@ -73,24 +104,17 @@ export const FinanceFilterDrawer: React.FC<FinanceFilterDrawerProps> = ({
       activeCount={activeCount}
       resetLabel={t('common.reset', 'Reset Filters')}
     >
+      {/* Status Filter */}
       <FL label={t('finance.status_col', 'Status')}>
         <ModernSelect
           value={filterStatus}
           onChange={setFilterStatus}
-          options={[
-            { value: '', label: t('finance.all_statuses', 'All Statuses') },
-            { value: 'approved', label: t('finance.status_approved', 'Approved') },
-            { value: 'pending', label: t('finance.status_pending', 'Pending') },
-            { value: 'rejected', label: t('finance.status_rejected', 'Rejected') },
-            { value: 'active', label: t('finance.status_active', 'Active') },
-            { value: 'inactive', label: t('finance.status_inactive', 'Inactive') },
-            { value: 'open', label: t('finance.status_open', 'Open Till') },
-            { value: 'closed', label: t('finance.status_closed', 'Closed Till') },
-          ]}
+          options={getStatusOptions()}
           placeholder={t('finance.all_statuses', 'All Statuses')}
         />
       </FL>
 
+      {/* Category Filter (Expenses Only) */}
       {activeTab === 'expenses' && (
         <FL label={t('finance.category_col', 'Category')}>
           <ModernSelect
@@ -102,22 +126,27 @@ export const FinanceFilterDrawer: React.FC<FinanceFilterDrawerProps> = ({
         </FL>
       )}
 
-      <FL label={t('finance.from_date', 'From Date')}>
-        <input type="date" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} className={inputCls} />
-      </FL>
+      {/* Date Range & Amounts (Expenses Only) */}
+      {activeTab === 'expenses' && (
+        <>
+          <FL label={t('finance.from_date', 'From Date')}>
+            <input type="date" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} className={inputCls} />
+          </FL>
 
-      <FL label={t('finance.to_date', 'To Date')}>
-        <input type="date" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} className={inputCls} />
-      </FL>
+          <FL label={t('finance.to_date', 'To Date')}>
+            <input type="date" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} className={inputCls} />
+          </FL>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <FL label={t('finance.min_amount', 'Min Amount')}>
-          <input type="number" value={filterAmountMin} onChange={e => setFilterAmountMin(e.target.value)} placeholder="0" className={inputCls} />
-        </FL>
-        <FL label={t('finance.max_amount', 'Max Amount')}>
-          <input type="number" value={filterAmountMax} onChange={e => setFilterAmountMax(e.target.value)} placeholder="99999" className={inputCls} />
-        </FL>
-      </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <FL label={t('finance.min_amount', 'Min Amount')}>
+              <input type="number" value={filterAmountMin} onChange={e => setFilterAmountMin(e.target.value)} placeholder="0" className={inputCls} />
+            </FL>
+            <FL label={t('finance.max_amount', 'Max Amount')}>
+              <input type="number" value={filterAmountMax} onChange={e => setFilterAmountMax(e.target.value)} placeholder="99999" className={inputCls} />
+            </FL>
+          </div>
+        </>
+      )}
     </FilterDrawerShell>
   )
 }

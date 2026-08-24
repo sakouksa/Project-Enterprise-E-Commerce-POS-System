@@ -5,6 +5,7 @@ import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight, Tag } from 'lucide-rea
 import { useCartStore } from '@/stores/cartStore'
 import { useSettingsStore } from '@/stores'
 import api from '@/lib/api'
+import { getImageUrl } from '@/lib/utils'
 
 const CartDrawer: React.FC = () => {
   const { isOpen, setOpen, items, subtotal, total, coupon_code, discount, setCart, applyCoupon, clearCoupon } = useCartStore()
@@ -123,9 +124,10 @@ const CartDrawer: React.FC = () => {
                     {/* Item Image */}
                     <div className="w-20 h-20 rounded-xl bg-white dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-700">
                       <img
-                        src={item.product?.image || '/placeholder.png'}
+                        src={getImageUrl(item.product?.image)}
                         alt={item.product?.name}
                         className="w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.src = '/images/placeholder-product.png' }}
                       />
                     </div>
 

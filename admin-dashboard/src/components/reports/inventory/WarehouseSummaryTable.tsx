@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Warehouse } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 interface WarehouseSummaryItem {
   name: string
@@ -16,9 +17,6 @@ interface Props {
 
 export const WarehouseSummaryTable: React.FC<Props> = ({ data = [], isLoading }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number = 0) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
 
   if (isLoading) {
     return (

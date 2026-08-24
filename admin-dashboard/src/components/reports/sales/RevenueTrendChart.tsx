@@ -5,6 +5,7 @@ import {
   Tooltip, Legend
 } from 'recharts'
 import { TrendingUp, Calendar } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface RevenueTrendPoint {
   date: string
@@ -26,8 +27,6 @@ export const RevenueTrendChart: React.FC<RevenueTrendChartProps> = ({
   onGroupByChange,
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 0 })}`
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -132,7 +131,7 @@ export const RevenueTrendChart: React.FC<RevenueTrendChartProps> = ({
                 yAxisId="left"
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={formatCurrency}
+                tickFormatter={(val) => formatCurrency(val, { decimals: 0 })}
                 tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
               />
               <YAxis

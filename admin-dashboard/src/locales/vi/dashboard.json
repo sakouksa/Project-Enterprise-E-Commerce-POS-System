@@ -15,7 +15,6 @@
   "refreshDashboard": "Làm mới bảng điều khiển",
   "globalSearch": "Tìm kiếm toàn cục",
   "searchPlaceholder": "Tìm kiếm đơn hàng, doanh số, sản phẩm, khách hàng...",
-
   "todaySales": "Doanh số hôm nay",
   "todayRevenue": "Tổng doanh thu hôm nay",
   "grossProfit": "Lợi nhuận gộp",
@@ -24,7 +23,6 @@
   "todayPurchases": "Nhập hàng hôm nay",
   "inventoryValue": "Tổng giá trị tồn kho",
   "cashBalance": "Số dư tiền mặt",
-
   "totalCustomers": "Tổng khách hàng",
   "totalEmployees": "Tổng nhân viên",
   "totalProducts": "Tổng sản phẩm",
@@ -33,7 +31,6 @@
   "totalBranches": "Tổng chi nhánh",
   "totalCompanies": "Tổng công ty",
   "pendingOrders": "Đơn hàng chờ xử lý",
-
   "lowStock": "Sản phẩm sắp hết hàng",
   "outOfStock": "Sản phẩm đã hết hàng",
   "pendingPurchase": "Đơn mua chờ duyệt",
@@ -42,7 +39,6 @@
   "pendingDelivery": "Đơn hàng chờ giao",
   "attendanceToday": "Chấm công hôm nay",
   "payrollDraft": "Dự thảo bảng lương",
-
   "todayExpenses": "Chi phí hôm nay",
   "todayIncome": "Doanh thu thu về",
   "todayReturns": "Hàng trả lại hôm nay",
@@ -54,7 +50,6 @@
   "loginCount": "Lượt đăng nhập",
   "failedLogin": "Đăng nhập thất bại",
   "backupStatus": "Trạng thái sao lưu",
-
   "salesTrend": "Xu hướng doanh số & Doanh thu",
   "revenueTrend": "Xu hướng doanh thu",
   "profitTrend": "Xu hướng biên lợi nhuận",
@@ -72,7 +67,6 @@
   "revenueByMonth": "Doanh thu theo tháng",
   "ordersByStatus": "Đơn hàng theo trạng thái",
   "returnsTrend": "Xu hướng trả hàng",
-
   "recentSales": "Doanh số gần đây",
   "recentPurchases": "Mua hàng gần đây",
   "latestCustomers": "Khách hàng mới nhất",
@@ -81,7 +75,6 @@
   "recentNotifications": "Thông báo",
   "activityTimeline": "Nhật ký hoạt động",
   "auditLogs": "Nhật ký kiểm toán",
-
   "createSale": "Tạo đơn bán hàng",
   "createPurchase": "Tạo đơn mua hàng",
   "addProduct": "Thêm sản phẩm",
@@ -92,7 +85,6 @@
   "addEmployee": "Thêm nhân viên",
   "openPOS": "Mở POS Bán lẻ",
   "generateReport": "Tạo báo cáo",
-
   "businessAlerts": "Cảnh báo kinh doanh",
   "lowStockAlert": "Cảnh báo sắp hết hàng",
   "expiredProductAlert": "Cảnh báo hàng hết hạn",
@@ -105,7 +97,6 @@
   "databaseWarningAlert": "Cảnh báo hiệu năng cơ sở dữ liệu",
   "apiOfflineAlert": "Hệ thống API ngoại tuyến",
   "jwtExpiredAlert": "Phiên làm việc hết hạn",
-
   "systemHealth": "Sức khỏe hệ thống",
   "systemHealthTitle": "Sức khỏe & Chẩn đoán hệ thống",
   "allSystemsOperational": "Tất cả hệ thống đang hoạt động bình thường",
@@ -132,7 +123,6 @@
   "operational": "Hoạt động tốt",
   "degraded": "Giảm hiệu năng",
   "error": "Lỗi",
-
   "loadingDashboard": "Đang đồng bộ dữ liệu bảng điều khiển...",
   "errorLoading": "Không thể tải dữ liệu từ máy chủ",
   "retry": "Thử kết nối lại",
@@ -179,7 +169,6 @@
   "newRegistrations": "Khách hàng mới đăng ký",
   "customers": "Khách hàng",
   "retentionRate": "Tỷ lệ giữ chân khách hàng",
-  "newCustomers": "Khách hàng mới",
   "returningCustomers": "Khách hàng quay lại",
   "salesInsight": "Phân tích tổng doanh số",
   "periodTotalSales": "Tổng doanh số kỳ này",
@@ -196,7 +185,6 @@
   "branchInsight": "Phân tích doanh số đa chi nhánh",
   "multiBranchVolume": "Tổng doanh số các chi nhánh",
   "topPerformingBranch": "Chi nhánh đạt doanh thu cao nhất",
-
   "warehouseStockStatus": "Tình trạng kho hàng",
   "stockHealthAlerts": "Cảnh báo sức khỏe tồn kho",
   "todayTransfers": "Chuyển kho hôm nay",

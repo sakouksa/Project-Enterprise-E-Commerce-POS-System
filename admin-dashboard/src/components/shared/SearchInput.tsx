@@ -21,16 +21,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   const { language } = useThemeStore()
   const { t } = useTranslation(['common', 'products', 'inventory'])
 
-  // Resolve placeholder reactively
-  let resolvedPlaceholder = ''
+  // Resolve placeholder safely and reactively
+  let resolvedPlaceholder = placeholder || ''
   if (!placeholder || placeholder === 'common.search') {
-    resolvedPlaceholder = t('common.search', 'Search...')
-  } else if (placeholder.includes('.')) {
+    resolvedPlaceholder = t('common.search', 'ស្វែងរក...')
+  } else if (!placeholder.includes(' ') && placeholder.includes('.') && !placeholder.includes('...')) {
     resolvedPlaceholder = t(placeholder, { defaultValue: placeholder })
-  } else {
-    // If a raw string was passed, try translating it or fallback to the string
-    const directTranslation = t(placeholder, { defaultValue: '' })
-    resolvedPlaceholder = directTranslation || placeholder
   }
 
   const heightClass = size === 'sm' ? 'h-8 text-xs' : size === 'lg' ? 'h-11 text-sm' : 'h-10 text-xs sm:text-sm'

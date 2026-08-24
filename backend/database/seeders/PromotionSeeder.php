@@ -156,6 +156,7 @@ class PromotionSeeder extends Seeder
 
         // 9. Expenses (10 records)
         $expenses = [];
+        $realisticAmounts = [45.50, 250.00, 35.00, 120.00, 28.50, 65.00, 45.00, 110.00, 55.00, 30.00];
         for ($i = 1; $i <= 10; $i++) {
             $expenses[] = [
                 'company_id' => $companyId,
@@ -165,7 +166,7 @@ class PromotionSeeder extends Seeder
                 'reference_number' => 'EXP-REF-' . str_pad($i, 4, '0', STR_PAD_LEFT),
                 'title' => "Monthly Outlay for " . $expNames[$i - 1],
                 'description' => 'Regular business operational expense.',
-                'amount' => rand(50, 500) * 1000,
+                'amount' => $realisticAmounts[$i - 1] ?? 50.00,
                 'date' => now()->subDays(10 - $i)->format('Y-m-d'),
                 'receipt' => "receipts/receipt-$i.jpg",
                 'status' => 'approved',

@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import i18n from '@/lib/i18n'
+export * from './searchStore'
+export * from './cartStore'
 
 // ─── Auth Store ──────────────────────────────────────────────────────────────
 
@@ -148,6 +151,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       setLanguage: (language) => {
         localStorage.setItem('language', language)
+        i18n.changeLanguage(language)
         set({ language })
       },
 
@@ -219,3 +223,75 @@ export const useCompareStore = create<CompareState>()(
     { name: 'customer_compare' }
   )
 )
+
+// ─── Location / Delivery Store (25 Provinces) ────────────────────────────────
+
+export const CAMBODIA_PROVINCES = [
+  'Phnom Penh',
+  'Kandal',
+  'Siem Reap',
+  'Battambang',
+  'Sihanoukville',
+  'Kampong Cham',
+  'Kampong Chhnang',
+  'Kampong Speu',
+  'Kampong Thom',
+  'Kampot',
+  'Kep',
+  'Koh Kong',
+  'Kratie',
+  'Mondulkiri',
+  'Oddar Meanchey',
+  'Pailin',
+  'Preah Vihear',
+  'Prey Veng',
+  'Pursat',
+  'Ratanakiri',
+  'Stung Treng',
+  'Svay Rieng',
+  'Takeo',
+  'Tboung Khmum',
+  'Banteay Meanchey',
+] as const
+
+export type ProvinceName = typeof CAMBODIA_PROVINCES[number]
+
+interface LocationState {
+  province: string
+  district?: string
+  deliveryHeadline: string
+  shippingEstimate: string
+  isExpressAvailable: boolean
+  setProvince: (province: string, district?: string) => void
+}
+
+export const useLocationStore = create<LocationState>()(
+  persist(
+    (set) => ({
+      province: 'Phnom Penh',
+      district: 'Daun Penh',
+      deliveryHeadline: 'Delivery within 1 hour in Phnom Penh',
+      shippingEstimate: 'Free on orders over $50 • Same-Day Express',
+      isExpressAvailable: true,
+
+      setProvince: (province, district) => {
+        const isPhnomPenh = province.toLowerCase().includes('phnom penh')
+        set({
+          province,
+          district: district || (isPhnomPenh ? 'Daun Penh' : 'Center'),
+          deliveryHeadline: isPhnomPenh
+            ? '⚡ Delivery within 1 hour in Phnom Penh'
+            : `🚚 Express Delivery to ${province} (1-2 Days)`,
+          shippingEstimate: isPhnomPenh
+            ? 'Free on orders over $50 • 1-Hour Express'
+            : 'Standard Delivery: $1.50 - $2.50 • 25 Provinces',
+          isExpressAvailable: isPhnomPenh,
+        })
+      },
+    }),
+    {
+      name: 'customer_location',
+    }
+  )
+)
+

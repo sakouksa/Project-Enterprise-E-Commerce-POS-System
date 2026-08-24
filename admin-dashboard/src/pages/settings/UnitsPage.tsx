@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
+import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
@@ -18,6 +19,7 @@ import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import StatusBadge from '@/components/common/StatusBadge'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
@@ -300,14 +302,8 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
     api.get('/units/export', { responseType: 'blob' })
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', `units_export_${new Date().toISOString().split('T')[0]}.csv`)
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
+        const dateStamp = new Date().toISOString().split('T')[0]
+        downloadBlob(blob, `units_export_${dateStamp}.csv`)
         toast.success(t('toast.exportSuccess'))
       })
       .catch(() => toast.error(t('toast.exportError')))
@@ -509,9 +505,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                     )}
                     {visibleColumns.status !== false && (
                       <td>
-                        <span className={unit.is_active ? 'badge-success' : 'badge-muted'}>
-                          {unit.is_active ? t('products.active') : t('products.inactive')}
-                        </span>
+                        <StatusBadge status={unit.is_active} />
                       </td>
                     )}
                     <td className="text-right pr-4">

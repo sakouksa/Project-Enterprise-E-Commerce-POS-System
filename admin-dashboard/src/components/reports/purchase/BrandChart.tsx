@@ -11,6 +11,7 @@ import {
   Cell
 } from 'recharts'
 import { Tag } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface BrandBreakdownItem {
   id: number
@@ -39,12 +40,6 @@ export const BrandChart: React.FC<BrandChartProps> = ({
   isLoading = false
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`
-    if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`
-    return `$${val}`
-  }
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -102,7 +97,7 @@ export const BrandChart: React.FC<BrandChartProps> = ({
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={formatCurrency}
+                tickFormatter={(val) => formatCurrency(val, { compact: true })}
                 tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
               />
               <Tooltip content={<CustomTooltip />} />

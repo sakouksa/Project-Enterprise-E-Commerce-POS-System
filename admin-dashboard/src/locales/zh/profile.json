@@ -13,7 +13,6 @@
   "last_login": "最后登录:",
   "loading_specs": "正在加载个人资料信息...",
   "logout_other_devices": "登出其他设备会话",
-
   "avatar": {
     "upload": "上传头像",
     "remove": "删除头像",
@@ -22,7 +21,6 @@
     "remove_success": "头像删除成功！",
     "remove_fail": "头像删除失败。"
   },
-
   "overview_tab": {
     "account_status": "账户状态",
     "active": "正常运行",
@@ -35,7 +33,6 @@
     "recent_timeline": "最近操作活动时间线",
     "no_recent_actions": "暂无最近的操作记录"
   },
-
   "personal_tab": {
     "title": "个人信息",
     "subtitle": "更新您的账户详细信息，包括姓名、电子邮箱、联系电话及常用地址",
@@ -70,7 +67,6 @@
     "success_update": "个人资料更新成功！",
     "fail_update": "更新个人资料失败。"
   },
-
   "security_tab": {
     "title": "账户安全",
     "credentials_title": "更新登录密码与安全凭证",
@@ -99,7 +95,6 @@
     "strength_strong": "强",
     "strength_very_strong": "极强"
   },
-
   "permissions_tab": {
     "title": "系统权限一览",
     "assigned_roles": "已分配角色",
@@ -113,7 +108,6 @@
     "th_guard": "Guard",
     "th_action": "操作范围"
   },
-
   "activities_tab": {
     "title": "安全审计与活动日志",
     "subtitle": "您在系统内执行的所有关键管理操作历史记录",
@@ -125,7 +119,6 @@
     "th_ua": "客户端设备 / 浏览器",
     "th_date": "操作时间"
   },
-
   "logins_tab": {
     "title": "登录历史记录",
     "subtitle": "您账户的所有登录认证尝试记录",
@@ -139,7 +132,6 @@
     "status_success": "成功",
     "status_failed": "失败"
   },
-
   "settings_tab": {
     "ui_title": "通用偏好设置",
     "subtitle": "自定义系统语言、主色调、视觉主题以及通知订阅渠道",

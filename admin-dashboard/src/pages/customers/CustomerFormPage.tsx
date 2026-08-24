@@ -236,7 +236,6 @@ export const CustomerFormPage: React.FC = () => {
             : t('customers.createCustomerTitle', 'បន្ថែមអតិថិជនថ្មី')
         }
         subtitle={t('customers.formSubtitle', 'គ្រប់គ្រង និងបំពេញព័ត៌មានអតិថិជនក្នុងប្រព័ន្ធ CRM')}
-        icon={<User size={20} />}
         breadcrumbs={[
           { label: t('customers.title', 'អតិថិជន'), path: '/customers' },
           {
@@ -262,17 +261,17 @@ export const CustomerFormPage: React.FC = () => {
         {/* ══════════════════════════════════════════════════
             ព័ត៌មានទូទៅ & រូបថត (SECTION 1)
         ══════════════════════════════════════════════════ */}
-        <div className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80">
+        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
                 <User size={18} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
                   {t('customers.formTabGeneral', 'ព័ត៌មានទូទៅ & រូបថត')}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
                   {t('customers.generalSectionHelp', 'បំពេញព័ត៌មានមូលដ្ឋាន និងរូបថតប្រវត្តិរូបរបស់អតិថិជន')}
                 </p>
               </div>
@@ -281,12 +280,12 @@ export const CustomerFormPage: React.FC = () => {
 
           <div className="space-y-4">
             {/* Profile Photo Upload */}
-            <div className="p-4 rounded-xl border border-border/80 bg-muted/10 flex flex-col sm:flex-row items-center gap-5">
+            <div className="p-4 rounded-xl border border-border/80 dark:border-slate-800 bg-muted/10 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center gap-5">
               {photoPreview ? (
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border/80 group shadow-xs shrink-0 bg-background">
+                <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border/80 dark:border-slate-700 group shadow-xs shrink-0 bg-background dark:bg-slate-900">
                   <img src={photoPreview} alt="Customer Avatar" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <label className="p-1.5 bg-card/90 hover:bg-card text-foreground rounded-lg cursor-pointer transition-colors shadow-xs" title={t('customers.changePhoto', 'ប្តូររូបថត')}>
+                    <label className="p-1.5 bg-card/90 dark:bg-slate-800/90 hover:bg-card dark:hover:bg-slate-700 text-foreground dark:text-slate-200 rounded-lg cursor-pointer transition-colors shadow-xs" title={t('customers.changePhoto', 'ប្តូររូបថត')}>
                       <Camera size={14} />
                       <input type="file" accept="image/*" onChange={onPhotoChange} className="hidden" />
                     </label>
@@ -301,15 +300,15 @@ export const CustomerFormPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <label className="w-full sm:w-auto flex-1 border-2 border-dashed border-border/80 hover:border-primary/50 rounded-xl p-4 flex items-center justify-center gap-3.5 cursor-pointer bg-background hover:bg-muted/30 transition-all">
+                <label className="w-full sm:w-auto flex-1 border-2 border-dashed border-border/80 dark:border-slate-700 hover:border-primary/50 dark:hover:border-primary/50 rounded-xl p-4 flex items-center justify-center gap-3.5 cursor-pointer bg-background dark:bg-slate-900 hover:bg-muted/30 dark:hover:bg-slate-800/60 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                     <UploadCloud size={20} />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-[13px] font-bold text-foreground block">
+                    <span className="text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 block">
                       {t('customers.clickUploadPhoto', 'ចុចដើម្បីបង្ហោះរូបថត')}
                     </span>
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-[11px] text-muted-foreground dark:text-slate-400">
                       {t('customers.photoHint', 'PNG, JPG ឬ WEBP (ទំហំអតិបរមា 2MB)')}
                     </span>
                   </div>
@@ -318,11 +317,11 @@ export const CustomerFormPage: React.FC = () => {
               )}
 
               {photoPreview && (
-                <div className="text-xs text-muted-foreground space-y-1 text-center sm:text-left">
-                  <span className="font-bold text-foreground block text-xs sm:text-[13px]">
+                <div className="text-xs text-muted-foreground dark:text-slate-400 space-y-1 text-center sm:text-left">
+                  <span className="font-bold text-foreground dark:text-slate-100 block text-xs sm:text-[13px]">
                     {t('customers.photoUpload', 'រូបថតប្រវត្តិរូប')}
                   </span>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground dark:text-slate-400">
                     {t('customers.photoHint', 'PNG, JPG ឬ WEBP (ទំហំអតិបរមា 2MB)')}
                   </p>
                 </div>
@@ -331,11 +330,11 @@ export const CustomerFormPage: React.FC = () => {
 
             {/* Customer Full Name */}
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                 {t('customers.fullName', 'ឈ្មោះពេញអតិថិជន')} <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                   <User size={15} />
                 </div>
                 <input
@@ -343,7 +342,7 @@ export const CustomerFormPage: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormField('name', e.target.value)}
                   placeholder={t('customers.namePlaceholder', t('namePlaceholder', 'ឧ. សុខ ចាន់ដារ៉ា'))}
-                  className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                 />
               </div>
             </div>
@@ -351,46 +350,46 @@ export const CustomerFormPage: React.FC = () => {
             {/* Gender & Date of Birth */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.gender', t('gender', 'ភេទ'))}
                 </label>
                 <select
                   value={formData.gender}
                   onChange={(e) => setFormField('gender', e.target.value)}
-                  className="form-input w-full h-9 px-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                  className="w-full h-10 min-h-[40px] px-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
                 >
-                  <option value="">{t('customers.selectGender', t('selectGender', 'ជ្រើសរើសភេទ'))}</option>
-                  <option value="male">{t('customers.genderMale', t('genderMale', 'ប្រុស'))}</option>
-                  <option value="female">{t('customers.genderFemale', t('genderFemale', 'ស្រី'))}</option>
-                  <option value="other">{t('customers.genderOther', t('genderOther', 'ផ្សេងទៀត'))}</option>
+                  <option value="" className="dark:bg-slate-900">{t('customers.selectGender', t('selectGender', 'ជ្រើសរើសភេទ'))}</option>
+                  <option value="male" className="dark:bg-slate-900">{t('customers.genderMale', t('genderMale', 'ប្រុស'))}</option>
+                  <option value="female" className="dark:bg-slate-900">{t('customers.genderFemale', t('genderFemale', 'ស្រី'))}</option>
+                  <option value="other" className="dark:bg-slate-900">{t('customers.genderOther', t('genderOther', 'ផ្សេងទៀត'))}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.birthDate', 'ថ្ងៃខែឆ្នាំកំណើត')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <Calendar size={15} />
                   </div>
                   <input
                     type="date"
                     value={formData.birth_date}
                     onChange={(e) => setFormField('birth_date', e.target.value)}
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium dark:[color-scheme:dark]"
                   />
                 </div>
               </div>
             </div>
 
             {/* Active Status Switch */}
-            <div className="p-4 bg-muted/15 border border-border/80 rounded-xl flex items-center justify-between">
+            <div className="p-4 bg-muted/15 dark:bg-slate-800/40 border border-border/80 dark:border-slate-800 rounded-xl flex items-center justify-between">
               <div className="space-y-0.5">
-                <label htmlFor="custActivePage" className="text-xs sm:text-[13px] font-bold text-foreground cursor-pointer select-none">
+                <label htmlFor="custActivePage" className="text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 cursor-pointer select-none">
                   {t('customers.activeCustomerAccount', 'គណនីអតិថិជនសកម្ម')}
                 </label>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
                   {t('customers.activeAccountHelp', 'អនុញ្ញាតឱ្យអតិថិជននេះអាចទិញទំនិញ និងប្រើប្រាស់សេវាកម្មក្នុងប្រព័ន្ធ')}
                 </p>
               </div>
@@ -399,7 +398,7 @@ export const CustomerFormPage: React.FC = () => {
                 id="custActivePage"
                 checked={formData.is_active}
                 onChange={(e) => setFormField('is_active', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-primary rounded border-border focus:ring-primary cursor-pointer"
+                className="form-checkbox h-5 w-5 text-primary rounded border-border dark:border-slate-700 focus:ring-primary cursor-pointer"
               />
             </div>
           </div>
@@ -408,17 +407,17 @@ export const CustomerFormPage: React.FC = () => {
         {/* ══════════════════════════════════════════════════
             ទំនាក់ទំនង & គណនី (SECTION 2)
         ══════════════════════════════════════════════════ */}
-        <div className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80">
+        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
                 <Phone size={18} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
                   {t('customers.formTabContact', 'ទំនាក់ទំនង & គណនី')}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
                   {t('customers.contactSectionHelp', 'ព័ត៌មានទំនាក់ទំនង សាខាប្រតិបត្តិការ និងការភ្ជាប់គណនីចូលប្រើប្រព័ន្ធ')}
                 </p>
               </div>
@@ -428,11 +427,11 @@ export const CustomerFormPage: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.email', 'អាសយដ្ឋានអ៊ីមែល')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <Mail size={15} />
                   </div>
                   <input
@@ -440,17 +439,17 @@ export const CustomerFormPage: React.FC = () => {
                     value={formData.email}
                     onChange={(e) => setFormField('email', e.target.value)}
                     placeholder={t('customers.emailPlaceholder', 'customer@example.com')}
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.phone', 'លេខទូរស័ព្ទ')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <Phone size={15} />
                   </div>
                   <input
@@ -458,7 +457,7 @@ export const CustomerFormPage: React.FC = () => {
                     value={formData.phone}
                     onChange={(e) => setFormField('phone', e.target.value)}
                     placeholder={t('customers.phonePlaceholder', '012 345 678 / +855...')}
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                   />
                 </div>
               </div>
@@ -466,20 +465,20 @@ export const CustomerFormPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.selectCompany', 'ក្រុមហ៊ុន / សាខាប្រតិបត្តិការ')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <Building2 size={15} />
                   </div>
                   <select
                     value={formData.company_id}
                     onChange={(e) => setFormField('company_id', e.target.value)}
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
                   >
                     {companies.map((c: any) => (
-                      <option key={c.id} value={c.id}>
+                      <option key={c.id} value={c.id} className="dark:bg-slate-900">
                         {c.name}
                       </option>
                     ))}
@@ -488,21 +487,21 @@ export const CustomerFormPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.selectUser', 'គណនីអ្នកប្រើប្រាស់ក្នុងប្រព័ន្ធ')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <Shield size={15} />
                   </div>
                   <select
                     value={formData.user_id}
                     onChange={(e) => setFormField('user_id', e.target.value)}
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
                   >
-                    <option value="">{t('customers.noLinkedUser', 'មិនទាន់ភ្ជាប់គណនីអ្នកប្រើប្រាស់')}</option>
+                    <option value="" className="dark:bg-slate-900">{t('customers.noLinkedUser', 'មិនទាន់ភ្ជាប់គណនីអ្នកប្រើប្រាស់')}</option>
                     {users.map((u: any) => (
-                      <option key={u.id} value={u.id}>
+                      <option key={u.id} value={u.id} className="dark:bg-slate-900">
                         {u.name} ({u.email})
                       </option>
                     ))}
@@ -516,17 +515,17 @@ export const CustomerFormPage: React.FC = () => {
         {/* ══════════════════════════════════════════════════
             ក្រុម & សមាជិកភាព (SECTION 3)
         ══════════════════════════════════════════════════ */}
-        <div className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80">
+        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
                 <Award size={18} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
                   {t('customers.formTabGroup', 'ក្រុម & សមាជិកភាព')}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
                   {t('customers.groupSectionHelp', 'ជ្រើសរើសក្រុមអតិថិជនដើម្បីទទួលបានការបញ្ចុះតម្លៃ និងអត្ថប្រយោជន៍ស្វ័យប្រវត្តិ')}
                 </p>
               </div>
@@ -535,21 +534,21 @@ export const CustomerFormPage: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                 {t('customers.customerGroup', 'ក្រុមអតិថិជន')}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                   <Award size={15} />
                 </div>
                 <select
                   value={formData.customer_group_id}
                   onChange={(e) => setFormField('customer_group_id', e.target.value)}
-                  className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
+                  className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
                 >
-                  <option value="">{t('customers.noSpecialGroup', 'ក្រុមទូទៅ (Standard)')}</option>
+                  <option value="" className="dark:bg-slate-900">{t('customers.noSpecialGroup', 'ក្រុមទូទៅ (Standard)')}</option>
                   {groups.map((g: any) => (
-                    <option key={g.id} value={g.id}>
+                    <option key={g.id} value={g.id} className="dark:bg-slate-900">
                       {g.name} {g.discount_percent ? `(បញ្ចុះតម្លៃ ${g.discount_percent}%)` : ''}
                     </option>
                   ))}
@@ -558,12 +557,12 @@ export const CustomerFormPage: React.FC = () => {
             </div>
 
             {/* Group Benefits Information Card */}
-            <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+            <div className="p-4 rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 space-y-2">
               <div className="flex items-center gap-2 text-primary font-bold text-xs sm:text-[13px]">
                 <Sparkles size={16} />
                 <span>{t('customers.groupBenefits', 'អត្ថប្រយោជន៍សមាជិកភាព')}</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground dark:text-slate-300 leading-relaxed">
                 {selectedGroup
                   ? t('customers.groupSelectedNotice', 'អតិថិជននេះស្ថិតក្នុងក្រុម "{{group}}" ដែលទទួលបានការបញ្ចុះតម្លៃស្វ័យប្រវត្តិចំនួន {{discount}}% លើការលក់ទំនិញ។', {
                       group: selectedGroup.name,
@@ -578,17 +577,17 @@ export const CustomerFormPage: React.FC = () => {
         {/* ══════════════════════════════════════════════════
             ហិរញ្ញវត្ថុ & ពន្ធដារ (SECTION 4)
         ══════════════════════════════════════════════════ */}
-        <div className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80">
+        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
                 <CreditCard size={18} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
                   {t('customers.formTabFinancial', 'ហិរញ្ញវត្ថុ & ពន្ធដារ')}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
                   {t('customers.financialSectionHelp', 'កំណត់កម្រិតឥណទានទិញជំពាក់ និងលេខសម្គាល់សារពើពន្ធផ្លូវការ')}
                 </p>
               </div>
@@ -598,11 +597,11 @@ export const CustomerFormPage: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.creditLimit', 'កម្រិតឥណទាន ($)')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <DollarSign size={15} />
                   </div>
                   <input
@@ -611,17 +610,17 @@ export const CustomerFormPage: React.FC = () => {
                     value={formData.credit_limit}
                     onChange={(e) => setFormField('credit_limit', e.target.value)}
                     placeholder="1000.00"
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                   {t('customers.taxNumber', 'លេខសម្គាល់សារពើពន្ធ')}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
                     <Receipt size={15} />
                   </div>
                   <input
@@ -629,19 +628,19 @@ export const CustomerFormPage: React.FC = () => {
                     value={formData.tax_number}
                     onChange={(e) => setFormField('tax_number', e.target.value)}
                     placeholder="TAX-90124"
-                    className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
+                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono font-medium"
                   />
                 </div>
               </div>
             </div>
 
             {/* Credit Policy Notice Card */}
-            <div className="p-4 bg-muted/15 border border-border/80 rounded-xl space-y-1.5">
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground">
+            <div className="p-4 bg-muted/15 dark:bg-slate-800/40 border border-border/80 dark:border-slate-800 rounded-xl space-y-1.5">
+              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100">
                 <Info size={15} className="text-primary" />
                 <span>{t('customers.creditPolicyTitle', 'គោលការណ៍ឥណទាន និងពន្ធដារ')}</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground dark:text-slate-300 leading-relaxed">
                 {t('customers.creditPolicyDesc', 'កម្រិតឥណទានអតិបរមាអនុញ្ញាតឱ្យអតិថិជនទិញជំពាក់លើការបញ្ជាទិញ និងវិក្កយបត្រ POS។')}
               </p>
             </div>
@@ -651,17 +650,17 @@ export const CustomerFormPage: React.FC = () => {
         {/* ══════════════════════════════════════════════════
             កំណត់ចំណាំ & សង្ខេប (SECTION 5)
         ══════════════════════════════════════════════════ */}
-        <div className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80">
+        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
                 <FileText size={18} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
                   {t('customers.formTabNotes', 'កំណត់ចំណាំ & សង្ខេប')}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
                   {t('customers.notesSectionHelp', 'កត់ត្រាចំណូលចិត្ត ឬព័ត៌មានបន្ថែមរបស់អតិថិជន')}
                 </p>
               </div>
@@ -670,7 +669,7 @@ export const CustomerFormPage: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
+              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
                 {t('customers.internalNotes', t('internalNotes', 'កំណត់ចំណាំផ្ទៃក្នុង'))}
               </label>
               <textarea
@@ -678,50 +677,50 @@ export const CustomerFormPage: React.FC = () => {
                 onChange={(e) => setFormField('notes', e.target.value)}
                 rows={3}
                 placeholder={t('customers.notesPlaceholder', t('notesPlaceholder', 'ចំណូលចិត្តរបស់អតិថិជន ឬកំណត់ចំណាំបន្ថែមសម្រាប់ការថែទាំ...'))}
-                className="form-input w-full p-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium leading-relaxed"
+                className="w-full p-3 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none font-medium leading-relaxed"
               />
             </div>
 
             {/* Live Summary Review Card */}
-            <div className="p-4 sm:p-5 rounded-xl border border-border/80 bg-muted/15 space-y-3.5">
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground">
+            <div className="p-4 sm:p-5 rounded-xl border border-border/80 dark:border-slate-800 bg-muted/15 dark:bg-slate-800/40 space-y-3.5">
+              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100">
                 <CheckCircle2 size={17} className="text-emerald-500" />
                 <span>{t('customers.summaryTitle', t('summaryTitle', 'ផ្ទៀងផ្ទាត់ព័ត៌មានសង្ខេបមុនពេលរក្សាទុក'))}</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div className="bg-background/80 p-3 rounded-lg border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">{t('customers.name', t('name', 'ឈ្មោះ'))}</span>
-                  <span className="font-bold text-foreground truncate block mt-0.5">
+                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.name', t('name', 'ឈ្មោះ'))}</span>
+                  <span className="font-bold text-foreground dark:text-slate-100 truncate block mt-0.5">
                     {formData.name || '—'}
                   </span>
                 </div>
-                <div className="bg-background/80 p-3 rounded-lg border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">{t('customers.phone', t('phone', 'ទូរស័ព្ទ'))}</span>
-                  <span className="font-bold text-foreground truncate block mt-0.5">
+                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.phone', t('phone', 'ទូរស័ព្ទ'))}</span>
+                  <span className="font-bold text-foreground dark:text-slate-100 truncate block mt-0.5">
                     {formData.phone || '—'}
                   </span>
                 </div>
-                <div className="bg-background/80 p-3 rounded-lg border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">{t('customers.customerGroup', t('customerGroup', 'ក្រុម'))}</span>
+                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.customerGroup', t('customerGroup', 'ក្រុម'))}</span>
                   <span className="font-bold text-primary truncate block mt-0.5">
                     {selectedGroup?.name || t('customers.standardGroup', t('standardGroup', 'ទូទៅ'))}
                   </span>
                 </div>
-                <div className="bg-background/80 p-3 rounded-lg border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">{t('customers.creditLimit', t('creditLimit', 'ឥណទាន'))}</span>
-                  <span className="font-mono font-bold text-foreground block mt-0.5">
+                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.creditLimit', t('creditLimit', 'ឥណទាន'))}</span>
+                  <span className="font-mono font-bold text-foreground dark:text-slate-100 block mt-0.5">
                     ${Number(formData.credit_limit || 0).toFixed(2)}
                   </span>
                 </div>
-                <div className="bg-background/80 p-3 rounded-lg border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">{t('customers.taxNumber', 'លេខសារពើពន្ធ')}</span>
-                  <span className="font-mono font-medium text-foreground truncate block mt-0.5">
+                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.taxNumber', 'លេខសារពើពន្ធ')}</span>
+                  <span className="font-mono font-medium text-foreground dark:text-slate-100 truncate block mt-0.5">
                     {formData.tax_number || '—'}
                   </span>
                 </div>
-                <div className="bg-background/80 p-3 rounded-lg border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">{t('common.status', 'ស្ថានភាព')}</span>
+                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('common.status', 'ស្ថានភាព')}</span>
                   <span className={`font-bold inline-block text-[11px] mt-0.5 ${formData.is_active ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {formData.is_active ? t('common.active', 'សកម្ម') : t('common.inactive', 'អសកម្ម')}
                   </span>
@@ -744,7 +743,7 @@ export const CustomerFormPage: React.FC = () => {
           infoSummary={
             formData.name ? (
               <span>
-                {t('customers.title', 'អតិថិជន')}: <strong className="text-foreground font-semibold">"{formData.name}"</strong>
+                {t('customers.title', 'អតិថិជន')}: <strong className="text-foreground dark:text-slate-100 font-semibold">"{formData.name}"</strong>
               </span>
             ) : (
               <span>{isEdit ? t('customers.editSubtitle', 'កែសម្រួលព័ត៌មានអតិថិជន') : t('customers.createSubtitle', 'បំពេញព័ត៌មានអតិថិជនថ្មី')}</span>

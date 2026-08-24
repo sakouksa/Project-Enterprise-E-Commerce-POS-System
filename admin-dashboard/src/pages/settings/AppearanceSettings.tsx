@@ -159,9 +159,9 @@ const AppearanceSettings: React.FC = () => {
   }
 
   return (
-    <div className="bg-card rounded-2xl sm:rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col lg:flex-row min-h-[500px]">
+    <div className="bg-card dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-border dark:border-slate-800 shadow-sm overflow-hidden flex flex-col lg:flex-row min-h-[500px]">
       {/* Sidebar Tabs */}
-      <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-muted/20 p-2.5 sm:p-3 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible shrink-0">
+      <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-border dark:border-slate-800 bg-muted/20 dark:bg-slate-950/40 p-2.5 sm:p-3 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible shrink-0">
         {[
           { id: 'theme', label: t('settings.tabThemeAndPanels', 'Theme, Sidebar & Navbar'), icon: <Palette size={16} /> },
           { id: 'fonts', label: t('settings.tabTypography', 'Typography'), icon: <Type size={16} /> },
@@ -172,7 +172,7 @@ const AppearanceSettings: React.FC = () => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 lg:shrink ${
-              activeTab === tab.id || (tab.id === 'theme' && activeTab === 'panels') ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              activeTab === tab.id || (tab.id === 'theme' && activeTab === 'panels') ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground dark:text-slate-400 hover:bg-muted dark:hover:bg-slate-800 hover:text-foreground dark:hover:text-slate-100'
             }`}
           >
             {tab.icon}
@@ -180,7 +180,7 @@ const AppearanceSettings: React.FC = () => {
           </button>
         ))}
 
-        <div className="mt-auto pt-4 border-t border-border hidden lg:block p-2">
+        <div className="mt-auto pt-4 border-t border-border dark:border-slate-800 hidden lg:block p-2">
           <button
             onClick={() => setShowResetModal(true)}
             className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-500 border border-red-500/20 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"

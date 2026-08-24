@@ -11,6 +11,8 @@ import {
   XCircle,
   AlertCircle
 } from 'lucide-react'
+import StatusBadge from '@/components/common/StatusBadge'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface PurchaseReportRow {
   id: number
@@ -55,76 +57,9 @@ export const PurchaseReportTable: React.FC<PurchaseReportTableProps> = ({
 }) => {
   const { t } = useTranslation('reports')
 
-  const formatCurrency = (val?: number) => {
-    if (val === undefined || val === null) return '$0.00'
-    return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
+  const renderStatusBadge = (status?: string) => <StatusBadge status={status || 'received'} />
 
-  const renderStatusBadge = (status?: string) => {
-    const st = (status || 'received').toLowerCase()
-    switch (st) {
-      case 'received':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <CheckCircle2 size={11} />
-            <span>RECEIVED</span>
-          </span>
-        )
-      case 'ordered':
-      case 'pending':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <Clock size={11} />
-            <span>{st.toUpperCase()}</span>
-          </span>
-        )
-      case 'partial':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <AlertCircle size={11} />
-            <span>PARTIAL</span>
-          </span>
-        )
-      case 'cancelled':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            <XCircle size={11} />
-            <span>CANCELLED</span>
-          </span>
-        )
-      default:
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-muted/60 text-muted-foreground uppercase">
-            {st}
-          </span>
-        )
-    }
-  }
-
-  const renderPaymentStatusBadge = (status?: string) => {
-    const st = (status || 'unpaid').toLowerCase()
-    switch (st) {
-      case 'paid':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            PAID
-          </span>
-        )
-      case 'partial':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            PARTIAL
-          </span>
-        )
-      case 'unpaid':
-      default:
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            UNPAID
-          </span>
-        )
-    }
-  }
+  const renderPaymentStatusBadge = (status?: string) => <StatusBadge status={status || 'unpaid'} />
 
   return (
     <div className="bg-card border border-border/80 rounded-[24px] p-6 shadow-sm space-y-4">

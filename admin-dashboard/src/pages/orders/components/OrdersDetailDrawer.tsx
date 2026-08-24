@@ -2,6 +2,7 @@ import React from 'react'
 import { X, ShoppingBag, User, Phone, MapPin, Loader2, CheckCircle2, Truck, Clock, PackageCheck, DollarSign, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface OrderItem {
   id:              number
@@ -53,37 +54,7 @@ export const OrdersDetailDrawer: React.FC<OrdersDetailDrawerProps> = ({
 }) => {
   const { t } = useTranslation('orders')
 
-  const getStatusBadge = (st: string) => {
-    switch (st) {
-      case 'completed':
-      case 'delivered':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
-            <CheckCircle2 size={10} /> {t(st as any) || st}
-          </span>
-        )
-      case 'processing':
-      case 'confirmed':
-      case 'shipped':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase">
-            <Truck size={10} /> {t(st as any) || st}
-          </span>
-        )
-      case 'pending':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase">
-            <Clock size={10} /> {t('pending')}
-          </span>
-        )
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 uppercase">
-            {t(st as any) || st}
-          </span>
-        )
-    }
-  }
+  const getStatusBadge = (st: string) => <StatusBadge status={st} />
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">

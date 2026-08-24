@@ -1,16 +1,8 @@
 import type { Purchase } from '../types/purchase.types'
+import { formatCurrency as formatUnifiedCurrency } from '@/utils/formatters'
 
 export const formatCurrency = (val: number | string, curr: string = 'USD'): string => {
-  const num = typeof val === 'number' ? val : parseFloat(val) || 0
-  if (curr === 'KHR') {
-    return '៛' + new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 0
-    }).format(Math.round(num))
-  }
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(num)
+  return formatUnifiedCurrency(val, { currency: curr })
 }
 
 export const getDualValues = (amountInSelected: number, currencyCode: string = 'USD', exchangeRate: number | string = 4100) => {

@@ -95,20 +95,20 @@ export const FormFooter: React.FC<FormFooterProps> = ({
     <div
       className={`${
         sticky
-          ? 'fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-md border-t border-border py-3 px-4 sm:px-6 shadow-lg'
-          : 'bg-card/90 dark:bg-card/80 border border-border/80 p-4 sm:p-5 rounded-2xl shadow-xs backdrop-blur-xl'
+          ? 'fixed bottom-0 left-0 right-0 z-30 bg-card/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-border dark:border-slate-800 py-3 px-4 sm:px-6 shadow-lg'
+          : 'bg-card/90 dark:bg-slate-900/90 border border-border/80 dark:border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xs backdrop-blur-xl'
       } ${className}`}
     >
       <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
         {/* Left: Summary Context & Helpful Hints */}
-        <div className="flex items-center gap-2.5 text-xs text-muted-foreground min-w-0 flex-1">
+        <div className="flex items-center gap-2.5 text-xs text-muted-foreground dark:text-slate-400 min-w-0 flex-1">
           {infoSummary ? (
             <div className="truncate max-w-md">{infoSummary}</div>
           ) : (
             showShortcutHint && onSubmit && (
-              <div className="hidden md:flex items-center gap-1.5 text-[11px] text-muted-foreground/80">
+              <div className="hidden md:flex items-center gap-1.5 text-[11px] text-muted-foreground/80 dark:text-slate-400">
                 <span>{t('common.quickSaveHint', 'ចុច')}</span>
-                <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-muted border border-border/70 rounded-md font-semibold text-foreground/80 flex items-center gap-0.5">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-muted dark:bg-slate-800 border border-border/70 dark:border-slate-700 rounded-md font-semibold text-foreground/80 dark:text-slate-300 flex items-center gap-0.5">
                   {isMac ? <Command size={10} /> : 'Ctrl +'} S
                 </kbd>
                 <span>{t('common.toSave', 'ដើម្បីរក្សាទុក')}</span>
@@ -129,7 +129,7 @@ export const FormFooter: React.FC<FormFooterProps> = ({
             <button
               type="button"
               onClick={handleCancel}
-              className="h-9 px-4 text-xs sm:text-[13px] font-semibold border border-border/80 bg-background/60 hover:bg-muted/80 rounded-lg text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1.5"
+              className="h-10 min-h-[40px] px-4 text-xs sm:text-[13px] font-semibold border border-border/80 dark:border-slate-700 bg-background/60 dark:bg-slate-800/80 hover:bg-muted/80 dark:hover:bg-slate-700/80 rounded-lg text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1.5"
             >
               <ArrowLeft size={13} className="opacity-70" />
               <span>{cancelLabel || t('common.cancel', 'បោះបង់')}</span>
@@ -142,7 +142,7 @@ export const FormFooter: React.FC<FormFooterProps> = ({
               type={onSubmit ? 'button' : 'submit'}
               onClick={onSubmit}
               disabled={isSubmitting || disabled}
-              className="h-9 px-5 text-xs sm:text-[13px] bg-primary text-primary-foreground rounded-lg font-bold shadow-xs hover:bg-primary/90 hover:shadow transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+              className="h-10 min-h-[40px] px-5 text-xs sm:text-[13px] bg-primary text-white rounded-lg font-bold shadow-xs hover:bg-primary/90 hover:shadow transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
             >
               {isSubmitting ? (
                 <Loader2 size={14} className="animate-spin" />

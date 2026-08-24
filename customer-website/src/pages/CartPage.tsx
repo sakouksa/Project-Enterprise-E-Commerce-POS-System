@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ShieldCheck, Tag } from 'lucide-react'
 import { useCartStore } from '@/stores/cartStore'
 import { useSettingsStore } from '@/stores'
+import PageTransition from '@/components/common/PageTransition'
 import api from '@/lib/api'
 
 const CartPage: React.FC = () => {
@@ -66,7 +67,7 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="container-site py-8 space-y-8">
+    <PageTransition className="container-site py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Shopping Cart ({items.length})
@@ -202,9 +203,8 @@ const CartPage: React.FC = () => {
             <span>Guaranteed Safe & Secure Checkout with SSL Encryption</span>
           </div>
         </div>
-
       </div>
-    </div>
+    </PageTransition>
   )
 }
 

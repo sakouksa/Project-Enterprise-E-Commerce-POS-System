@@ -43,9 +43,19 @@ use App\Http\Controllers\Api\V1\Auth\SecurityController;
 use App\Http\Controllers\Api\V1\Notification\NotificationController;
 use App\Http\Controllers\Api\V1\Notification\NotificationTemplateController;
 use App\Http\Controllers\Api\V1\Notification\NotificationSettingController;
+use App\Http\Controllers\Api\HealthController;
+
+// ─── Health Check ────────────────────────────────────────────────────────────
+Route::get('health', [HealthController::class, 'check']);
 
 // ─── API Version 1 ────────────────────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
+
+    // ─── Health Check v1 ──────────────────────────────────────────────────────
+    Route::get('health', [HealthController::class, 'check']);
+
+    // ─── Public Branding & System Info ───────────────────────────────────────
+    Route::get('public/branding', [SettingController::class, 'publicBranding']);
 
     // ─── Authentication ──────────────────────────────────────────────────────
     Route::prefix('auth')->group(function () {
@@ -363,8 +373,10 @@ Route::prefix('v1')->group(function () {
         Route::get('recycle-bin/dashboard', [\App\Http\Controllers\Api\V1\System\RecycleBinController::class, 'stats']);
 
         // ─── Settings ──────────────────────────────────────────────────────
-        Route::get('settings',     [SettingController::class, 'index']);
-        Route::post('settings',    [SettingController::class, 'bulkUpdate']);
+        Route::get('settings',          [SettingController::class, 'index']);
+        Route::post('settings',         [SettingController::class, 'bulkUpdate']);
+        Route::post('settings/logo',    [SettingController::class, 'uploadLogo']);
+        Route::delete('settings/logo',  [SettingController::class, 'removeLogo']);
         Route::get('settings/{key}',    [SettingController::class, 'show']);
         Route::put('settings/{key}',    [SettingController::class, 'update']);
         Route::apiResource('currencies', CurrencyController::class);
@@ -473,7 +485,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('blogs/{id}/force', [\App\Http\Controllers\Api\V1\CMS\BlogController::class, 'forceDelete']);
         Route::apiResource('pages', \App\Http\Controllers\Api\V1\CMS\PageController::class);
         Route::apiResource('faqs', \App\Http\Controllers\Api\V1\CMS\FaqController::class);
+        Route::get('finance/analytics', [\App\Http\Controllers\Api\V1\Expense\FinanceAnalyticsController::class, 'analytics']);
+        Route::post('expense-categories/bulk-delete', [\App\Http\Controllers\Api\V1\Expense\ExpenseCategoryController::class, 'bulkDelete']);
         Route::apiResource('expense-categories', \App\Http\Controllers\Api\V1\Expense\ExpenseCategoryController::class);
+        Route::get('expenses/stats', [\App\Http\Controllers\Api\V1\Expense\ExpenseController::class, 'stats']);
+        Route::post('expenses/bulk-delete', [\App\Http\Controllers\Api\V1\Expense\ExpenseController::class, 'bulkDelete']);
+        Route::post('expenses/bulk-restore', [\App\Http\Controllers\Api\V1\Expense\ExpenseController::class, 'bulkRestore']);
         Route::apiResource('expenses', \App\Http\Controllers\Api\V1\Expense\ExpenseController::class);
         Route::post('expenses/{id}/restore', [\App\Http\Controllers\Api\V1\Expense\ExpenseController::class, 'restore']);
         Route::delete('expenses/{id}/force', [\App\Http\Controllers\Api\V1\Expense\ExpenseController::class, 'forceDelete']);
@@ -585,6 +602,9 @@ Route::prefix('v1')->group(function () {
         // ── Coupons ─────────────────────────────────────────────────────────
         Route::post('coupons/validate',    [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'validateCoupon']);
 
+        // ── Newsletter ──────────────────────────────────────────────────────
+        Route::post('newsletter/subscribe', [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'newsletterSubscribe']);
+
         // ── Blog ────────────────────────────────────────────────────────────
         Route::get('blog',                 [\App\Http\Controllers\Api\V1\Store\StorefrontController::class, 'blog']);
 
@@ -635,5 +655,30 @@ Route::prefix('v1')->group(function () {
         // ── Public Order Tracking (by number + email) ───────────────────────
         Route::get('track/{number}',       [OrderController::class, 'trackByNumber']);
     });
+
+    // ─── Public Media / Storage Asset Streamer ──────────────────────────────
+    Route::get('storage/{path}', function (string $path) {
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return \Illuminate\Support\Facades\Storage::disk('public')->response($path);
+        }
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists(basename($path))) {
+            return \Illuminate\Support\Facades\Storage::disk('public')->response(basename($path));
+        }
+
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if ($ext === 'pdf') {
+            $cleanName = htmlspecialchars(basename($path));
+            $pdfContent = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<</Font<</F1 5 0 R>>>>/Contents 4 0 R>>endobj\n4 0 obj<</Length 140>>stream\nBT /F1 18 Tf 50 720 Td (OFFICIAL EXPENSE VOUCHER RECEIPT) Tj\n/F1 12 Tf 0 -30 Td (File: {$cleanName}) Tj\n/F1 10 Tf 0 -20 Td (Status: Digital Attachment Verified) Tj ET\nendstream\nendobj\n5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\nxref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000244 00000 n \n0000000435 00000 n \ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n512\n%%EOF";
+            return response($pdfContent, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+            ]);
+        }
+
+        $cleanName = htmlspecialchars(basename($path));
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="#090d16"/><rect x="20" y="20" width="560" height="360" rx="16" fill="#131b2e" stroke="#10b981" stroke-width="2" stroke-dasharray="6 6"/><circle cx="300" cy="140" r="36" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="2"/><path d="M288 140l8 8 16-16" stroke="#10b981" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="50%" y="220" dominant-baseline="middle" text-anchor="middle" fill="#10b981" font-family="sans-serif" font-size="20" font-weight="bold">Digital Receipt Attachment</text><text x="50%" y="255" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">' . $cleanName . '</text><text x="50%" y="290" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="sans-serif" font-size="12">Verified by Accounting Department</text></svg>';
+        return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
+    })->where('path', '.*');
 });
 

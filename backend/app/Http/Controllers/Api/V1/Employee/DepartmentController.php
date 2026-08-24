@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Employee;
 
 use App\Http\Controllers\Api\BaseApiController;
@@ -6,14 +7,18 @@ use App\Http\Requests\Employee\CreateDepartmentRequest;
 use App\Http\Requests\Employee\UpdateDepartmentRequest;
 use App\Http\Resources\Employee\DepartmentResource;
 use App\Infrastructure\Services\Employee\DepartmentService;
+use App\Models\Employee\Department;
+use App\Services\Support\CsvService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DepartmentController extends BaseApiController
 {
-    public function __construct(private readonly DepartmentService $service)
-    {
-    }
+    public function __construct(
+        private readonly DepartmentService $service,
+        protected CsvService $csvService
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -110,7 +115,7 @@ class DepartmentController extends BaseApiController
         $this->service->forceDelete($id);
         return $this->successResponse(
             null,
-            'Department permanently deleted'
+            'Department permanently deleted successfully'
         );
     }
 
@@ -122,11 +127,7 @@ class DepartmentController extends BaseApiController
 
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
         $count = $this->service->bulkDelete($ids);
-
-        return $this->successResponse(
-            null,
-            "{$count} departments deleted successfully"
-        );
+        return $this->successResponse(null, "{$count} departments deleted successfully");
     }
 
     public function bulkRestore(Request $request): JsonResponse
@@ -137,47 +138,29 @@ class DepartmentController extends BaseApiController
 
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
         $count = $this->service->bulkRestore($ids);
-
-        return $this->successResponse(
-            null,
-            "{$count} departments restored successfully"
-        );
+        return $this->successResponse(null, "{$count} departments restored successfully");
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
-        $headers = [
-            'Content-type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename=departments_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
-        ];
+        $headers = ['ID', 'Name', 'Code', 'Description', 'Status'];
+        $departments = Department::when($request->search, function ($q, $v) {
+            $q->where('name', 'like', "%{$v}%")
+              ->orWhere('code', 'like', "%{$v}%");
+        })->get();
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, ['ID', 'Name', 'Code', 'Description', 'Status']);
-
-            $departments = \App\Models\Employee\Department::when($request->search, function($q, $v) {
-                $q->where('name', 'like', "%{$v}%")
-                  ->orWhere('code', 'like', "%{$v}%");
-            })->get();
-
-            foreach ($departments as $dept) {
-                fputcsv($file, [
-                    $dept->id,
-                    $dept->name,
-                    $dept->code,
-                    $dept->description,
-                    $dept->is_active ? 'Active' : 'Inactive'
-                ]);
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'departments_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $departments,
+            rowMapper: fn(Department $dept) => [
+                $dept->id,
+                $dept->name,
+                $dept->code,
+                $dept->description,
+                $dept->is_active ? 'Active' : 'Inactive',
+            ]
+        );
     }
 
     public function import(Request $request): JsonResponse
@@ -187,63 +170,36 @@ class DepartmentController extends BaseApiController
         }
 
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $filePath = $file->getRealPath();
-
-        $handle = fopen($filePath, 'r');
-        if ($handle === false) {
-            return $this->errorResponse('Cannot open the uploaded file.');
+        $result = $this->csvService->parseCsv($request->file('file'), ['name']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return $this->errorResponse('Empty CSV file.');
-        }
-
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            
-            // Pad or slice row to match headers count
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } elseif (count($row) > count($headers)) {
-                $row = array_slice($row, 0, count($headers));
-            }
-
-            $data = array_combine($headers, $row);
-            if (!$data) {
-                $errors[] = "Line {$line}: Mismatched columns count.";
-                continue;
-            }
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
             $code = trim($data['code'] ?? '');
             $description = trim($data['description'] ?? '');
-            $is_active = filter_var($data['status'] ?? $data['is_active'] ?? 'active', FILTER_VALIDATE_BOOLEAN) || strtolower($data['status'] ?? '') === 'active' || strtolower($data['status'] ?? '') === '1';
+            $isActive = filter_var($data['status'] ?? $data['is_active'] ?? 'active', FILTER_VALIDATE_BOOLEAN) || strtolower($data['status'] ?? '') === 'active' || strtolower($data['status'] ?? '') === '1';
 
             if (empty($name)) {
                 $errors[] = "Line {$line}: Name is required.";
                 continue;
             }
 
-            $exists = \App\Models\Employee\Department::where('name', $name)
+            $exists = Department::where('name', $name)
                 ->orWhere(function ($q) use ($code) {
-                    if ($code) $q->where('code', $code);
+                    if ($code) {
+                        $q->where('code', $code);
+                    }
                 })
                 ->exists();
 
@@ -252,23 +208,21 @@ class DepartmentController extends BaseApiController
                 continue;
             }
 
-            \App\Models\Employee\Department::create([
-                'company_id' => $request->user()->company_id ?? 1,
-                'branch_id'  => $request->user()->branch_id ?? 1,
-                'name'       => $name,
-                'code'       => $code ?: null,
-                'description'=> $description ?: null,
-                'is_active'  => $is_active
+            Department::create([
+                'company_id'  => $request->user()?->company_id ?? 1,
+                'branch_id'   => $request->user()?->branch_id ?? 1,
+                'name'        => $name,
+                'code'        => $code ?: null,
+                'description' => $description ?: null,
+                'is_active'   => $isActive,
             ]);
 
             $successCount++;
         }
 
-        fclose($handle);
-
         return $this->successResponse([
             'success_count' => $successCount,
-            'errors'        => $errors
+            'errors'        => $errors,
         ], "Import completed. {$successCount} records imported successfully.");
     }
 }

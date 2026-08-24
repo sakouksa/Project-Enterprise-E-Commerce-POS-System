@@ -82,12 +82,12 @@ export const PurchaseReturnDetailDrawer: React.FC<PurchaseReturnDetailDrawerProp
                         {t('common.date', 'Date')}: {selectedReturn.date || (selectedReturn.created_at ? new Date(selectedReturn.created_at).toLocaleDateString() : '—')}
                       </span>
                       <span className="text-muted-foreground/40">•</span>
-                      <span className={RETURN_STATUS_BADGE[selectedReturn.status] || 'px-2 py-0.5 rounded text-[10px] font-bold bg-muted'}>
+                      <span className={RETURN_STATUS_BADGE[selectedReturn.status] || 'inline-flex items-center justify-center px-2 py-0.5 rounded text-xs bg-muted'}>
                         {selectedReturn.status === 'completed' || selectedReturn.status === 'approved'
-                          ? t('purchases.approved', 'Approved')
+                          ? t('purchases.approved', 'បានអនុម័ត')
                           : selectedReturn.status === 'cancelled'
-                          ? t('purchases.cancelled', 'Cancelled')
-                          : t('purchases.draft', 'Draft')}
+                          ? t('purchases.cancelled', 'បានបោះបង់')
+                          : t('purchases.draft', 'សេចក្តីព្រាង')}
                       </span>
                     </div>
                   </div>

@@ -1,0 +1,9 @@
+{
+  "feed.loading_more": "Loading more products...",
+  "feed.reached_end": "You've reached the end of the catalog",
+  "feed.all_caught_up": "All products loaded",
+  "feed.load_error": "Couldn't load more products",
+  "feed.retry": "Try Again",
+  "feed.back_to_top": "Back to Top",
+  "feed.showing_count": "Showing {{count}} of {{total}} products"
+}

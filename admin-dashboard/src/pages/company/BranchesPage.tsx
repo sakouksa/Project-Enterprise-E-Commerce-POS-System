@@ -16,6 +16,7 @@ import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface Branch {
   id:          number
@@ -277,9 +278,7 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                         )}
                       </td>
                       <td>
-                        <span className={b.is_active ? 'badge-success' : 'badge-muted'}>
-                          {b.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        <StatusBadge status={b.is_active} />
                       </td>
                       <td className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
@@ -513,11 +512,9 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                       <span className="text-muted-foreground">Main Office:</span>
                       <span className="font-medium">{viewBranch.is_main ? 'Yes' : 'No'}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Status:</span>
-                      <span className={viewBranch.is_active ? 'text-green-500 font-medium' : 'text-muted-foreground'}>
-                        {viewBranch.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                      <StatusBadge status={viewBranch.is_active} />
                     </div>
                   </div>
                 </div>

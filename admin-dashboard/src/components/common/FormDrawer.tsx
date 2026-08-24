@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,7 @@ interface FormDrawerProps {
   onClose: () => void
   onSubmit?: (e?: any) => void
   submitLabel?: string
+  cancelLabel?: string
   loading?: boolean
   isSubmitting?: boolean
   children: React.ReactNode
@@ -27,11 +29,17 @@ const FormDrawer: React.FC<FormDrawerProps> = ({
   width = 'max-w-xl',
   onClose,
   onSubmit,
-  submitLabel = 'Save Changes',
+  submitLabel,
+  cancelLabel,
   loading = false,
+  isSubmitting,
   children,
   footer,
 }) => {
+  const { t } = useTranslation(['common'])
+  const isBusy = loading || isSubmitting
+  const effectiveSubmitLabel = submitLabel || t('save', 'Save Changes')
+  const effectiveCancelLabel = cancelLabel || t('cancel', 'Cancel')
   // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -100,27 +108,27 @@ const FormDrawer: React.FC<FormDrawerProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    disabled={loading}
-                    className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                    disabled={isBusy}
+                    className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                   >
-                    Cancel
+                    {effectiveCancelLabel}
                   </button>
                   {onSubmit && (
                     <button
                       type="button"
                       onClick={onSubmit}
-                      disabled={loading}
+                      disabled={isBusy}
                       className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-md shadow-primary/20
-                                 hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+                                 hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                     >
-                      {loading && (
+                      {isBusy && (
                         <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor"
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
                       )}
-                      <span>{submitLabel}</span>
+                      <span>{effectiveSubmitLabel}</span>
                     </button>
                   )}
                 </div>

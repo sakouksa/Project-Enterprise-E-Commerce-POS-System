@@ -2,6 +2,7 @@ import React from 'react'
 import { DollarSign, Wallet, Percent } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { formatCurrency } from '@/utils/formatters'
 
 interface DashboardRow5Props {
   stats?: any
@@ -11,13 +12,7 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2,
-    }).format(val || 0)
-  }
+  const locale = i18n.language === 'km' ? 'km-KH' : 'en-US'
 
   const sales = stats?.today_sales || 0
   const expenses = stats?.today_expenses || 0
@@ -36,13 +31,13 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
           <div>
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.todayIncome')}</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-bold text-sm text-foreground">{formatCurrency(stats?.today_income || sales)}</span>
+              <span className="font-bold text-sm text-foreground">{formatCurrency(stats?.today_income || sales, { locale })}</span>
             </div>
           </div>
           <div className="border-t border-border/20 pt-3">
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.todayExpenses')}</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-bold text-sm text-foreground">{formatCurrency(expenses)}</span>
+              <span className="font-bold text-sm text-foreground">{formatCurrency(expenses, { locale })}</span>
             </div>
           </div>
         </div>
@@ -57,11 +52,11 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
         <div className="space-y-4">
           <div>
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.pendingPayment')}</span>
-            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(stats?.pending_payments || 0)}</h5>
+            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(stats?.pending_payments || 0, { locale })}</h5>
           </div>
           <div className="border-t border-border/20 pt-3">
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.pendingPurchase')}</span>
-            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(stats?.today_purchases || 0)}</h5>
+            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(stats?.today_purchases || 0, { locale })}</h5>
           </div>
         </div>
       </div>
@@ -75,7 +70,7 @@ export const DashboardRow5: React.FC<DashboardRow5Props> = ({ stats }) => {
         <div className="space-y-4">
           <div>
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.grossProfit')}</span>
-            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(grossProfit)}</h5>
+            <h5 className="font-bold text-sm text-foreground mt-1">{formatCurrency(grossProfit, { locale })}</h5>
           </div>
           <div className="border-t border-border/20 pt-3">
             <span className="text-[11px] text-muted-foreground font-semibold">{t('dashboard.netProfit')}</span>

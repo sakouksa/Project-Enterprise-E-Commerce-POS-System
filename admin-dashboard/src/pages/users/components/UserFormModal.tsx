@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Loader2, Upload, User as UserIcon } from 'lucide-react'
+import { X, Loader2, Upload } from 'lucide-react'
+import UserAvatar from '@/components/common/UserAvatar'
 import type { User } from '../types'
 
 interface UserFormModalProps {
@@ -152,13 +153,11 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               <div className="space-y-1.5">
                 <label className="label">Profile Avatar Image</label>
                 <div className="flex items-center gap-3 bg-muted/20 p-3 rounded-xl border border-border">
-                  <div className="w-12 h-12 rounded-full border border-border bg-card overflow-hidden flex items-center justify-center flex-shrink-0">
-                    {avatar ? (
-                      <img src={getAvatarUrl(avatar) || ''} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon size={24} className="text-muted-foreground" />
-                    )}
-                  </div>
+                  <UserAvatar
+                    src={avatar}
+                    name={name || 'User'}
+                    sizeClassName="w-12 h-12"
+                  />
                   <div className="flex-1 space-y-1">
                     <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:opacity-90 transition-opacity">
                       {isUploadingAvatar ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}

@@ -13,6 +13,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import StatusBadge from '@/components/common/StatusBadge'
 import { useTranslation } from 'react-i18next'
 
 interface Review {
@@ -218,12 +219,7 @@ const ReviewsPage: React.FC = () => {
                       <p className="text-xs text-muted-foreground line-clamp-2 max-w-xs">{review.comment || 'No comment'}</p>
                     </td>
                     <td>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        review.status === 'approved' ? 'badge-success' :
-                        review.status === 'pending' ? 'badge-warning' : 'badge-danger'
-                      }`}>
-                        {t(`reviews.${review.status}`)}
-                      </span>
+                      <StatusBadge status={review.status} />
                     </td>
                     <td className="text-xs text-muted-foreground">{new Date(review.created_at).toLocaleDateString()}</td>
                     <td className="text-right">

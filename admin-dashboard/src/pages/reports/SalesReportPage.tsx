@@ -9,6 +9,7 @@ import api from '@/api/client'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { downloadBlob } from '@/utils/export'
 
 import { SalesFilters, type SalesFilterState } from '@/components/reports/sales/SalesFilters'
 import { SalesSummaryCards } from '@/components/reports/sales/SalesSummaryCards'
@@ -170,14 +171,7 @@ export const SalesReportPage: React.FC = () => {
       })
 
       const blob = new Blob([response.data], { type: format === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8;' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `sales_report_${exportFilters.date_from}_${exportFilters.date_to}.${format === 'excel' ? 'csv' : format}`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
+      downloadBlob(blob, `sales_report_${exportFilters.date_from}_${exportFilters.date_to}.${format === 'excel' ? 'csv' : format}`)
 
       toast.success(
         format === 'excel' || format === 'csv'

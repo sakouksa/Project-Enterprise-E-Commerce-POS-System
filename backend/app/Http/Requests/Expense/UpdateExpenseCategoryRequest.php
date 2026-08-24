@@ -14,10 +14,13 @@ class UpdateExpenseCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['integer', 'exists:companies,id'],
-            'name' => ['string'],
-            'code' => ['string'],
-            'is_active' => ['boolean']
+            'company_id' => ['nullable', 'integer', 'exists:companies,id'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:50'],
+            'icon' => ['nullable', 'string', 'max:50'],
+            'color' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'is_active' => ['nullable', 'boolean']
         ];
     }
 }

@@ -1,0 +1,15 @@
+{
+  "product.quick_add": "เพิ่มลงตะกร้าด่วน",
+  "product.added": "เพิ่มแล้ว",
+  "product.adding": "กำลังเพิ่ม...",
+  "product.out_of_stock": "สินค้าหมด",
+  "product.in_stock": "มีสินค้า",
+  "product.featured": "พิเศษ",
+  "product.off": "ลด",
+  "product.reviews": "รีวิว",
+  "product.sold": "ขายแล้ว",
+  "product.available": "คงเหลือ",
+  "product.view_details": "ดูรายละเอียด",
+  "product.add_to_wishlist": "เพิ่มในรายการโปรด",
+  "product.remove_wishlist": "ลบออกจากรายการโปรด"
+}

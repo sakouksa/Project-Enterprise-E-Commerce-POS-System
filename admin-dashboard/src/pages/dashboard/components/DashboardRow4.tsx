@@ -2,6 +2,7 @@ import React from 'react'
 import { Warehouse, Boxes, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { formatCurrency } from '@/utils/formatters'
 
 interface DashboardRow4Props {
   lowStockList: any[]
@@ -11,14 +12,7 @@ interface DashboardRow4Props {
 export const DashboardRow4: React.FC<DashboardRow4Props> = ({ lowStockList, stats }) => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2,
-    }).format(val || 0)
-  }
+  const locale = i18n.language === 'km' ? 'km-KH' : 'en-US'
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -95,7 +89,7 @@ export const DashboardRow4: React.FC<DashboardRow4Props> = ({ lowStockList, stat
           </h4>
           <div className="mt-4">
             <span className="text-xs text-muted-foreground font-semibold">{t('dashboard.inventoryValuation', 'Total Stock Valuation')}</span>
-            <h3 className="text-2xl font-black text-foreground mt-1">{formatCurrency(stats?.inventory_value || 0)}</h3>
+            <h3 className="text-2xl font-black text-foreground mt-1">{formatCurrency(stats?.inventory_value || 0, { locale })}</h3>
           </div>
         </div>
         <button 

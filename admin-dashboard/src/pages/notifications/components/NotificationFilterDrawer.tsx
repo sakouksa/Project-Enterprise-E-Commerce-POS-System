@@ -73,7 +73,7 @@ const NotificationFilterDrawer: React.FC<NotificationFilterDrawerProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+            className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-xs transition-opacity"
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
@@ -82,17 +82,17 @@ const NotificationFilterDrawer: React.FC<NotificationFilterDrawerProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="w-screen max-w-md bg-card border-l border-border shadow-2xl flex flex-col justify-between"
+              className="w-screen max-w-md bg-card dark:bg-slate-900 border-l border-border dark:border-slate-800 shadow-2xl flex flex-col justify-between"
             >
               {/* Drawer Header */}
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <div className="px-6 py-4 border-b border-border dark:border-slate-800 flex items-center justify-between bg-muted/30 dark:bg-slate-900">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-primary/10 text-primary rounded-xl">
                     <Filter size={18} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-base text-foreground">Advanced Notification Filters</h3>
-                    <p className="text-[11px] text-muted-foreground">Filter alerts by priority, type, status & date range</p>
+                    <h3 className="font-bold text-base text-foreground dark:text-slate-100">Advanced Notification Filters</h3>
+                    <p className="text-[11px] text-muted-foreground dark:text-slate-400">Filter alerts by priority, type, status & date range</p>
                   </div>
                 </div>
 
@@ -183,24 +183,24 @@ const NotificationFilterDrawer: React.FC<NotificationFilterDrawerProps> = ({
 
                 {/* 5. Modern Created Date Range */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Created Date Range</label>
+                  <label className="text-xs font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">Created Date Range</label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[10px] font-semibold text-muted-foreground block mb-1">Start Date</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground dark:text-slate-400 block mb-1">Start Date</span>
                       <input
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="w-full p-2.5 rounded-xl border border-border dark:border-slate-700 bg-card dark:bg-slate-800/90 text-foreground dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all dark:[color-scheme:dark]"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] font-semibold text-muted-foreground block mb-1">End Date</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground dark:text-slate-400 block mb-1">End Date</span>
                       <input
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="w-full p-2.5 rounded-xl border border-border dark:border-slate-700 bg-card dark:bg-slate-800/90 text-foreground dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all dark:[color-scheme:dark]"
                       />
                     </div>
                   </div>
@@ -208,11 +208,11 @@ const NotificationFilterDrawer: React.FC<NotificationFilterDrawerProps> = ({
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
+              <div className="p-4 border-t border-border dark:border-slate-800 bg-muted/20 dark:bg-slate-900 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={onReset}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-border dark:border-slate-700 text-xs font-semibold text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100 hover:bg-muted dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
                 >
                   <RotateCcw size={14} />
                   <span>Reset Filters</span>
@@ -224,7 +224,7 @@ const NotificationFilterDrawer: React.FC<NotificationFilterDrawerProps> = ({
                     onApply()
                     onClose()
                   }}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
                 >
                   <Check size={14} />
                   <span>Apply Filters</span>

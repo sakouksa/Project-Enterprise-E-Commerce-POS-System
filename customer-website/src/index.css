@@ -151,7 +151,7 @@ a:hover { color: var(--brand-700); }
 @layer components {
   /* Container */
   .container-site {
-    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-8;
   }
 
   /* Cards */
@@ -422,3 +422,42 @@ a:hover { color: var(--brand-700); }
   .print-only  { display: block !important; }
   body { background: white; color: black; }
 }
+
+/* ─── Seamless Marquee Auto-Scroll ───────────────────────────────────────── */
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee 50s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+
+
+/* ─── Reduced Motion Accessibility ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

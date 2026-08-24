@@ -12,6 +12,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import StatusBadge from '@/components/common/StatusBadge'
 import { useTranslation } from 'react-i18next'
 
 interface Banner {
@@ -370,11 +371,7 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
                     {visibleColumns.sortOrder && <td>{banner.sort_order}</td>}
                     {visibleColumns.status && (
                       <td>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          banner.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
-                          {banner.is_active ? t('common.active') : t('common.inactive')}
-                        </span>
+                        <StatusBadge status={banner.is_active} />
                       </td>
                     )}
                     {visibleColumns.activePeriod && (

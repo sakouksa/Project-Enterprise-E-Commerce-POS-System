@@ -8,6 +8,7 @@ import { useCartStore } from '@/stores/cartStore'
 import { useSettingsStore, useAuthStore } from '@/stores'
 import api from '@/lib/api'
 import Spinner from '@/components/ui/Spinner'
+import PageTransition from '@/components/common/PageTransition'
 import { cn } from '@/lib/utils'
 
 const CheckoutPage: React.FC = () => {
@@ -75,7 +76,7 @@ const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="container-site py-8 space-y-8">
+    <PageTransition className="container-site py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           Checkout
@@ -319,7 +320,7 @@ const CheckoutPage: React.FC = () => {
         </div>
 
       </form>
-    </div>
+    </PageTransition>
   )
 }
 

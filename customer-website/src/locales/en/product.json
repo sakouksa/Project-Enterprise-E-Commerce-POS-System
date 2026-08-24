@@ -1,0 +1,15 @@
+{
+  "product.quick_add": "Quick Add",
+  "product.added": "Added to Cart",
+  "product.adding": "Adding...",
+  "product.out_of_stock": "Out of Stock",
+  "product.in_stock": "In Stock",
+  "product.featured": "Featured",
+  "product.off": "OFF",
+  "product.reviews": "reviews",
+  "product.sold": "Sold",
+  "product.available": "Available",
+  "product.view_details": "View Details",
+  "product.add_to_wishlist": "Add to Wishlist",
+  "product.remove_wishlist": "Remove from Wishlist"
+}

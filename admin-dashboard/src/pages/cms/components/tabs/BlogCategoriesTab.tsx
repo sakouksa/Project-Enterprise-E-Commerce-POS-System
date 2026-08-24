@@ -3,6 +3,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface BlogCategoriesTabProps {
   records: any[]
@@ -58,9 +59,7 @@ export const BlogCategoriesTab: React.FC<BlogCategoriesTabProps> = ({
                     )}
                     {visibleColumns.status && (
                       <td>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${r.is_active ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
-                          {r.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        <StatusBadge status={r.is_active} />
                       </td>
                     )}
                     {visibleColumns.actions && (

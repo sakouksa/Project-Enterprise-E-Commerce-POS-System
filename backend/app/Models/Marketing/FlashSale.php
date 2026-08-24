@@ -31,6 +31,11 @@ class FlashSale extends Model
         return $this->hasMany(FlashSaleProduct::class);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(FlashSaleProduct::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true)

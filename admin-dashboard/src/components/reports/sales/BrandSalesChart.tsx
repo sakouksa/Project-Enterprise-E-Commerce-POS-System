@@ -5,6 +5,7 @@ import {
   Tooltip, Cell
 } from 'recharts'
 import { BarChart3 } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface BrandSalesPoint {
   id: number
@@ -26,8 +27,6 @@ export const BrandSalesChart: React.FC<BrandSalesChartProps> = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 0 })}`
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -95,7 +94,7 @@ export const BrandSalesChart: React.FC<BrandSalesChartProps> = ({
                 type="number"
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={formatCurrency}
+                tickFormatter={(val) => formatCurrency(val, { decimals: 0 })}
                 tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
               />
               <YAxis

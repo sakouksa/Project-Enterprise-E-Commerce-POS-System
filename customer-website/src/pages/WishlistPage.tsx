@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, ShoppingBag, Trash2 } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import ProductCard from '@/components/product/ProductCard'
 import Spinner from '@/components/ui/Spinner'
+import PageTransition from '@/components/common/PageTransition'
 import api from '@/lib/api'
 
 const WishlistPage: React.FC = () => {
@@ -19,7 +20,7 @@ const WishlistPage: React.FC = () => {
   if (loading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
 
   return (
-    <div className="container-site py-8 space-y-8">
+    <PageTransition className="container-site py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display">
           My Wishlist ({wishlist.length})
@@ -41,7 +42,7 @@ const WishlistPage: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageTransition>
   )
 }
 

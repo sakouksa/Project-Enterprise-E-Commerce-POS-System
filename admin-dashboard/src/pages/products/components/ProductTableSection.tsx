@@ -5,6 +5,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import type { Product } from '../types/productsPage.types'
 
@@ -85,7 +86,7 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
               {isLoading ? (
                 <LoadingSkeleton cols={9} />
               ) : products.length === 0 ? (
-                <EmptyState cols={9} message={t('common:noData', 'No product items found matching query.')} />
+                <EmptyState cols={9} message={t('common.noData', t('noData', 'No product items found matching query.'))} />
               ) : (
                 products.map((p) => {
                   const isSelected = selectedRows.includes(p.id)
@@ -163,11 +164,7 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                       )}
                       {visibleColumns.status && (
                         <td>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                            p.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                          }`}>
-                            {p.status === 'active' ? t('common.active', 'សកម្ម') : t('common.inactive', 'អសកម្ម')}
-                          </span>
+                          <StatusBadge status={p.status ?? (p as any).is_active} />
                         </td>
                       )}
                       <td className="text-right" onClick={(e) => e.stopPropagation()}>

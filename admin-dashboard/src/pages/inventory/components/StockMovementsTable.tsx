@@ -4,6 +4,7 @@ import { Activity, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Sliders, Eye, Pa
 import TableWrapper from '@/components/shared/TableWrapper'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import Pagination from '@/components/shared/Pagination'
+import { formatShortDate } from '@/utils/formatters'
 
 interface StockMovementsTableProps {
   data: any
@@ -35,18 +36,6 @@ export const StockMovementsTable: React.FC<StockMovementsTableProps> = ({
 
   const activeColCount = 1 + Object.values(visibleColumns).filter(v => v !== false).length
 
-  const formatShortDate = (dateStr: string | null | undefined): string => {
-    if (!dateStr) return '—'
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return '—'
-    const yyyy = date.getFullYear()
-    const mm = String(date.getMonth() + 1).padStart(2, '0')
-    const dd = String(date.getDate()).padStart(2, '0')
-    const hh = String(date.getHours()).padStart(2, '0')
-    const min = String(date.getMinutes()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd} ${hh}:${min}`
-  }
-
   const getTypeBadge = (type: string, refType?: string) => {
     const isPositive = type === 'in' || type === 'addition'
     const isTransfer = refType?.includes('transfer') || type === 'transfer'
@@ -54,7 +43,7 @@ export const StockMovementsTable: React.FC<StockMovementsTableProps> = ({
 
     if (isTransfer) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
           <ArrowLeftRight size={10} />
           {t('transfer', 'Transfer')}
         </span>
@@ -63,7 +52,7 @@ export const StockMovementsTable: React.FC<StockMovementsTableProps> = ({
 
     if (isAdjustment) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
           <Sliders size={10} />
           {t('adjustment', 'Adjustment')}
         </span>
@@ -72,7 +61,7 @@ export const StockMovementsTable: React.FC<StockMovementsTableProps> = ({
 
     if (isPositive) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
           <ArrowDownLeft size={10} />
           {t('stockIn', 'Stock In')}
         </span>
@@ -80,7 +69,7 @@ export const StockMovementsTable: React.FC<StockMovementsTableProps> = ({
     }
 
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
         <ArrowUpRight size={10} />
         {t('stockOut', 'Stock Out')}
       </span>

@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import StatusBadge from '@/components/common/StatusBadge'
 import api from '@/api/client'
 import type { Customer } from '../types'
 
@@ -159,13 +160,7 @@ export const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-xl font-extrabold text-foreground tracking-tight">{cust.name}</h2>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                        cust.is_active 
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                      }`}>
-                        {cust.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
-                      </span>
+                      <StatusBadge status={cust.is_active} />
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5 mt-1.5 text-xs text-muted-foreground">

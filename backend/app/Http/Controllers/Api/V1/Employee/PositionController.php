@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Employee;
 
 use App\Http\Controllers\Api\BaseApiController;
@@ -6,14 +7,19 @@ use App\Http\Requests\Employee\CreatePositionRequest;
 use App\Http\Requests\Employee\UpdatePositionRequest;
 use App\Http\Resources\Employee\PositionResource;
 use App\Infrastructure\Services\Employee\PositionService;
+use App\Models\Employee\Department;
+use App\Models\Employee\Position;
+use App\Services\Support\CsvService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PositionController extends BaseApiController
 {
-    public function __construct(private readonly PositionService $service)
-    {
-    }
+    public function __construct(
+        private readonly PositionService $service,
+        protected CsvService $csvService
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -110,7 +116,7 @@ class PositionController extends BaseApiController
         $this->service->forceDelete($id);
         return $this->successResponse(
             null,
-            'Position permanently deleted'
+            'Position permanently deleted successfully'
         );
     }
 
@@ -122,11 +128,7 @@ class PositionController extends BaseApiController
 
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
         $count = $this->service->bulkDelete($ids);
-
-        return $this->successResponse(
-            null,
-            "{$count} positions deleted successfully"
-        );
+        return $this->successResponse(null, "{$count} positions deleted successfully");
     }
 
     public function bulkRestore(Request $request): JsonResponse
@@ -137,48 +139,30 @@ class PositionController extends BaseApiController
 
         $ids = $request->validate(['ids' => 'required|array'])['ids'];
         $count = $this->service->bulkRestore($ids);
-
-        return $this->successResponse(
-            null,
-            "{$count} positions restored successfully"
-        );
+        return $this->successResponse(null, "{$count} positions restored successfully");
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
-        $headers = [
-            'Content-type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename=positions_export_' . now()->format('Y-m-d') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
-        ];
+        $headers = ['ID', 'Name', 'Code', 'Department', 'Description', 'Status'];
+        $positions = Position::with('department')->when($request->search, function ($q, $v) {
+            $q->where('name', 'like', "%{$v}%")
+              ->orWhere('code', 'like', "%{$v}%");
+        })->get();
 
-        $callback = function () use ($request) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, ['ID', 'Name', 'Code', 'Department', 'Description', 'Status']);
-
-            $positions = \App\Models\Employee\Position::with('department')->when($request->search, function($q, $v) {
-                $q->where('name', 'like', "%{$v}%")
-                  ->orWhere('code', 'like', "%{$v}%");
-            })->get();
-
-            foreach ($positions as $pos) {
-                fputcsv($file, [
-                    $pos->id,
-                    $pos->name,
-                    $pos->code,
-                    $pos->department?->name ?? '',
-                    $pos->description,
-                    $pos->is_active ? 'Active' : 'Inactive'
-                ]);
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->csvService->streamExport(
+            filename: 'positions_export_' . now()->format('Y-m-d') . '.csv',
+            headers: $headers,
+            rows: $positions,
+            rowMapper: fn(Position $pos) => [
+                $pos->id,
+                $pos->name,
+                $pos->code,
+                $pos->department?->name ?? '',
+                $pos->description,
+                $pos->is_active ? 'Active' : 'Inactive',
+            ]
+        );
     }
 
     public function import(Request $request): JsonResponse
@@ -188,54 +172,26 @@ class PositionController extends BaseApiController
         }
 
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt'
+            'file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $file = $request->file('file');
-        $filePath = $file->getRealPath();
-
-        $handle = fopen($filePath, 'r');
-        if ($handle === false) {
-            return $this->errorResponse('Cannot open the uploaded file.');
+        $result = $this->csvService->parseCsv($request->file('file'), ['name', 'department']);
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], $result['errors'], 400);
         }
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return $this->errorResponse('Empty CSV file.');
-        }
-
-        $headers = array_map(fn($h) => strtolower(trim($h)), $headers);
 
         $successCount = 0;
         $errors = [];
-        $line = 1;
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } elseif (count($row) > count($headers)) {
-                $row = array_slice($row, 0, count($headers));
-            }
-
-            $data = array_combine($headers, $row);
-            if (!$data) {
-                $errors[] = "Line {$line}: Mismatched columns count.";
-                continue;
-            }
+        foreach ($result['rows'] as $rowItem) {
+            $line = $rowItem['_line'];
+            $data = $rowItem['data'];
 
             $name = trim($data['name'] ?? '');
             $code = trim($data['code'] ?? '');
             $departmentName = trim($data['department'] ?? '');
             $description = trim($data['description'] ?? '');
-            $is_active = filter_var($data['status'] ?? $data['is_active'] ?? 'active', FILTER_VALIDATE_BOOLEAN) || strtolower($data['status'] ?? '') === 'active' || strtolower($data['status'] ?? '') === '1';
+            $isActive = filter_var($data['status'] ?? $data['is_active'] ?? 'active', FILTER_VALIDATE_BOOLEAN) || strtolower($data['status'] ?? '') === 'active' || strtolower($data['status'] ?? '') === '1';
 
             if (empty($name)) {
                 $errors[] = "Line {$line}: Name is required.";
@@ -247,16 +203,18 @@ class PositionController extends BaseApiController
                 continue;
             }
 
-            $dept = \App\Models\Employee\Department::where('name', $departmentName)->first();
+            $dept = Department::where('name', $departmentName)->first();
             if (!$dept) {
                 $errors[] = "Line {$line}: Department '{$departmentName}' not found.";
                 continue;
             }
 
-            $exists = \App\Models\Employee\Position::where('name', $name)
+            $exists = Position::where('name', $name)
                 ->where('department_id', $dept->id)
                 ->orWhere(function ($q) use ($code) {
-                    if ($code) $q->where('code', $code);
+                    if ($code) {
+                        $q->where('code', $code);
+                    }
                 })
                 ->exists();
 
@@ -265,23 +223,21 @@ class PositionController extends BaseApiController
                 continue;
             }
 
-            \App\Models\Employee\Position::create([
-                'company_id'    => $request->user()->company_id ?? 1,
+            Position::create([
+                'company_id'    => $request->user()?->company_id ?? 1,
                 'department_id' => $dept->id,
                 'name'          => $name,
                 'code'          => $code ?: null,
                 'description'   => $description ?: null,
-                'is_active'     => $is_active
+                'is_active'     => $isActive,
             ]);
 
             $successCount++;
         }
 
-        fclose($handle);
-
         return $this->successResponse([
             'success_count' => $successCount,
-            'errors'        => $errors
+            'errors'        => $errors,
         ], "Import completed. {$successCount} records imported successfully.");
     }
 }

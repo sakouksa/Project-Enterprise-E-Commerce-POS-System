@@ -4,6 +4,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 import type { Coupon } from '../../types/coupon'
 
 interface CouponTableSectionProps {
@@ -102,16 +103,9 @@ export const CouponTableSection: React.FC<CouponTableSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => toggleStatusMutation.mutate({ id: coupon.id, is_active: !coupon.is_active })}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                              isExp
-                                ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                                : coupon.is_active
-                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                            }`}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${isExp ? 'bg-amber-500' : coupon.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                            <span>{isExp ? 'Expired' : coupon.is_active ? 'Active' : 'Inactive'}</span>
+                            <StatusBadge status={isExp ? 'expired' : coupon.is_active} />
                           </button>
                         </td>
                       )}

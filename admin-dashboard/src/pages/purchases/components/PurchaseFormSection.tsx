@@ -214,7 +214,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
               value={poDate}
               onChange={(e) => setPoDate(e.target.value)}
               required
-              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-medium focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+              className="form-input w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-medium focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
             />
           </div>
 
@@ -227,7 +227,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-medium focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+              className="form-input w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-medium focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
             />
           </div>
 
@@ -260,7 +260,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
               required
               min="0.000001"
               step="any"
-              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-mono font-medium disabled:opacity-60 focus:ring-2 focus:ring-primary/20 transition-all"
+              className="form-input w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-mono font-medium disabled:opacity-60 focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
@@ -275,7 +275,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
               onChange={(e) => setShippingCost(e.target.value)}
               min="0"
               step="any"
-              className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-mono font-medium focus:ring-2 focus:ring-primary/20 transition-all"
+              className="form-input w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-mono font-medium focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
         </div>

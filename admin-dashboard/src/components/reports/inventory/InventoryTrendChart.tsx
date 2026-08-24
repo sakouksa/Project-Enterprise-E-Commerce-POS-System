@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts'
 import { TrendingUp } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 interface TrendPoint {
   date: string
@@ -18,8 +19,6 @@ interface Props {
 
 export const InventoryTrendChart: React.FC<Props> = ({ data = [], isLoading }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => `$${(val / 1000).toFixed(1)}k`
 
   if (isLoading) {
     return (
@@ -53,7 +52,7 @@ export const InventoryTrendChart: React.FC<Props> = ({ data = [], isLoading }) =
             <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border/40" />
               <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" />
-              <YAxis tickLine={false} axisLine={false} tickFormatter={formatCurrency} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" />
+              <YAxis tickLine={false} axisLine={false} tickFormatter={(val) => formatCurrency(val, { compact: true })} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
                 formatter={(val: any) => [`$${Number(val || 0).toLocaleString()}`, 'Valuation ($)']}

@@ -4,6 +4,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 import type { Promotion } from '../../types/promotion'
 
 interface PromotionTableSectionProps {
@@ -96,20 +97,9 @@ export const PromotionTableSection: React.FC<PromotionTableSectionProps> = ({
                           <button
                             type="button"
                             onClick={() => toggleStatusMutation.mutate({ id: p.id, is_active: !p.is_active })}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                              st === 'running'
-                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                : st === 'scheduled'
-                                ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
-                                : st === 'expired'
-                                ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                                : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                            }`}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              st === 'running' ? 'bg-emerald-500' : st === 'scheduled' ? 'bg-blue-500' : st === 'expired' ? 'bg-amber-500' : 'bg-rose-500'
-                            }`} />
-                            <span className="capitalize">{st}</span>
+                            <StatusBadge status={st} />
                           </button>
                         </td>
                       )}

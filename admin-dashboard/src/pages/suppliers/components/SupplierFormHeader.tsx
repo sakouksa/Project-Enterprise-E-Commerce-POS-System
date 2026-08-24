@@ -39,7 +39,7 @@ export const SupplierFormHeader: React.FC<SupplierFormHeaderProps> = ({
     <button
       type="button"
       onClick={onOpenLivePreview}
-      className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer active:scale-95"
+      className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 dark:border-slate-700 bg-background dark:bg-slate-800/80 text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted/80 dark:hover:bg-slate-700 text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer active:scale-95"
       title={t('suppliers.livePreview', 'ពិនិត្យមើលផ្ទាល់')}
     >
       <Eye size={14} />
@@ -60,7 +60,6 @@ export const SupplierFormHeader: React.FC<SupplierFormHeaderProps> = ({
           ? t('suppliers.editSubtitle', 'ធ្វើបច្ចុប្បន្នភាពទម្រង់ និងព័ត៌មានអ្នកផ្គត់ផ្គង់')
           : t('suppliers.createSubtitle', 'បំពេញព័ត៌មានដើម្បីចុះឈ្មោះអ្នកផ្គត់ផ្គង់ថ្មីក្នុងប្រព័ន្ធ')
       }
-      icon={<Truck size={20} />}
       statusBadge={statusBadge}
       breadcrumbs={[
         { label: t('nav.purchases', t('common.purchases', 'ការទិញទំនិញ')), path: '/purchases' },

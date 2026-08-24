@@ -1,9 +1,10 @@
 import React from 'react'
-import { ShieldCheck, Award, Users, Globe, Truck } from 'lucide-react'
+import { ShieldCheck, Award, Truck } from 'lucide-react'
+import PageTransition from '@/components/common/PageTransition'
 
 const AboutPage: React.FC = () => {
   return (
-    <div className="container-site py-12 space-y-12">
+    <PageTransition className="container-site py-12 space-y-12">
       <div className="max-w-3xl mx-auto text-center space-y-4">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white font-display">
           About ShopKh Enterprise Platform
@@ -38,7 +39,7 @@ const AboutPage: React.FC = () => {
           <p className="text-xs text-gray-500">Trusted by over 100,000+ active happy customers nationwide.</p>
         </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }
 

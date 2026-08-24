@@ -9,6 +9,7 @@ import api from '@/api/client'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { downloadBlob } from '@/utils/export'
 
 import { InventoryFilters, type InventoryFilterState } from '@/components/reports/inventory/InventoryFilters'
 import { InventorySummaryCards } from '@/components/reports/inventory/InventorySummaryCards'
@@ -117,14 +118,8 @@ export const InventoryReportPage: React.FC = () => {
         responseType: 'blob',
       })
 
-      const url = window.URL.createObjectURL(new Blob([response.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `Inventory_Report_${exportParams.date_from}_to_${exportParams.date_to}.csv`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
+      const blob = new Blob([response.data])
+      downloadBlob(blob, `Inventory_Report_${exportParams.date_from}_to_${exportParams.date_to}.csv`)
 
       toast.success(t('inventory.toast.exportExcelSuccess', 'Inventory report exported to Excel successfully!'))
     } catch (err: any) {

@@ -15,7 +15,7 @@ class CreateCustomerAddressRequest extends FormRequest
     {
         return [
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
-            'label'       => ['required', 'string', 'in:Home,Office,Warehouse,Other'],
+            'label'       => ['required', 'string', 'max:100'],
             'name'        => ['required', 'string', 'max:255'],
             'phone'       => ['required', 'string', 'max:50'],
             'address'     => ['required', 'string'],

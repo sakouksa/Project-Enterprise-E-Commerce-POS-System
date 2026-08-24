@@ -71,8 +71,7 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
   const { t } = useTranslation(['common'])
   const navigate = useNavigate()
 
-  // Enterprise pattern: Show submit in header on Edit mode (for quick save), hide on Create mode (clean header)
-  const shouldShowSubmit = showSubmit !== undefined ? showSubmit : (isEdit ?? false)
+  const shouldShowSubmit = showSubmit ?? false
 
   const handleBack = () => {
     if (onBack) {
@@ -85,26 +84,26 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
   }
 
   return (
-    <div className={`space-y-3 sm:space-y-4 ${className}`}>
-      {/* ─── Breadcrumb ─── */}
+    <div className={`space-y-3 sm:space-y-3.5 ${className}`}>
+      {/* ─── Breadcrumb Navigation ─── */}
       {breadcrumbs && breadcrumbs.length > 0 && (
         <div className="px-0.5">
           <Breadcrumb items={breadcrumbs} />
         </div>
       )}
 
-      {/* ─── Modern Form Title & Action Bar (Clean & Distinct from List Page Header) ─── */}
+      {/* ─── Clean Modern Form Header Bar (Unboxed & Elegant) ─── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-0.5">
         {/* Left: Clean Title, Status Badge & Subtitle */}
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground dark:text-slate-100 truncate">
               {title}
             </h1>
             {statusBadge && <div className="shrink-0">{statusBadge}</div>}
           </div>
           {subtitle && (
-            <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed">
+            <p className="text-xs sm:text-[13px] text-muted-foreground dark:text-slate-400 leading-relaxed max-w-3xl">
               {subtitle}
             </p>
           )}
@@ -120,7 +119,7 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
             <button
               type="button"
               onClick={handleBack}
-              className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95"
+              className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900/90 text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-800 text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95"
             >
               <ArrowLeft size={14} />
               <span>{backLabel || t('common.back', 'ត្រឡប់ក្រោយ')}</span>
@@ -130,13 +129,13 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
           {/* Extra Custom Action Buttons (e.g. Live Preview) */}
           {extraActions}
 
-          {/* Submit Button (Shown on Edit mode for quick save or when explicitly requested) */}
+          {/* Submit Button (Only when explicitly requested with showSubmit={true}) */}
           {shouldShowSubmit && (
             <button
               type={onSubmit ? 'button' : 'submit'}
               onClick={onSubmit}
               disabled={isSubmitting}
-              className="h-9 px-4 sm:px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+              className="h-9 px-4 sm:px-5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs sm:text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
             >
               {isSubmitting ? (
                 <Loader2 size={14} className="animate-spin" />

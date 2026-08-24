@@ -37,7 +37,7 @@ interface PurchasesFilterDrawerProps {
 
 const FieldLabel: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="space-y-1.5">
-    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+    <label className="block text-[11px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
       {label}
     </label>
     {children}
@@ -160,13 +160,13 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
             type="date"
             value={purchaseDateStartFilter}
             onChange={(e) => { setPurchaseDateStartFilter(e.target.value); setPage(1); }}
-            className="form-input text-xs w-full rounded-xl border border-border bg-background py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
           />
           <input
             type="date"
             value={purchaseDateEndFilter}
             onChange={(e) => { setPurchaseDateEndFilter(e.target.value); setPage(1); }}
-            className="form-input text-xs w-full rounded-xl border border-border bg-background py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
           />
         </div>
       </FieldLabel>
@@ -179,14 +179,14 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
             placeholder={t('purchases.minValue', 'Min')}
             value={minAmountFilter}
             onChange={(e) => { setMinAmountFilter(e.target.value); setPage(1); }}
-            className="form-input text-xs w-full font-mono rounded-xl border border-border bg-background py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400"
           />
           <input
             type="number"
             placeholder={t('purchases.maxValue', 'Max')}
             value={maxAmountFilter}
             onChange={(e) => { setMaxAmountFilter(e.target.value); setPage(1); }}
-            className="form-input text-xs w-full font-mono rounded-xl border border-border bg-background py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3.5 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400"
           />
         </div>
       </FieldLabel>

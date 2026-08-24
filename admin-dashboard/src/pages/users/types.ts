@@ -19,13 +19,11 @@ export interface User {
   two_factor?: boolean
 }
 
+import { getAbsoluteImageUrl } from '@/utils/image'
+
 export const getAvatarUrl = (avatar?: string | null): string | null => {
   if (!avatar) return null
-  if (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:')) {
-    return avatar
-  }
-  const backendBase = import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, '') || 'http://127.0.0.1:8001'
-  return `${backendBase}/${avatar.startsWith('/') ? avatar.slice(1) : avatar}`
+  return getAbsoluteImageUrl(avatar)
 }
 
 export const defaultPermissionModules = [

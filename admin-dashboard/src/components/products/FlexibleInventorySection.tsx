@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Boxes,
   TrendingUp,
@@ -19,6 +19,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { EnterpriseSelect } from '@/components/common/EnterpriseSelect'
 
 interface WarehouseItem {
   id: number | string
@@ -89,6 +90,13 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
   const [quantity, setQuantity] = useState<string>('')
   const [reason, setReason] = useState<string>('')
   const [historyFilter, setHistoryFilter] = useState<string>('all')
+
+  // Auto-select first warehouse when warehouses list is loaded
+  useEffect(() => {
+    if (!warehouseId && warehouses && warehouses.length > 0) {
+      setWarehouseId(String(warehouses[0].id))
+    }
+  }, [warehouses, warehouseId])
 
   const threshold = parseInt(lowStockThreshold) || 5
   const cost = parseFloat(costPrice) || 0
@@ -269,47 +277,81 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
         </div>
       </div>
 
-      {/* ─── Compact Settings & Control Banner (Simple & Streamlined) ─── */}
-      <div className="bg-card/80 border border-border/80 p-4 rounded-2xl shadow-2xs flex flex-wrap items-center justify-between gap-4">
+      {/* ─── Compact Settings & Control Banner (Clean, Modern & Balanced) ─── */}
+      <div className="bg-card/90 dark:bg-card/70 border border-border/80 p-3.5 sm:p-4 rounded-2xl shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
-            <Sliders size={18} />
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+            <Sliders size={16} />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-foreground">
+            <h4 className="text-xs sm:text-[13px] font-bold text-foreground leading-tight">
               {t('stockTrackingSettings', 'ការកំណត់តាមដានស្តុក')}
             </h4>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               {t('stockTrackingDesc', 'តាមដានចំនួនស្តុកស្វ័យប្រវត្តិពេលលក់ និងកំណត់កម្រិតប្រកាសអាសន្ន')}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-3.5 self-start sm:self-auto">
           {/* Toggle Track Inventory */}
-          <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-xl bg-muted/30 border border-border/60 hover:bg-muted/60 transition-all select-none">
+          <label className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all select-none shadow-2xs ${
+            trackInventory
+              ? 'bg-primary/10 border-primary/30 text-primary'
+              : 'bg-muted/40 border-border/80 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+          }`}>
             <input
               type="checkbox"
               checked={trackInventory}
               onChange={(e) => onTrackInventoryChange(e.target.checked)}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
+              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 cursor-pointer accent-primary"
             />
-            <span className="text-xs font-bold text-foreground">
-              {t('trackStockLevel', 'តាមដានស្តុក')}
-            </span>
+            <span>{t('trackStockLevel', 'តាមដានកម្រិតស្តុក')}</span>
           </label>
 
-          {/* Threshold Input */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground">{t('products.lowStockThreshold', 'កម្រិតស្តុកទាប:')}</span>
-            <input
-              type="number"
-              value={lowStockThreshold}
-              onChange={(e) => onLowStockThresholdChange(e.target.value)}
-              className="form-input text-xs font-bold font-mono w-20 py-1.5 px-2.5 rounded-lg bg-background text-foreground border-border/80 focus:ring-2 focus:ring-primary/20"
-              disabled={!trackInventory}
-              placeholder="5"
-            />
+          {/* Clean Stepper Threshold Input */}
+          <div className={`flex items-center gap-2 ${!trackInventory ? 'opacity-40 pointer-events-none' : ''}`}>
+            <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+              {t('products.lowStockThreshold', 'កម្រិតប្រកាសអាសន្ន:')}
+            </span>
+            <div className="inline-flex items-center h-8 bg-background border border-border/80 rounded-lg p-0.5 shadow-2xs focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
+              <button
+                type="button"
+                onClick={() => {
+                  const val = Math.max(0, (parseInt(lowStockThreshold) || 0) - 1)
+                  onLowStockThresholdChange(String(val))
+                }}
+                disabled={!trackInventory || (parseInt(lowStockThreshold) || 0) <= 0}
+                className="w-6 h-6 flex items-center justify-center rounded bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer transition-colors"
+                title="Decrease"
+              >
+                <Minus size={11} />
+              </button>
+              <input
+                type="number"
+                min="0"
+                value={lowStockThreshold}
+                onChange={(e) => onLowStockThresholdChange(e.target.value)}
+                className="w-12 text-center text-xs font-bold font-mono bg-transparent border-0 outline-none p-0 text-foreground"
+                disabled={!trackInventory}
+                placeholder="5"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const val = (parseInt(lowStockThreshold) || 0) + 1
+                  onLowStockThresholdChange(String(val))
+                }}
+                disabled={!trackInventory}
+                className="w-6 h-6 flex items-center justify-center rounded bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer transition-colors"
+                title="Increase"
+              >
+                <Plus size={11} />
+              </button>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
+              {t('unitsUnit', 'គ្រឿង')}
+            </span>
           </div>
 
           {/* Save Button */}
@@ -317,9 +359,9 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
             type="button"
             onClick={onSaveSettings}
             disabled={isSavingSettings}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+            className="h-8 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-50 active:scale-95 flex items-center gap-1.5 shrink-0"
           >
-            {isSavingSettings ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
+            {isSavingSettings ? <Loader2 className="animate-spin" size={13} /> : <CheckCircle2 size={13} />}
             <span>{t('products.saveBtn', 'រក្សាទុក')}</span>
           </button>
         </div>
@@ -358,37 +400,38 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
             <div className={`grid grid-cols-1 ${variants && variants.length > 0 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3.5`}>
               {/* Warehouse Location */}
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 mb-1">
+                <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
                   {t('products.warehouseLocationLabel', 'ទីតាំងឃ្លាំង (Warehouse)')} <span className="text-red-500">*</span>
                 </label>
-                <select
+                <EnterpriseSelect
                   value={warehouseId}
-                  onChange={(e) => setWarehouseId(e.target.value)}
-                  className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                >
-                  <option value="">{t('products.selectWarehousePlaceholder', 'ជ្រើសរើសឃ្លាំង...')}</option>
-                  {warehouses.map((w) => (
-                    <option key={w.id} value={String(w.id)}>{w.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setWarehouseId(val ? String(val) : '')}
+                  options={warehouses.map((w) => ({
+                    value: String(w.id),
+                    label: w.name,
+                  }))}
+                  placeholder={t('products.selectWarehousePlaceholder', 'ជ្រើសរើសឃ្លាំង...')}
+                />
               </div>
 
               {/* Variant Selector (If Product Has Variants) */}
               {variants && variants.length > 0 && (
                 <div>
-                  <label className="block text-xs font-semibold text-foreground/90 mb-1">
+                  <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
                     {t('products.variantOptionLabel', 'ជម្រើសទំនិញ (Variant)')}
                   </label>
-                  <select
+                  <EnterpriseSelect
                     value={variantId}
-                    onChange={(e) => setVariantId(e.target.value)}
-                    className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                  >
-                    <option value="">{t('products.allMainStockPlaceholder', 'ស្តុកទូទៅ (All / Main Stock)')}</option>
-                    {variants.map((v) => (
-                      <option key={v.id} value={String(v.id)}>{v.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setVariantId(val ? String(val) : '')}
+                    options={[
+                      { value: '', label: t('products.allMainStockPlaceholder', 'ស្តុកទូទៅ (All / Main Stock)') },
+                      ...variants.map((v) => ({
+                        value: String(v.id),
+                        label: v.name,
+                      }))
+                    ]}
+                    placeholder={t('products.variantOptionLabel', 'ជម្រើសទំនិញ (Variant)')}
+                  />
                 </div>
               )}
 
@@ -404,7 +447,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                     placeholder={t('products.enterQtyPlaceholder', 'បញ្ចូលចំនួន...')}
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] font-mono rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="form-input w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] font-mono rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all"
                     required
                   />
                 </div>
@@ -486,7 +529,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
                 placeholder={t('products.reasonPlaceholder', 'ឧទាហរណ៍៖ ទិញចូលបន្ថែម, ទំនិញខូច, ផ្ទៀងផ្ទាត់ស្តុក...')}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="form-input w-full h-9 px-3 py-1.5 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all"
+                className="form-input w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all"
               />
 
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -509,7 +552,7 @@ export const FlexibleInventorySection: React.FC<FlexibleInventorySectionProps> =
               <button
                 type="submit"
                 disabled={isAddingAdjustment || !quantity}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                className="h-10 min-h-[40px] flex items-center gap-1.5 px-5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs sm:text-[13px] font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
               >
                 {isAddingAdjustment ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
                 <span>{t('logAdjustment', 'Save Stock Adjustment')}</span>

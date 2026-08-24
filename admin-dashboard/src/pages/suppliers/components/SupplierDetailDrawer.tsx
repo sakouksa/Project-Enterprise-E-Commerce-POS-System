@@ -9,6 +9,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import api from '@/api/client'
+import StatusBadge from '@/components/common/StatusBadge'
 import type { Supplier } from '../types/supplier.types'
 
 interface SupplierDetailDrawerProps {
@@ -106,16 +107,7 @@ export const SupplierDetailDrawer: React.FC<SupplierDetailDrawerProps> = ({
                       <h3 className="font-bold text-base text-foreground truncate max-w-[260px] sm:max-w-md">
                         {supp.name}
                       </h3>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border inline-flex items-center gap-1 ${
-                          supp.is_active
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                            : 'bg-muted text-muted-foreground border-border'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${supp.is_active ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
-                        {supp.is_active ? t('suppliers.active', 'សកម្ម') : t('suppliers.inactive', 'អសកម្ម')}
-                      </span>
+                      <StatusBadge status={supp.is_active} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground font-mono">
                       <span>{supp.code}</span>

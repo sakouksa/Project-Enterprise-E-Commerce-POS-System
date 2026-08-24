@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Trophy, Package, Award } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface TopProductItem {
   rank: number
@@ -23,8 +24,6 @@ export const TopProductsTable: React.FC<TopProductsTableProps> = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation('reports')
-
-  const formatCurrency = (val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 
   return (
     <div className="bg-card border border-border/80 rounded-[24px] p-6 shadow-sm space-y-4 flex flex-col h-full">

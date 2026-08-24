@@ -13,9 +13,12 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore, applyPrimaryCssVar } from '@/stores/themeStore'
+import { useCompanyStore } from '@/stores/companyStore'
+import { BrandLogo } from '@/components/common/BrandLogo'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
 import Header from './Header'
+import UserAvatar from '@/components/common/UserAvatar'
 
 // ─── Navigation Types ────────────────────────────────────────────────────────
 
@@ -160,12 +163,8 @@ const NAV_GROUPS: NavGroup[] = [
       {
         labelKey: 'nav.financeManagement',
         icon: <DollarSign size={17} />,
+        path: '/expenses',
         permission: 'finance.view',
-        children: [
-          { labelKey: 'nav.expenses',         path: '/expenses', permission: 'expense.view', icon: <Receipt size={13.5} /> },
-          { labelKey: 'nav.paymentMethods',   path: '/payments/methods', permission: 'payment.view', icon: <CreditCard size={13.5} /> },
-          { labelKey: 'nav.transactions',     path: '/payments/transactions', permission: 'payment.view', icon: <ArrowLeftRight size={13.5} /> },
-        ],
       },
     ],
   },
@@ -681,9 +680,14 @@ const AdminLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user, darkMode, logout, hasPermission } = useAuthStore()
   const { primaryColor, sidebar: sidebarConfig } = useThemeStore()
+  const { branding, fetchBranding } = useCompanyStore()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+
+  useEffect(() => {
+    fetchBranding()
+  }, [fetchBranding])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -767,27 +771,25 @@ const AdminLayout: React.FC = () => {
                 className="flex items-center justify-between h-16 px-4 border-b flex-shrink-0"
               >
                 <div
-                  className="flex items-center gap-2.5 cursor-pointer"
+                  className="flex items-center gap-2.5 cursor-pointer min-w-0"
                   onClick={() => {
                     navigate('/dashboard')
                     setMobileOpen(false)
                   }}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <Store size={16} className="text-white" />
-                  </div>
-                  <div>
+                  <BrandLogo size="sm" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+                  <div className="overflow-hidden min-w-0">
                     <p
                       style={{ color: sidebarConfig?.textColor || undefined }}
-                      className="text-xs font-black uppercase tracking-wider leading-none"
+                      className="text-xs font-black uppercase tracking-wider leading-none truncate"
                     >
-                      Enterprise POS
+                      {branding.brand_name || user?.company?.name || 'NexPOS'}
                     </p>
                     <span
                       style={{ color: sidebarConfig?.textColor || undefined }}
-                      className="text-[10px] opacity-70 font-bold block mt-0.5"
+                      className="text-[10px] opacity-70 font-bold block mt-0.5 truncate"
                     >
-                      {t('common.management_system', 'Management System')}
+                      {user?.branch?.name || t('common.management_system', 'Management System')}
                     </span>
                   </div>
                 </div>
@@ -829,13 +831,12 @@ const AdminLayout: React.FC = () => {
                   }}
                   className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-foreground/10 transition-colors cursor-pointer group shadow-2xs"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xs ring-2 ring-primary/20">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-white text-xs font-bold">{user?.name?.[0] ?? 'U'}</span>
-                    )}
-                  </div>
+                  <UserAvatar
+                    src={user?.avatar}
+                    name={user?.name || 'Super Admin'}
+                    sizeClassName="w-8 h-8"
+                    className="ring-2 ring-primary/20"
+                  />
                   <div className="flex-1 overflow-hidden min-w-0">
                     <p
                       style={{ color: sidebarConfig?.textColor || undefined }}
@@ -886,35 +887,33 @@ const AdminLayout: React.FC = () => {
           {!isCollapsed ? (
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-2.5 cursor-pointer"
+              className="flex items-center gap-2.5 cursor-pointer min-w-0"
               onClick={() => navigate('/dashboard')}
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                <Store size={16} className="text-white" />
-              </div>
-              <div className="overflow-hidden">
+              <BrandLogo size="sm" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+              <div className="overflow-hidden min-w-0">
                 <p
                   style={{ color: sidebarConfig?.textColor || undefined }}
-                  className="text-xs font-black uppercase tracking-wider leading-none"
+                  className="text-xs font-black uppercase tracking-wider leading-none truncate"
                 >
-                  Enterprise POS
+                  {branding.brand_name || user?.company?.name || 'NexPOS'}
                 </p>
                 <span
                   style={{ color: sidebarConfig?.textColor || undefined }}
-                  className="text-[10px] opacity-70 font-bold block mt-0.5"
+                  className="text-[10px] opacity-70 font-bold block mt-0.5 truncate"
                 >
-                  {t('common.management_system', 'Management System')}
+                  {user?.branch?.name || t('common.management_system', 'Management System')}
                 </span>
               </div>
             </motion.div>
           ) : (
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
-              className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center mx-auto shadow-md cursor-pointer"
+              className="mx-auto cursor-pointer"
               onClick={() => setCollapsed(false)}
-              title={t('common.management_system', 'Management System')}
+              title={user?.company?.name || branding.brand_name || 'NexPOS'}
             >
-              <Store size={16} className="text-white" />
+              <BrandLogo size="sm" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
             </motion.div>
           )}
         </div>
@@ -943,13 +942,12 @@ const AdminLayout: React.FC = () => {
               onClick={() => navigate('/profile')}
               className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-foreground/10 transition-colors cursor-pointer group shadow-2xs"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xs ring-2 ring-primary/20">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-white text-xs font-bold">{user?.name?.[0] ?? 'U'}</span>
-                )}
-              </div>
+              <UserAvatar
+                src={user?.avatar}
+                name={user?.name || 'Super Admin'}
+                sizeClassName="w-8 h-8"
+                className="ring-2 ring-primary/20"
+              />
               <div className="flex-1 overflow-hidden min-w-0">
                 <p
                   style={{ color: sidebarConfig?.textColor || undefined }}
@@ -988,13 +986,14 @@ const AdminLayout: React.FC = () => {
             <div
               onClick={() => navigate('/profile')}
               title={user?.name || 'Super Admin'}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center overflow-hidden shadow-xs ring-2 ring-primary/20 cursor-pointer hover:scale-110 transition-transform"
+              className="cursor-pointer hover:scale-110 transition-transform"
             >
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white text-xs font-bold">{user?.name?.[0] ?? 'U'}</span>
-              )}
+              <UserAvatar
+                src={user?.avatar}
+                name={user?.name || 'Super Admin'}
+                sizeClassName="w-8 h-8"
+                className="ring-2 ring-primary/20"
+              />
             </div>
             <button
               type="button"

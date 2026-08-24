@@ -57,7 +57,7 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
       <IconComponent
         size={iconSizes[size]}
         className={`shrink-0 transition-colors ${
-          isActive ? 'text-primary-foreground' : 'text-muted-foreground/75 group-hover:text-foreground'
+          isActive ? 'text-white' : 'text-muted-foreground/80 dark:text-slate-400 group-hover:text-foreground dark:group-hover:text-slate-200'
         }`}
       />
     )
@@ -67,7 +67,7 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
     return (
       <div
         role="tablist"
-        className={`flex items-center gap-2 overflow-x-auto pb-1 border-b border-border/80 no-scrollbar print:hidden ${className}`}
+        className={`flex items-center gap-2 overflow-x-auto pb-1 border-b border-border/80 dark:border-slate-800 no-scrollbar print:hidden ${className}`}
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
@@ -82,18 +82,18 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
                 tab.disabled ? 'opacity-50 cursor-not-allowed' : ''
               } ${
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-sm font-bold scale-[1.01]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium active:scale-[0.98]'
+                  ? 'bg-primary text-white shadow-sm font-bold scale-[1.01]'
+                  : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100 hover:bg-muted/50 dark:hover:bg-slate-800/60 font-medium active:scale-[0.98]'
               }`}
             >
               {renderIcon(tab.icon, isActive)}
               <span className="tracking-tight">{tab.label}</span>
               {tab.count !== undefined && (
                 <span
-                  className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                  className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-colors ${
                     isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'bg-muted text-muted-foreground group-hover:bg-muted-foreground/20'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400 group-hover:bg-muted-foreground/20 dark:group-hover:bg-slate-700 dark:group-hover:text-slate-200 border border-transparent dark:border-slate-700/60'
                   }`}
                 >
                   {tab.count}
@@ -110,7 +110,7 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
   return (
     <div
       role="tablist"
-      className={`w-full flex items-center justify-between gap-2 p-1.5 bg-card border border-border rounded-2xl overflow-x-auto no-scrollbar print:hidden shadow-xs ${className}`}
+      className={`w-full flex items-center justify-between gap-2 p-1.5 bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl overflow-x-auto no-scrollbar print:hidden shadow-xs ${className}`}
     >
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
         {tabs.map((tab) => {
@@ -126,8 +126,8 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
                 tab.disabled ? 'opacity-50 cursor-not-allowed' : ''
               } ${
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-sm font-bold scale-[1.01]'
-                  : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground font-semibold active:scale-[0.98]'
+                  ? 'bg-primary text-white shadow-sm font-bold scale-[1.01]'
+                  : 'text-muted-foreground dark:text-slate-400 hover:bg-muted/80 dark:hover:bg-slate-800 hover:text-foreground dark:hover:text-slate-100 font-semibold active:scale-[0.98]'
               }`}
             >
               {renderIcon(tab.icon, isActive)}
@@ -136,8 +136,8 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
                 <span
                   className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-colors ${
                     isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'bg-muted text-muted-foreground group-hover:bg-muted-foreground/20'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400 group-hover:bg-muted-foreground/20 dark:group-hover:bg-slate-700 dark:group-hover:text-slate-200 border border-transparent dark:border-slate-700/60'
                   }`}
                 >
                   {tab.count}

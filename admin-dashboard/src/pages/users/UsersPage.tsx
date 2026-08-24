@@ -11,6 +11,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { downloadCsv } from '@/utils/export'
 
 import { UserStatsCards } from './components/UserStatsCards'
 import { UserFilterDrawer } from './components/UserFilterDrawer'
@@ -363,24 +364,6 @@ const UsersPage: React.FC = () => {
     setConfirmPassword(pass)
   }
 
-  const downloadCSVFile = (filename: string, headers: string[], rows: (string | number)[][]) => {
-    const escapeCell = (val: any) => {
-      if (val === null || val === undefined) return '""'
-      const str = String(val).replace(/"/g, '""')
-      return `"${str}"`
-    }
-    const csvContent = '\uFEFF' + headers.map(escapeCell).join(',') + '\n' + rows.map((row) => row.map(escapeCell).join(',')).join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}_export_${new Date().toISOString().split('T')[0]}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
   const handleExportCSV = () => {
     toast.info('Exporting users CSV dataset...')
     setTimeout(() => {
@@ -394,7 +377,7 @@ const UsersPage: React.FC = () => {
         u.roles?.[0]?.name || 'Staff',
         u.is_active ? 'Active' : 'Inactive',
       ])
-      downloadCSVFile('users_directory', headers, rows)
+      downloadCsv('users_directory', headers, rows)
       toast.success(`Exported ${rows.length} users to CSV!`)
     }, 300)
   }

@@ -6,9 +6,10 @@ import {
 } from 'lucide-react'
 import ProductCard from '@/components/product/ProductCard'
 import Spinner from '@/components/ui/Spinner'
+import PageTransition from '@/components/common/PageTransition'
 import { useSettingsStore, useWishlistStore } from '@/stores'
 import { useCartStore } from '@/stores/cartStore'
-import { cn } from '@/lib/utils'
+import { cn, getImageUrl } from '@/lib/utils'
 import api from '@/lib/api'
 
 const ProductDetailPage: React.FC = () => {
@@ -100,7 +101,7 @@ const ProductDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="container-site py-8 space-y-12">
+    <PageTransition className="container-site py-8 space-y-12">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Link to="/" className="hover:text-gray-900 dark:hover:text-white">Home</Link>
@@ -123,9 +124,10 @@ const ProductDetailPage: React.FC = () => {
         <div className="space-y-4">
           <div className="relative aspect-square rounded-3xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
             <img
-              src={activeImage || product.images?.[0]?.url || '/placeholder.png'}
+              src={getImageUrl(activeImage || product.images?.[0]?.url)}
               alt={product.name}
               className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.src = '/images/placeholder-product.png' }}
             />
             {product.discount_percent > 0 && (
               <span className="absolute top-4 left-4 badge-discount px-3 py-1 text-xs font-bold rounded-xl shadow-sm">
@@ -146,7 +148,7 @@ const ProductDetailPage: React.FC = () => {
                     activeImage === img.url ? 'border-blue-600 scale-95 shadow-md' : 'border-transparent opacity-70 hover:opacity-100'
                   )}
                 >
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -170,6 +172,7 @@ const ProductDetailPage: React.FC = () => {
               <div className="flex items-center gap-1 text-amber-400">
                 <Star className="w-4 h-4 fill-current" />
                 <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  
                   {product.rating_summary?.average || '4.8'}
                 </span>
               </div>
@@ -363,7 +366,7 @@ const ProductDetailPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageTransition>
   )
 }
 

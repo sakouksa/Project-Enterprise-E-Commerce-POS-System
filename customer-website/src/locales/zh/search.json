@@ -1,0 +1,8 @@
+{
+  "search.ai_search": "AI 智能搜索",
+  "search.by_name": "按名称搜索",
+  "search.by_sku": "按SKU搜索",
+  "search.placeholder_ai": "AI 智能搜索 (例如 RTX 4060, 游戏本, Apple M3)...",
+  "search.placeholder_name": "按商品名称搜索 (例如 MacBook Pro, 华硕天选)...",
+  "search.placeholder_sku": "输入SKU编号或条形码 (例如 LAP-2026-X1)..."
+}

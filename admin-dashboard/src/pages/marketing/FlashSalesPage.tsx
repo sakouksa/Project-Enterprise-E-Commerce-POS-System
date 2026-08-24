@@ -16,28 +16,12 @@ import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import StatusBadge from '@/components/common/StatusBadge'
+import CsvImportModal from '@/components/shared/CsvImportModal'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
-
-// ── Helper: Format DateTime for HTML5 <input type="datetime-local" /> ─────────
-const formatDateTimeLocal = (dateStr?: string | null): string => {
-  if (!dateStr) return ''
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) {
-      const clean = dateStr.replace(' ', 'T')
-      return clean.length >= 16 ? clean.slice(0, 16) : clean
-    }
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const hours = String(d.getHours()).padStart(2, '0')
-    const minutes = String(d.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  } catch {
-    return ''
-  }
-}
+import { formatDateTimeLocal } from '@/utils/formatters'
+import { downloadCsv } from '@/utils/export'
 
 // ── Types & Interfaces ────────────────────────────────────────────────────────
 interface FlashSale {
@@ -473,29 +457,6 @@ const FlashSalesPage: React.FC = () => {
   }
 
   // ── CSV Export & Import Handlers ─────────────────────────────────────────
-  const downloadCSVFile = (filename: string, headers: string[], rows: (string | number)[][]) => {
-    const escapeCell = (val: any) => {
-      if (val === null || val === undefined) return '""'
-      const str = String(val).replace(/"/g, '""')
-      return `"${str}"`
-    }
-
-    const csvContent =
-      '\uFEFF' +
-      headers.map(escapeCell).join(',') +
-      '\n' +
-      rows.map((row) => row.map(escapeCell).join(',')).join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}_export_${new Date().toISOString().split('T')[0]}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
 
   const handleExportCSV = () => {
     toast.info('Exporting Flash Sales CSV dataset...')
@@ -509,7 +470,7 @@ const FlashSalesPage: React.FC = () => {
         s.products_count || 0,
         s.is_active ? 'Active' : 'Inactive',
       ])
-      downloadCSVFile('flash_sales_campaigns', headers, rows)
+      downloadCsv('flash_sales_campaigns', headers, rows)
       toast.success(`Exported ${rows.length} flash sales to CSV!`)
     }, 300)
   }
@@ -1050,35 +1011,7 @@ const FlashSalesPage: React.FC = () => {
                 sales.map((sale) => {
                   const st = getSaleStatus(sale)
 
-                  let statusBadge = (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Active
-                    </span>
-                  )
-
-                  if (st === 'scheduled') {
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        Scheduled
-                      </span>
-                    )
-                  } else if (st === 'paused') {
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        Paused
-                      </span>
-                    )
-                  } else if (st === 'expired') {
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                        Expired
-                      </span>
-                    )
-                  }
+                  const statusBadge = <StatusBadge status={st} />
 
                   const sRevenue = Number(sale.revenue_generated || (sale.id * 750 + 1150))
                   const sUnits = Number(sale.units_sold || Math.round(sale.id * 12 + 25))
@@ -1558,111 +1491,26 @@ const FlashSalesPage: React.FC = () => {
       </AnimatePresence>
 
       {/* ── 10. CSV IMPORT MODAL ────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {importModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-card border border-border rounded-[24px] shadow-2xl max-w-lg w-full p-6 space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Upload size={18} className="text-primary" />
-                  <span>Import Flash Sales CSV</span>
-                </h3>
-                <button
-                  onClick={() => {
-                    setImportModalOpen(false)
-                    setImportFile(null)
-                    setImportPreviewData(null)
-                  }}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center space-y-2 hover:border-primary/50 transition-colors">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleFileSelectForImport(e.target.files[0])
-                      }
-                    }}
-                    className="hidden"
-                    id="csvFileInput"
-                  />
-                  <label htmlFor="csvFileInput" className="cursor-pointer block space-y-2">
-                    <div className="p-3 rounded-full bg-primary/10 text-primary w-fit mx-auto">
-                      <Upload size={24} />
-                    </div>
-                    <div className="text-xs font-bold text-foreground">
-                      {importFile ? importFile.name : 'Click to upload or drag CSV file here'}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Supported format: .csv (Max size 10MB)
-                    </div>
-                  </label>
-                </div>
-
-                {importPreviewData && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-bold text-foreground">Data Preview</div>
-                    <div className="max-h-36 overflow-auto rounded-xl border border-border text-[10px]">
-                      <table className="w-full text-left">
-                        <thead className="bg-muted text-muted-foreground font-bold">
-                          <tr>
-                            {importPreviewData.headers.map((h, i) => (
-                              <th key={i} className="p-2 border-b border-border">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {importPreviewData.rows.map((row, idx) => (
-                            <tr key={idx}>
-                              {row.map((cell, cidx) => (
-                                <td key={cidx} className="p-2 truncate max-w-[120px]">{cell}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-border pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImportModalOpen(false)
-                    setImportFile(null)
-                    setImportPreviewData(null)
-                  }}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-border text-muted-foreground hover:bg-muted cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={!importFile || isImporting}
-                  onClick={handleConfirmImport}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-white hover:opacity-90 flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                >
-                  {isImporting && <Loader2 className="animate-spin" size={14} />}
-                  Confirm Import
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <CsvImportModal
+        isOpen={importModalOpen}
+        onClose={() => {
+          setImportModalOpen(false)
+          setImportFile(null)
+          setImportPreviewData(null)
+        }}
+        resourceName="Flash Sales"
+        expectedHeaders={['name', 'starts_at', 'ends_at', 'status']}
+        importFile={importFile}
+        setImportFile={(file) => {
+          setImportFile(file)
+          if (file) handleFileSelectForImport(file)
+        }}
+        isImporting={isImporting}
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleConfirmImport()
+        }}
+      />
 
       {/* ── 11. CONFIRM DELETE DIALOG ────────────────────────────────────────────── */}
       <ConfirmDialog

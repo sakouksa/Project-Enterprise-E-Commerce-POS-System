@@ -15,7 +15,6 @@
   "refreshDashboard": "ធ្វើបច្ចុប្បន្នភាពផ្ទាំង",
   "globalSearch": "ស្វែងរកសកល",
   "searchPlaceholder": "ស្វែងរកការលក់ ការបញ្ជាទិញ ទំនិញ អតិថិជន...",
-
   "todaySales": "ការលក់ថ្ងៃនេះ",
   "todayRevenue": "ចំណូលសរុបថ្ងៃនេះ",
   "grossProfit": "ប្រាក់ចំណេញដុល",
@@ -24,7 +23,6 @@
   "todayPurchases": "ការទិញចូលថ្ងៃនេះ",
   "inventoryValue": "តម្លៃស្តុកសរុប",
   "cashBalance": "សមតុល្យសាច់ប្រាក់",
-
   "totalCustomers": "អតិថិជនសរុប",
   "totalEmployees": "បុគ្គលិកសរុប",
   "totalProducts": "ទំនិញសរុប",
@@ -33,7 +31,6 @@
   "totalBranches": "សាខាសរុប",
   "totalCompanies": "ក្រុមហ៊ុនសរុប",
   "pendingOrders": "ការបញ្ជាទិញរង់ចាំ",
-
   "lowStock": "ទំនិញជិតអស់ពីស្តុក",
   "outOfStock": "ទំនិញអស់ពីស្តុក",
   "pendingPurchase": "ការទិញរង់ចាំពិនិត្យ",
@@ -42,19 +39,17 @@
   "pendingDelivery": "ការដឹកជញ្ជូនរង់ចាំ",
   "attendanceToday": "វត្តមានថ្ងៃនេះ",
   "payrollDraft": "សេចក្តីព្រាងប្រាក់បៀវត្ស",
-
   "todayExpenses": "ចំណាយថ្ងៃនេះ",
   "todayIncome": "ចំណូលប្រមូលបាន",
   "todayReturns": "ការទំនិញត្រឡប់មកវិញ",
   "todayRefunds": "ការសងប្រាក់វិញ",
-  "newCustomers": "អតិថិជនថ្មី",
+  "newCustomers": "អតិថិជនទិញដំបូង",
   "newEmployees": "បុគ្គលិកថ្មី",
   "activeUsers": "អ្នកប្រើប្រាស់សកម្ម",
   "onlineUsers": "អ្នកប្រើប្រាស់អនឡាញ",
   "loginCount": "ចំនួនចូលប្រើប្រាស់",
   "failedLogin": "ការចូលប្រើមិនបានសម្រេច",
   "backupStatus": "ស្ថានភាពបម្រុងទុក",
-
   "salesTrend": "និន្នាការការលក់ និងចំណូល",
   "revenueTrend": "និន្នាការចំណូល",
   "profitTrend": "និន្នាការប្រាក់ចំណេញ",
@@ -72,7 +67,6 @@
   "revenueByMonth": "ចំណូលប្រចាំខែ",
   "ordersByStatus": "ការបញ្ជាទិញតាមស្ថានភាព",
   "returnsTrend": "និន្នាការត្រឡប់ទំនិញ",
-
   "recentSales": "ការលក់ថ្មីៗ",
   "recentPurchases": "ការទិញចូលថ្មីៗ",
   "latestCustomers": "អតិថិជនថ្មីៗ",
@@ -81,7 +75,6 @@
   "recentNotifications": "ការជូនដំណឹង",
   "activityTimeline": "កំណត់ត្រាសកម្មភាព",
   "auditLogs": "កំណត់ត្រាសវនកម្ម",
-
   "createSale": "បង្កើតការលក់",
   "createPurchase": "បង្កើតការទិញ",
   "addProduct": "បន្ថែមទំនិញ",
@@ -92,7 +85,6 @@
   "addEmployee": "បន្ថែមបុគ្គលិក",
   "openPOS": "បើកប្រព័ន្ធ POS",
   "generateReport": "បង្កើតរបាយការណ៍",
-
   "businessAlerts": "ការព្រមានអាជីវកម្ម",
   "lowStockAlert": "ព្រមានស្តុកជិតអស់",
   "expiredProductAlert": "ព្រមានទំនិញផុតកំណត់",
@@ -105,7 +97,6 @@
   "databaseWarningAlert": "ដំណឹងប្រព័ន្ធទិន្នន័យ",
   "apiOfflineAlert": "ប្រព័ន្ធ API មិនដំណើរការ",
   "jwtExpiredAlert": "ផុតកំណត់សេសសិន",
-
   "systemHealth": "សុខភាពប្រព័ន្ធ",
   "systemHealthTitle": "សុខភាព & ស្ថានភាពប្រតិបត្តិការប្រព័ន្ធ",
   "allSystemsOperational": "គ្រប់សេវាកម្មទាំងអស់ដំណើរការល្អ",
@@ -132,7 +123,6 @@
   "operational": "ដំណើរការល្អ",
   "degraded": "ថយចុះ",
   "error": "មានកំហុស",
-
   "loadingDashboard": "កំពុងភ្ជាប់ទិន្នន័យផ្ទាំងគ្រប់គ្រង...",
   "errorLoading": "មិនអាចទាញយកទិន្នន័យពីម៉ាស៊ីនបម្រើបានទេ។",
   "retry": "ព្យាយាមភ្ជាប់ឡើងវិញ",
@@ -179,7 +169,6 @@
   "newRegistrations": "ការចុះឈ្មោះអតិថិជនថ្មី",
   "customers": "អតិថិជន",
   "retentionRate": "អត្រារក្សាទុកអតិថិជន",
-  "newCustomers": "អតិថិជនទិញដំបូង",
   "returningCustomers": "អតិថិជនចាស់ត្រឡប់មកវិញ",
   "salesInsight": "វិភាគការលក់សរុប",
   "periodTotalSales": "ចំណូលសរុប",
@@ -196,7 +185,6 @@
   "branchInsight": "វិភាគចំណូលតាមសាខា",
   "multiBranchVolume": "ចំណូលលក់សាខាសរុប",
   "topPerformingBranch": "សាខាដែលមានចំណូលខ្ពស់បំផុត",
-
   "warehouseStockStatus": "ស្ថានភាពស្តុកឃ្លាំង",
   "stockHealthAlerts": "ការព្រមានសុខភាពស្តុក",
   "todayTransfers": "ការផ្ទេរថ្ងៃនេះ",

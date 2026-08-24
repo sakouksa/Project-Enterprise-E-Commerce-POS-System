@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
+import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
@@ -18,6 +19,7 @@ import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import StatusBadge from '@/components/common/StatusBadge'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
@@ -331,14 +333,8 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     api.get('/attributes/export', { responseType: 'blob' })
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', `attributes_export_${new Date().toISOString().split('T')[0]}.csv`)
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
+        const dateStamp = new Date().toISOString().split('T')[0]
+        downloadBlob(blob, `attributes_export_${dateStamp}.csv`)
         toast.success(t('toast.exportSuccess'))
       })
       .catch(() => toast.error(t('toast.exportError')))
@@ -570,15 +566,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     )}
                     {visibleColumns.status !== false && (
                       <td>
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            attr.is_active
-                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {attr.is_active ? t('products.active') : t('products.inactive')}
-                        </span>
+                        <StatusBadge status={attr.is_active} />
                       </td>
                     )}
                     <td className="text-right pr-4">

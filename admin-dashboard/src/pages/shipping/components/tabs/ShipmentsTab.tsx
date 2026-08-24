@@ -3,6 +3,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface ShipmentsTabProps {
   records: any[]
@@ -76,17 +77,7 @@ export const ShipmentsTab: React.FC<ShipmentsTabProps> = ({
                       )}
                       {visibleColumns.status && (
                         <td>
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                            st === 'delivered' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
-                            st === 'shipped' || st === 'in_transit' ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20' :
-                            st === 'pending' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
-                            'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              st === 'delivered' ? 'bg-emerald-500' : st === 'shipped' || st === 'in_transit' ? 'bg-blue-500' : st === 'pending' ? 'bg-amber-500' : 'bg-rose-500'
-                            }`} />
-                            <span>{st.replace('_', ' ')}</span>
-                          </span>
+                          <StatusBadge status={st} />
                         </td>
                       )}
                       {visibleColumns.actions && (

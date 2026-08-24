@@ -407,7 +407,7 @@ export const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                       className="px-3 py-1.5 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                     >
                       <Trash2 size={13} />
-                      <span>{t('common.delete', 'Delete')} ({selectedVariantIds.length})</span>
+                      <span>{t('products.deleteSelected', t('common.deleteSelected', 'Delete Selected'))} ({selectedVariantIds.length})</span>
                     </button>
                   )}
                   <button

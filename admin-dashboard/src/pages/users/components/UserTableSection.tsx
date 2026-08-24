@@ -7,6 +7,8 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
+import UserAvatar from '@/components/common/UserAvatar'
 import type { User } from '../types'
 
 interface UserTableSectionProps {
@@ -63,12 +65,12 @@ export const UserTableSection: React.FC<UserTableSectionProps> = ({
                   <tr key={u.id} className="hover:bg-muted/40 transition-colors">
                     {visibleColumns.avatar && (
                       <td className="text-center">
-                        <div className="w-9 h-9 rounded-full overflow-hidden border border-border bg-muted flex items-center justify-center mx-auto">
-                          {u.avatar ? (
-                            <img src={getAvatarUrl(u.avatar) || ''} alt={u.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <UserIcon size={18} className="text-muted-foreground" />
-                          )}
+                        <div className="flex items-center justify-center">
+                          <UserAvatar
+                            src={u.avatar}
+                            name={u.name}
+                            sizeClassName="w-9 h-9"
+                          />
                         </div>
                       </td>
                     )}
@@ -98,14 +100,9 @@ export const UserTableSection: React.FC<UserTableSectionProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleActiveMutation.mutate({ id: u.id, is_active: !u.is_active })}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                            u.is_active
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20'
-                          }`}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          <span>{u.is_active ? 'Active' : 'Inactive'}</span>
+                          <StatusBadge status={u.is_active} />
                         </button>
                       </td>
                     )}

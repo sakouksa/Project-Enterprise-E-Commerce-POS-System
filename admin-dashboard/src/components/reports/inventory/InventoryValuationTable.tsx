@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Search, ChevronLeft, ChevronRight, FileSpreadsheet, DollarSign } from 'lucide-react'
 import api from '@/api/client'
+import { formatCurrency } from '@/utils/formatters'
 import type { InventoryFilterState } from './InventoryFilters'
 
 interface Props {
@@ -26,9 +27,6 @@ export const InventoryValuationTable: React.FC<Props> = ({ filters }) => {
 
   const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
   const lastPage = data?.last_page || 1
-
-  const formatCurrency = (val: number = 0) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
 
   return (
     <div className="rounded-2xl bg-card border border-border/50 p-5 shadow-sm space-y-4">

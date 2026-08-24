@@ -12,6 +12,7 @@ use App\Models\Inventory\Inventory;
 use App\Models\Inventory\InventoryMovement;
 use App\Services\POS\VoiceSearchService;
 use App\Services\POS\VisionSearchService;
+use App\Services\Sales\SaleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,9 @@ use Illuminate\Support\Str;
 
 class POSController extends BaseApiController
 {
+    public function __construct(
+        protected SaleService $saleService
+    ) {}
     // ─── Generate a unique invoice number ────────────────────────────────────
     private function generateInvoiceNumber(): string
     {
@@ -328,169 +332,20 @@ class POSController extends BaseApiController
             'items.*.tax_amount'         => 'nullable|numeric|min:0',
         ]);
 
-        $sale = DB::transaction(function () use ($data, $request) {
-            $authUser  = auth()->user();
-            $companyId = $data['company_id'] ?? $authUser?->company_id ?? 1;
-
-            // Resolve IDs — default to first available record if not provided
-            $branchId    = $data['branch_id']    ?? DB::table('branches')->where('company_id', $companyId)->value('id') ?? 1;
-            $warehouseId = $data['warehouse_id'] ?? DB::table('warehouses')->where('company_id', $companyId)->value('id') ?? 1;
-            $storeId     = $data['store_id']     ?? DB::table('stores')->where('company_id', $companyId)->value('id');
-
-            // Auto-generate invoice number if not provided
-            $invoiceNumber = $data['invoice_number'] ?? $this->generateInvoiceNumber();
-
-            // Eager-load all products to avoid N+1
-            $productIds  = collect($data['items'])->pluck('product_id')->unique()->toArray();
-            $productsMap = Product::with('tax')
-                ->whereIn('id', $productIds)
-                ->get()
-                ->keyBy('id');
-
-            // Ensure PostgreSQL primary key sequences are synced before creating sale record
-            try {
-                $maxSalesId = DB::table('sales')->max('id') ?: 1;
-                DB::statement("SELECT setval(pg_get_serial_sequence('sales', 'id'), {$maxSalesId})");
-            } catch (\Throwable $e) {
-                // Ignore if not PostgreSQL or sequence unavailable
-            }
-
-            // ─── 1. STRICT STOCK AVAILABILITY CHECK ───────────────────────────
-            foreach ($data['items'] as $item) {
-                $product   = $productsMap[$item['product_id']] ?? null;
-                if (!$product) continue;
-
-                $variantId = $item['product_variant_id'] ?? null;
-                $qty       = (float) $item['quantity'];
-
-                // Only validate if inventory tracking is active
-                if ($product->track_inventory) {
-                    $invQuery = Inventory::where('product_id', $product->id)
-                        ->when($variantId, fn($q) => $q->where('product_variant_id', $variantId));
-
-                    if ($warehouseId) {
-                        $invQuery->where('warehouse_id', $warehouseId);
-                    }
-
-                    $availableStock = (float) ($invQuery->sum('quantity') ?? 0);
-
-                    if ($availableStock <= 0 || $availableStock < $qty) {
-                        abort(response()->json([
-                            'success' => false,
-                            'message' => "ទំនិញ '{$product->name}' អស់ពីស្តុកហើយ (ស្តុកនៅសល់: {$availableStock}, ចំនួនចង់ទិញ: {$qty})។ មិនអាចលក់បានឡើយ!",
-                            'errors'  => [
-                                'stock' => ["Product '{$product->name}' has insufficient stock. Available: {$availableStock}, Requested: {$qty}"]
-                            ]
-                        ], 422));
-                    }
-                }
-            }
-
-            // Create the sale record
-            $sale = Sale::create([
-                'company_id'      => $companyId,
-                'branch_id'       => $branchId,
-                'store_id'        => $storeId,
-                'warehouse_id'    => $warehouseId,
-                'customer_id'     => $data['customer_id'] ?? null,
-                'user_id'         => $authUser?->id,
-                'invoice_number'  => $invoiceNumber,
-                'date'            => now(),
-                'status'          => 'completed',
-                'subtotal'        => $data['subtotal'],
-                'tax_amount'      => $data['tax_amount'],
-                'discount_amount' => $data['discount_amount'],
-                'grand_total'     => $data['grand_total'],
-                'paid_amount'     => $data['paid_amount'],
-                'change_amount'   => $data['change_amount'],
-                'payment_method'  => $data['payment_method'] ?? 'cash',
-                'payment_details' => $data['payment_details'] ?? null,
-                'notes'           => $data['notes'] ?? null,
-                'currency_code'   => 'USD',
-            ]);
-
-            // Process each sale item
-            foreach ($data['items'] as $item) {
-                $product   = $productsMap[$item['product_id']];
-                $variantId = $item['product_variant_id'] ?? null;
-                $qty       = (float) $item['quantity'];
-                $unitPrice = (float) $item['unit_price'];
-                $costPrice = (float) ($item['cost_price'] ?? $product->cost_price ?? 0);
-                $discAmt   = (float) ($item['discount_amount'] ?? 0);
-
-                // Calculate per-item tax from product tax if not provided
-                $taxRate = 0;
-                if ($product->tax) {
-                    $taxRate = $product->tax->type === 'percentage'
-                        ? (float) $product->tax->rate
-                        : 0;
-                }
-                $taxPercent = (float) ($item['tax_percent'] ?? $taxRate);
-                $lineSubtotal = ($unitPrice * $qty) - $discAmt;
-                $taxAmount    = (float) ($item['tax_amount'] ?? round($lineSubtotal * ($taxPercent / 100), 2));
-                $lineTotal    = $lineSubtotal + $taxAmount;
-
-                $sale->items()->create([
-                    'product_id'         => $product->id,
-                    'product_variant_id' => $variantId,
-                    'product_name'       => $product->name,
-                    'sku'                => $product->sku,
-                    'quantity'           => $qty,
-                    'unit_price'         => $unitPrice,
-                    'cost_price'         => $costPrice,
-                    'discount_amount'    => $discAmt,
-                    'tax_percent'        => $taxPercent,
-                    'tax_amount'         => $taxAmount,
-                    'subtotal'           => round($lineSubtotal, 2),
-                    'total'              => round($lineTotal, 2),
-                ]);
-
-                // ── Decrease inventory stock with pessimistic lockForUpdate ─
-                $inventory = Inventory::where('warehouse_id', $warehouseId)
-                    ->where('product_id', $product->id)
-                    ->when($variantId, fn($q) => $q->where('product_variant_id', $variantId))
-                    ->lockForUpdate()
-                    ->first();
-
-                $qtyBefore = $inventory ? (float) $inventory->quantity : 0;
-                $qtyAfter  = max(0, $qtyBefore - $qty);
-
-                if ($inventory) {
-                    $inventory->decrement('quantity', $qty);
-                }
-
-                // ── Create inventory movement audit record ─────────────
-                InventoryMovement::create([
-                    'company_id'         => $companyId,
-                    'warehouse_id'       => $warehouseId,
-                    'product_id'         => $product->id,
-                    'product_variant_id' => $variantId,
-                    'user_id'            => $authUser?->id,
-                    'reference_type'     => 'sale',
-                    'reference_id'       => $sale->id,
-                    'type'               => 'out',
-                    'quantity'           => $qty,
-                    'quantity_before'    => $qtyBefore,
-                    'quantity_after'     => $qtyAfter,
-                    'unit_cost'          => $unitPrice,
-                    'notes'              => "POS Sale: {$invoiceNumber}",
-                ]);
-
-                // ── Increment product sold_count ───────────────────────────
-                $product->increment('sold_count', (int) $qty);
-            }
+        try {
+            $sale = $this->saleService->processSale($data, $request->user());
 
             // ── Record POS Sale Audit Log ──────────────────────────────────
             if (class_exists(\App\Models\Log\AuditLog::class)) {
                 \App\Models\Log\AuditLog::create([
-                    'company_id'     => $companyId,
-                    'user_id'        => $authUser?->id,
+                    'company_id'     => $sale->company_id,
+                    'user_id'        => $request->user()?->id,
                     'action'         => 'POS_SALE_CREATED',
                     'module'         => 'POS',
                     'entity'         => 'Sale',
                     'entity_id'      => $sale->id,
                     'new_values'     => [
-                        'invoice_number'  => $invoiceNumber,
+                        'invoice_number'  => $sale->invoice_number,
                         'grand_total'     => $sale->grand_total,
                         'paid_amount'     => $sale->paid_amount,
                         'payment_method'  => $sale->payment_method,
@@ -499,18 +354,20 @@ class POSController extends BaseApiController
                     'ip_address'     => $request->ip(),
                     'user_agent'     => $request->userAgent(),
                     'status'         => 'success',
-                    'description'    => "POS Sale created: {$invoiceNumber} for \${$sale->grand_total}",
+                    'description'    => "POS Sale created: {$sale->invoice_number} for \${$sale->grand_total}",
                 ]);
             }
 
-            return $sale;
-        });
-
-        return $this->successResponse(
-            $sale->load(['items.product:id,name,sku', 'customer:id,name', 'cashier:id,name']),
-            'POS Transaction completed successfully',
-            201
-        );
+            return $this->successResponse(
+                $sale->load(['items.product:id,name,sku', 'customer:id,name', 'cashier:id,name']),
+                'POS Transaction completed successfully',
+                201
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->errorResponse($e->getMessage(), $e->errors(), 422);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to process POS sale: ' . $e->getMessage(), null, 500);
+        }
     }
 
     // ─── POST /api/v1/pos/sales/{id}/return ──────────────────────────────────

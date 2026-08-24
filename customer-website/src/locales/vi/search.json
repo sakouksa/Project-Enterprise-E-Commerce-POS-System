@@ -1,0 +1,8 @@
+{
+  "search.ai_search": "Tìm kiếm bằng AI",
+  "search.by_name": "Tìm theo tên",
+  "search.by_sku": "Tìm theo mã SKU",
+  "search.placeholder_ai": "Tìm kiếm bằng AI (vd: RTX 4060, Laptop, Apple M3)...",
+  "search.placeholder_name": "Tìm theo tên sản phẩm (vd: MacBook Pro, ASUS ROG)...",
+  "search.placeholder_sku": "Tìm theo mã SKU hoặc mã vạch (vd: LAP-2026-X1)..."
+}

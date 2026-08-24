@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { AreaChart, Area, ResponsiveContainer } from 'recharts'
 import { useTranslation } from 'react-i18next'
+import { formatCurrency, formatNumber } from '@/utils/formatters'
 
 interface DashboardStatsProps {
   stats: any
@@ -28,13 +29,14 @@ const generateSparkline = (baseVal: number) => {
     { v: Math.round(baseVal * 0.9) },
     { v: Math.round(baseVal * 0.8) },
     { v: Math.round(baseVal * 0.95) },
-    { v: Math.round(baseVal) },
+    { v: Math.round(baseVal * 1.1) },
   ]
 }
 
 export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading, visibleWidgetIds }) => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const locale = i18n.language === 'km' ? 'km-KH' : 'en-US'
 
   const filterCard = (cardId: string) => {
     if (!visibleWidgetIds || visibleWidgetIds.length === 0) return true
@@ -45,15 +47,11 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, isLoading
   }
 
   const formatMoney = (amount: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2,
-    }).format(amount ?? 0)
+    return formatCurrency(amount, { locale })
   }
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat(i18n.language === 'km' ? 'km-KH' : 'en-US').format(num ?? 0)
+  const formatNum = (num: number) => {
+    return formatNumber(num, { locale })
   }
 
   // Row 1: Primary Enterprise Financials & Sales

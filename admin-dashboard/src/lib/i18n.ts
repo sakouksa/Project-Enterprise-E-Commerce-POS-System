@@ -86,15 +86,15 @@ export function translateString(text: string): string {
   }
 
   // Handle dotted keys like 'common.reset', 'button.add', 'table.id', 'pageContent.name'
-  if (trimmed.includes('.')) {
-    const parts = trimmed.split('.')
+  if (trimmed.includes('.') && !trimmed.includes(' ')) {
+    const parts = trimmed.split('.').filter(Boolean)
     const lastPart = parts[parts.length - 1]
-    if (activeDict[lastPart]) {
+    if (lastPart && activeDict[lastPart]) {
       const lead = text.match(/^\s*/)?.[0] || ''
       const trail = text.match(/\s*$/)?.[0] || ''
       return lead + activeDict[lastPart] + trail
     }
-    if (activeLowerDict[lastPart.toLowerCase()]) {
+    if (lastPart && activeLowerDict[lastPart.toLowerCase()]) {
       const lead = text.match(/^\s*/)?.[0] || ''
       const trail = text.match(/\s*$/)?.[0] || ''
       return lead + activeLowerDict[lastPart.toLowerCase()] + trail
@@ -242,11 +242,11 @@ i18n
       escapeValue: false, // react already safes from xss
     },
     parseMissingKeyHandler: (key: string, defaultValue?: string) => {
-      if (defaultValue && defaultValue !== key) return defaultValue
+      if (defaultValue) return defaultValue
       if (!key) return key
       if (activeDict[key]) return activeDict[key]
-      const parts = key.split('.')
-      const lastPart = parts[parts.length - 1]
+      const parts = key.split('.').filter(Boolean)
+      const lastPart = parts[parts.length - 1] || key
       if (activeDict[lastPart]) return activeDict[lastPart]
       const rawTerm = lastPart.replace(/_/g, ' ')
       const formattedTerm = rawTerm.charAt(0).toUpperCase() + rawTerm.slice(1)

@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Ticket, Copy, CheckCircle2, Clock } from 'lucide-react'
+import StatusBadge from '@/components/common/StatusBadge'
 import type { Coupon } from '../../types/coupon'
 
 interface CouponDetailDrawerProps {
@@ -43,11 +44,7 @@ export const CouponDetailDrawer: React.FC<CouponDetailDrawerProps> = ({
               <div className="p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-purple-500/10 border border-primary/20 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black uppercase text-primary tracking-wider">{coupon.type.replace('_', ' ')}</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    coupon.is_active ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                  }`}>
-                    {coupon.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                  <StatusBadge status={coupon.is_active} />
                 </div>
                 <div>
                   <h2 className="text-2xl font-extrabold text-foreground">{coupon.name}</h2>

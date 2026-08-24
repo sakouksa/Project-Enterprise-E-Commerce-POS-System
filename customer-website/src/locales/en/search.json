@@ -1,0 +1,8 @@
+{
+  "search.ai_search": "AI Search",
+  "search.by_name": "Search By Name",
+  "search.by_sku": "Search By SKU",
+  "search.placeholder_ai": "Search with AI (e.g. RTX 4060, Apple M3, gaming laptop)...",
+  "search.placeholder_name": "Search by product name (e.g. MacBook Pro, ASUS ROG)...",
+  "search.placeholder_sku": "Search by SKU or Barcode (e.g. LAP-2026-X1)..."
+}

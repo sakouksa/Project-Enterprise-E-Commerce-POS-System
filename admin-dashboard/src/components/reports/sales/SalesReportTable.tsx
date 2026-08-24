@@ -4,6 +4,8 @@ import {
   Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight,
   Eye, FileText, Download, CheckCircle2, Clock, XCircle
 } from 'lucide-react'
+import StatusBadge from '@/components/common/StatusBadge'
+import { formatCurrency } from '@/utils/formatters'
 
 export interface SaleRecord {
   id: number
@@ -72,31 +74,7 @@ export const SalesReportTable: React.FC<SalesReportTableProps> = ({
   })
   const [showColumnConfig, setShowColumnConfig] = useState(false)
 
-  const formatCurrency = (val?: number) => `$${(val ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-      case 'paid':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            <CheckCircle2 size={11} /> {status}
-          </span>
-        )
-      case 'pending':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-            <Clock size={11} /> {status}
-          </span>
-        )
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-            <XCircle size={11} /> {status}
-          </span>
-        )
-    }
-  }
+  const getStatusBadge = (status: string) => <StatusBadge status={status} />
 
   return (
     <div className="bg-card border border-border/80 rounded-[24px] p-6 shadow-sm space-y-4 relative overflow-hidden">

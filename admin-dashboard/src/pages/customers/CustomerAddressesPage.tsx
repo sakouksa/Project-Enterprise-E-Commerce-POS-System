@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, Search, Edit2, Trash2, RefreshCw, X, MapPin, Loader2,
-  ChevronUp, ChevronDown, Download, Settings, CheckCircle2,
-  User, Home, Building2, Phone, UserCheck, Navigation, Globe, Compass, Check, Tag
+  Plus, Search, Trash2, RefreshCw, MapPin,
+  ChevronUp, ChevronDown, Download, CheckCircle2,
+  AlertCircle, Home, Building2, Package, Tag, Store, Building, Factory, Hotel
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
@@ -18,49 +16,139 @@ import ModernSelect from '@/components/shared/ModernSelect'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import ResetButton from '@/components/shared/ResetButton'
 import { useTranslation } from 'react-i18next'
-import { useThemeStore } from '@/stores/themeStore'
-
-interface CustomerAddress {
-  id: number
-  customer_id: number
-  customer?: { name: string }
-  label: string
-  name: string
-  phone: string
-  address: string
-  city: string
-  province: string
-  country: string
-  postal_code: string
-  latitude?: number
-  longitude?: number
-  is_default: boolean
-  created_at: string
-}
-
-interface AddressFormData {
-  customer_id: string
-  label: 'Home' | 'Office' | 'Warehouse' | 'Other'
-  name: string
-  phone: string
-  address: string
-  city: string
-  province: string
-  country: string
-  postal_code: string
-  latitude: string
-  longitude: string
-  is_default: boolean
-}
+import { CustomerAddressModal, type CustomerAddress } from '@/components/common'
 
 interface CustomerAddressesPageProps {
   isTab?: boolean
   onRegisterActions?: (actions: { openAdd: () => void; exportData: () => void }) => void
 }
 
+const getTranslatedAddressLabel = (label: string, t: any) => {
+  const norm = (label || '').trim().toLowerCase()
+  if (!label) return '—'
+  if (norm === 'home') return t('customers.labelHome', 'Home')
+  if (norm === 'office') return t('customers.labelOffice', 'Office')
+  if (norm === 'warehouse') return t('customers.labelWarehouse', 'Warehouse')
+  if (norm === 'other') return t('customers.labelOther', 'Other')
+  if (norm === 'store' || norm === 'shop') return t('customers.labelStore', 'Store')
+  if (norm === 'branch') return t('customers.labelBranch', 'Branch')
+  if (norm === 'condo') return t('customers.labelCondo', 'Condo')
+  if (norm === 'villa') return t('customers.labelVilla', 'Villa')
+  if (norm === 'factory') return t('customers.labelFactory', 'Factory')
+  if (norm === 'hotel') return t('customers.labelHotel', 'Hotel')
+  if (norm === 'apartment') return t('customers.labelApartment', 'Apartment')
+  if (norm === 'hq' || norm === 'headquarters') return t('customers.labelHQ', 'Headquarters')
+  return label
+}
+
+const renderAddressLabelBadge = (label: string, t: any) => {
+  const norm = (label || '').trim().toLowerCase()
+  if (!label) {
+    return <span className="text-muted-foreground">—</span>
+  }
+
+  if (norm === 'home' || norm.startsWith('home')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 whitespace-nowrap shadow-2xs">
+        <Home size={12} className="shrink-0 text-blue-500" />
+        <span>{norm === 'home' ? t('customers.labelHome', 'Home') : label}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'office' || norm === 'work' || norm === 'hq' || norm.startsWith('office')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap shadow-2xs">
+        <Building2 size={12} className="shrink-0 text-purple-500" />
+        <span>{norm === 'office' ? t('customers.labelOffice', 'Office') : label}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'warehouse' || norm.startsWith('warehouse')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 whitespace-nowrap shadow-2xs">
+        <Package size={12} className="shrink-0 text-amber-500" />
+        <span>{norm === 'warehouse' ? t('customers.labelWarehouse', 'Warehouse') : label}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'store' || norm === 'shop') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap shadow-2xs">
+        <Store size={12} className="shrink-0 text-emerald-500" />
+        <span>{t('customers.labelStore', 'Store')}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'branch') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 whitespace-nowrap shadow-2xs">
+        <Building size={12} className="shrink-0 text-cyan-500" />
+        <span>{t('customers.labelBranch', 'Branch')}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'condo' || norm === 'apartment') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 whitespace-nowrap shadow-2xs">
+        <Building2 size={12} className="shrink-0 text-indigo-500" />
+        <span>{norm === 'condo' ? t('customers.labelCondo', 'Condo') : t('customers.labelApartment', 'Apartment')}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'villa') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap shadow-2xs">
+        <Home size={12} className="shrink-0 text-rose-500" />
+        <span>{t('customers.labelVilla', 'Villa')}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'factory') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 whitespace-nowrap shadow-2xs">
+        <Factory size={12} className="shrink-0 text-orange-500" />
+        <span>{t('customers.labelFactory', 'Factory')}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'hotel') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 whitespace-nowrap shadow-2xs">
+        <Hotel size={12} className="shrink-0 text-teal-500" />
+        <span>{t('customers.labelHotel', 'Hotel')}</span>
+      </span>
+    )
+  }
+
+  if (norm === 'other') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap shadow-2xs">
+        <Tag size={12} className="shrink-0 text-rose-500" />
+        <span>{t('customers.labelOther', 'Other')}</span>
+      </span>
+    )
+  }
+
+  // Custom label tag
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 whitespace-nowrap shadow-2xs">
+      <Tag size={12} className="shrink-0 text-primary" />
+      <span className="max-w-[120px] truncate" title={label}>{label}</span>
+    </span>
+  )
+}
+
 const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = false, onRegisterActions }) => {
-  const { language } = useThemeStore()
-  const { t } = useTranslation(['customers', 'common'])
+  const { t, i18n } = useTranslation(['customers', 'common'])
+  const isKhmer = i18n.language === 'km'
   const toast = useToast()
   const qc = useQueryClient()
 
@@ -76,10 +164,13 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'customeraddresses' })
 
+  // Bulk selection states
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+
   const [modalOpen, setModalOpen] = useState(false)
   const [editingAddress, setEditingAddress] = useState<CustomerAddress | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CustomerAddress | null>(null)
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState({
     id: true,
     customer: true,
@@ -94,43 +185,11 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     actions: true,
   })
 
-  const toggleColumn = (col: keyof typeof visibleColumns) => {
-    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))
-  }
-
   // Filters & Sorting state
   const [customerFilter, setCustomerFilter] = useState('')
   const [defaultFilter, setDefaultFilter] = useState('all')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-
-  // React Hook Form
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting }
-  } = useForm<AddressFormData>({
-    defaultValues: {
-      customer_id: '',
-      label: 'Home',
-      name: '',
-      phone: '',
-      address: '',
-      city: '',
-      province: '',
-      country: 'Cambodia',
-      postal_code: '',
-      latitude: '',
-      longitude: '',
-      is_default: false
-    }
-  })
-
-  const watchCustomerId = watch('customer_id')
-  const watchLabel = watch('label')
 
   // Queries
   const { data: customers } = useQuery({
@@ -154,31 +213,6 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     placeholderData: (prev) => prev,
   })
 
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/customer-addresses', payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['customer-addresses'] })
-      toast.success(t('toast.created', { item: t('customers.customerAddresses') }))
-      closeModal()
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('toast.error'))
-    },
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/customer-addresses/${id}`, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['customer-addresses'] })
-      toast.success(t('toast.updated', { item: t('customers.customerAddresses') }))
-      closeModal()
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? t('toast.error'))
-    },
-  })
-
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/customer-addresses/${id}`),
     onSuccess: () => {
@@ -193,44 +227,47 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     },
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => api.post('/customer-addresses/bulk-delete', { ids }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customer-addresses'] })
+      toast.success(t('toast.deleted', { item: `${selectedRows.length} ${t('customers.customerAddresses', 'Customer Addresses')}` }))
+      setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
+      adjustAfterDelete(selectedRows.length)
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to delete selected customer addresses.'))
+      setBulkDeleteConfirmOpen(false)
+    }
+  })
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(addresses.map((a) => a.id).filter((id): id is number => typeof id === 'number'))
+    } else {
+      setSelectedRows([])
+    }
+  }
+
+  const handleSelectRow = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedRows((prev) => [...prev, id])
+    } else {
+      setSelectedRows((prev) => prev.filter((i) => i !== id))
+    }
+  }
+
   const addresses: CustomerAddress[] = addressesData?.data ?? []
   const pagination = addressesData?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
 
-  const openCreateModal = () => {
+  const openCreateModal = React.useCallback(() => {
     setEditingAddress(null)
-    reset({
-      customer_id: '',
-      label: 'Home',
-      name: '',
-      phone: '',
-      address: '',
-      city: '',
-      province: '',
-      country: 'Cambodia',
-      postal_code: '',
-      latitude: '',
-      longitude: '',
-      is_default: false
-    })
     setModalOpen(true)
-  }
+  }, [])
 
   const openEditModal = (addr: CustomerAddress) => {
     setEditingAddress(addr)
-    reset({
-      customer_id: addr.customer_id.toString(),
-      label: addr.label as any,
-      name: addr.name,
-      phone: addr.phone,
-      address: addr.address,
-      city: addr.city,
-      province: addr.province,
-      country: addr.country,
-      postal_code: addr.postal_code ?? '',
-      latitude: addr.latitude ? addr.latitude.toString() : '',
-      longitude: addr.longitude ? addr.longitude.toString() : '',
-      is_default: addr.is_default
-    })
     setModalOpen(true)
   }
 
@@ -239,40 +276,16 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
     setEditingAddress(null)
   }
 
-  const onFormSubmit = (formData: AddressFormData) => {
-    const payload = {
-      customer_id: parseInt(formData.customer_id),
-      label: formData.label,
-      name: formData.name,
-      phone: formData.phone,
-      address: formData.address,
-      city: formData.city,
-      province: formData.province,
-      country: formData.country,
-      postal_code: formData.postal_code,
-      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-      is_default: formData.is_default
-    }
-
-    if (editingAddress) {
-      updateMutation.mutate({ id: editingAddress.id, data: payload })
-    } else {
-      createMutation.mutate(payload)
-    }
-  }
-
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(field)
-      setSortOrder('asc')
     }
     setPage(1)
   }
 
-  const handleExport = () => {
+  const handleExport = React.useCallback(() => {
     const infoId = toast.info(t('customers.toast.exportDownloading', 'Downloading customer address data...'))
     setTimeout(() => {
       if (infoId) toast.dismiss(infoId)
@@ -297,8 +310,7 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
       let tbodyHtml = ''
       addresses.forEach(addr => {
         const customerName = addr.customer?.name || (addr.customer_id ? `Customer #${addr.customer_id}` : '—')
-        const labelKey = addr.label ? `label${addr.label.charAt(0).toUpperCase() + addr.label.slice(1).toLowerCase()}` : ''
-        const translatedLabel = labelKey ? t(`customers.${labelKey}`, addr.label) : (addr.label || '—')
+        const translatedLabel = getTranslatedAddressLabel(addr.label, t)
         const defaultText = addr.is_default ? t('common.yes', 'Yes') : t('common.no', 'No')
 
         tbodyHtml += '<tr>' +
@@ -357,13 +369,14 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
       document.body.removeChild(link)
       toast.success(t('customers.toast.exportSuccessAddresses', 'Customer addresses exported successfully.'))
     }, 800)
-  }
+  }, [addresses, t, toast])
 
   const handleResetFilters = () => {
     setCustomerFilter('')
     setDefaultFilter('all')
     setSortBy('created_at')
     setSortOrder('desc')
+    setSelectedRows([])
     resetPagination()
   }
 
@@ -374,7 +387,7 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         exportData: handleExport,
       })
     }
-  }, [onRegisterActions, addresses])
+  }, [onRegisterActions, openCreateModal, handleExport])
 
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) return null
@@ -478,454 +491,209 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         </div>
       </div>
 
-      {/* Table Card */}
+      {/* Bulk actions panel */}
+      {selectedRows.length > 0 && (
+        <div className="flex items-center justify-between p-3.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 rounded-2xl shadow-xs animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+            <AlertCircle size={16} />
+            <span>{selectedRows.length} {t('customers.selectedCount', t('common.selected', 'Selected'))}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setBulkDeleteConfirmOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-500 cursor-pointer transition-colors shadow-xs"
+            >
+              <Trash2 size={13} />
+              <span>{t('customers.deleteSelected', t('common.deleteSelected', 'Delete Selected'))}</span>
+            </button>
+            <button
+              onClick={() => setSelectedRows([])}
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 cursor-pointer"
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Addresses Enterprise Table */}
       <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
-        <TableWrapper isFetching={isFetching}>
-          <div className="overflow-x-auto">
-            <table className="w-full data-table min-w-[1200px]">
-              <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
-                <tr>
-                  {visibleColumns.id && (
-                    <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.id', 'ID')} {renderSortIcon('id')}
+          <TableWrapper isFetching={isFetching}>
+            <div className="overflow-x-auto">
+              <table className="w-full data-table min-w-[1200px]">
+                <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
+                  <tr>
+                    <th className="w-10 text-center !px-3">
+                      <input
+                        type="checkbox"
+                        className="checkbox h-4 w-4 rounded border-border"
+                        checked={addresses.length > 0 && selectedRows.length === addresses.length}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
                     </th>
-                  )}
-                  {visibleColumns.customer && (
-                    <th onClick={() => handleSort('customer_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.title')} {renderSortIcon('customer_id')}
-                    </th>
-                  )}
-                  {visibleColumns.label && (
-                    <th onClick={() => handleSort('label')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.addressLabel')} {renderSortIcon('label')}
-                    </th>
-                  )}
-                  {visibleColumns.recipient && (
-                    <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.recipient')} {renderSortIcon('name')}
-                    </th>
-                  )}
-                  {visibleColumns.phone && (
-                    <th onClick={() => handleSort('phone')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('common.phone')} {renderSortIcon('phone')}
-                    </th>
-                  )}
-                  {visibleColumns.address && (
-                    <th onClick={() => handleSort('address')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.addresses')} {renderSortIcon('address')}
-                    </th>
-                  )}
-                  {visibleColumns.region && (
-                    <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.region')}
-                    </th>
-                  )}
-                  {visibleColumns.postalCode && (
-                    <th onClick={() => handleSort('postal_code')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.postalCode')} {renderSortIcon('postal_code')}
-                    </th>
-                  )}
-                  {visibleColumns.coordinates && (
-                    <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                      {t('customers.coordinates', 'Coordinates (Lat, Lng)')}
-                    </th>
-                  )}
-                  {visibleColumns.status && (
-                    <th onClick={() => handleSort('is_default')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none whitespace-nowrap">
-                      {t('customers.defaultAddress', 'Default Address')} {renderSortIcon('is_default')}
-                    </th>
-                  )}
-                  {visibleColumns.actions && (
-                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('common.actions')}</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="hover:bg-muted/5">
-                      {visibleColumns.id && <td className="p-4"><div className="skeleton h-4 w-8 rounded" /></td>}
-                      {visibleColumns.customer && <td className="p-4"><div className="skeleton h-4 w-32 rounded" /></td>}
-                      {visibleColumns.label && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
-                      {visibleColumns.recipient && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
-                      {visibleColumns.phone && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
-                      {visibleColumns.address && <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>}
-                      {visibleColumns.region && <td className="p-4"><div className="skeleton h-4 w-36 rounded" /></td>}
-                      {visibleColumns.postalCode && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
-                      {visibleColumns.coordinates && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
-                      {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>}
-                      {visibleColumns.actions && <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>}
-                    </tr>
-                  ))
-                ) : addresses.map((addr) => (
-                  <tr key={addr.id} className="hover:bg-muted/10 transition-colors">
-                    {visibleColumns.id && <td className="p-4 text-sm font-mono text-muted-foreground">{addr.id}</td>}
+                    {visibleColumns.id && (
+                      <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.id', 'ID')} {renderSortIcon('id')}
+                      </th>
+                    )}
                     {visibleColumns.customer && (
-                      <td className="p-4 font-semibold text-sm text-foreground">
-                        {addr.customer?.name ?? '—'}
-                      </td>
+                      <th onClick={() => handleSort('customer_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.title', 'Customer')} {renderSortIcon('customer_id')}
+                      </th>
                     )}
                     {visibleColumns.label && (
-                      <td className="p-4 text-sm">
-                        <span className="px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground text-xs font-semibold border border-border/80">
-                          {addr.label ? t(`customers.label${addr.label.charAt(0).toUpperCase() + addr.label.slice(1).toLowerCase()}`, addr.label) : '—'}
-                        </span>
-                      </td>
+                      <th onClick={() => handleSort('label')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.addressLabel', 'Label')} {renderSortIcon('label')}
+                      </th>
                     )}
-                    {visibleColumns.recipient && <td className="p-4 text-sm font-semibold text-foreground">{addr.name}</td>}
-                    {visibleColumns.phone && <td className="p-4 text-sm font-mono text-muted-foreground">{addr.phone}</td>}
+                    {visibleColumns.recipient && (
+                      <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.recipient', 'Recipient')} {renderSortIcon('name')}
+                      </th>
+                    )}
+                    {visibleColumns.phone && (
+                      <th onClick={() => handleSort('phone')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('common.phone', 'Phone')} {renderSortIcon('phone')}
+                      </th>
+                    )}
                     {visibleColumns.address && (
-                      <td className="p-4 text-sm text-muted-foreground max-w-[200px] truncate" title={addr.address}>
-                        {addr.address}
-                      </td>
+                      <th onClick={() => handleSort('address')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.addresses', 'Address')} {renderSortIcon('address')}
+                      </th>
                     )}
                     {visibleColumns.region && (
-                      <td className="p-4 text-sm text-muted-foreground">
-                        {addr.city}, {addr.province} ({addr.country})
-                      </td>
+                      <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.region', 'Region')}
+                      </th>
                     )}
-                    {visibleColumns.postalCode && <td className="p-4 text-sm text-muted-foreground font-mono">{addr.postal_code}</td>}
+                    {visibleColumns.postalCode && (
+                      <th onClick={() => handleSort('postal_code')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.postalCode', 'Postal Code')} {renderSortIcon('postal_code')}
+                      </th>
+                    )}
                     {visibleColumns.coordinates && (
-                      <td className="p-4 text-sm text-muted-foreground font-mono">
-                        {addr.latitude !== null && addr.longitude !== null ? `${addr.latitude}, ${addr.longitude}` : '—'}
-                      </td>
+                      <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                        {t('customers.coordinates', 'Coordinates (Lat, Lng)')}
+                      </th>
                     )}
                     {visibleColumns.status && (
-                      <td className="p-4 text-sm whitespace-nowrap">
-                        {addr.is_default ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap shadow-2xs">
-                            <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-                            <span>{t('customers.defaultAddress', 'អាសយដ្ឋានលំនាំដើម')}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60 whitespace-nowrap">
-                            {t('customers.secondaryAddress', 'អាសយដ្ឋានរង')}
-                          </span>
-                        )}
-                      </td>
+                      <th onClick={() => handleSort('is_default')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none whitespace-nowrap">
+                        {t('customers.defaultAddress', 'Default Address')} {renderSortIcon('is_default')}
+                      </th>
                     )}
                     {visibleColumns.actions && (
-                      <td className="p-4 text-right">
-                        <TableActionMenu
-                          onEdit={() => openEditModal(addr)}
-                          onDelete={() => setDeleteTarget(addr)}
-                        />
+                      <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('customers.actions', t('common.actions', 'Actions'))}</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="hover:bg-muted/5">
+                        <td className="w-10 text-center !px-3"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
+                        {visibleColumns.id && <td className="p-4"><div className="skeleton h-4 w-8 rounded" /></td>}
+                        {visibleColumns.customer && <td className="p-4"><div className="skeleton h-4 w-32 rounded" /></td>}
+                        {visibleColumns.label && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                        {visibleColumns.recipient && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                        {visibleColumns.phone && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
+                        {visibleColumns.address && <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>}
+                        {visibleColumns.region && <td className="p-4"><div className="skeleton h-4 w-36 rounded" /></td>}
+                        {visibleColumns.postalCode && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                        {visibleColumns.coordinates && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                        {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>}
+                        {visibleColumns.actions && <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>}
+                      </tr>
+                    ))
+                  ) : addresses.map((addr) => {
+                    const isSelected = typeof addr.id === 'number' ? selectedRows.includes(addr.id) : false
+                    return (
+                      <tr key={addr.id} className={`hover:bg-muted/10 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
+                        <td className="w-10 text-center !px-3" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="checkbox h-4 w-4 rounded border-border"
+                            checked={isSelected}
+                            onChange={(e) => addr.id && handleSelectRow(addr.id, e.target.checked)}
+                          />
+                        </td>
+                        {visibleColumns.id && <td className="p-4 text-sm font-mono text-muted-foreground">{addr.id}</td>}
+                        {visibleColumns.customer && (
+                          <td className="p-4 font-semibold text-sm text-foreground">
+                            {addr.customer?.name ?? '—'}
+                          </td>
+                        )}
+                        {visibleColumns.label && (
+                          <td className="p-4 text-sm">
+                            {renderAddressLabelBadge(addr.label, t)}
+                          </td>
+                        )}
+                        {visibleColumns.recipient && <td className="p-4 text-sm font-semibold text-foreground">{addr.name}</td>}
+                        {visibleColumns.phone && <td className="p-4 text-sm font-mono text-muted-foreground">{addr.phone}</td>}
+                        {visibleColumns.address && (
+                          <td className="p-4 text-sm text-muted-foreground max-w-[200px] truncate" title={addr.address}>
+                            {addr.address}
+                          </td>
+                        )}
+                        {visibleColumns.region && (
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {addr.city}, {addr.province} ({addr.country})
+                          </td>
+                        )}
+                        {visibleColumns.postalCode && <td className="p-4 text-sm text-muted-foreground font-mono">{addr.postal_code}</td>}
+                        {visibleColumns.coordinates && (
+                          <td className="p-4 text-sm text-muted-foreground font-mono">
+                            {addr.latitude !== null && addr.longitude !== null ? `${addr.latitude}, ${addr.longitude}` : '—'}
+                          </td>
+                        )}
+                        {visibleColumns.status && (
+                          <td className="p-4 text-sm whitespace-nowrap">
+                            {addr.is_default ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap shadow-2xs">
+                                <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                                <span>{t('customers.defaultAddress', 'Default Address')}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60 whitespace-nowrap">
+                                {t('customers.secondaryAddress', 'Secondary Address')}
+                              </span>
+                            )}
+                          </td>
+                        )}
+                        {visibleColumns.actions && (
+                          <td className="p-4 text-right">
+                            <TableActionMenu
+                              onEdit={() => openEditModal(addr)}
+                              onDelete={() => setDeleteTarget(addr)}
+                            />
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                  {!isLoading && addresses.length === 0 && (
+                    <tr>
+                      <td colSpan={12} className="py-16 text-center">
+                        <MapPin size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+                        <p className="text-muted-foreground">{t('common.noData', 'No data available')}</p>
                       </td>
-                    )}
-                  </tr>
-                ))}
-                {!isLoading && addresses.length === 0 && (
-                  <tr>
-                    <td colSpan={12} className="py-16 text-center">
-                      <MapPin size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                      <p className="text-muted-foreground">{t('common.noData')}</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </TableWrapper>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </TableWrapper>
 
-        <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
-      </div>
+          <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+        </div>
 
-      {/* Form Dialog Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="bg-card border border-border/80 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl my-auto flex flex-col max-h-[90vh]"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border/80 bg-muted/20 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                    <MapPin size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
-                      {editingAddress
-                        ? t('customers.editAddressTitle', t('customers.editAddress', 'កែសម្រួលអាសយដ្ឋានដឹកជញ្ជូន'))
-                        : t('customers.addAddressTitle', t('customers.addAddress', 'បន្ថែមអាសយដ្ឋានដឹកជញ្ជូន'))}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {t('customers.addressModalSubtitle', 'គ្រប់គ្រងអាសយដ្ឋាន ទីតាំង និងព័ត៌មានអ្នកទទួលទំនិញ')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+      {/* ─── Global Customer Address Modal ─── */}
+      <CustomerAddressModal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        initialData={editingAddress}
+      />
 
-              {/* Modal Body */}
-              <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                  {/* Customer & Address Type */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.customer', 'អតិថិជន')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <User size={15} />
-                        </div>
-                        <select
-                          {...register('customer_id', { required: t('customers.validation.customerRequired', 'សូមជ្រើសរើសអតិថិជន') })}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
-                        >
-                          <option value="">{t('customers.selectCustomer', '-- ជ្រើសរើសអតិថិជន --')}</option>
-                          {(customers ?? []).map((c: any) => (
-                            <option key={c.id} value={String(c.id)}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {errors.customer_id && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.customer_id.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.addressLabel', 'ប្រភេទអាសយដ្ឋាន')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Tag size={15} />
-                        </div>
-                        <select
-                          {...register('label')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-medium"
-                        >
-                          <option value="Home">{t('customers.labelHome', 'ផ្ទះ')}</option>
-                          <option value="Office">{t('customers.labelOffice', 'ការិយាល័យ')}</option>
-                          <option value="Warehouse">{t('customers.labelWarehouse', 'ឃ្លាំង')}</option>
-                          <option value="Other">{t('customers.labelOther', 'ផ្សេងៗ')}</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recipient Name & Phone Number */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.receiverName', 'ឈ្មោះអ្នកទទួល')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <UserCheck size={15} />
-                        </div>
-                        <input
-                          {...register('name', { required: t('customers.validation.receiverNameRequired', 'តម្រូវឱ្យបញ្ចូលឈ្មោះអ្នកទទួល') })}
-                          placeholder={t('customers.receiverNamePlaceholder', 'ឧ. សុខ ចាន់ដារ៉ា')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        />
-                      </div>
-                      {errors.name && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.name.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.phone', 'លេខទូរស័ព្ទ')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Phone size={15} />
-                        </div>
-                        <input
-                          {...register('phone', { required: t('customers.validation.phoneRequired', 'តម្រូវឱ្យបញ្ចូលលេខទូរស័ព្ទ') })}
-                          placeholder={t('customers.phonePlaceholder', '012 345 678')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
-                        />
-                      </div>
-                      {errors.phone && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.phone.message}</p>}
-                    </div>
-                  </div>
-
-                  {/* Street Address */}
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                      {t('customers.streetAddress', 'អាសយដ្ឋានផ្លូវ / ទីតាំង')} <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                        <MapPin size={15} />
-                      </div>
-                      <input
-                        {...register('address', { required: t('customers.validation.addressRequired', 'តម្រូវឱ្យបញ្ចូលអាសយដ្ឋានផ្លូវ') })}
-                        placeholder={t('customers.streetAddressPlaceholder', 'ឧ. ផ្ទះលេខ ១២៣ ផ្លូវ ៤៥៦')}
-                        className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                      />
-                    </div>
-                    {errors.address && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.address.message}</p>}
-                  </div>
-
-                  {/* City, Province, Country */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.city', 'រាជធានី/ក្រុង')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Navigation size={14} />
-                        </div>
-                        <input
-                          {...register('city', { required: t('customers.validation.cityRequired', 'តម្រូវឱ្យបញ្ចូលរាជធានី/ក្រុង') })}
-                          placeholder={t('customers.cityPlaceholder', 'ឧ. ភ្នំពេញ')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        />
-                      </div>
-                      {errors.city && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.city.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.province', 'ខេត្ត/រដ្ឋ')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Building2 size={14} />
-                        </div>
-                        <input
-                          {...register('province', { required: t('customers.validation.provinceRequired', 'តម្រូវឱ្យបញ្ចូលខេត្ត/រដ្ឋ') })}
-                          placeholder={t('customers.provincePlaceholder', 'ឧ. ភ្នំពេញ')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        />
-                      </div>
-                      {errors.province && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.province.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.country', 'ប្រទេស')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Globe size={14} />
-                        </div>
-                        <input
-                          {...register('country', { required: t('customers.validation.countryRequired', 'តម្រូវឱ្យបញ្ចូលប្រទេស') })}
-                          placeholder={t('customers.countryPlaceholder', 'កម្ពុជា')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        />
-                      </div>
-                      {errors.country && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.country.message}</p>}
-                    </div>
-                  </div>
-
-                  {/* Postal Code, Latitude, Longitude */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.postalCode', 'លេខកូដប្រៃសណីយ៍')} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                          <Compass size={14} />
-                        </div>
-                        <input
-                          {...register('postal_code', { required: t('customers.validation.postalCodeRequired', 'តម្រូវឱ្យបញ្ចូលលេខកូដប្រៃសណីយ៍') })}
-                          placeholder={t('customers.postalCodePlaceholder', '12000')}
-                          className="form-input w-full h-9 pl-9 pr-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
-                        />
-                      </div>
-                      {errors.postal_code && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.postal_code.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.latitude', 'រយៈទទឹង (Latitude)')}
-                      </label>
-                      <input
-                        step="any"
-                        {...register('latitude', {
-                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.latitudeNumeric', 'រយៈទទឹងត្រូវតែជាលេខ')
-                        })}
-                        placeholder={t('customers.latitudePlaceholder', '11.5564')}
-                        className="form-input w-full h-9 px-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
-                      />
-                      {errors.latitude && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.latitude.message}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-                        {t('customers.longitude', 'រយៈបណ្តោយ (Longitude)')}
-                      </label>
-                      <input
-                        step="any"
-                        {...register('longitude', {
-                          validate: val => !val || !isNaN(Number(val)) || t('customers.validation.longitudeNumeric', 'រយៈបណ្តោយត្រូវតែជាលេខ')
-                        })}
-                        placeholder={t('customers.longitudePlaceholder', '104.9282')}
-                        className="form-input w-full h-9 px-3 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-mono font-medium"
-                      />
-                      {errors.longitude && <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.longitude.message}</p>}
-                    </div>
-                  </div>
-
-                  {/* Set as Default Address Card */}
-                  <div className="p-3.5 bg-muted/15 border border-border/80 rounded-xl flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <label htmlFor="isDefaultCheckbox" className="text-xs sm:text-[13px] font-bold text-foreground cursor-pointer select-none">
-                        {t('customers.setDefault', 'កំណត់ជាអាសយដ្ឋានលំនាំដើម')}
-                      </label>
-                      <p className="text-[11px] text-muted-foreground">
-                        {t('customers.defaultAddressHelp', 'ប្រើប្រាស់អាសយដ្ឋាននេះជាអាទិភាពដំបូងលើការបញ្ជាទិញ និងវិក្កយបត្រ POS')}
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      id="isDefaultCheckbox"
-                      {...register('is_default')}
-                      className="form-checkbox h-4.5 w-4.5 text-primary rounded border-border focus:ring-primary cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-border/80 bg-muted/20 shrink-0">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="h-9 px-4 text-xs sm:text-[13px] font-bold border border-border/80 bg-card rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-xs active:scale-95"
-                  >
-                    {t('common.cancel', 'បោះបង់')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-                    className="h-9 px-5 text-xs sm:text-[13px] bg-primary text-primary-foreground rounded-lg font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                  >
-                    {(isSubmitting || createMutation.isPending || updateMutation.isPending) ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Check size={14} />
-                    )}
-                    <span>
-                      {editingAddress
-                        ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
-                        : t('customers.saveAddress', 'រក្សាទុកអាសយដ្ឋាន')}
-                    </span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
+      {/* Single Delete Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
         title="customers.deleteAddressTitle"
@@ -933,8 +701,23 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         confirmText="common.confirmDelete"
         cancelText="common.cancel"
         loading={deleteMutation.isPending}
-        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        onConfirm={() => deleteTarget && typeof deleteTarget.id === 'number' && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('customers.bulkDeleteAddressesTitle', 'Delete Selected Addresses')}
+        message={t('customers.confirmBulkDeleteAddressesMessage', {
+          count: selectedRows.length,
+          defaultValue: `Are you sure you want to delete ${selectedRows.length} selected addresses? This action cannot be undone.`
+        }).replace('{{count}}', String(selectedRows.length))}
+        confirmText={t('common.confirmDelete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
       />
     </div>
   )

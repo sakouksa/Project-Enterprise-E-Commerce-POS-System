@@ -4,6 +4,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
+import StatusBadge from '@/components/common/StatusBadge'
 
 interface CompaniesTabProps {
   records: any[]
@@ -84,14 +85,9 @@ export const CompaniesTab: React.FC<CompaniesTabProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleStatusMutation.mutate({ id: r.id, is_active: !r.is_active })}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                            r.is_active
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20'
-                          }`}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${r.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          <span>{r.is_active ? 'Active' : 'Inactive'}</span>
+                          <StatusBadge status={r.is_active} />
                         </button>
                       </td>
                     )}

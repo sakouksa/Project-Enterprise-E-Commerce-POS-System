@@ -6,6 +6,7 @@ import {
   AlertCircle, FileText, CheckCircle, Plus, Minus, Sparkles,
   ArrowRight, ShieldCheck, CreditCard, Warehouse, Save
 } from 'lucide-react'
+import { EnterpriseSelect } from '@/components/common'
 import { formatCurrency } from '../utils/purchaseCurrency'
 
 interface CreatePurchaseReturnModalProps {
@@ -166,21 +167,23 @@ export const CreatePurchaseReturnModal: React.FC<CreatePurchaseReturnModalProps>
                     <label className="block font-semibold text-foreground mb-1.5">
                       {t('purchases.selectPurchaseOrder', 'Select Purchase Order')} <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <EnterpriseSelect
                       value={purchaseId}
-                      onChange={(e) => setPurchaseId(e.target.value)}
-                      required
-                      className="form-select w-full py-2 px-3 text-xs bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    >
-                      <option value="">{t('purchases.choosePOToReturn', 'Choose a Purchase Order to return items from...')}</option>
-                      {(purchasesData ?? [])
+                      onChange={(val) => setPurchaseId(val ? String(val) : '')}
+                      placeholder={t('purchases.choosePOToReturn', 'Choose a Purchase Order to return items from...')}
+                      searchPlaceholder={t('purchases.searchPOPlaceholder', 'Search PO number, supplier...')}
+                      options={(purchasesData ?? [])
                         .filter((p: any) => p.status === 'received' || p.status === 'completed' || p.status === 'partial' || p.status === 'ordered')
-                        .map((p: any) => (
-                          <option key={p.id} value={p.id}>
-                            {p.reference_number} — {p.supplier?.name} (Total: ${Number(p.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                          </option>
-                        ))}
-                    </select>
+                        .map((p: any) => ({
+                          value: String(p.id),
+                          label: `${p.reference_number} — ${p.supplier?.name || ''} ($${Number(p.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`,
+                          title: p.reference_number,
+                          subtitle: `${p.supplier?.name ? `${p.supplier.name} • ` : ''}${p.warehouse?.name ? `${p.warehouse.name} • ` : ''}$${Number(p.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                          code: p.reference_number,
+                          badge: p.status,
+                          raw: p,
+                        }))}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
@@ -193,22 +196,22 @@ export const CreatePurchaseReturnModal: React.FC<CreatePurchaseReturnModalProps>
                         value={returnDate}
                         onChange={(e) => setReturnDate(e.target.value)}
                         required
-                        className="form-input w-full py-2 px-3 text-xs bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="h-10 min-h-[40px] w-full px-3.5 py-2 text-xs bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                       />
                     </div>
                     <div>
                       <label className="block font-semibold text-foreground mb-1.5">
                         {t('purchases.status', 'Status')} <span className="text-red-500">*</span>
                       </label>
-                      <select
+                      <EnterpriseSelect
                         value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        required
-                        className="form-select w-full py-2 px-3 text-xs bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      >
-                        <option value="draft">{t('purchases.draft', 'Draft (Pending Review)')}</option>
-                        <option value="approved">{t('purchases.approved', 'Approved (Debit Stock Immediately)')}</option>
-                      </select>
+                        onChange={(val) => setStatus(val ? String(val) : 'draft')}
+                        options={[
+                          { value: 'draft', label: t('purchases.draft', 'Draft (Pending Review)'), badge: 'draft' },
+                          { value: 'approved', label: t('purchases.approved', 'Approved (Debit Stock Immediately)'), badge: 'approved' },
+                        ]}
+                        placeholder={t('purchases.status', 'Status')}
+                      />
                     </div>
                   </div>
                 </div>

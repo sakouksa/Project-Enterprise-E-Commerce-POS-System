@@ -1,20 +1,23 @@
-import React, { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import React, { useState, useMemo } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, Trash2, RefreshCw, Briefcase, Users, UserCheck, DollarSign, Calendar,
-  Download, Upload, Filter, Settings, RotateCcw, QrCode, X
+  Download, Upload, Filter, Settings, RotateCcw, QrCode, X, AlertCircle
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
+import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import WorkspaceTabs, { type WorkspaceTabItem } from '@/components/shared/WorkspaceTabs'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
+import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
 import ShiftsTab from './components/ShiftsTab'
 import DynamicQrKioskModal from './components/DynamicQrKioskModal'
 import AttendanceDetailModal from './components/AttendanceDetailModal'
@@ -28,6 +31,7 @@ import { INITIAL_VISIBLE_COLUMNS_MAP, type Tab, type ImportResult } from './type
 
 const EmployeesPage: React.FC = () => {
   const { t } = useTranslation(['employees', 'common'])
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -67,13 +71,17 @@ const EmployeesPage: React.FC = () => {
   const [filterSalaryMax, setFilterSalaryMax] = useState('')
   const [filterRole, setFilterRole] = useState('')
 
-  // Trashed Recycle Bin filter
-  const [recycleBinMode, setRecycleBinMode] = useState(false)
-
   // Column Visibility Map across all sub-tabs
   const [visibleColumnsMap, setVisibleColumnsMap] = useState<Record<Tab, Record<string, boolean>>>(INITIAL_VISIBLE_COLUMNS_MAP)
   const visibleColumns = visibleColumnsMap[activeTab] || {}
-  const [showColSettings, setShowColSettings] = useState(false)
+
+  const currentColumns = useMemo(() => {
+    const defaultCols = INITIAL_VISIBLE_COLUMNS_MAP[activeTab] || {}
+    return Object.keys(defaultCols).map((col) => ({
+      key: col,
+      label: t(`employees.${col}`, col.replace(/_/g, ' ')),
+    }))
+  }, [activeTab, t])
 
   // UI Modals / Drawers states
   const [modalOpen, setModalOpen] = useState(false)
@@ -91,9 +99,8 @@ const EmployeesPage: React.FC = () => {
 
   // Bulk actions & Delete confirmations
   const [selectedRows, setSelectedRows] = useState<number[]>([])
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
-  const [forceDeleteMode, setForceDeleteMode] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
 
   // Form Fields
   const [formCompanyId, setFormCompanyId] = useState('1')
@@ -181,9 +188,7 @@ const EmployeesPage: React.FC = () => {
       sort_by: sortBy,
       sort_order: sortOrder,
     }
-    if (recycleBinMode) {
-      f.status = 'deleted'
-    } else if (filterStatus) {
+    if (filterStatus) {
       f.status = filterStatus
     }
     if (filterBranchId) f.branch_id = filterBranchId
@@ -205,7 +210,7 @@ const EmployeesPage: React.FC = () => {
   }
 
   const { data: listData, isLoading, isFetching } = useQuery({
-    queryKey: [activeTab, recycleBinMode, page, debouncedSearch, perPage, sortBy, sortOrder, filterBranchId, filterDeptId, filterPosId, filterStatus, filterGender, filterDateStart, filterDateEnd, filterSalaryMin, filterSalaryMax],
+    queryKey: [activeTab, page, debouncedSearch, perPage, sortBy, sortOrder, filterBranchId, filterDeptId, filterPosId, filterStatus, filterGender, filterDateStart, filterDateEnd, filterSalaryMin, filterSalaryMax],
     queryFn: () => api.get(`/${activeTab}`, { params: buildFilters() }).then(r => r.data),
     placeholderData: (prev) => prev,
   })
@@ -231,39 +236,28 @@ const EmployeesPage: React.FC = () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       refetchStats()
       closeModal()
-      toast.success('Record updated successfully.')
+      toast.success(t('employees.updateSuccess', 'Record updated successfully.'))
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to update record.')
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to update record.'))
   })
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, force }: { id: number; force: boolean }) => {
+    mutationFn: ({ id, force }: { id: number; force?: boolean }) => {
       const url = force ? `/${activeTab}/${id}/force` : `/${activeTab}/${id}`
       return api.delete(url)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       refetchStats()
-      setConfirmOpen(false)
-      toast.success(forceDeleteMode ? 'Record permanently deleted.' : 'Record deleted successfully.')
+      setDeleteTarget(null)
+      toast.success(t('employees.deleteSuccess', 'Record deleted successfully.'))
       adjustAfterDelete(records.length)
-      setSelectedRows([])
+      setSelectedRows(prev => prev.filter(id => id !== deleteTarget?.id))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to delete record. It might be referenced elsewhere.')
-      setConfirmOpen(false)
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to delete record. It might be referenced elsewhere.'))
+      setDeleteTarget(null)
     }
-  })
-
-  const restoreMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/${activeTab}/${id}/restore`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [activeTab] })
-      refetchStats()
-      toast.success('Record restored successfully.')
-      setSelectedRows([])
-    },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to restore record.')
   })
 
   const bulkDeleteMutation = useMutation({
@@ -271,21 +265,20 @@ const EmployeesPage: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       refetchStats()
-      toast.success('Selected records deleted successfully.')
+      let successMsg = t('employees.bulkDeleteSuccess', 'Selected records deleted successfully.')
+      if (activeTab === 'employees') successMsg = t('employees.bulkDeleteEmployeesSuccess', successMsg)
+      else if (activeTab === 'departments') successMsg = t('employees.bulkDeleteDepartmentsSuccess', successMsg)
+      else if (activeTab === 'positions') successMsg = t('employees.bulkDeletePositionsSuccess', successMsg)
+      else if (activeTab === 'attendance') successMsg = t('employees.bulkDeleteAttendanceSuccess', successMsg)
+      else if (activeTab === 'payrolls') successMsg = t('employees.bulkDeletePayrollsSuccess', successMsg)
+      toast.success(successMsg)
       setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to perform bulk deletion.')
-  })
-
-  const bulkRestoreMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post(`/${activeTab}/bulk-restore`, { ids }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [activeTab] })
-      refetchStats()
-      toast.success('Selected records restored successfully.')
-      setSelectedRows([])
-    },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to perform bulk restoration.')
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to perform bulk deletion.'))
+      setBulkDeleteConfirmOpen(false)
+    }
   })
 
   // Export
@@ -293,13 +286,9 @@ const EmployeesPage: React.FC = () => {
     toast.info('Generating export... download will begin shortly.')
     api.get(`/${activeTab}/export`, { params: buildFilters(), responseType: 'blob' })
       .then((res) => {
-        const url = window.URL.createObjectURL(new Blob([res.data]))
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `${activeTab}_export_${new Date().toISOString().split('T')[0]}.csv`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        const blob = new Blob([res.data])
+        const dateStamp = new Date().toISOString().split('T')[0]
+        downloadBlob(blob, `${activeTab}_export_${dateStamp}.csv`)
         toast.success('Export downloaded successfully.')
       })
       .catch(() => toast.error('Export failed. Please try again.'))
@@ -379,13 +368,23 @@ const EmployeesPage: React.FC = () => {
   }
 
   const openCreateModal = () => {
+    if (activeTab === 'employees') {
+      navigate('/employees/create')
+      return
+    }
     setSelectedItem(null)
     setFormCompanyId('1')
     setFormBranchId('1')
     setFormDeptId('')
     setFormPosId('')
     setFormUserId('')
-    setFormEmployeeNumber(`EMP${Math.floor(100000 + Math.random() * 900000)}`)
+    if (activeTab === 'departments') {
+      setFormEmployeeNumber(`DEPT-${Math.floor(1000 + Math.random() * 9000)}`)
+    } else if (activeTab === 'positions') {
+      setFormEmployeeNumber(`POS-${Math.floor(1000 + Math.random() * 9000)}`)
+    } else {
+      setFormEmployeeNumber(`EMP${Math.floor(100000 + Math.random() * 900000)}`)
+    }
     setFormName('')
     setFormEmail('')
     setFormPhone('')
@@ -418,6 +417,10 @@ const EmployeesPage: React.FC = () => {
   }
 
   const openEditModal = (item: any) => {
+    if (activeTab === 'employees') {
+      navigate(`/employees/${item.id}/edit`)
+      return
+    }
     setSelectedItem(item)
     if (activeTab === 'departments') {
       setFormName(item.name)
@@ -433,25 +436,6 @@ const EmployeesPage: React.FC = () => {
       setFormDeptId(item.department_id?.toString() ?? '')
       setFormAddress(item.description ?? '')
       setFormStatus(item.is_active ? 'active' : 'inactive')
-    } else if (activeTab === 'employees') {
-      setFormCompanyId(item.company_id?.toString() ?? '1')
-      setFormBranchId(item.branch_id?.toString() ?? '1')
-      setFormDeptId(item.department_id?.toString() ?? '')
-      setFormPosId(item.position_id?.toString() ?? '')
-      setFormUserId(item.user_id?.toString() ?? '')
-      setFormEmployeeNumber(item.employee_number)
-      setFormName(item.name)
-      setFormEmail(item.email ?? '')
-      setFormPhone(item.phone ?? '')
-      setFormNik(item.nik ?? '')
-      setFormGender(item.gender ?? 'male')
-      setFormBirthDate(item.birth_date ? item.birth_date.split('T')[0] : '')
-      setFormAddress(item.address ?? '')
-      setFormPhoto(item.photo ?? '')
-      setFormJoinDate(item.join_date ? item.join_date.split('T')[0] : '')
-      setFormResignDate(item.resign_date ? item.resign_date.split('T')[0] : '')
-      setFormStatus(item.status)
-      setFormBasicSalary(item.basic_salary?.toString() ?? '')
     } else if (activeTab === 'attendance') {
       setAttEmployeeId(item.employee_id?.toString() ?? '')
       setAttDate(item.date ? item.date.split('T')[0] : '')
@@ -502,7 +486,6 @@ const EmployeesPage: React.FC = () => {
     setFilterSalaryMin('')
     setFilterSalaryMax('')
     setFilterRole('')
-    setRecycleBinMode(false)
     reset()
   }
 
@@ -586,16 +569,74 @@ const EmployeesPage: React.FC = () => {
     }
   }
 
-  const confirmDelete = (id: number, force = false) => {
-    setDeleteId(id)
-    setForceDeleteMode(force)
-    setConfirmOpen(true)
+  const confirmDelete = (itemOrId: any) => {
+    if (typeof itemOrId === 'object' && itemOrId !== null) {
+      setDeleteTarget(itemOrId)
+    } else {
+      const found = records.find((r: any) => r.id === itemOrId)
+      setDeleteTarget(found || { id: itemOrId })
+    }
   }
 
   const handleDelete = () => {
-    if (deleteId) {
-      deleteMutation.mutate({ id: deleteId, force: forceDeleteMode })
+    if (deleteTarget?.id) {
+      deleteMutation.mutate({ id: deleteTarget.id, force: false })
     }
+  }
+
+  const getSingleDeleteTitle = () => {
+    if (activeTab === 'employees') return t('employees.deleteEmployeeTitle', 'Delete Employee')
+    if (activeTab === 'departments') return t('employees.deleteDepartmentTitle', 'Delete Department')
+    if (activeTab === 'positions') return t('employees.deletePositionTitle', 'Delete Position')
+    if (activeTab === 'attendance') return t('employees.deleteAttendanceTitle', 'Delete Attendance Record')
+    if (activeTab === 'payrolls') return t('employees.deletePayrollTitle', 'Delete Payroll Record')
+    return t('employees.deleteTitle', 'Delete Record')
+  }
+
+  const getDeleteTargetName = () => {
+    if (!deleteTarget) return ''
+    if (deleteTarget.name) return deleteTarget.name
+    if (activeTab === 'attendance') {
+      return deleteTarget.employee?.name ? `${deleteTarget.employee.name} (${deleteTarget.attendance_date || (deleteTarget.date ? deleteTarget.date.split('T')[0] : '')})` : (deleteTarget.attendance_date || deleteTarget.date || '')
+    }
+    if (activeTab === 'payrolls') {
+      return deleteTarget.employee?.name ? `${deleteTarget.employee.name} (${deleteTarget.period_month || ''})` : (deleteTarget.period_month || '')
+    }
+    return deleteTarget.code || deleteTarget.employee_number || (deleteTarget.id ? `#${deleteTarget.id}` : '')
+  }
+
+  const getBulkDeleteTitle = () => {
+    if (activeTab === 'employees') return t('employees.bulkDeleteEmployeesTitle', 'Delete Selected Employees')
+    if (activeTab === 'departments') return t('employees.bulkDeleteDepartmentsTitle', 'Delete Selected Departments')
+    if (activeTab === 'positions') return t('employees.bulkDeletePositionsTitle', 'Delete Selected Positions')
+    if (activeTab === 'attendance') return t('employees.bulkDeleteAttendanceTitle', 'Delete Selected Attendance Logs')
+    if (activeTab === 'payrolls') return t('employees.bulkDeletePayrollsTitle', 'Delete Selected Payrolls')
+    return t('employees.bulkDeleteTitle', 'Delete Selected Records')
+  }
+
+  const getBulkDeleteMessage = () => {
+    let msgKey = 'employees.confirmBulkDeleteMessage'
+    let defaultMsg = `Are you sure you want to delete ${selectedRows.length} selected records? This action will move them to the trash.`
+    if (activeTab === 'employees') {
+      msgKey = 'employees.confirmBulkDeleteEmployeesMessage'
+      defaultMsg = `Are you sure you want to delete ${selectedRows.length} selected employees? This action will move them to the trash.`
+    } else if (activeTab === 'departments') {
+      msgKey = 'employees.confirmBulkDeleteDepartmentsMessage'
+      defaultMsg = `Are you sure you want to delete ${selectedRows.length} selected departments? This action cannot be undone.`
+    } else if (activeTab === 'positions') {
+      msgKey = 'employees.confirmBulkDeletePositionsMessage'
+      defaultMsg = `Are you sure you want to delete ${selectedRows.length} selected positions? This action cannot be undone.`
+    } else if (activeTab === 'attendance') {
+      msgKey = 'employees.confirmBulkDeleteAttendanceMessage'
+      defaultMsg = `Are you sure you want to delete ${selectedRows.length} selected attendance logs? This action cannot be undone.`
+    } else if (activeTab === 'payrolls') {
+      msgKey = 'employees.confirmBulkDeletePayrollsMessage'
+      defaultMsg = `Are you sure you want to delete ${selectedRows.length} selected payroll records? This action cannot be undone.`
+    }
+    return t(msgKey, {
+      count: selectedRows.length,
+      defaultValue: defaultMsg
+    }).replace('{{count}}', String(selectedRows.length))
   }
 
   const getPhotoUrl = (photoPath?: string) => {
@@ -624,16 +665,10 @@ const EmployeesPage: React.FC = () => {
     { id: 'positions', label: t('employees.positions', 'តួនាទីការងារ'), count: posList?.length, icon: UserCheck },
     { id: 'attendance', label: t('employees.attendance', 'វត្តមាន'), icon: Calendar },
     { id: 'payrolls', label: t('employees.payrolls', 'ប្រាក់បៀវត្សរ៍'), icon: DollarSign },
-    { id: 'trash', label: t('employees.trash_bin', 'ធុងសំរាម'), icon: Trash2 },
   ]
 
   const handleTabChange = (tabId: string) => {
-    if (tabId === 'trash') {
-      setRecycleBinMode(true)
-    } else {
-      setRecycleBinMode(false)
-      setActiveTab(tabId as Tab)
-    }
+    setActiveTab(tabId as Tab)
     setSelectedRows([])
   }
 
@@ -647,43 +682,45 @@ const EmployeesPage: React.FC = () => {
       />
 
       {/* Header Card */}
-      <div className="bg-card border border-border/80 p-5 sm:p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
+      <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
         <div className="space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
-            <span>{t('employees.employee_management', 'Employee Management')}</span>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground dark:text-slate-100 flex items-center gap-2">
+            <Briefcase className="text-primary" size={26} />
+            <span>{t('employees.employee_management', 'ការគ្រប់គ្រងបុគ្គលិក')}</span>
           </h1>
-          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            {t('employees.subtitle_desc', 'Manage employees, departments, positions, attendance, payroll, employment status, and workforce performance across the Enterprise ERP platform.')}
+          <p className="text-xs sm:text-sm text-muted-foreground dark:text-slate-400">
+            {t('employees.subtitle_desc', 'គ្រប់គ្រងបុគ្គលិក ដេប៉ាតឺម៉ង់ តួនាទី វត្តមាន ប្រាក់បៀវត្សរ៍ និងការវាស់វែងសមត្ថភាពការងារនៅទូទាំងប្រព័ន្ធ ERP')}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {activeTab === 'attendance' && (
-            <button
-              onClick={() => setKioskModalOpen(true)}
-              className="h-9 flex items-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-xs cursor-pointer"
-            >
-              <QrCode size={15} />
-              <span>{t('employees.launch_qr_kiosk', 'Launch QR Kiosk')}</span>
-            </button>
-          )}
+
+        <div className="flex items-center flex-wrap gap-2.5">
+          <button
+            onClick={() => setKioskModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 transition-all duration-200 cursor-pointer shadow-xs"
+          >
+            <QrCode size={16} />
+            <span>{t('employees.launch_qr_kiosk', 'QR Kiosk')}</span>
+          </button>
+
           <button
             onClick={() => setImportOpen(true)}
-            className="h-9 flex items-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold rounded-lg border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 hover:bg-muted/80 dark:hover:bg-slate-800 text-foreground dark:text-slate-200 transition-all duration-200 cursor-pointer shadow-xs"
           >
-            <Upload size={15} />
-            <span>{t('employees.import_csv', 'Import CSV')}</span>
+            <Upload size={16} />
+            <span>{t('employees.import_csv', 'នាំចូល CSV')}</span>
           </button>
+
           <button
             onClick={handleExport}
-            className="h-9 flex items-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold rounded-lg border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 hover:bg-muted/80 dark:hover:bg-slate-800 text-foreground dark:text-slate-200 transition-all duration-200 cursor-pointer shadow-xs"
           >
-            <Download size={15} />
-            <span>{t('employees.export_csv', 'Export CSV')}</span>
+            <Download size={16} />
+            <span>{t('employees.export_csv', 'នាំចេញ CSV')}</span>
           </button>
+
           <button
-            onClick={openCreateModal}
-            className="h-9 flex items-center gap-1.5 px-4 text-xs sm:text-[13px] font-bold text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-all shadow-xs cursor-pointer"
+            onClick={() => openCreateModal()}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200 cursor-pointer"
           >
             <Plus size={16} />
             <span>{activeTab === 'attendance' ? t('employees.add_attendance', 'Add Attendance') : t('employees.add_employee', 'Add Employee')}</span>
@@ -705,17 +742,17 @@ const EmployeesPage: React.FC = () => {
       {/* ─── Global Sub-tabs Navigation (Full-width long bar like Customer) ─── */}
       <WorkspaceTabs
         tabs={workspaceTabs}
-        activeTab={recycleBinMode ? 'trash' : activeTab}
+        activeTab={activeTab}
         onChange={handleTabChange}
         size="md"
         variant="pill"
         rightContent={
-          activeTab === 'attendance' && !recycleBinMode ? (
-            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/60">
+          activeTab === 'attendance' ? (
+            <div className="flex items-center bg-muted/60 dark:bg-slate-800/80 p-1 rounded-xl border border-border/60 dark:border-slate-700">
               <button
                 onClick={() => setAttendanceSubTab('logs')}
                 className={`px-3 py-1 text-xs sm:text-[13px] font-semibold rounded-lg transition-all cursor-pointer ${
-                  attendanceSubTab === 'logs' ? 'bg-card text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground'
+                  attendanceSubTab === 'logs' ? 'bg-card dark:bg-slate-900 text-foreground dark:text-slate-100 shadow-sm font-bold' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100'
                 }`}
               >
                 {t('employees.attendance_logs', 'Attendance Logs')}
@@ -723,7 +760,7 @@ const EmployeesPage: React.FC = () => {
               <button
                 onClick={() => setAttendanceSubTab('shifts')}
                 className={`px-3 py-1 text-xs sm:text-[13px] font-semibold rounded-lg transition-all cursor-pointer ${
-                  attendanceSubTab === 'shifts' ? 'bg-card text-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground'
+                  attendanceSubTab === 'shifts' ? 'bg-card dark:bg-slate-900 text-foreground dark:text-slate-100 shadow-sm font-bold' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-100'
                 }`}
               >
                 {t('employees.shift_schedules', 'Shift Schedules')}
@@ -733,17 +770,26 @@ const EmployeesPage: React.FC = () => {
         }
       />
 
+      {/* ─── Bulk actions banner (Clean, Modern, Dark-Mode Supported) ─── */}
+      <BulkSelectionBanner
+        selectedCount={selectedRows.length}
+        onDelete={() => setBulkDeleteConfirmOpen(true)}
+        onClear={() => setSelectedRows([])}
+        deleteLabel={t('employees.deleteSelected', t('common.deleteSelected', 'Delete Selected'))}
+        deleteLoading={bulkDeleteMutation.isPending}
+      />
+
       {/* ─── Search + Action Toolbar (Matching Customer Page Pattern) ─── */}
-      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
+      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card dark:bg-slate-900 p-3 rounded-2xl border border-border/80 dark:border-slate-800 shadow-sm print:hidden">
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
           <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder={t('employees.search_placeholder', 'Search Employee Name, ID, Email, Phone, Department, Position...')}
-              className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
+              className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 hover:border-muted-foreground/40 focus:bg-background dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground dark:text-slate-100 transition-all placeholder:text-muted-foreground dark:placeholder:text-slate-400 shadow-sm font-medium"
             />
             {search && (
               <button
@@ -776,46 +822,6 @@ const EmployeesPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-          {selectedRows.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-muted/50 p-1 px-2.5 rounded-xl border border-border mr-1">
-              <span className="text-[11px] text-muted-foreground font-semibold px-1">{selectedRows.length} {t('common.selected', 'Selected')}</span>
-              {recycleBinMode ? (
-                <>
-                  <button
-                    onClick={() => bulkRestoreMutation.mutate(selectedRows)}
-                    className="p-1.5 hover:bg-green-50 dark:hover:bg-green-950/20 text-green-500 rounded-lg transition-colors cursor-pointer"
-                    title={t('employees.restore', 'Restore')}
-                  >
-                    <RotateCcw size={14} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Permanently delete all selected items?')) {
-                        selectedRows.forEach(id => deleteMutation.mutate({ id, force: true }))
-                      }
-                    }}
-                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors cursor-pointer"
-                    title={t('employees.force_delete', 'Force Delete')}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (confirm('Move all selected items to trash?')) {
-                      bulkDeleteMutation.mutate(selectedRows)
-                    }
-                  }}
-                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-colors cursor-pointer"
-                  title={t('common.delete', 'Delete')}
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
-          )}
-
           <button
             type="button"
             onClick={() => qc.invalidateQueries({ queryKey: [activeTab] })}
@@ -826,47 +832,18 @@ const EmployeesPage: React.FC = () => {
           </button>
 
           {/* Column Visibility settings */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowColSettings(!showColSettings)}
-              className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
-              title={t('employees.column_settings', 'Column Settings')}
-            >
-              <Settings size={15} />
-            </button>
-            <AnimatePresence>
-              {showColSettings && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowColSettings(false)} />
-                  <div className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
-                    <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">{t('employees.columns_visibility', 'Toggle Columns')}</p>
-                    <div className="max-h-56 overflow-y-auto space-y-0.5">
-                      {Object.keys(visibleColumns).map(col => (
-                        <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                          <input
-                            type="checkbox"
-                            checked={visibleColumns[col]}
-                            onChange={e =>
-                              setVisibleColumnsMap(prev => ({
-                                ...prev,
-                                [activeTab]: {
-                                  ...prev[activeTab],
-                                  [col]: e.target.checked,
-                                },
-                              }))
-                            }
-                            className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                          />
-                          <span>{t(`employees.${col}`, col.replace('_', ' '))}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+          <ColumnSettingsPopover
+            columns={currentColumns}
+            visibleColumns={visibleColumns}
+            defaultVisibleColumns={INITIAL_VISIBLE_COLUMNS_MAP[activeTab]}
+            onChange={(updated) =>
+              setVisibleColumnsMap((prev) => ({
+                ...prev,
+                [activeTab]: updated,
+              }))
+            }
+            title={t('employees.columns_visibility', t('common.columnsVisibility', 'Column Visibility'))}
+          />
         </div>
       </div>
 
@@ -922,8 +899,6 @@ const EmployeesPage: React.FC = () => {
             setSelectedAttendanceDetail={setSelectedAttendanceDetail}
             openEditModal={openEditModal}
             confirmDelete={confirmDelete}
-            recycleBinMode={recycleBinMode}
-            restoreRecord={(id) => restoreMutation.mutate(id)}
           />
 
           <Pagination
@@ -1047,11 +1022,28 @@ const EmployeesPage: React.FC = () => {
       <DynamicQrKioskModal open={kioskModalOpen} onClose={() => setKioskModalOpen(false)} />
       <AttendanceDetailModal attendance={selectedAttendanceDetail} onClose={() => setSelectedAttendanceDetail(null)} />
 
+      {/* Single Delete Dialog */}
       <ConfirmDialog
-        open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
+        open={!!deleteTarget}
+        title={getSingleDeleteTitle()}
+        itemName={getDeleteTargetName()}
+        confirmText={t('common.confirmDelete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={deleteMutation.isPending}
         onConfirm={handleDelete}
-        title="Are you sure you want to delete this record?"
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={getBulkDeleteTitle()}
+        message={getBulkDeleteMessage()}
+        confirmText={t('common.confirmDelete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
       />
     </div>
   )

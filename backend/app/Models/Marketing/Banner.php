@@ -27,19 +27,31 @@ class Banner extends Model
 
     protected $appends = ['image_url', 'link_url'];
 
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            });
+    }
+
     public function getImageUrlAttribute(): ?string
     {
         $img = $this->attributes['image'] ?? null;
         
         if (!$img || $img === '[]' || $img === '""' || $img === 'null' || str_contains($img, 'blob:http') || str_contains($img, '/storage/[]')) {
-            return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80';
+            return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80';
         }
 
         if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://') || str_starts_with($img, 'data:')) {
             return $img;
         }
 
-        return url('storage/' . ltrim($img, '/'));
+        $cleanPath = preg_replace('#^storage/#', '', ltrim($img, '/'));
+        return url('api/v1/storage/' . $cleanPath);
     }
 
     public function getLinkUrlAttribute(): ?string

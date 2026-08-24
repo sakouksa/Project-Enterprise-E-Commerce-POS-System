@@ -25,14 +25,14 @@ export const PurchaseReturnsStatsCards: React.FC<PurchaseReturnsStatsCardsProps>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
+        className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
       >
         <div className="space-y-1">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <p className="text-[10px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
             {t('purchases.totalReturns', 'Total Returns')}
           </p>
-          <p className="text-2xl font-extrabold text-foreground tracking-tight font-mono">{returns.length}</p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-2xl font-extrabold text-foreground dark:text-slate-100 tracking-tight font-mono">{returns.length}</p>
+          <p className="text-[11px] text-muted-foreground dark:text-slate-400">
             <span className="text-emerald-500 font-bold">{approvedReturns.length} {t('purchases.approved', 'Approved')}</span>
             <span className="mx-1.5">•</span>
             <span>{pendingReturns.length} {t('purchases.draft', 'Draft')}</span>
@@ -48,16 +48,16 @@ export const PurchaseReturnsStatsCards: React.FC<PurchaseReturnsStatsCardsProps>
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
+        className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
       >
         <div className="space-y-1">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <p className="text-[10px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
             {t('purchases.returnedValue', 'Total Refund Value')}
           </p>
-          <p className="text-xl font-extrabold text-foreground tracking-tight font-mono truncate max-w-[190px]">
+          <p className="text-xl font-extrabold text-foreground dark:text-slate-100 tracking-tight font-mono truncate max-w-[190px]">
             {formatCurrency(totalAmount, 'USD')}
           </p>
-          <p className="text-[11px] text-muted-foreground font-mono">
+          <p className="text-[11px] text-muted-foreground dark:text-slate-400 font-mono">
             {formatCurrency(totalAmount * 4100, 'KHR')}
           </p>
         </div>
@@ -71,14 +71,14 @@ export const PurchaseReturnsStatsCards: React.FC<PurchaseReturnsStatsCardsProps>
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
+        className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
       >
         <div className="space-y-1">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <p className="text-[10px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
             {t('purchases.approvedReturns', 'Approved & Shipped')}
           </p>
           <p className="text-2xl font-extrabold text-emerald-500 tracking-tight font-mono">{approvedReturns.length}</p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground dark:text-slate-400">
             {t('purchases.inventoryDebited', 'Inventory restocked / debited')}
           </p>
         </div>
@@ -92,18 +92,18 @@ export const PurchaseReturnsStatsCards: React.FC<PurchaseReturnsStatsCardsProps>
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
+        className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-xs hover:shadow-md transition-all duration-200"
       >
         <div className="space-y-1">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <p className="text-[10px] font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
             {t('purchases.pendingApproval', 'Pending Action')}
           </p>
-          <p className="text-2xl font-extrabold text-blue-500 tracking-tight font-mono">{pendingReturns.length}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {t('purchases.awaitingReview', 'Awaiting review / shipment')}
+          <p className="text-2xl font-extrabold text-amber-500 tracking-tight font-mono">{pendingReturns.length}</p>
+          <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+            {t('purchases.awaitingCreditNote', 'Awaiting review & debit approval')}
           </p>
         </div>
-        <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
           <Truck size={22} />
         </div>
       </motion.div>

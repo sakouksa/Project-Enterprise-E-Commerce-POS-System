@@ -22,6 +22,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
+import { downloadCsv } from '@/utils/export'
 
 interface TrashItem {
   id:          number
@@ -439,30 +440,6 @@ const RecycleBinPage: React.FC = () => {
   }
 
   // ── CSV Export Handler ─────────────────────────────────────────────────────
-  const downloadCSVFile = (filename: string, headers: string[], rows: (string | number)[][]) => {
-    const escapeCell = (val: any) => {
-      if (val === null || val === undefined) return '""'
-      const str = String(val).replace(/"/g, '""')
-      return `"${str}"`
-    }
-
-    const csvContent =
-      '\uFEFF' +
-      headers.map(escapeCell).join(',') +
-      '\n' +
-      rows.map((row) => row.map(escapeCell).join(',')).join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}_export_${new Date().toISOString().split('T')[0]}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
   const handleExportCSV = () => {
     sound.playClick()
     toast.info(`Exporting ${activeTab} recycle bin CSV dataset...`)
@@ -476,7 +453,7 @@ const RecycleBinPage: React.FC = () => {
         item.deleted_by || 'System Admin',
         item.status || 'Deleted',
       ])
-      downloadCSVFile(`recycle_bin_${activeTab}`, headers, rows)
+      downloadCsv(`recycle_bin_${activeTab}`, headers, rows)
       toast.success(`Exported ${rows.length} deleted records to CSV!`)
     }, 300)
   }

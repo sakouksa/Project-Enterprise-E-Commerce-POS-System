@@ -1,6 +1,8 @@
 import React from 'react'
 import { ShieldCheck, MapPin, Phone, Mail } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useCompanyStore } from '@/stores/companyStore'
+import { getAbsoluteImageUrl } from '@/utils/image'
 
 export interface CompanyPrintInfo {
   name?: string
@@ -51,16 +53,19 @@ export const GlobalPrintHeader: React.FC<GlobalPrintHeaderProps> = ({
   extraMeta = [],
 }) => {
   const { t } = useTranslation(['purchases', 'common'])
+  const { branding } = useCompanyStore()
+  const rawLogo = companyInfo?.logoUrl || branding.logo || '/logo.svg'
+  const logoUrl = getAbsoluteImageUrl(rawLogo) || '/logo.svg'
 
   const company: CompanyPrintInfo = {
-    name: companyInfo?.name || t('purchases.printStoreName', t('printStoreName', 'ENTERPRISE POS + E-COMMERCE')),
-    tagline: companyInfo?.tagline || t('purchases.printTagline', t('printTagline', 'Omni-Channel Retail & Multi-Branch Inventory System')),
-    address: companyInfo?.address || t('purchases.printAddress', t('printAddress', 'Phnom Penh, Kingdom of Cambodia')),
-    phone: companyInfo?.phone || t('purchases.printPhone', t('printPhone', '+855 (0) 23 999 888')),
-    email: companyInfo?.email || t('purchases.printEmail', t('printEmail', 'support@enterprisepos.com')),
-    website: companyInfo?.website || 'www.enterprisepos.com',
-    vatNumber: companyInfo?.vatNumber || t('purchases.printVatNumber', t('printVatNumber', 'VAT Reg No: VAT-88902194')),
-    logoUrl: companyInfo?.logoUrl || '/logo.svg',
+    name: companyInfo?.name || branding.company_name || branding.brand_name || 'NEXPOS ENTERPRISE',
+    tagline: companyInfo?.tagline || branding.brand_tagline || 'Omni-Channel Retail & Multi-Branch Inventory System',
+    address: companyInfo?.address || branding.address || 'Phnom Penh, Kingdom of Cambodia',
+    phone: companyInfo?.phone || branding.phone || '+855 (0) 23 888 999',
+    email: companyInfo?.email || branding.email || 'support@nexpos.io',
+    website: companyInfo?.website || 'www.nexpos.io',
+    vatNumber: companyInfo?.vatNumber || 'VAT Reg No: VAT-88902194',
+    logoUrl,
   }
 
   const docType = documentTypeLabel || t('purchases.officialDebitNote', t('officialDebitNote', 'Official Enterprise Document'))

@@ -4,6 +4,8 @@ import { ArrowLeftRight, Truck, CheckCircle2, Clock, XCircle, Eye, Edit, Trash2,
 import TableWrapper from '@/components/shared/TableWrapper'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import Pagination from '@/components/shared/Pagination'
+import StatusBadge from '@/components/common/StatusBadge'
+import { formatShortDate } from '@/utils/formatters'
 
 interface StockTransfersTableProps {
   data: any
@@ -41,50 +43,7 @@ export const StockTransfersTable: React.FC<StockTransfersTableProps> = ({
 
   const activeColCount = 1 + Object.values(visibleColumns).filter(v => v !== false).length
 
-  const formatShortDate = (dateStr: string | null | undefined): string => {
-    if (!dateStr) return '—'
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return '—'
-    const yyyy = date.getFullYear()
-    const mm = String(date.getMonth() + 1).padStart(2, '0')
-    const dd = String(date.getDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'in_transit':
-      case 'shipped':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <Truck size={10} />
-            {t('inTransit', 'In Transit')}
-          </span>
-        )
-      case 'received':
-      case 'completed':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <CheckCircle2 size={10} />
-            {t('completed', 'Completed')}
-          </span>
-        )
-      case 'cancelled':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            <XCircle size={10} />
-            {t('cancelled', 'Cancelled')}
-          </span>
-        )
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <Clock size={10} />
-            {t('draft', 'Draft')}
-          </span>
-        )
-    }
-  }
+  const getStatusBadge = (status: string) => <StatusBadge status={status} />
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden print:hidden">

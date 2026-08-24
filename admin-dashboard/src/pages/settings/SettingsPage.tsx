@@ -684,6 +684,7 @@ const SettingsPage: React.FC = () => {
                           <div className="w-full h-full flex items-center justify-center">
                             <BrandLogo size="lg" customLogo={logoPreview || siteLogo} bordered={false} />
                           </div>
+                        
                         )}
 
                         {/* Hover change overlay */}

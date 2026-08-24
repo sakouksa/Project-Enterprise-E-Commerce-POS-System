@@ -48,6 +48,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useCompanyStore } from '@/stores/companyStore'
 import { BrandLogo } from '@/components/common/BrandLogo'
+import LanguageDropdown from '@/components/layout/LanguageDropdown'
+import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
 import api from '@/api/client'
 
 // ─── Pure Vector SVG Country Flag Component ───────────────────────────────────
@@ -460,134 +462,22 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Actions (Language Switcher with Vector Country Flags) */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Quick Actions (Language Switcher & Theme Mode matching Admin Dashboard) */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Support Modal Trigger */}
           <button
             onClick={() => setActiveModal('support')}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 transition-all shadow-xs"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 transition-all shadow-2xs cursor-pointer"
           >
             <Headphones className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>{t('auth.helpSupport')}</span>
           </button>
 
-          {/* Language Switcher Dropdown (With Vector Country Flag Icons) */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setLangDropdownOpen(!langDropdownOpen)
-                setThemeDropdownOpen(false)
-              }}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800 transition-all shadow-xs text-xs font-semibold cursor-pointer"
-            >
-              <CountryFlagIcon code={currentLangObj.code} className="w-5 h-3.5" />
-              <span className="hidden sm:inline text-xs">{currentLangObj.label}</span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+          {/* Standard 5-Language Dropdown with Search & Flags (Exact match with Admin Dashboard) */}
+          <LanguageDropdown />
 
-            <AnimatePresence>
-              {langDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-30"
-                    onClick={() => setLangDropdownOpen(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-48 sm:w-52 max-w-[calc(100vw-32px)] rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50"
-                  >
-                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/80 mb-1 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Language</span>
-                    </div>
-                    {LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                          language === lang.code
-                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <CountryFlagIcon code={lang.code} className="w-5 h-3.5" />
-                          <span>{lang.label}</span>
-                        </div>
-                        {language === lang.code && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Theme Mode Dropdown Popup */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setThemeDropdownOpen(!themeDropdownOpen)
-                setLangDropdownOpen(false)
-              }}
-              title="Change Appearance Mode"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800 transition-all shadow-xs cursor-pointer"
-            >
-              {darkMode ? (
-                <Moon className="w-4 h-4 text-blue-400" />
-              ) : (
-                <Sun className="w-4 h-4 text-amber-500" />
-              )}
-            </button>
-
-            <AnimatePresence>
-              {themeDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-30"
-                    onClick={() => setThemeDropdownOpen(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-40 sm:w-44 max-w-[calc(100vw-32px)] rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50"
-                  >
-                    {[
-                      { id: 'light', label: t('auth.theme.light', 'Light Mode'), icon: <Sun className="w-4 h-4 text-amber-500" /> },
-                      { id: 'dark', label: t('auth.theme.dark', 'Dark Mode'), icon: <Moon className="w-4 h-4 text-blue-400" /> },
-                      { id: 'system', label: t('auth.theme.system', 'System Default'), icon: <Monitor className="w-4 h-4 text-slate-400" /> },
-                    ].map((mode) => {
-                      const isSel = themeMode === mode.id
-                      return (
-                        <button
-                          key={mode.id}
-                          onClick={() => handleThemeChange(mode.id as any)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                            isSel
-                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            {mode.icon}
-                            <span>{mode.label}</span>
-                          </div>
-                          {isSel && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
-                        </button>
-                      )
-                    })}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Standard Theme Switcher with Light, Dark, and System Default (Exact match with Admin Dashboard) */}
+          <ThemeSwitcher />
         </div>
       </header>
 

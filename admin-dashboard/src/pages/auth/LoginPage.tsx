@@ -592,110 +592,128 @@ const LoginPage: React.FC = () => {
       </header>
 
       {/* ─── MAIN RESPONSIVE SPLIT LAYOUT ──────────────────────────────────── */}
-      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 lg:py-8 flex-1 flex items-center justify-center">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-14 items-center my-auto">
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-8 lg:py-10 flex-1 flex items-center justify-center">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-16 items-center my-auto">
 
-          {/* ─── LEFT HERO SECTION (Desktop & Large Screens) ───────────────── */}
-          <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-center py-2 lg:py-4 pr-0 xl:pr-6">
+          {/* ─── LEFT HERO SECTION (Ultra-Clean Modern Typography & Value Props) ── */}
+          <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-center py-4 pr-0 xl:pr-6">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="space-y-4 xl:space-y-5 max-w-xl text-left"
+              className="space-y-6 max-w-xl text-left"
             >
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold backdrop-blur-md">
-                <Sparkles className="w-3.5 h-3.5 animate-spin-slow shrink-0" />
-                <span>{language === 'km' ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} ជំនាន់ថ្មី` : `${branding.brand_name || 'OptaPOS'} Enterprise Edition`}</span>
+              {/* Feature Pill Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span>{language === 'km' ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} Enterprise ជំនាន់ថ្មី` : `${branding.brand_name || 'OptaPOS'} Enterprise Commerce Platform`}</span>
               </div>
 
-              {/* Main Headline */}
-              <h1 className="text-3xl lg:text-4xl xl:text-[44px] font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
-                {language === 'km' 
-                  ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} Omni-Commerce` 
-                  : `${branding.brand_name || 'OptaPOS'} Enterprise Commerce`}
+              {/* Main Headline with generous line-height for Khmer Script */}
+              <h1 className="text-3xl lg:text-4xl xl:text-[42px] font-black text-slate-900 dark:text-white tracking-tight leading-[1.3] lg:leading-[1.35]">
+                {language === 'km' ? (
+                  <>
+                    ប្រព័ន្ធគ្រប់គ្រង <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500">{branding.brand_name || 'OptaPOS'}</span> Omni-Commerce
+                  </>
+                ) : (
+                  <>
+                    Next-Gen <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500">{branding.brand_name || 'OptaPOS'}</span> Enterprise Commerce
+                  </>
+                )}
               </h1>
 
-              {/* Subtitle */}
+              {/* Subtitle with proper spacing */}
               <p className="text-slate-600 dark:text-slate-400 text-sm xl:text-base leading-relaxed max-w-lg">
-                {language === 'km' ? (branding.brand_tagline_km || 'ប្រព័ន្ធគ្រប់គ្រងការលក់ និងពាណិជ្ជកម្មឆ្លាតវៃជំនាន់ក្រោយ') : (branding.brand_tagline || 'Next-Generation Enterprise POS & Omni-Channel Commerce')}
+                {language === 'km' 
+                  ? (branding.brand_tagline_km || 'ប្រព័ន្ធគ្រប់គ្រងការលក់ និងពាណិជ្ជកម្មឆ្លាតវៃជំនាន់ក្រោយ ភ្ជាប់ទំនាក់ទំនងរវាងហាង និងអតិថិជន') 
+                  : (branding.brand_tagline || 'High-performance cloud POS and omni-channel commerce engine engineered for multi-branch enterprises.')}
               </p>
 
-              {/* ─── Responsive Animated Metric Cards ─────────────────────── */}
-              <div className="grid grid-cols-2 gap-3 xl:gap-3.5 pt-2 text-left">
-                {/* Sales Card */}
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              {/* ─── 3 Clean Value Highlights (Minimal, Sleek, Professional) ─── */}
+              <div className="space-y-3 pt-1 text-left">
+                <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/60 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-blue-600 dark:text-blue-400 font-bold">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.sales')}</div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">$128,450.00</div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate">{t('auth.cards.salesSub')}</div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {language === 'km' ? 'លក់រហ័ស & គាំទ្រ KHQR និងការទូទាត់ចម្រុះ' : 'High-Speed POS & Instant KHQR Payments'}
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {language === 'km' ? 'គិតលុយលឿន ចេញវិក្កយបត្រភ្លាមៗ មិនរអាក់រអួល' : 'Sub-second checkout, split tenders & auto thermal receipt'}
+                    </div>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* Inventory Card */}
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                    <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/60 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <Package className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.inventory')}</div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">14,250 Items</div>
-                    <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate">{t('auth.cards.inventorySub')}</div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {language === 'km' ? 'គ្រប់គ្រងស្តុកឃ្លាំងច្រើនសាខា Real-Time' : 'Multi-Branch Real-Time Inventory Control'}
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {language === 'km' ? 'តាមដានស្តុក ផ្ទេរទំនិញរវាងឃ្លាំង និងប្រកាសអាសន្នទំនិញជិតអស់' : 'Unified multi-warehouse ledger with instant low-stock alerts'}
+                    </div>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* Orders Card */}
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                    <ShoppingCart className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/60 shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-600 dark:text-purple-400 font-bold">
+                    <BarChart3 className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.orders')}</div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">1,840 Orders</div>
-                    <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate">{t('auth.cards.ordersSub')}</div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {language === 'km' ? 'របាយការណ៍ចំណូល-ចំណាយ & ហិរញ្ញវត្ថុច្បាស់លាស់' : 'Executive Financial & P&L Analytics'}
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {language === 'km' ? 'វិភាគថ្លៃដើម COGS ចំណេញដុល និងរបាយការណ៍វេនលក់' : 'Automated profit & loss, COGS valuation and shift audits'}
+                    </div>
                   </div>
-                </motion.div>
-
-                {/* Analytics Card */}
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                    <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{t('auth.cards.analytics')}</div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white truncate">Real-Time</div>
-                    <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium truncate">{t('auth.cards.analyticsSub')}</div>
-                  </div>
-                </motion.div>
+                </div>
               </div>
 
-              {/* Feature Chips */}
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600 dark:text-slate-400">
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80">
-                  <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> {t('auth.cards.warehouse')}
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80">
-                  <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> {t('auth.cards.employees')}
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> {t('auth.cards.finance')}
-                </span>
+              {/* ─── One-Click Quick Demo Accounts Bar ─────────────────────── */}
+              <div className="pt-2">
+                <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Key className="w-3 h-3 text-blue-500" />
+                  <span>{language === 'km' ? 'ចុចសាកល្បងភ្លាមៗ (Quick Demo Accounts):' : 'Quick Demo Logins:'}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue('username', 'admin', { shouldValidate: true })
+                      setValue('password', 'password', { shouldValidate: true })
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 text-xs font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <span>👑 Super Admin</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue('username', 'EMP-0001', { shouldValidate: true })
+                      setValue('password', 'password', { shouldValidate: true })
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-purple-200/80 dark:border-purple-800/60 text-purple-700 dark:text-purple-300 text-xs font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <span>💼 Store Manager</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue('username', 'cashier1', { shouldValidate: true })
+                      setValue('password', 'password', { shouldValidate: true })
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <span>🛍️ Cashier POS</span>
+                  </button>
+                </div>
               </div>
+
             </motion.div>
           </div>
 
@@ -724,11 +742,11 @@ const LoginPage: React.FC = () => {
 
                 {/* Header inside Login Card */}
                 <div className="text-center mb-6 sm:mb-7 flex flex-col items-center">
-                  <BrandLogo size="lg" animated className="mb-3 sm:mb-3.5" />
-                  <h2 className="text-xl sm:text-2xl xl:text-[26px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+                  <BrandLogo size="lg" animated className="mb-3.5" />
+                  <h2 className="text-xl sm:text-2xl xl:text-[26px] font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                     {t('auth.loginTitle')}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-medium">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-medium">
                     {t('auth.loginSubtitle')}
                   </p>
                 </div>

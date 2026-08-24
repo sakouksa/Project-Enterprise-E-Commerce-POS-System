@@ -33,7 +33,11 @@ Welcome to the comprehensive technical documentation for the **Enterprise E-Comm
 - [**Data Dictionary**](./database/data-dictionary.md): Comprehensive table-by-table column specification.
 
 ### 5. 🚀 Operations & Development
+- [**Full System Changelog & Step-by-Step Hosting Guide**](./production-hosting-and-changelog-guide.md): Comprehensive report of all system fixes, technical SEO, DRY refactors, and full VPS / Vercel / Render hosting walkthrough.
 - [**Production Deployment Guide**](./deployment.md): Docker Compose setup, Nginx reverse proxy, production optimization, and SSL.
+- [**Hosting & Sizing Guide**](./hosting.md): Cloud provider recommendations, sizing matrix, and network security.
+- [**Customer Website Architecture**](../customer-website/docs/customer-website-architecture.md): Frontend architecture, data flow, and component rules.
+- [**Customer Website Developer Guide**](../customer-website/docs/customer-website-developer-guide.md): Onboarding handbook with step-by-step recipes.
 - [**Local Development Guide**](./development-guide.md): Monorepo setup, environment variables, Artisan commands, and database seeding.
 - [**Git Workflow & PR Standards**](./git-workflow.md): Branching strategy, Conventional Commits, and pull request checklist.
 - [**Troubleshooting & FAQ**](./troubleshooting.md): Solutions for database connectivity, CORS, cache issues, and thermal printer fonts.

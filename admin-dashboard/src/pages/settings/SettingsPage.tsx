@@ -673,8 +673,8 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center gap-5 pt-1">
-                      {/* Logo Live Preview Box (Fixed Dimension, Clean Contain) */}
-                      <div className="relative group w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white dark:bg-slate-950 border-2 border-dashed border-primary/40 dark:border-primary/30 flex items-center justify-center p-2.5 shrink-0 shadow-sm overflow-hidden hover:border-primary transition-all duration-200">
+                      {/* Logo Live Preview Box (Fixed Dimension, Clean Contain, Transparent) */}
+                      <div className="relative group w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-muted/20 dark:bg-slate-900/40 border-2 border-dashed border-border/80 hover:border-primary/60 flex items-center justify-center p-2.5 shrink-0 shadow-xs overflow-hidden transition-all duration-200">
                         {isUploadingLogo ? (
                           <div className="flex flex-col items-center justify-center text-primary gap-1.5">
                             <Loader2 className="w-7 h-7 animate-spin" />

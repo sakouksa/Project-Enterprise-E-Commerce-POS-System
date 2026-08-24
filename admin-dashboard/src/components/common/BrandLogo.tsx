@@ -19,11 +19,11 @@ interface BrandLogoProps {
 }
 
 const SIZE_MAP = {
-  xs: { box: 'w-8 h-8', rounded: 'rounded-xl', text: 'text-xs', sub: 'text-[9px]' },
-  sm: { box: 'w-10 h-10', rounded: 'rounded-xl', text: 'text-sm', sub: 'text-[10px]' },
-  md: { box: 'w-12 h-12', rounded: 'rounded-2xl', text: 'text-base', sub: 'text-xs' },
-  lg: { box: 'w-16 h-16 sm:w-20 sm:h-20', rounded: 'rounded-2xl sm:rounded-3xl', text: 'text-xl', sub: 'text-xs' },
-  xl: { box: 'w-24 h-24 sm:w-28 sm:h-28', rounded: 'rounded-3xl', text: 'text-2xl', sub: 'text-sm' },
+  xs: { box: 'w-8 h-8', text: 'text-xs', sub: 'text-[9px]' },
+  sm: { box: 'w-10 h-10', text: 'text-sm', sub: 'text-[10px]' },
+  md: { box: 'w-12 h-12', text: 'text-base', sub: 'text-xs' },
+  lg: { box: 'w-16 h-16 sm:w-20 sm:h-20', text: 'text-xl', sub: 'text-xs' },
+  xl: { box: 'w-24 h-24 sm:w-28 sm:h-28', text: 'text-2xl', sub: 'text-sm' },
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
@@ -37,7 +37,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   animated = false,
   onClick,
   rounded,
-  bordered = true,
+  bordered = false,
 }) => {
   const { branding } = useCompanyStore()
   const { user } = useAuthStore()
@@ -55,19 +55,19 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const displayTagline = branding.brand_tagline || 'Next-Generation Enterprise POS'
 
   const dims = SIZE_MAP[size] || SIZE_MAP.sm
-  const appliedRounded = rounded ? `rounded-${rounded}` : dims.rounded
+  const appliedRounded = rounded ? `rounded-${rounded}` : 'rounded-2xl'
 
   const Content = (
     <div
       className={`inline-flex items-center gap-3 ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
-      {/* ─── Master Logo Container (Fixed Aspect Ratio, Ultra-Clean Contain) ─── */}
+      {/* ─── Master Logo Container (Transparent Background, Clean Contain) ─── */}
       <div
-        className={`relative flex items-center justify-center shrink-0 p-1.5 overflow-hidden transition-all duration-200 ${dims.box} ${appliedRounded} ${
+        className={`relative flex items-center justify-center shrink-0 transition-all duration-200 ${dims.box} ${appliedRounded} ${
           bordered
-            ? 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs ring-1 ring-black/5 dark:ring-white/5'
-            : 'bg-transparent'
+            ? 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs ring-1 ring-black/5 dark:ring-white/5 p-1.5'
+            : 'bg-transparent border-0 shadow-none p-0'
         }`}
       >
         {!imgError && logoUrl ? (
@@ -75,11 +75,11 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
             src={logoUrl}
             alt={`${displayName} Logo`}
             onError={() => setImgError(true)}
-            className={`w-full h-full max-w-full max-h-full object-contain filter drop-shadow-xs transition-transform duration-200 select-none ${imageClassName}`}
+            className={`w-full h-full max-w-full max-h-full object-contain select-none transition-transform duration-200 ${imageClassName}`}
           />
         ) : (
           /* Sleek fallback vector monogram badge */
-          <div className="w-full h-full rounded-xl bg-gradient-to-tr from-rose-600 via-red-600 to-amber-500 flex items-center justify-center text-white font-black shadow-inner">
+          <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-rose-600 via-red-600 to-amber-500 flex items-center justify-center text-white font-black shadow-inner">
             <span className="leading-none text-white tracking-wider font-extrabold text-sm uppercase">
               {displayName.charAt(0).toUpperCase()}
             </span>

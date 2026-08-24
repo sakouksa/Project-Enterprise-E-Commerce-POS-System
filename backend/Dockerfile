@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     libwebp-dev \
     libxml2-dev \
+    libzip-dev \
     oniguruma-dev \
     icu-dev \
     zip \
@@ -27,7 +28,8 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp \
         bcmath \
         gd \
         opcache \
-        intl
+        intl \
+        zip
 
 # Copy Composer
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer

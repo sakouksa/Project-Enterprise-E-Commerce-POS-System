@@ -39,7 +39,7 @@ class HealthController extends Controller
             $isHealthy = false;
             $checks['database'] = [
                 'status' => 'DOWN',
-                'error' => 'Database connection failed',
+                'error' => 'Database connection failed: ' . $e->getMessage(),
             ];
         }
 
@@ -61,7 +61,7 @@ class HealthController extends Controller
             $isHealthy = false;
             $checks['cache'] = [
                 'status' => 'DOWN',
-                'error' => 'Cache connection failed',
+                'error' => 'Cache connection failed: ' . $e->getMessage(),
             ];
         }
 

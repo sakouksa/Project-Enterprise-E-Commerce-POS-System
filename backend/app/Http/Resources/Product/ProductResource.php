@@ -2,11 +2,14 @@
 
 namespace App\Http\Resources\Product;
 
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductResource extends JsonResource
 {
+    use FormatsMediaUrl;
+
     public function toArray(Request $request): array
     {
         return [
@@ -50,7 +53,7 @@ class ProductResource extends JsonResource
             'brand' => $this->whenLoaded('brand', fn() => [
                 'id'   => $this->brand?->id,
                 'name' => $this->brand?->name,
-                'logo' => $this->brand?->logo,
+                'logo' => $this->formatMediaUrl($this->brand?->logo),
             ]),
             'unit' => $this->whenLoaded('unit', fn() => [
                 'id'     => $this->unit?->id,
@@ -142,14 +145,6 @@ class ProductResource extends JsonResource
 
     protected function formatImageUrl(?string $path): ?string
     {
-        if (empty($path)) return null;
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-        $clean = ltrim($path, '/');
-        if (str_starts_with($clean, 'storage/')) {
-            return asset($clean);
-        }
-        return asset('storage/' . $clean);
+        return $this->formatMediaUrl($path);
     }
 }

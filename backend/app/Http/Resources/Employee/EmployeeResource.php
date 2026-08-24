@@ -2,13 +2,18 @@
 
 namespace App\Http\Resources\Employee;
 
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class EmployeeResource extends JsonResource
 {
+    use FormatsMediaUrl;
+
     public function toArray(Request $request): array
     {
+        $photoUrl = $this->formatMediaUrl($this->photo);
+
         return [
             'id' => $this->id,
             'company_id' => $this->company_id,
@@ -24,8 +29,8 @@ class EmployeeResource extends JsonResource
             'gender' => $this->gender,
             'birth_date' => $this->birth_date?->format('Y-m-d'),
             'address' => $this->address,
-            'photo' => $this->photo,
-            'photo_url' => $this->photo ? \Illuminate\Support\Facades\Storage::url($this->photo) : null,
+            'photo' => $photoUrl,
+            'photo_url' => $photoUrl,
             'join_date' => $this->join_date?->format('Y-m-d'),
             'resign_date' => $this->resign_date?->format('Y-m-d'),
             'status' => $this->status,

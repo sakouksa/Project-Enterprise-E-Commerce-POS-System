@@ -2,21 +2,17 @@
 
 namespace App\Http\Resources\Auth;
 
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends JsonResource
 {
+    use FormatsMediaUrl;
+
     public function toArray(Request $request): array
     {
-        $avatarUrl = $this->avatar;
-        if ($avatarUrl && !str_starts_with($avatarUrl, 'http') && !str_starts_with($avatarUrl, 'https')) {
-            if (str_starts_with($avatarUrl, '/storage') || str_starts_with($avatarUrl, 'storage')) {
-                $avatarUrl = asset($avatarUrl);
-            } else {
-                $avatarUrl = asset('storage/' . $avatarUrl);
-            }
-        }
+        $avatarUrl = $this->formatMediaUrl($this->avatar);
 
         return [
             'id'            => $this->id,
@@ -32,7 +28,7 @@ class UserResource extends JsonResource
             'company'       => $this->whenLoaded('company', fn() => [
                 'id'   => $this->company?->id,
                 'name' => $this->company?->name,
-                'logo' => $this->company?->logo,
+                'logo' => $this->formatMediaUrl($this->company?->logo),
             ]),
             'branch' => $this->whenLoaded('branch', fn() => [
                 'id'   => $this->branch?->id,

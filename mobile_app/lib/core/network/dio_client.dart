@@ -1,12 +1,17 @@
 import 'package:dio/dio.dart';
 
 class DioClient {
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://enterprise-pos-api.onrender.com/api/v1',
+  );
+
   final Dio _dio;
 
-  DioClient()
+  DioClient({String? baseUrl})
       : _dio = Dio(
           BaseOptions(
-            baseUrl: 'http://localhost:8001/api/v1',
+            baseUrl: baseUrl ?? defaultBaseUrl,
             connectTimeout: const Duration(seconds: 15),
             receiveTimeout: const Duration(seconds: 15),
             headers: {

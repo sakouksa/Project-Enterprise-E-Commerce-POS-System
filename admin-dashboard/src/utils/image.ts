@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@/api/client'
  * E.g. "https://enterprise-pos-api.onrender.com/api/v1" -> "https://enterprise-pos-api.onrender.com"
  * In local dev without absolute API_BASE_URL, returns "" (uses Vite proxy).
  */
-const getBackendOrigin = (): string => {
+export const getBackendOrigin = (): string => {
   const base = import.meta.env.VITE_API_BASE_URL || API_BASE_URL || ''
   if (base.startsWith('http://') || base.startsWith('https://')) {
     return base.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '').replace(/\/+$/, '')
@@ -16,7 +16,22 @@ const getBackendOrigin = (): string => {
   return ''
 }
 
-const BACKEND_ORIGIN = getBackendOrigin()
+export const BACKEND_ORIGIN = getBackendOrigin()
+
+export type MediaFallbackType = 'product' | 'avatar' | 'brand' | 'category' | 'banner' | 'company' | 'general'
+
+/**
+ * Standard fallbacks for missing or broken images.
+ */
+export const DEFAULT_FALLBACKS: Record<MediaFallbackType, string> = {
+  product: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+  brand: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&auto=format&fit=crop&q=80',
+  category: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&auto=format&fit=crop&q=80',
+  banner: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80',
+  company: '/logo.png',
+  general: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&auto=format&fit=crop&q=80',
+}
 
 /**
  * Normalizes and converts any product/user/employee/receipt/logo image value (string, object, path, full URL)
@@ -34,7 +49,7 @@ export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
     path = (urlOrPath.url || urlOrPath.image || urlOrPath.image_path || urlOrPath.photo || urlOrPath.avatar || urlOrPath.path || '').trim()
   }
 
-  if (!path || typeof path !== 'string') return ''
+  if (!path || typeof path !== 'string' || path === '[]' || path === '""' || path === 'null') return ''
 
   // Data URIs or Blob URLs
   if (path.startsWith('data:') || path.startsWith('blob:')) {
@@ -69,7 +84,7 @@ export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
       return BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api/v1/storage/${cleanPath}` : `/api/v1/storage/${cleanPath}`
     }
 
-    // Secure HTTP to HTTPS if on production
+    // Secure HTTP to HTTPS if on production Render domain
     if (path.startsWith('http://enterprise-pos-api.onrender.com')) {
       return path.replace(/^http:\/\//, 'https://')
     }
@@ -85,6 +100,18 @@ export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
   }
 
   return `/api/v1/storage/${cleanPath}`
+}
+
+/**
+ * Universal Canonical Media Resolver.
+ */
+export const resolveMediaUrl = (urlOrPath?: any, fallbackType?: MediaFallbackType): string => {
+  const resolved = getAbsoluteImageUrl(urlOrPath)
+  if (resolved) return resolved
+  if (fallbackType && DEFAULT_FALLBACKS[fallbackType]) {
+    return DEFAULT_FALLBACKS[fallbackType]
+  }
+  return ''
 }
 
 /**
@@ -124,7 +151,7 @@ export const getProductFallbackPhoto = (categoryName?: string, productName?: str
   if (name.includes('apparel') || name.includes('cloth') || name.includes('shirt')) {
     return 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'
   }
-  return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80'
+  return DEFAULT_FALLBACKS.product
 }
 
 /**
@@ -140,4 +167,3 @@ export const resolveProductPhoto = (
   if (url) return url
   return getProductFallbackPhoto(categoryName, productName)
 }
-

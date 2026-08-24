@@ -2,18 +2,17 @@
 
 namespace App\Http\Resources\Customer;
 
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CustomerResource extends JsonResource
 {
+    use FormatsMediaUrl;
+
     public function toArray(Request $request): array
     {
-        $photoUrl = $this->photo;
-        if ($photoUrl && !str_starts_with($photoUrl, 'http://') && !str_starts_with($photoUrl, 'https://')) {
-            $clean = ltrim($photoUrl, '/');
-            $photoUrl = str_starts_with($clean, 'storage/') ? asset($clean) : asset('storage/' . $clean);
-        }
+        $photoUrl = $this->formatMediaUrl($this->photo);
 
         return [
             'id'                => $this->id,

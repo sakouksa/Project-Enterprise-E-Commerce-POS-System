@@ -2,11 +2,14 @@
 
 namespace App\Http\Resources\Product;
 
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductVariantResource extends JsonResource
 {
+    use FormatsMediaUrl;
+
     public function toArray(Request $request): array
     {
         return [
@@ -19,7 +22,7 @@ class ProductVariantResource extends JsonResource
             'selling_price' => (float) $this->selling_price,
             'compare_price' => $this->compare_price ? (float) $this->compare_price : null,
             'weight'        => $this->weight ? (float) $this->weight : null,
-            'image'         => $this->image ? (str_starts_with($this->image, 'http') ? $this->image : asset('storage/' . ltrim($this->image, '/'))) : null,
+            'image'         => $this->formatMediaUrl($this->image),
             'is_active'     => (bool) $this->is_active,
             'stock'         => ($this->relationLoaded('inventories') && $this->inventories->count() > 0)
                                 ? (float) $this->inventories->sum('quantity')

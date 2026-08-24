@@ -2,11 +2,14 @@
 
 namespace App\Http\Resources\Notification;
 
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class NotificationResource extends JsonResource
 {
+    use FormatsMediaUrl;
+
     public function toArray(Request $request): array
     {
         $userId = auth()->id();
@@ -29,7 +32,7 @@ class NotificationResource extends JsonResource
             'icon' => $this->icon,
             'color' => $this->color,
             'priority' => $this->priority,
-            'image' => $this->image,
+            'image' => $this->formatMediaUrl($this->image),
             'action_url' => $this->action_url,
             'reference_type' => $this->reference_type,
             'reference_id' => $this->reference_id,

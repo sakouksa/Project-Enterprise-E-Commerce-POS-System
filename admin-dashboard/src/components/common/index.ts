@@ -38,4 +38,8 @@ export type { CustomerAddressModalProps, CustomerAddress, AddressFormData } from
 export { default as CustomerGroupModal } from './CustomerGroupModal'
 export type { CustomerGroupModalProps, CustomerGroup, CustomerGroupFormData } from './CustomerGroupModal'
 export { default as PercentBadge } from './PercentBadge'
+export { default as AppImage } from './AppImage'
+export type { AppImageProps } from './AppImage'
+export { default as AvatarImage } from './AvatarImage'
+export type { AvatarImageProps } from './AvatarImage'
 export type { PercentBadgeProps, PercentBadgeVariant } from './PercentBadge'

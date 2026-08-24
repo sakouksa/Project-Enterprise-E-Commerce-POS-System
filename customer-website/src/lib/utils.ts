@@ -69,49 +69,79 @@ export function calculateDiscountPercent(price: number, comparePrice?: number): 
   return Math.round(((comparePrice - price) / comparePrice) * 100)
 }
 
-export function getImageUrl(path?: string | null): string {
-  if (!path) return '/images/placeholder-product.png'
+export type MediaFallbackType = 'product' | 'avatar' | 'brand' | 'category' | 'banner' | 'company' | 'general'
 
-  // If data URI
-  if (path.startsWith('data:') || path.startsWith('blob:')) return path
+export const DEFAULT_FALLBACKS: Record<MediaFallbackType, string> = {
+  product: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+  brand: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&auto=format&fit=crop&q=80',
+  category: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&auto=format&fit=crop&q=80',
+  banner: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80',
+  company: '/logo.png',
+  general: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&auto=format&fit=crop&q=80',
+}
+
+export function getImageUrl(path?: any): string {
+  if (!path) return ''
+
+  let str = ''
+  if (typeof path === 'string') {
+    str = path.trim()
+  } else if (typeof path === 'object' && path !== null) {
+    str = (path.url || path.image || path.image_path || path.photo || path.avatar || path.path || '').trim()
+  }
+
+  if (!str || str === '[]' || str === '""' || str === 'null') return ''
+
+  // If data URI or blob
+  if (str.startsWith('data:') || str.startsWith('blob:')) return str
 
   // Local frontend public directory assets
   if (
-    path === '/logo.svg' ||
-    path === '/logo.png' ||
-    path === '/favicon.svg' ||
-    path === '/favicon.ico' ||
-    path === '/icons.svg' ||
-    path === '/apple-touch-icon.png' ||
-    path.startsWith('/images/') ||
-    path.startsWith('/assets/')
+    str === '/logo.svg' ||
+    str === '/logo.png' ||
+    str === '/favicon.svg' ||
+    str === '/favicon.ico' ||
+    str === '/icons.svg' ||
+    str === '/apple-touch-icon.png' ||
+    str.startsWith('/images/') ||
+    str.startsWith('/assets/')
   ) {
-    return path
+    return str
   }
 
   const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://enterprise-pos-api.onrender.com/api/v1' : '')
   const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '').replace(/\/+$/, '')
 
   // If already an absolute URL
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    const isLocalhost = /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(path)
+  if (str.startsWith('http://') || str.startsWith('https://')) {
+    const isLocalhost = /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(str)
     if (isLocalhost) {
-      const cleanPath = path
+      const cleanPath = str
         .replace(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?\/?/, '')
         .replace(/^(api\/v1\/)?storage\//, '')
       return origin ? `${origin}/api/v1/storage/${cleanPath}` : `/api/v1/storage/${cleanPath}`
     }
-    return path.replace(/^http:\/\/enterprise-pos-api\.onrender\.com/, 'https://enterprise-pos-api.onrender.com')
+    return str.replace(/^http:\/\/enterprise-pos-api\.onrender\.com/, 'https://enterprise-pos-api.onrender.com')
   }
 
-  // Clean path
-  const clean = path.replace(/^\/?(api\/v1\/storage\/|storage\/)/, '').replace(/^\//, '')
+  // Clean relative path
+  const clean = str.replace(/^\/?(api\/v1\/storage\/|storage\/)/, '').replace(/^\//, '')
 
   if (origin) {
     return `${origin}/api/v1/storage/${clean}`
   }
 
   return `/api/v1/storage/${clean}`
+}
+
+export function resolveMediaUrl(path?: any, fallbackType?: MediaFallbackType): string {
+  const url = getImageUrl(path)
+  if (url) return url
+  if (fallbackType && DEFAULT_FALLBACKS[fallbackType]) {
+    return DEFAULT_FALLBACKS[fallbackType]
+  }
+  return DEFAULT_FALLBACKS.product
 }
 
 export function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number) {

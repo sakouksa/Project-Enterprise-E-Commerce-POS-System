@@ -1,38 +1,41 @@
 import React, { useState } from 'react'
-import { cn, getImageUrl } from '@/lib/utils'
+import { cn, resolveMediaUrl, DEFAULT_FALLBACKS, type MediaFallbackType } from '@/lib/utils'
 
 export interface ImageWithFallbackProps
   extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
-  src?: string | null
+  src?: any
+  fallbackType?: MediaFallbackType
   fallbackSrc?: string
-  aspectRatio?: 'square' | 'video' | 'auto' | 'banner'
+  aspectRatio?: 'square' | 'video' | 'auto' | 'banner' | 'portrait'
   containerClassName?: string
 }
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
+  fallbackType = 'product',
   alt = 'Product image',
-  fallbackSrc = '/images/placeholder-product.png',
+  fallbackSrc,
   aspectRatio = 'auto',
   containerClassName,
   className,
   loading = 'lazy',
   ...props
 }) => {
-  const [imgSrc, setImgSrc] = useState<string>(getImageUrl(src))
+  const defaultFallback = fallbackSrc || DEFAULT_FALLBACKS[fallbackType] || DEFAULT_FALLBACKS.product
+  const [imgSrc, setImgSrc] = useState<string>(resolveMediaUrl(src, fallbackType))
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   // Sync state if src prop changes
   React.useEffect(() => {
-    setImgSrc(getImageUrl(src))
+    setImgSrc(resolveMediaUrl(src, fallbackType))
     setHasError(false)
-  }, [src])
+  }, [src, fallbackType])
 
   const handleError = () => {
     if (!hasError) {
       setHasError(true)
-      setImgSrc(fallbackSrc)
+      setImgSrc(defaultFallback)
     }
   }
 

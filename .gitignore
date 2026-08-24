@@ -28,7 +28,7 @@ build/
 .vscode/
 
 # Database dumps (exceeding 100MB GitHub limit)
-database/
+/database/
 *.sql
 
 # GitHub Actions workflows (requires workflow PAT scope)

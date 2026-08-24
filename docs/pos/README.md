@@ -1,55 +1,59 @@
-# 🛒 OptaPOS Point of Sale (POS) Subsystem
+# 🛒 OptaPOS High-Speed Retail POS Subsystem
 
-Welcome to the technical manual for the **OptaPOS High-Speed Retail POS Engine**.
+សូមស្វាគមន៍មកកាន់ **មគ្គុទ្ទេសក៍ស្ថាបត្យកម្ម និងដំណើរការលម្អិតនៃម៉ាស៊ីនគិតប្រាក់ (Point of Sale - POS)** របស់ OptaPOS។
 
 ---
 
-## 📌 POS Overview & Architecture
+## 📌 មាតិកាឯកសារលម្អិតតាមផ្នែក (Detailed POS Documentation Index)
 
-The POS engine is engineered for high-volume supermarket, retail electronics, and boutique checkout environments. It operates across both the **React 19 Admin Web POS** and the **Flutter 3.24 Mobile POS** connected to Laravel 12 backend services.
+| ឯកសារ (Document) | ខ្លឹមសារ និងដំណើរការ (Topic & Workflow) |
+|---|---|
+| 1. [ទិដ្ឋភាពទូទៅនៃ POS](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/pos-overview.md) | ស្ថាបត្យកម្មទូទៅ, Layout ផ្ទាំង Touch Screen, និងគ្រាប់ចុចកាត់ (Hotkeys F1-F10) |
+| 2. [ការគ្រប់គ្រងវេនលក់ (Shift)](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/open-close-shift.md) | ការបើកវេន (Opening Float), ចរន្តលុយ Cash In/Out, និងការផ្ទៀងផ្ទាត់បិទវេន (Z-Report) |
+| 3. [ការស្វែងរកទំនិញ & Barcode/Voice](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/product-search-and-barcode.md) | Laser Scanner, Camera Scanner Modal, AI Voice Search, និង Variant Picker |
+| 4. [ការផ្អាកកន្ត្រក (Held Carts)](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/held-carts-and-multi-orders.md) | ផ្អាកកន្ត្រកភ្ញៀវភ្លេចលុយ (Parked Carts) និងការ Restore មកលក់បន្តវិញ |
+| 5. [អតិថិជន & កម្រិតតម្លៃ (Loyalty)](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/customer-loyalty-and-pricing.md) | ស្វែងរកអតិថិជន, កម្រិតតម្លៃ VIP/Wholesale, ការសន្សំ/ដូរពិន្ទុ, និងការទិញជំពាក់ |
+| 6. [ការបញ្ចុះតម្លៃ ពន្ធ & Coupons](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/discounts-taxes-and-coupons.md) | បញ្ចុះតម្លៃលើ Item/Cart, Promo Coupons, និងរូបមន្តគណនាពន្ធ Cambodian VAT 10% |
+| 7. [ការទូទាត់ Bakong KHQR](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/bakong-khqr-payments.md) | EMVCo Dynamic QR Code, Webhook & WebSocket ផ្ទៀងផ្ទាត់ស្វ័យប្រវត្តិនឹង NBC |
+| 8. [ការទូទាត់ចម្រុះ (Split Payments)](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/card-transfer-and-split-payments.md) | ការបង់ Cash + KHQR + Card ក្នុងវិក្កយបត្រតែមួយ និងការគណនាលុយអាប់ USD/KHR |
+| 9. [Atomic Row Locking ស្តុក](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/atomic-row-locking.md) | ការការពារកុំឱ្យលក់លើសស្តុកតាមរយៈ PostgreSQL `lockForUpdate()` ក្នុង `DB::transaction()` |
+| 10. [ការបោះពុម្ពវិក្កយបត្រ (Receipt)](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/receipt-printing.md) | ម៉ាស៊ីនព្រីនកម្ដៅ ESC/POS 80mm/58mm, វិក្កយបត្រផ្លូវការ A4/A5, និង Cash Drawer Kick |
+| 11. [ការបង្វិលសងប្រាក់ (Refunds)](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/returns-and-refunds.md) | ការទទួលទំនិញដូរ ឬសងប្រាក់, ការបូកស្តុកត្រឡប់, និងការអនុញ្ញាត Manager Override |
 
+---
+
+## ⚡ ដំណើរការសង្ខេបពីដើមដល់ចប់ (Complete Lifecycle Diagram)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cashier
+    participant UI as POS Client (React 19 / Flutter)
+    participant API as Laravel 12 API
+    participant DB as PostgreSQL 18
+    participant Printer as ESC/POS Thermal Printer
+
+    Cashier->>UI: បើកវេនលក់ (Opening Float $50)
+    UI->>API: POST /api/v1/pos/registers/open
+    API->>DB: INSERT INTO pos_shifts
+    loop ការលក់ទំនិញ (Sales Loop)
+        Cashier->>UI: Scan Barcode / Voice Search
+        UI->>UI: បូកទំនិញចូល Cart + គណនា Discount & VAT
+        Cashier->>UI: ចុច Checkout (Cash / KHQR / Card)
+        UI->>API: POST /api/v1/pos/checkout
+        API->>DB: BEGIN TRANSACTION ➜ lockForUpdate()
+        API->>DB: Deduct stock & INSERT sales, sale_items, payments
+        API->>DB: COMMIT TRANSACTION
+        API-->>UI: Return Success + Invoice Data
+        UI->>Printer: Print 80mm ESC/POS Receipt + Open Drawer
+    end
+    Cashier->>UI: បិទវេនលក់ (Close Shift & Physical Cash Count)
+    UI->>API: POST /api/v1/pos/registers/close
+    API->>DB: Calculate Variance & UPDATE pos_shifts
+    API-->>UI: Output Z-Report PDF
 ```
-+---------------------------------------------------------------------------------------------------------------+
-|                                            POS TRANSACTION LIFECYCLE                                          |
-+---------------------------------------------------------------------------------------------------------------+
-| 1. Open Shift ➜ 2. Scan Barcode ➜ 3. Apply Discount/Tax ➜ 4. Lock Stock ➜ 5. Pay (KHQR/Cash) ➜ 6. Receipt     |
-+---------------------------------------------------------------------------------------------------------------+
-```
 
 ---
-
-## 🗂️ POS Documentation Index
-
-| Document | Topic & Focus | Key Components Involved |
-|---|---|---|
-| [POS Overview](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/pos-overview.md) | Architectural overview, touch layout, state | `POSPage.tsx`, `pos_controller.dart` |
-| [Shift Management](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/open-close-shift.md) | Opening float, cash drawer reconciliation, shift close | `POSShiftController.php`, `pos_registers` |
-| [Bakong KHQR Payments](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/bakong-khqr-payments.md) | EMVCo QR generation, WebSocket payment callback | `BakongService.php`, `payments` |
-| [Atomic Row Locking](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/atomic-row-locking.md) | Concurrency protection, `lockForUpdate()`, FIFO | `POSService.php`, `inventories` |
-| [Split Payments & Refunds](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/split-payments-and-refunds.md) | Multi-tender checkout, partial return handling | `SaleReturnService.php`, `sale_returns` |
-| [Receipt Printing](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/pos/receipt-printing.md) | ESC/POS 80mm/58mm thermal printing & PDF receipts | `ReceiptController.php`, `sales` |
-
----
-
-## ⚡ POS Concurrency & Stock Flow
-
-When a cashier clicks **"Complete Sale"**:
-1. Frontend sends payload `POST /api/v1/pos/checkout`.
-2. Backend starts `DB::beginTransaction()`.
-3. Backend locks the target warehouse inventory records:
-   ```php
-   $inventory = Inventory::where('warehouse_id', $warehouseId)
-       ->where('product_variant_id', $variantId)
-       ->lockForUpdate()
-       ->firstOrFail();
-   ```
-4. If stock is insufficient, throws `422 Unprocessable Entity ("Insufficient stock")` and rolls back transaction.
-5. Deducts stock quantity and inserts audit log in `inventory_movements`.
-6. Creates `sales`, `sale_items`, and `payments` records.
-7. Commits database transaction.
-8. Triggers `SaleCompletedEvent` for real-time WebSocket notification and dashboard updates.
-
----
-*Related Docs:*
+*ឯកសារពាក់ព័ន្ធ:*
+- [Master Documentation Hub](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/README.md)
 - [Sales Business Domain](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/business-domains/sales/README.md)
-- [Database Schema Reference](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/database/README.md)

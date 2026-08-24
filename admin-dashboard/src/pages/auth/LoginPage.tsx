@@ -246,21 +246,6 @@ const LoginPage: React.FC = () => {
     }
   }
 
-  // Fast 1-Click Demo Account Autofill for frictionless UX testing
-  const fillDemoAccount = (role: 'admin' | 'manager' | 'cashier') => {
-    setServerError(null)
-    if (role === 'admin') {
-      setValue('username', 'admin', { shouldValidate: true })
-      setValue('password', 'password', { shouldValidate: true })
-    } else if (role === 'manager') {
-      setValue('username', 'manager', { shouldValidate: true })
-      setValue('password', 'password', { shouldValidate: true })
-    } else {
-      setValue('username', 'cashier', { shouldValidate: true })
-      setValue('password', 'password', { shouldValidate: true })
-    }
-  }
-
   // Reset Forgot Password Modal State
   const resetForgotState = () => {
     setForgotStep(1)
@@ -391,53 +376,45 @@ const LoginPage: React.FC = () => {
       const status = err.response?.status
       const backendMsg = err.response?.data?.message
 
-      // Standard OWASP Authentication Security Guideline (Prevent User Enumeration)
-      // Generic message for all credential errors (401, 404, 422)
-      const isCredentialError = status === 401 || status === 404 || status === 422
-
-      let errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ')
-      let errorMessage = t(
-        'auth.errors.invalidCredentials',
-        'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវឡើយ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នកឡើងវិញ។'
-      )
+      let errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
+      let errorMessage = t('auth.errors.unknown', 'មានកំហុសមិនរំពឹងទុកបានកើតឡើង។ សូមព្យាយាមម្តងទៀត។')
 
       if (!err.response) {
-        errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
         if (!navigator.onLine) {
-          errorMessage = t('auth.errors.offline', 'ឧបករណ៍របស់អ្នកកំពុងស្ថិតក្នុងស្ថានភាពគ្មានអ៊ីនធឺណិត (Offline)។')
+          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorMessage = t('auth.errors.offline')
         } else if (err.code === 'ECONNABORTED') {
-          errorMessage = t('auth.errors.timeout', 'ការឆ្លើយតបពីប្រព័ន្ធចំណាយពេលយូរជ្រុល។ សូមព្យាយាមចូលម្តងទៀត។')
+          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorMessage = t('auth.errors.timeout')
         } else {
-          errorMessage = t('auth.errors.networkError', 'មិនអាចភ្ជាប់ទៅកាន់ប្រព័ន្ធបានឡើយ។ សូមពិនិត្យមើលការតភ្ជាប់អ៊ីនធឺណិត ឬ Wi-Fi របស់អ្នក។')
+          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorMessage = t('auth.errors.networkError')
         }
-      } else if (isCredentialError) {
-        errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ')
-        errorMessage = t(
-          'auth.errors.invalidCredentials',
-          'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវឡើយ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នកឡើងវិញ។'
-        )
+      } else if (status === 401) {
+        errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
+        errorMessage = t('auth.errors.401')
       } else if (status === 403) {
-        errorTitle = t('auth.errorTitles.accessDenied', 'គណនីត្រូវបានផ្អាក ឬគ្មានសិទ្ធិ')
-        errorMessage = t(
-          'auth.errors.403',
-          'គណនីនេះត្រូវបានផ្អាក ឬគ្មានសិទ្ធិចូលប្រើប្រាស់ឡើយ។ សូមទាក់ទងអ្នកគ្រប់គ្រងប្រព័ន្ធ។'
-        )
+        errorTitle = t('auth.errorTitles.accessDenied', 'គណនីគ្មានសិទ្ធិ ឬត្រូវបានផ្អាក')
+        errorMessage = t('auth.errors.403')
+      } else if (status === 404) {
+        errorTitle = t('auth.errorTitles.notFound', 'រកមិនឃើញគណនី')
+        errorMessage = t('auth.errors.404')
       } else if (status === 419) {
         errorTitle = t('auth.errorTitles.sessionExpired', 'សេសសិនផុតកំណត់')
-        errorMessage = t(
-          'auth.errors.419',
-          'សេសសិននៃការចូលបានផុតកំណត់។ សូមផ្ទុកទំព័រនេះឡើងវិញ (Refresh) ហើយព្យាយាមម្តងទៀត។'
-        )
+        errorMessage = t('auth.errors.419')
+      } else if (status === 422) {
+        errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានមិនត្រឹមត្រូវ')
+        errorMessage = t('auth.errors.422')
       } else if (status === 429) {
-        errorTitle = t('auth.errorTitles.locked', 'គណនីត្រូវបានផ្អាកបណ្តោះអាសន្ន')
-        errorMessage = t(
-          'auth.errors.429',
-          'ដើម្បីសុវត្ថិភាព ការចូលត្រូវបានផ្អាកបណ្តោះអាសន្ន បន្ទាប់ពីការព្យាយាមមិនជោគជ័យច្រើនដង។ សូមរង់ចាំមួយភ្លែត រួចព្យាយាមម្តងទៀត។'
-        )
-      } else if (status >= 500) {
-        errorTitle = status === 503 ? t('auth.errorTitles.maintenance', 'ម៉ាស៊ីនបម្រើកំពុងថែទាំ') : t('auth.errorTitles.serverError', 'ប្រព័ន្ធកំពុងជួបបញ្ហា')
-        errorMessage = status === 503 ? t('auth.errors.503', 'ប្រព័ន្ធកំពុងស្ថិតក្រោមការថែទាំជាប្រចាំ។ សូមព្យាយាមចូលម្តងទៀតក្នុងពេលបន្តិចទៀត។') : t('auth.errors.500', 'មានបញ្ហាបច្ចេកទេសក្នុងប្រព័ន្ធ។ ក្រុមការងារ IT បានទទួលដំណឹង និងកំពុងពិនិត្យដោះស្រាយ។')
-      } else if (backendMsg && typeof backendMsg === 'string') {
+        errorTitle = t('auth.errorTitles.locked', 'គណនីត្រូវបានសោរបណ្តោះអាសន្ន')
+        errorMessage = t('auth.errors.429')
+      } else if (status === 500) {
+        errorTitle = t('auth.errorTitles.serverError', 'ប្រព័ន្ធកំពុងជួបបញ្ហា')
+        errorMessage = t('auth.errors.500')
+      } else if (status === 503) {
+        errorTitle = t('auth.errorTitles.maintenance', 'ម៉ាស៊ីនបម្រើកំពុងថែទាំ')
+        errorMessage = t('auth.errors.503')
+      } else if (backendMsg) {
         errorMessage = backendMsg
       }
 
@@ -475,7 +452,7 @@ const LoginPage: React.FC = () => {
           <BrandLogo size="sm" animated />
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-extrabold text-base sm:text-xl tracking-tight text-slate-900 dark:text-white truncate">
-              {branding.brand_name || 'OptaPOS'}
+              {branding.brand_name || 'NexPOS'}
             </span>
             <span className="hidden xs:inline-flex text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               {t('auth.systemVersion', 'v2.5')}
@@ -614,363 +591,303 @@ const LoginPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ─── MAIN UNIFIED ENTERPRISE DUAL-PANE CARD LAYOUT ───────────────────────── */}
-      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 flex-1 flex items-center justify-center my-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="w-full max-w-5xl xl:max-w-6xl rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/10 dark:shadow-black/60 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 grid grid-cols-1 lg:grid-cols-12 text-left"
-        >
-          {/* ════════════════════════════════════════════════════════════════════
-              LEFT PANEL — Enterprise Brand Showcase & Live Telemetry Panel
-          ════════════════════════════════════════════════════════════════════ */}
-          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col justify-between p-8 xl:p-10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white relative overflow-hidden">
-            
-            {/* Ambient Background Glow Inside Left Panel */}
-            <div className="absolute -top-10 -right-10 w-64 h-64 bg-blue-600/20 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-indigo-600/20 rounded-full blur-[80px] pointer-events-none" />
+      {/* ─── MAIN RESPONSIVE MODERN HERO & SPACIOUS LOGIN CARD ──────────────── */}
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 flex-1 flex items-center justify-center">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 xl:gap-16 items-center my-auto">
 
-            {/* Top Brand Header & Live System Status */}
-            <div className="relative z-10 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                <span>{language === 'km' ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} v2.5 កំពុងដំណើរការ` : `${branding.brand_name || 'OptaPOS'} Enterprise v2.5 Online`}</span>
+          {/* ─── LEFT HERO SECTION (Showcase, Values & Live Metrics - 100% 5-Language i18n) ─── */}
+          <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-center py-4 pr-0 xl:pr-6 text-left">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
+              className="space-y-6 xl:space-y-7 max-w-2xl"
+            >
+              {/* Dynamic Badge */}
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-50/90 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/60 text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-semibold shadow-xs backdrop-blur-md">
+                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span>{t('auth.badge')}</span>
               </div>
 
-              <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight leading-snug text-white">
-                {language === 'km' ? (
-                  <>
-                    ប្រព័ន្ធគ្រប់គ្រងការលក់ <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">{branding.brand_name || 'OptaPOS'}</span> លំដាប់សហគ្រាស
-                  </>
-                ) : (
-                  <>
-                    Next-Gen <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">{branding.brand_name || 'OptaPOS'}</span> Commerce & POS
-                  </>
-                )}
+              {/* Main Headline */}
+              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.18]">
+                {t('auth.heroTitle')}
               </h1>
 
-              <p className="text-slate-300 text-xs xl:text-sm leading-relaxed max-w-sm">
-                {language === 'km' 
-                  ? (branding.brand_tagline_km || 'ភ្ជាប់ការលក់នៅបញ្ជរផ្ទាល់ (POS), ការបញ្ជាទិញអនឡាញ, និងការគ្រប់គ្រងស្តុកច្រើនឃ្លាំងក្នុងប្រព័ន្ធតែមួយ។')
-                  : (branding.brand_tagline || 'Unified Point of Sale, Multi-Warehouse Inventory, and Real-Time Financial Ledger in one seamless platform.')}
+              {/* Subtitle */}
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl font-normal">
+                {t('auth.heroSubtitle')}
               </p>
-            </div>
 
-            {/* Middle Real-Time Live Telemetry Widgets */}
-            <div className="relative z-10 grid grid-cols-2 gap-3 my-6">
-              {/* Sales Metric */}
-              <div className="p-3.5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium text-slate-400 truncate">{t('auth.cards.sales', 'ការលក់សរុប')}</div>
-                  <div className="text-xs font-bold text-white truncate">$128,450.00</div>
-                  <div className="text-[9px] text-emerald-400 font-semibold">{t('auth.cards.salesSub', '+24.5%')}</div>
-                </div>
+              {/* 3 Modern Feature Cards */}
+              <div className="space-y-3.5 pt-2">
+                {[
+                  {
+                    icon: <ShoppingCart className="w-5 h-5 text-blue-600 dark:text-blue-400" />,
+                    bg: 'bg-blue-500/10 border-blue-500/20',
+                    title: t('auth.features.posTitle', 'High-Speed POS & Barcode Checkout'),
+                    desc: t('auth.features.posDesc', 'Instant KHQR, split payments, and fast thermal receipt printing.'),
+                  },
+                  {
+                    icon: <Package className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />,
+                    bg: 'bg-indigo-500/10 border-indigo-500/20',
+                    title: t('auth.features.inventoryTitle', 'Multi-Branch Inventory & Warehousing'),
+                    desc: t('auth.features.inventoryDesc', 'Real-time atomic stock sync, inter-branch transfers, and audit logs.'),
+                  },
+                  {
+                    icon: <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />,
+                    bg: 'bg-emerald-500/10 border-emerald-500/20',
+                    title: t('auth.features.securityTitle', 'Role-Based Access & Security Audit'),
+                    desc: t('auth.features.securityDesc', 'Granular permission controls, shift tracking, and activity audits.'),
+                  },
+                ].map((item, idx) => (
+                  <motion.div
+                    key={idx}
+                    whileHover={{ x: 4 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-3.5 sm:p-4 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-start gap-3.5"
+                  >
+                    <div className={`w-10 h-10 rounded-xl ${item.bg} border flex items-center justify-center shrink-0 mt-0.5`}>
+                      {item.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">{item.title}</h4>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
-              {/* Inventory Metric */}
-              <div className="p-3.5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0">
-                  <Package className="w-4 h-4 text-blue-400" />
+              {/* 3 Live Trust Stats Row */}
+              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 text-left">
+                  <div className="text-xs sm:text-sm font-extrabold text-blue-600 dark:text-blue-400">{t('auth.stats.uptime', '99.99%')}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{t('auth.stats.uptimeLabel', 'Uptime SLA')}</div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium text-slate-400 truncate">{t('auth.cards.inventory', 'មុខទំនិញក្នុងស្តុក')}</div>
-                  <div className="text-xs font-bold text-white truncate">14,250 Items</div>
-                  <div className="text-[9px] text-blue-400 font-semibold">{t('auth.cards.warehouseSub', '8 Warehouses')}</div>
+                <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 text-left">
+                  <div className="text-xs sm:text-sm font-extrabold text-indigo-600 dark:text-indigo-400">{t('auth.stats.sync', 'Real-Time')}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{t('auth.stats.syncLabel', 'Cloud Sync')}</div>
                 </div>
-              </div>
-
-              {/* POS Terminal Status */}
-              <div className="p-3.5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shrink-0">
-                  <ShoppingCart className="w-4 h-4 text-indigo-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium text-slate-400 truncate">{t('auth.cards.pos', 'ម៉ាស៊ីន POS')}</div>
-                  <div className="text-xs font-bold text-white truncate">KHQR & Split Pay</div>
-                  <div className="text-[9px] text-indigo-300 font-semibold">0.2s Atomic POS</div>
+                <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 text-left">
+                  <div className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{t('auth.stats.security', '256-Bit')}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{t('auth.stats.securityLabel', 'SSL Encrypted')}</div>
                 </div>
               </div>
-
-              {/* Security & RBAC */}
-              <div className="p-3.5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium text-slate-400 truncate">RBAC Security</div>
-                  <div className="text-xs font-bold text-white truncate">Shift & Audit Logs</div>
-                  <div className="text-[9px] text-purple-300 font-semibold">ISO 27001 Standard</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom SLA & Trust Guarantee */}
-            <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>99.99% Uptime SLA</span>
-              </div>
-              <div>256-Bit AES Encryption</div>
-            </div>
-
+            </motion.div>
           </div>
 
-          {/* ════════════════════════════════════════════════════════════════════
-              RIGHT PANEL — Enterprise Login Form (High-End & Clean UX)
-          ════════════════════════════════════════════════════════════════════ */}
-          <div className="lg:col-span-7 xl:col-span-7 p-7 sm:p-9 xl:p-11 flex flex-col justify-center bg-white dark:bg-slate-900 relative">
-            
-            {/* Top Loading Progress Bar */}
-            {isSubmitting && (
-              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden z-20">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600"
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${loginProgress}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-            )}
-
-            {/* Form Header */}
-            <div className="mb-6 sm:mb-7">
-              <div className="flex items-center gap-2 mb-2">
-                <BrandLogo size="sm" rounded="lg" />
-                <span className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
-                  {branding.brand_name || branding.company_name || 'OptaPOS'}
-                </span>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800/80">
-                  {t('auth.systemVersion', 'v2.5')}
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-                {t('auth.loginTitle')}
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-normal leading-relaxed">
-                {t('auth.loginSubtitle')}
-              </p>
-            </div>
-
-            {/* Modern Error Alert Banner */}
-            <AnimatePresence>
-              {serverError && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.96, y: -6 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: -6 }}
-                  className="mb-5 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 shadow-xs"
-                >
-                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-rose-900 dark:text-rose-100">{serverError.title}</div>
-                    <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">{serverError.message}</p>
+          {/* ─── RIGHT LOGIN CARD SECTION (Spacious, Ergonomic, Modern Form UX) ─── */}
+          <div className="w-full lg:col-span-6 xl:col-span-5 flex items-center justify-center lg:justify-end">
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
+              className="w-full max-w-[460px] sm:max-w-[490px] lg:max-w-[480px] xl:max-w-[500px] mx-auto lg:mr-0"
+            >
+              {/* Clean, Modern Spacious Card Container */}
+              <div className="relative rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-400/10 dark:shadow-black/50 p-7 sm:p-9 lg:p-10 overflow-hidden text-left">
+                
+                {/* Progress Bar during loading */}
+                {isSubmitting && (
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-100 dark:bg-slate-800 overflow-hidden z-20">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${loginProgress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setServerError(null)}
-                    className="text-rose-400 hover:text-rose-700 p-0.5 rounded cursor-pointer shrink-0"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* ─── ENTERPRISE FORM INPUTS ──────────────────────────────── */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-4.5" onKeyDown={handleKeyDown}>
-              
-              {/* Identifier Input */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>{t('auth.identifierLabel')}</span>
-                    <span className="text-rose-500 font-bold">*</span>
-                  </label>
-                </div>
-
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700/80 flex items-center justify-center text-blue-600 dark:text-blue-400 pointer-events-none">
-                    <UserCheck className="w-4 h-4" />
-                  </div>
-                  <input
-                    {...usernameRegisterProps}
-                    ref={(e) => {
-                      registerUsernameRef(e)
-                      usernameInputRef.current = e
-                    }}
-                    type="text"
-                    autoComplete="username"
-                    placeholder={t('auth.identifierPlaceholder')}
-                    className={`w-full pl-13 pr-4 py-3 bg-slate-50/70 dark:bg-slate-950/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm font-medium
-                               placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
-                                 errors.username
-                                   ? 'border-rose-400 bg-rose-50/20'
-                                   : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs'
-                               }`}
-                  />
-                </div>
-                {errors.username && (
-                  <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
-                    <Info className="w-3 h-3 shrink-0" />
-                    <span>{errors.username.message === 'identifierRequired' ? (language === 'km' ? 'សូមបញ្ចូលឈ្មោះគណនី' : 'Username is required') : errors.username.message}</span>
-                  </p>
                 )}
-              </div>
 
-              {/* Password Input */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <span>{t('auth.password')}</span>
-                    <span className="text-rose-500 font-bold">*</span>
-                  </label>
+                {/* Header inside Login Card */}
+                <div className="text-center mb-7 sm:mb-8 flex flex-col items-center">
+                  <BrandLogo size="lg" animated className="mb-3.5" />
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+                    {t('auth.loginTitle')}
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-normal max-w-sm">
+                    {t('auth.loginSubtitle')}
+                  </p>
+                </div>
 
-                  {/* Caps Lock Indicator */}
-                  {capsLockActive && (
-                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3 text-amber-500" />
-                      {t('auth.capsLockOn')}
-                    </span>
+                {/* Modern Error Alert Box */}
+                <AnimatePresence>
+                  {serverError && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.96, y: -6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96, y: -6 }}
+                      className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200 text-xs sm:text-sm flex items-start gap-3 shadow-xs"
+                    >
+                      <ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-rose-900 dark:text-rose-100 text-xs sm:text-sm">{serverError.title}</div>
+                        <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 leading-relaxed">{serverError.message}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setServerError(null)}
+                        className="text-rose-400 hover:text-rose-700 dark:hover:text-rose-200 p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors cursor-pointer shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
 
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 w-8 h-8 rounded-lg bg-indigo-50 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 pointer-events-none">
-                    <Lock className="w-4 h-4" />
+                {/* ─── ULTRA CLEAN SPACIOUS LOGIN FORM ──────────────────────── */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-5.5" onKeyDown={handleKeyDown}>
+                  
+                  {/* Identifier Input */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                      {t('auth.identifierLabel')}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
+                        <UserCheck className="w-5 h-5" />
+                      </div>
+                      <input
+                        {...usernameRegisterProps}
+                        ref={(e) => {
+                          registerUsernameRef(e)
+                          usernameInputRef.current = e
+                        }}
+                        type="text"
+                        autoComplete="username"
+                        placeholder={t('auth.identifierPlaceholder')}
+                        className={`w-full pl-12 pr-4 py-3.5 sm:py-4 bg-slate-50/80 dark:bg-slate-950/60 border rounded-2xl text-slate-900 dark:text-white text-sm sm:text-base
+                                   placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                                     errors.username
+                                       ? 'border-rose-400 bg-rose-50/20'
+                                       : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                   }`}
+                      />
+                    </div>
+                    {errors.username && (
+                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 shrink-0" />
+                        <span>{errors.username.message === 'identifierRequired' ? t('auth.validation.identifierRequired', 'Please enter your username, employee code or phone') : errors.username.message}</span>
+                      </p>
+                    )}
                   </div>
-                  <input
-                    {...register('password')}
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    placeholder={t('auth.passwordPlaceholder')}
-                    className={`w-full pl-13 pr-11 py-3 bg-slate-50/70 dark:bg-slate-950/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm font-medium
-                               placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
-                                 errors.password
-                                   ? 'border-rose-400 bg-rose-50/20'
-                                   : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs'
-                               }`}
-                  />
+
+                  {/* Password Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        {t('auth.password')}
+                      </label>
+
+                      {/* Caps Lock Indicator */}
+                      {capsLockActive && (
+                        <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                          {t('auth.capsLockOn')}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <input
+                        {...register('password')}
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        placeholder={t('auth.passwordPlaceholder')}
+                        className={`w-full pl-12 pr-12 py-3.5 sm:py-4 bg-slate-50/80 dark:bg-slate-950/60 border rounded-2xl text-slate-900 dark:text-white text-sm sm:text-base
+                                   placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                                     errors.password
+                                       ? 'border-rose-400 bg-rose-50/20'
+                                       : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                   }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+
+                    {errors.password && (
+                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 shrink-0" />
+                        <span>{errors.password.message === 'passwordRequired' ? t('auth.validation.passwordRequired', 'Please enter your password') : errors.password.message}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Remember Me & Forgot Password */}
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                      <input
+                        {...register('remember')}
+                        type="checkbox"
+                        className="w-4.5 h-4.5 rounded-lg border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
+                      />
+                      <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
+                        {t('auth.rememberMe')}
+                      </span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetForgotState()
+                        setActiveModal('forgot')
+                      }}
+                      className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer"
+                    >
+                      {t('auth.forgotPassword')}
+                    </button>
+                  </div>
+
+                  {/* Submit Button */}
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors cursor-pointer"
-                    tabIndex={-1}
+                    type="submit"
+                    disabled={isSubmitting || isSuccessState}
+                    className={`w-full py-3.5 sm:py-4 px-6 rounded-2xl font-bold text-sm sm:text-base text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200
+                              flex items-center justify-center gap-2.5 cursor-pointer ${
+                                isSuccessState
+                                  ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25'
+                                  : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-700 active:scale-[0.99]'
+                              } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {isSuccessState ? (
+                      <div className="flex items-center gap-2.5 text-white font-bold">
+                        <CheckCircle2 className="w-5 h-5 text-white" />
+                        <span>{t('auth.loginSuccess')}</span>
+                      </div>
+                    ) : isSubmitting ? (
+                      <div className="flex items-center gap-2.5">
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                        <span>{t('auth.loggingIn')}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2.5 font-bold tracking-wide">
+                        <LogIn className="w-5 h-5" />
+                        <span>{t('auth.loginButton')}</span>
+                      </div>
+                    )}
                   </button>
+                </form>
+
+                {/* ─── Trust & Security Badge ─────────────────────────────── */}
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-2 text-center text-xs text-slate-400 dark:text-slate-500">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>{t('auth.securityNote')}</span>
                 </div>
 
-                {errors.password && (
-                  <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
-                    <Info className="w-3 h-3 shrink-0" />
-                    <span>{errors.password.message === 'passwordRequired' ? (language === 'km' ? 'សូមបញ្ចូលពាក្យសម្ងាត់' : 'Password is required') : errors.password.message}</span>
-                  </p>
-                )}
               </div>
-
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer select-none group">
-                  <input
-                    {...register('remember')}
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
-                  />
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
-                    {t('auth.rememberMe')}
-                  </span>
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetForgotState()
-                    setActiveModal('forgot')
-                  }}
-                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer"
-                >
-                  {t('auth.forgotPassword')}
-                </button>
-              </div>
-
-              {/* Enterprise Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting || isSuccessState}
-                className={`w-full py-3.5 px-5 rounded-xl font-extrabold text-xs sm:text-sm text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-600/35 transition-all duration-200
-                          flex items-center justify-center gap-2 cursor-pointer ${
-                            isSuccessState
-                              ? 'bg-emerald-600 hover:bg-emerald-500'
-                              : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99]'
-                          } disabled:opacity-60 disabled:cursor-not-allowed`}
-              >
-                {isSuccessState ? (
-                  <div className="flex items-center gap-2 text-white font-bold">
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>{t('auth.loginSuccess')}</span>
-                  </div>
-                ) : isSubmitting ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>{t('auth.loggingIn')}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 font-bold tracking-wide">
-                    <LogIn className="w-4 h-4" />
-                    <span>{t('auth.loginButton')}</span>
-                  </div>
-                )}
-              </button>
-            </form>
-
-            {/* ─── QUICK DEMO ACCOUNTS PILLS (1-Click Fast Test UX) ─────── */}
-            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80">
-              <div className="text-center mb-2.5">
-                <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
-                  {t('auth.demoAccessTitle', '— Quick Demo Access —')}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('admin')}
-                  className="px-2 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer truncate text-center shadow-xs"
-                  title="Super Admin"
-                >
-                  👑 {t('auth.roles.admin', 'Admin')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('manager')}
-                  className="px-2 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer truncate text-center shadow-xs"
-                  title="Branch Manager"
-                >
-                  👔 {t('auth.roles.manager', 'Manager')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('cashier')}
-                  className="px-2 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer truncate text-center shadow-xs"
-                  title="Cashier Terminal"
-                >
-                  💳 {t('auth.roles.cashier', 'Cashier')}
-                </button>
-              </div>
-            </div>
-
-            {/* ─── Trust & Compliance Badge ─────────────────────────────── */}
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-1.5 text-center text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>{t('auth.securityNote')}</span>
-            </div>
-
+            </motion.div>
           </div>
-        </motion.div>
+
+        </div>
       </main>
 
       {/* ─── FOOTER ───────────────────────────────────────────────────────── */}

@@ -685,7 +685,7 @@ const LoginPage: React.FC = () => {
               className="w-full max-w-[420px] sm:max-w-[440px] mx-auto lg:mr-0"
             >
               {/* Ultra-Clean Card Container */}
-              <div className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none p-6 sm:p-8 overflow-hidden text-left">
+              <div className="relative rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none p-6 sm:p-8 overflow-hidden text-left">
                 
                 {/* Progress Bar during loading */}
                 {isSubmitting && (
@@ -701,13 +701,13 @@ const LoginPage: React.FC = () => {
 
                 {/* Header inside Login Card */}
                 <div className="text-center mb-6 sm:mb-7 flex flex-col items-center">
-                  <div className="mb-3 flex items-center justify-center">
+                  <div className="mb-3 inline-flex items-center justify-center p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
                     <BrandLogo size="md" />
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                     {t('auth.loginTitle')}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-normal max-w-xs leading-relaxed">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-normal max-w-xs leading-relaxed">
                     {t('auth.loginSubtitle')}
                   </p>
                 </div>
@@ -758,8 +758,8 @@ const LoginPage: React.FC = () => {
                         type="text"
                         autoComplete="username"
                         placeholder={t('auth.identifierPlaceholder')}
-                        className={`w-full pl-10 pr-4 py-2.5 sm:py-3 bg-slate-50/60 dark:bg-slate-950/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
-                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                        className={`w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white dark:bg-slate-950/70 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
+                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all shadow-2xs ${
                                      errors.username
                                        ? 'border-rose-400 bg-rose-50/20'
                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
@@ -799,8 +799,8 @@ const LoginPage: React.FC = () => {
                         type={showPassword ? 'text' : 'password'}
                         autoComplete="current-password"
                         placeholder={t('auth.passwordPlaceholder')}
-                        className={`w-full pl-10 pr-10 py-2.5 sm:py-3 bg-slate-50/60 dark:bg-slate-950/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
-                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                        className={`w-full pl-10 pr-10 py-2.5 sm:py-3 bg-white dark:bg-slate-950/70 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
+                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all shadow-2xs ${
                                      errors.password
                                        ? 'border-rose-400 bg-rose-50/20'
                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'

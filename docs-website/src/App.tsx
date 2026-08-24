@@ -34,6 +34,8 @@ import { ChangelogPage } from './pages/ChangelogPage';
 import { StatisticsPage } from './pages/StatisticsPage';
 import { AboutPage } from './pages/AboutPage';
 
+import { usePageSEO } from './hooks/usePageSEO';
+
 // Scroll to top on route change
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -45,6 +47,7 @@ function ScrollToTop() {
 
 function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  usePageSEO();
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans selection:bg-brand-500 selection:text-white transition-colors duration-200">

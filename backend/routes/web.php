@@ -4,7 +4,15 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+        'name' => config('app.name', 'Enterprise POS API'),
+        'version' => '1.0.0',
+        'status' => 'online',
+        'environment' => config('app.env'),
+        'health_check' => url('/api/health'),
+        'api_v1' => url('/api/v1'),
+        'store_api' => url('/api/v1/store'),
+    ]);
 });
 
 // Storage File Streamer (Supports PDFs, Images, and dynamic fallbacks with 0 403 errors)

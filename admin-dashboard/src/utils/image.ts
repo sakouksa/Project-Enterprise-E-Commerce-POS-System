@@ -1,10 +1,27 @@
-import api from '@/api/client'
+import { API_BASE_URL } from '@/api/client'
 
 /**
- * Normalizes and converts any product/user/employee/receipt image value (string, object, path, full URL)
- * into a valid, displayable URL that works reliably across both Desktop and Mobile testing (IP access).
- * Automatically handles rewriting backend localhost/127.0.0.1:8001 URLs to relative /storage URLs
- * so that Vite dev server proxy can route them seamlessly without CORS or loopback connection issues.
+ * Derives the Backend Origin URL from API_BASE_URL or env settings.
+ * E.g. "https://enterprise-pos-api.onrender.com/api/v1" -> "https://enterprise-pos-api.onrender.com"
+ * In local dev without absolute API_BASE_URL, returns "" (uses Vite proxy).
+ */
+const getBackendOrigin = (): string => {
+  const base = import.meta.env.VITE_API_BASE_URL || API_BASE_URL || ''
+  if (base.startsWith('http://') || base.startsWith('https://')) {
+    return base.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '').replace(/\/+$/, '')
+  }
+  if (import.meta.env.PROD) {
+    return 'https://enterprise-pos-api.onrender.com'
+  }
+  return ''
+}
+
+const BACKEND_ORIGIN = getBackendOrigin()
+
+/**
+ * Normalizes and converts any product/user/employee/receipt/logo image value (string, object, path, full URL)
+ * into a valid, displayable URL that works reliably in Production (Vercel/CDN) and Local Dev.
+ * Automatically rewrites localhost/127.0.0.1:8001 DB seed URLs to the active backend storage endpoint.
  */
 export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
   if (!urlOrPath) return ''
@@ -24,60 +41,50 @@ export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
     return path
   }
 
-  // Full HTTP/HTTPS URLs
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    try {
-      const parsed = new URL(path)
-      // If it points to backend ports (8001, 8000) or local hostnames, convert to relative /storage path
-      if (
-        parsed.hostname === 'localhost' ||
-        parsed.hostname === '127.0.0.1' ||
-        parsed.hostname === '0.0.0.0' ||
-        parsed.port === '8001' ||
-        parsed.port === '8000' ||
-        parsed.pathname.startsWith('/storage')
-      ) {
-        return parsed.pathname // e.g. "/storage/profile/xxx.jpg"
-      }
-    } catch (e) {
-      // If URL constructor fails, regex strip localhost/127.0.0.1:8001
-      path = path.replace(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/, '')
-      if (path.startsWith('/')) return path
-    }
+  // Local frontend public directory assets
+  if (
+    path === '/logo.svg' ||
+    path === '/logo.png' ||
+    path === '/favicon.svg' ||
+    path === '/favicon.ico' ||
+    path === '/icons.svg' ||
+    path === '/apple-touch-icon.png' ||
+    path.startsWith('/images/') ||
+    path.startsWith('/assets/')
+  ) {
     return path
   }
 
-  // Relative path handling
-  const cleaned = path.startsWith('/') ? path.substring(1) : path
+  // External CDN URLs (e.g. Unsplash, Cloudinary, AWS S3, etc.)
+  if (
+    path.startsWith('http://') ||
+    path.startsWith('https://')
+  ) {
+    // Check if it's pointing to localhost or old dev backend ports
+    const isLocalhost = /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(path)
+    if (isLocalhost) {
+      const cleanPath = path
+        .replace(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?\/?/, '')
+        .replace(/^(api\/v1\/)?storage\//, '')
+      return BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api/v1/storage/${cleanPath}` : `/api/v1/storage/${cleanPath}`
+    }
 
-  // If already starts with storage/
-  if (cleaned.startsWith('storage/')) {
-    return `/${cleaned}`
+    // Secure HTTP to HTTPS if on production
+    if (path.startsWith('http://enterprise-pos-api.onrender.com')) {
+      return path.replace(/^http:\/\//, 'https://')
+    }
+
+    return path
   }
 
-  // Common upload subdirectories that live in public storage
-  const knownStoragePrefixes = [
-    'companies/',
-    'settings/',
-    'stores/',
-    'payments/',
-    'logos/',
-    'profile/',
-    'employees/',
-    'expenses/',
-    'receipts/',
-    'products/',
-    'users/',
-    'categories/',
-    'brands/',
-    'avatars/',
-    'media/',
-  ]
-  if (knownStoragePrefixes.some(prefix => cleaned.startsWith(prefix))) {
-    return `/storage/${cleaned}`
+  // Relative path (e.g. "storage/products/xxx.webp", "products/xxx.webp", "companies/logo.png")
+  const cleanPath = path.replace(/^\/?(api\/v1\/)?storage\//, '').replace(/^\//, '')
+
+  if (BACKEND_ORIGIN) {
+    return `${BACKEND_ORIGIN}/api/v1/storage/${cleanPath}`
   }
 
-  return `/${cleaned}`
+  return `/api/v1/storage/${cleanPath}`
 }
 
 /**
@@ -85,40 +92,5 @@ export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
  * ensuring zero 403 Forbidden errors when accessed via browser tabs or previews.
  */
 export const getStorageFileUrl = (urlOrPath?: any): string => {
-  if (!urlOrPath) return ''
-  let path = ''
-  if (typeof urlOrPath === 'string') {
-    path = urlOrPath.trim()
-  } else if (typeof urlOrPath === 'object' && urlOrPath !== null) {
-    path = (urlOrPath.url || urlOrPath.receipt || urlOrPath.image || urlOrPath.path || '').trim()
-  }
-  if (!path || typeof path !== 'string') return ''
-
-  if (path.startsWith('data:') || path.startsWith('blob:')) {
-    return path
-  }
-
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    try {
-      const parsed = new URL(path)
-      if (
-        parsed.hostname === 'localhost' ||
-        parsed.hostname === '127.0.0.1' ||
-        parsed.hostname === '0.0.0.0' ||
-        parsed.port === '8001' ||
-        parsed.port === '8000' ||
-        parsed.port === '5174' ||
-        parsed.pathname.startsWith('/storage')
-      ) {
-        const cleanPath = parsed.pathname.replace(/^\/(api\/v1\/)?storage\//, '')
-        return `/api/v1/storage/${cleanPath}`
-      }
-    } catch (e) {
-      // Fallthrough
-    }
-    return path
-  }
-
-  const cleaned = path.replace(/^\/?(api\/v1\/)?storage\//, '').replace(/^\//, '')
-  return `/api/v1/storage/${cleaned}`
+  return getAbsoluteImageUrl(urlOrPath)
 }

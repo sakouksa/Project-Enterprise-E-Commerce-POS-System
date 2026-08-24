@@ -72,21 +72,42 @@ export function calculateDiscountPercent(price: number, comparePrice?: number): 
 export function getImageUrl(path?: string | null): string {
   if (!path) return '/images/placeholder-product.png'
 
+  // If data URI
+  if (path.startsWith('data:') || path.startsWith('blob:')) return path
+
+  // Local frontend public directory assets
+  if (
+    path === '/logo.svg' ||
+    path === '/logo.png' ||
+    path === '/favicon.svg' ||
+    path === '/favicon.ico' ||
+    path === '/icons.svg' ||
+    path === '/apple-touch-icon.png' ||
+    path.startsWith('/images/') ||
+    path.startsWith('/assets/')
+  ) {
+    return path
+  }
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://enterprise-pos-api.onrender.com/api/v1' : '')
+  const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '').replace(/\/+$/, '')
+
   // If already an absolute URL
   if (path.startsWith('http://') || path.startsWith('https://')) {
+    const isLocalhost = /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(path)
+    if (isLocalhost) {
+      const cleanPath = path
+        .replace(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?\/?/, '')
+        .replace(/^(api\/v1\/)?storage\//, '')
+      return origin ? `${origin}/api/v1/storage/${cleanPath}` : `/api/v1/storage/${cleanPath}`
+    }
     return path.replace(/^http:\/\/enterprise-pos-api\.onrender\.com/, 'https://enterprise-pos-api.onrender.com')
   }
 
-  // If data URI
-  if (path.startsWith('data:')) return path
-
   // Clean path
-  const clean = path.replace(/^\/?(api\/v1\/storage\/|storage\/)/, '')
+  const clean = path.replace(/^\/?(api\/v1\/storage\/|storage\/)/, '').replace(/^\//, '')
 
-  // In production, fallback to Render backend if needed, or relative for proxy
-  if (import.meta.env.PROD) {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://enterprise-pos-api.onrender.com/api/v1'
-    const origin = apiBase.replace(/\/api\/v1\/?$/, '')
+  if (origin) {
     return `${origin}/api/v1/storage/${clean}`
   }
 

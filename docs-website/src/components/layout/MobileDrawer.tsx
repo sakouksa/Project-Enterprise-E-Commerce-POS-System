@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Layers } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -15,10 +16,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
       <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md" onClick={onClose} />
       <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col z-50">
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-extrabold text-sm">
-            <Layers className="w-5 h-5" />
-            <span className="text-slate-900 dark:text-slate-100">Enterprise Docs</span>
-          </div>
+          <BrandLogo to="/" size="sm" />
           <button 
             onClick={onClose} 
             className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 transition-colors"

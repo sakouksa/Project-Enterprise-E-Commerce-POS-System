@@ -31,6 +31,11 @@ build/
 /database/
 *.sql
 
+# Build outputs
+dist/
+**/dist/
+*.tsbuildinfo
+
 # GitHub Actions workflows (requires workflow PAT scope)
 .github/
 

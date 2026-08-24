@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Layers, ShieldCheck, ExternalLink } from 'lucide-react';
 import { useDocs } from '../../stores/useDocsStore';
+import { BrandLogo } from '../common/BrandLogo';
 
 export const Footer: React.FC = () => {
   const { language } = useDocs();
@@ -12,10 +13,7 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand Col */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-extrabold text-base">
-              <Layers className="w-5 h-5" />
-              <span className="text-slate-900 dark:text-slate-100">Enterprise POS + E-Commerce</span>
-            </div>
+            <BrandLogo size="md" />
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               {language === 'km' 
                 ? 'ប្រព័ន្ធគ្រប់គ្រងសហគ្រាសរួមបញ្ចូលគ្នាពេញលេញ រវាង E-Commerce, POS Terminal, ស្តុកឃ្លាំង, ការទិញទំនិញ, វត្តមាន QR និងប្រាក់បៀវត្សរ៍។'
@@ -79,7 +77,7 @@ export const Footer: React.FC = () => {
 
         <div className="pt-8 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 flex items-center justify-between flex-wrap gap-4">
           <div>
-            © 2026 Enterprise E-Commerce + POS System. Built for Production Excellence.
+            © 2026 OptaPOS Enterprise E-Commerce + POS System. Built for Production Excellence.
           </div>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400">

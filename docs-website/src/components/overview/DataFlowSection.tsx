@@ -26,14 +26,8 @@ interface DataFlowNode {
   nameKh: string;
   category: 'client' | 'network' | 'security' | 'backend' | 'database' | 'response';
   icon: any;
-  simpleDesc: {
-    km: string;
-    en: string;
-  };
-  techDesc: {
-    km: string;
-    en: string;
-  };
+  simpleDesc: Record<string, string>;
+  techDesc: Record<string, string>;
   codeExample: string;
 }
 
@@ -450,7 +444,7 @@ openCashDrawerPulse();`
               <span>💡 Simple Explanation (តួនាទីសង្ខេបសម្រាប់អ្នកទូទៅ)</span>
             </div>
             <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal">
-              {activeNode.simpleDesc[language] || activeNode.simpleDesc.en}
+              {activeNode.simpleDesc[language] || activeNode.simpleDesc['en'] || activeNode.simpleDesc['km']}
             </p>
           </div>
 
@@ -461,7 +455,7 @@ openCashDrawerPulse();`
               <span>⚙️ Technical Specification (កម្រិតវិស្វករអភិវឌ្ឍន៍)</span>
             </div>
             <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal">
-              {activeNode.techDesc[language] || activeNode.techDesc.en}
+              {activeNode.techDesc[language] || activeNode.techDesc['en'] || activeNode.techDesc['km']}
             </p>
           </div>
         </div>

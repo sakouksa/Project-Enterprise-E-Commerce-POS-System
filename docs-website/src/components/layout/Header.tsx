@@ -4,6 +4,7 @@ import { Search, Globe, Menu, ExternalLink, Shield, ShoppingBag, Layers, Chevron
 import { useDocs } from '../../stores/useDocsStore';
 import { Language } from '../../locales/translations';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -48,28 +49,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
             <Menu className="w-5 h-5" />
           </button>
 
-          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-brand-500/20 via-brand-600/10 to-emerald-500/20 border border-brand-500/30 dark:border-brand-500/40 flex items-center justify-center text-brand-600 dark:text-brand-400 shadow-sm group-hover:scale-105 group-hover:shadow-md group-hover:shadow-brand-500/20 transition-all duration-200">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-black text-sm sm:text-base text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap">
-                  {t.siteTitle.split('&')[0]}
-                  <span className="text-brand-600 dark:text-brand-400 font-extrabold">
-                    {t.siteTitle.includes('&') ? `& ${t.siteTitle.split('&')[1]}` : ''}
-                  </span>
-                </span>
-                <span className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 border border-brand-200 dark:border-brand-500/30">
-                  <Sparkles className="w-2.5 h-2.5" />
-                  {t.headerLiveBadge}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block truncate max-w-[280px] lg:max-w-md font-normal leading-tight">
-                {t.siteSubtitle}
-              </p>
-            </div>
-          </Link>
+          <BrandLogo to="/" />
         </div>
 
         {/* Center: Search Button (Cmd+K) */}

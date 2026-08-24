@@ -360,6 +360,8 @@ const SettingsPage: React.FC = () => {
       setSuccess(true)
       toast.success('Global settings updated successfully!')
       qc.invalidateQueries({ queryKey: ['settings'] })
+      qc.invalidateQueries({ queryKey: ['companies'] })
+      fetchBranding(true)
       setTimeout(() => setSuccess(false), 3000)
     },
     onError: () => {

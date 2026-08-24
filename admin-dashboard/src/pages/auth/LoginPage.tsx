@@ -606,19 +606,19 @@ const LoginPage: React.FC = () => {
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5 animate-spin-slow shrink-0" />
-                <span>{t('auth.badge', 'Next-Gen Enterprise Commerce Platform')}</span>
+                <span>{language === 'km' ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} ជំនាន់ថ្មី` : `${branding.brand_name || 'OptaPOS'} Enterprise Edition`}</span>
               </div>
 
               {/* Main Headline */}
               <h1 className="text-3xl lg:text-4xl xl:text-[44px] font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
                 {language === 'km' 
-                  ? `ប្រព័ន្ធ ${branding.brand_name || 'NexPOS'} Omni-Commerce` 
-                  : `${branding.brand_name || 'NexPOS'} Enterprise Commerce`}
+                  ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} Omni-Commerce` 
+                  : `${branding.brand_name || 'OptaPOS'} Enterprise Commerce`}
               </h1>
 
               {/* Subtitle */}
               <p className="text-slate-600 dark:text-slate-400 text-sm xl:text-base leading-relaxed max-w-lg">
-                {language === 'km' ? branding.brand_tagline_km : branding.brand_tagline}
+                {language === 'km' ? (branding.brand_tagline_km || 'ប្រព័ន្ធគ្រប់គ្រងការលក់ និងពាណិជ្ជកម្មឆ្លាតវៃជំនាន់ក្រោយ') : (branding.brand_tagline || 'Next-Generation Enterprise POS & Omni-Channel Commerce')}
               </p>
 
               {/* ─── Responsive Animated Metric Cards ─────────────────────── */}
@@ -947,7 +947,7 @@ const LoginPage: React.FC = () => {
       {/* ─── FOOTER ───────────────────────────────────────────────────────── */}
       <footer className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 border-t border-slate-200/70 dark:border-slate-900 text-[11px] sm:text-xs text-slate-500 text-center sm:text-left">
         <div>
-          {t('auth.copyright')}
+          © {new Date().getFullYear()} {branding.brand_name || branding.company_name || 'OptaPOS'}. {language === 'km' ? 'រក្សាសិទ្ធិគ្រប់យ៉ាង។' : 'All rights reserved.'}
         </div>
 
         <div className="flex items-center gap-4 sm:gap-6">

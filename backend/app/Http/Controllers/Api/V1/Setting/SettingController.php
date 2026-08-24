@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Setting;
 
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Resources\Traits\FormatsMediaUrl;
 use App\Models\Setting\Setting;
 use App\Models\Company\Company;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class SettingController extends BaseApiController
 {
+    use FormatsMediaUrl;
+
     /**
      * GET /api/v1/settings
      */
@@ -32,27 +35,44 @@ class SettingController extends BaseApiController
 
         foreach ($data['settings'] as $key => $value) {
             Setting::updateOrCreate(
-                ['company_id' => $data['company_id'], 'key' => $key],
-                ['value' => is_array($value) ? json_encode($value) : (string) $value]
+                ['key' => $key],
+                [
+                    'value'      => is_array($value) ? json_encode($value) : (string) $value,
+                    'company_id' => $data['company_id'],
+                ]
             );
         }
 
-        // If site_name or site_logo was updated, sync with Company model as well
-        if (isset($data['settings']['site_name']) && !empty($data['settings']['site_name'])) {
-            $name = (string) $data['settings']['site_name'];
-            Company::where('id', $data['company_id'])->update(['name' => $name]);
-            Company::query()->update(['name' => $name]);
-        }
-        if (isset($data['settings']['site_logo']) && !empty($data['settings']['site_logo'])) {
-            $logo = (string) $data['settings']['site_logo'];
-            Company::where('id', $data['company_id'])->update(['logo' => $logo]);
-            Company::query()->update(['logo' => $logo]);
-        }
+        return $this->successResponse(null, 'Settings updated successfully.');
+    }
 
-        // Clear Storefront cache so customer website reflects changes immediately
-        $this->clearStorefrontCache();
+    /**
+     * GET /api/v1/settings/{key}
+     */
+    public function show(string $key): JsonResponse
+    {
+        $setting = Setting::where('key', $key)->first();
+        if (!$setting) {
+            return $this->notFoundResponse('Setting not found.');
+        }
+        return $this->successResponse($setting);
+    }
 
-        return $this->successResponse(Setting::all(), 'Settings updated successfully');
+    /**
+     * PUT /api/v1/settings/{key}
+     */
+    public function update(Request $request, string $key): JsonResponse
+    {
+        $data = $request->validate([
+            'value' => 'required',
+        ]);
+
+        $setting = Setting::updateOrCreate(
+            ['key' => $key],
+            ['value' => is_array($data['value']) ? json_encode($data['value']) : (string) $data['value']]
+        );
+
+        return $this->successResponse($setting, 'Setting updated successfully.');
     }
 
     /**
@@ -72,18 +92,23 @@ class SettingController extends BaseApiController
     public function publicBranding(): JsonResponse
     {
         $company = \App\Models\Company\Company::where('is_active', true)->orderBy('id')->first();
-        $siteName = Setting::where('key', 'site_name')->value('value') ?: ($company?->name ?: 'NexPOS');
-        $siteEmail = Setting::where('key', 'site_email')->value('value') ?: ($company?->email ?: 'support@nexpos.io');
+        $siteName = Setting::where('key', 'site_name')->value('value') ?: ($company?->name ?: 'OptaPOS');
+        $companyName = Setting::where('key', 'company_name')->value('value') ?: ($company?->name ?: $siteName);
+        $siteEmail = Setting::where('key', 'site_email')->value('value') ?: ($company?->email ?: 'support@optapos.io');
         $sitePhone = Setting::where('key', 'company_phone')->value('value') ?: ($company?->phone ?: '+855 23 888 999');
+        $siteTagline = Setting::where('key', 'site_tagline')->value('value') ?: 'Next-Generation Enterprise POS & Omni-Channel Commerce';
+        $siteTaglineKm = Setting::where('key', 'site_tagline_km')->value('value') ?: 'ប្រព័ន្ធគ្រប់គ្រងការលក់ និងពាណិជ្ជកម្មឆ្លាតវៃជំនាន់ក្រោយ';
+        
         $siteLogo = Setting::where('key', 'site_logo')->value('value');
-        $logo = $siteLogo ?: ($company?->logo ?: '/logo.svg');
+        $rawLogo = $siteLogo ?: ($company?->logo ?: '/logo.png');
+        $formattedLogo = $this->formatMediaUrl($rawLogo) ?: '/logo.png';
 
         return $this->successResponse([
             'brand_name'       => $siteName,
-            'brand_tagline'    => 'Next-Generation Enterprise POS & Omni-Channel Commerce',
-            'brand_tagline_km' => 'ប្រព័ន្ធគ្រប់គ្រងការលក់ និងពាណិជ្ជកម្មឆ្លាតវៃជំនាន់ក្រោយ',
-            'company_name'     => $company?->name ?: 'NexPOS Retail Enterprise',
-            'logo'             => $logo,
+            'brand_tagline'    => $siteTagline,
+            'brand_tagline_km' => $siteTaglineKm,
+            'company_name'     => $companyName,
+            'logo'             => $formattedLogo,
             'email'            => $siteEmail,
             'phone'            => $sitePhone,
             'address'          => $company?->address ?: 'Phnom Penh, Cambodia',

@@ -16,12 +16,12 @@ export interface BrandingInfo {
 }
 
 const DEFAULT_BRANDING: BrandingInfo = {
-  brand_name: 'NexPOS',
+  brand_name: 'OptaPOS',
   brand_tagline: 'Next-Generation Enterprise POS & Omni-Channel Commerce',
   brand_tagline_km: 'ប្រព័ន្ធគ្រប់គ្រងការលក់ និងពាណិជ្ជកម្មឆ្លាតវៃជំនាន់ក្រោយ',
-  company_name: 'NexPOS Retail Enterprise',
-  logo: '/nexpos-logo.jpg',
-  email: 'support@nexpos.io',
+  company_name: 'OptaPOS Enterprise',
+  logo: '/logo.png',
+  email: 'support@optapos.io',
   phone: '+855 23 888 999',
   address: 'Norodom Blvd, Phnom Penh, Cambodia',
   currency: 'USD',

@@ -777,13 +777,13 @@ const AdminLayout: React.FC = () => {
                     setMobileOpen(false)
                   }}
                 >
-                  <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+                  <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'OptaPOS'} />
                   <div className="overflow-hidden min-w-0">
                     <p
                       style={{ color: sidebarConfig?.textColor || undefined }}
                       className="text-sm font-black uppercase tracking-wider leading-none truncate"
                     >
-                      {branding.brand_name || user?.company?.name || 'NexPOS'}
+                      {branding.brand_name || user?.company?.name || 'OptaPOS'}
                     </p>
                     <span
                       style={{ color: sidebarConfig?.textColor || undefined }}
@@ -890,13 +890,13 @@ const AdminLayout: React.FC = () => {
               className="flex items-center gap-3 cursor-pointer min-w-0"
               onClick={() => navigate('/dashboard')}
             >
-              <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+              <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'OptaPOS'} />
               <div className="overflow-hidden min-w-0">
                 <p
                   style={{ color: sidebarConfig?.textColor || undefined }}
                   className="text-sm font-black uppercase tracking-wider leading-none truncate"
                 >
-                  {branding.brand_name || user?.company?.name || 'NexPOS'}
+                  {branding.brand_name || user?.company?.name || 'OptaPOS'}
                 </p>
                 <span
                   style={{ color: sidebarConfig?.textColor || undefined }}
@@ -911,9 +911,9 @@ const AdminLayout: React.FC = () => {
               whileHover={{ scale: 1.08 }}
               className="mx-auto cursor-pointer"
               onClick={() => setCollapsed(false)}
-              title={user?.company?.name || branding.brand_name || 'NexPOS'}
+              title={user?.company?.name || branding.brand_name || 'OptaPOS'}
             >
-              <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+              <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'OptaPOS'} />
             </motion.div>
           )}
         </div>

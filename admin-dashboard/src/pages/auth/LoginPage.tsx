@@ -246,6 +246,21 @@ const LoginPage: React.FC = () => {
     }
   }
 
+  // Fast 1-Click Demo Account Autofill for frictionless UX testing
+  const fillDemoAccount = (role: 'admin' | 'manager' | 'cashier') => {
+    setServerError(null)
+    if (role === 'admin') {
+      setValue('username', 'admin', { shouldValidate: true })
+      setValue('password', 'password', { shouldValidate: true })
+    } else if (role === 'manager') {
+      setValue('username', 'manager', { shouldValidate: true })
+      setValue('password', 'password', { shouldValidate: true })
+    } else {
+      setValue('username', 'cashier', { shouldValidate: true })
+      setValue('password', 'password', { shouldValidate: true })
+    }
+  }
+
   // Reset Forgot Password Modal State
   const resetForgotState = () => {
     setForgotStep(1)
@@ -452,7 +467,7 @@ const LoginPage: React.FC = () => {
           <BrandLogo size="sm" animated />
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-extrabold text-base sm:text-xl tracking-tight text-slate-900 dark:text-white truncate">
-              {branding.brand_name || 'NexPOS'}
+              {branding.brand_name || 'OptaPOS'}
             </span>
             <span className="hidden xs:inline-flex text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               {t('auth.systemVersion', 'v2.5')}
@@ -591,286 +606,253 @@ const LoginPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ─── MAIN RESPONSIVE CLEAN SPLIT LAYOUT ─────────────────────────────── */}
-      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 flex-1 flex items-center justify-center">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center my-auto">
-
-          {/* ─── LEFT HERO SECTION (Clean, Standard Typography & Feature List) ─── */}
-          <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-center py-4 pr-0 xl:pr-6 text-left">
-            <motion.div
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="space-y-6 max-w-xl"
-            >
-              {/* Clean Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200/80 dark:border-blue-800/60 text-blue-600 dark:text-blue-400 text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>{language === 'km' ? `ប្រព័ន្ធ ${branding.brand_name || 'OptaPOS'} ជំនាន់ថ្មី` : `${branding.brand_name || 'OptaPOS'} Enterprise Edition`}</span>
+      {/* ─── MAIN CENTERED MODERN CARD LAYOUT (Ultra-Clean, Eye-Friendly & High UX) ─── */}
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex-1 flex flex-col items-center justify-center my-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="w-full max-w-[420px] sm:max-w-[440px]"
+        >
+          {/* Main Card Container */}
+          <div className="relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl shadow-slate-900/5 dark:shadow-black/40 p-7 sm:p-9 text-left">
+            
+            {/* Top Loading Progress Bar */}
+            {isSubmitting && (
+              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden z-20">
+                <motion.div
+                  className="h-full bg-blue-600"
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${loginProgress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
               </div>
+            )}
 
-              {/* Main Headline */}
-              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
-                {language === 'km' ? (
-                  <>
-                    ប្រព័ន្ធគ្រប់គ្រង <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{branding.brand_name || 'OptaPOS'}</span> លំដាប់សហគ្រាស
-                  </>
-                ) : (
-                  <>
-                    Next-Gen <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{branding.brand_name || 'OptaPOS'}</span> Commerce & POS
-                  </>
-                )}
-              </h1>
-
-              {/* Subtitle */}
-              <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed max-w-lg">
-                {language === 'km' 
-                  ? (branding.brand_tagline_km || 'ភ្ជាប់ការលក់នៅបញ្ជរផ្ទាល់ (POS), ការបញ្ជាទិញអនឡាញ, និងការគ្រប់គ្រងស្តុកច្រើនឃ្លាំងក្នុងប្រព័ន្ធតែមួយ។')
-                  : (branding.brand_tagline || 'Unified Point of Sale, Multi-Warehouse Inventory, and Real-Time Financial Ledger in one seamless platform.')}
+            {/* Card Header (Logo, Welcome Title, Subtitle) */}
+            <div className="text-center mb-6 sm:mb-7 flex flex-col items-center">
+              <div className="mb-3.5 p-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 shadow-xs">
+                <BrandLogo size="lg" rounded="xl" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
+                {t('auth.loginTitle')}
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 font-normal max-w-xs leading-relaxed">
+                {t('auth.loginSubtitle')}
               </p>
+            </div>
 
-              {/* 3 Core Value Props - Clean Minimalist Checklist */}
-              <div className="space-y-3 pt-2">
-                {[
-                  { 
-                    title: language === 'km' ? 'លក់រហ័សទាន់ចិត្ត (High-Speed POS)' : 'High-Speed POS & Barcode', 
-                    desc: language === 'km' ? 'គាំទ្រ KHQR, Split Payment និងបោះពុម្ពវិក្កយបត្រភ្លាមៗ' : 'Instant KHQR, Split Payments, and thermal receipt printing' 
-                  },
-                  { 
-                    title: language === 'km' ? 'គ្រប់គ្រងស្តុកច្រើនសាខា (Multi-Branch Inventory)' : 'Multi-Branch Inventory', 
-                    desc: language === 'km' ? 'កាត់ស្តុក Real-time ផ្ទេរទំនិញរវាងឃ្លាំង និងតាមដានចលនាស្តុក' : 'Real-time atomic stock deduction, transfers, and ledger audit' 
-                  },
-                  { 
-                    title: language === 'km' ? 'សុវត្ថិភាពខ្ពស់ & សិទ្ធិបុគ្គលិក (RBAC Security)' : 'Role-Based Access & Audit', 
-                    desc: language === 'km' ? 'កំណត់សិទ្ធិតាមតួនាទី និងតាមដានប្រវត្តិសកម្មភាព Activity Log' : 'Granular permission controls, shift tracking, and activity audit' 
-                  },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">{item.title}</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.desc}</p>
-                    </div>
+            {/* Modern Error Alert Banner */}
+            <AnimatePresence>
+              {serverError && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96, y: -6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: -6 }}
+                  className="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 shadow-xs"
+                >
+                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-rose-900 dark:text-rose-100">{serverError.title}</div>
+                    <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">{serverError.message}</p>
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+                  <button
+                    type="button"
+                    onClick={() => setServerError(null)}
+                    className="text-rose-400 hover:text-rose-700 p-0.5 rounded cursor-pointer shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* ─── RIGHT LOGIN CARD SECTION (Clean, Standard, Modern Form UX) ─── */}
-          <div className="w-full lg:col-span-6 xl:col-span-5 flex items-center justify-center lg:justify-end">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="w-full max-w-[420px] sm:max-w-[440px] mx-auto lg:mr-0"
-            >
-              {/* Clean Standard Card Container */}
-              <div className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none p-6 sm:p-8 overflow-hidden text-left">
-                
-                {/* Progress Bar during loading */}
-                {isSubmitting && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden z-20">
-                    <motion.div
-                      className="h-full bg-blue-600"
-                      initial={{ width: '0%' }}
-                      animate={{ width: `${loginProgress}%` }}
-                      transition={{ duration: 0.3 }}
-                    />
+            {/* ─── ULTRA CLEAN LOGIN FORM ──────────────────────────────── */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-4.5" onKeyDown={handleKeyDown}>
+              
+              {/* Identifier Input */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  {t('auth.identifierLabel')}
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                  <input
+                    {...usernameRegisterProps}
+                    ref={(e) => {
+                      registerUsernameRef(e)
+                      usernameInputRef.current = e
+                    }}
+                    type="text"
+                    autoComplete="username"
+                    placeholder={t('auth.identifierPlaceholder')}
+                    className={`w-full pl-10 pr-4 py-2.5 sm:py-3 bg-slate-50/50 dark:bg-slate-900/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
+                               placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                                 errors.username
+                                   ? 'border-rose-400 bg-rose-50/20'
+                                   : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
+                               }`}
+                  />
+                </div>
+                {errors.username && (
+                  <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
+                    <Info className="w-3 h-3 shrink-0" />
+                    <span>{errors.username.message === 'identifierRequired' ? (language === 'km' ? 'សូមបញ្ចូលឈ្មោះគណនី' : 'Username is required') : errors.username.message}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Password Input */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t('auth.password')}
+                  </label>
+
+                  {/* Caps Lock Indicator */}
+                  {capsLockActive && (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-amber-500" />
+                      {t('auth.capsLockOn')}
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    {...register('password')}
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder={t('auth.passwordPlaceholder')}
+                    className={`w-full pl-10 pr-10 py-2.5 sm:py-3 bg-slate-50/50 dark:bg-slate-900/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
+                               placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
+                                 errors.password
+                                   ? 'border-rose-400 bg-rose-50/20'
+                                   : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
+                               }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors cursor-pointer"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {errors.password && (
+                  <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
+                    <Info className="w-3 h-3 shrink-0" />
+                    <span>{errors.password.message === 'passwordRequired' ? (language === 'km' ? 'សូមបញ្ចូលពាក្យសម្ងាត់' : 'Password is required') : errors.password.message}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none group">
+                  <input
+                    {...register('remember')}
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
+                  />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
+                    {t('auth.rememberMe')}
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForgotState()
+                    setActiveModal('forgot')
+                  }}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer"
+                >
+                  {t('auth.forgotPassword')}
+                </button>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting || isSuccessState}
+                className={`w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white shadow-md shadow-blue-500/20 transition-all duration-200
+                          flex items-center justify-center gap-2 cursor-pointer ${
+                            isSuccessState
+                              ? 'bg-emerald-600 hover:bg-emerald-500'
+                              : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99]'
+                          } disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                {isSuccessState ? (
+                  <div className="flex items-center gap-2 text-white font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>{t('auth.loginSuccess')}</span>
+                  </div>
+                ) : isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>{t('auth.loggingIn')}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 font-semibold">
+                    <LogIn className="w-4 h-4" />
+                    <span>{t('auth.loginButton')}</span>
                   </div>
                 )}
+              </button>
+            </form>
 
-                {/* Header inside Login Card */}
-                <div className="text-center mb-6 sm:mb-7 flex flex-col items-center">
-                  <BrandLogo size="md" animated className="mb-3" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-                    {t('auth.loginTitle')}
-                  </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 font-normal">
-                    {t('auth.loginSubtitle')}
-                  </p>
-                </div>
-
-                {/* Modern Error Alert Box */}
-                <AnimatePresence>
-                  {serverError && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.96, y: -6 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.96, y: -6 }}
-                      className="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 shadow-xs"
-                    >
-                      <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-rose-900 dark:text-rose-100">{serverError.title}</div>
-                        <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">{serverError.message}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setServerError(null)}
-                        className="text-rose-400 hover:text-rose-700 p-0.5 rounded cursor-pointer shrink-0"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* ─── ULTRA CLEAN STANDARD LOGIN FORM ──────────────────────── */}
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-4.5" onKeyDown={handleKeyDown}>
-                  
-                  {/* Identifier Input */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {t('auth.identifierLabel')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                        <UserCheck className="w-4 h-4" />
-                      </div>
-                      <input
-                        {...usernameRegisterProps}
-                        ref={(e) => {
-                          registerUsernameRef(e)
-                          usernameInputRef.current = e
-                        }}
-                        type="text"
-                        autoComplete="username"
-                        placeholder={t('auth.identifierPlaceholder')}
-                        className={`w-full pl-10 pr-4 py-2.5 sm:py-3 bg-slate-50/50 dark:bg-slate-900/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
-                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
-                                     errors.username
-                                       ? 'border-rose-400 bg-rose-50/20'
-                                       : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
-                                   }`}
-                      />
-                    </div>
-                    {errors.username && (
-                      <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
-                        <Info className="w-3 h-3 shrink-0" />
-                        <span>{errors.username.message === 'identifierRequired' ? (language === 'km' ? 'សូមបញ្ចូលឈ្មោះគណនី' : 'Username is required') : errors.username.message}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Password Input */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {t('auth.password')}
-                      </label>
-
-                      {/* Caps Lock Indicator */}
-                      {capsLockActive && (
-                        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 text-amber-500" />
-                          {t('auth.capsLockOn')}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <input
-                        {...register('password')}
-                        type={showPassword ? 'text' : 'password'}
-                        autoComplete="current-password"
-                        placeholder={t('auth.passwordPlaceholder')}
-                        className={`w-full pl-10 pr-10 py-2.5 sm:py-3 bg-slate-50/50 dark:bg-slate-900/60 border rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm
-                                   placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all ${
-                                     errors.password
-                                       ? 'border-rose-400 bg-rose-50/20'
-                                       : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
-                                   }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors cursor-pointer"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-
-                    {errors.password && (
-                      <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
-                        <Info className="w-3 h-3 shrink-0" />
-                        <span>{errors.password.message === 'passwordRequired' ? (language === 'km' ? 'សូមបញ្ចូលពាក្យសម្ងាត់' : 'Password is required') : errors.password.message}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Remember Me & Forgot Password */}
-                  <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <label className="flex items-center gap-2 cursor-pointer select-none group">
-                      <input
-                        {...register('remember')}
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
-                      />
-                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
-                        {t('auth.rememberMe')}
-                      </span>
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        resetForgotState()
-                        setActiveModal('forgot')
-                      }}
-                      className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer"
-                    >
-                      {t('auth.forgotPassword')}
-                    </button>
-                  </div>
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || isSuccessState}
-                    className={`w-full py-2.5 sm:py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm text-white shadow-sm hover:shadow transition-all duration-200
-                              flex items-center justify-center gap-2 cursor-pointer ${
-                                isSuccessState
-                                  ? 'bg-emerald-600 hover:bg-emerald-500'
-                                  : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99]'
-                              } disabled:opacity-60 disabled:cursor-not-allowed`}
-                  >
-                    {isSuccessState ? (
-                      <div className="flex items-center gap-2 text-white font-bold">
-                        <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span>{t('auth.loginSuccess')}</span>
-                      </div>
-                    ) : isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>{t('auth.loggingIn')}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 font-semibold">
-                        <LogIn className="w-4 h-4" />
-                        <span>{t('auth.loginButton')}</span>
-                      </div>
-                    )}
-                  </button>
-                </form>
-
-                {/* ─── Trust & Security Badge ─────────────────────────────── */}
-                <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-1.5 text-center text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>{t('auth.securityNote')}</span>
-                </div>
-
+            {/* ─── QUICK DEMO ACCOUNTS PILLS (1-Click Fast Test UX) ─────── */}
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="text-center mb-2.5">
+                <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500">
+                  {language === 'km' ? '— សាកល្បង Demo Accounts រហ័ស —' : '— Quick Demo Access —'}
+                </span>
               </div>
-            </motion.div>
-          </div>
 
-        </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fillDemoAccount('admin')}
+                  className="px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer truncate text-center"
+                  title="Super Admin"
+                >
+                  👑 Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemoAccount('manager')}
+                  className="px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer truncate text-center"
+                  title="Branch Manager"
+                >
+                  👔 Manager
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemoAccount('cashier')}
+                  className="px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer truncate text-center"
+                  title="Cashier Terminal"
+                >
+                  💳 Cashier
+                </button>
+              </div>
+            </div>
+
+            {/* ─── Trust & Security Badge ─────────────────────────────── */}
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-1.5 text-center text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>{t('auth.securityNote')}</span>
+            </div>
+
+          </div>
+        </motion.div>
       </main>
 
       {/* ─── FOOTER ───────────────────────────────────────────────────────── */}

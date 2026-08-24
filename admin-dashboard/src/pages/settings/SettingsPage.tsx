@@ -655,10 +655,10 @@ const SettingsPage: React.FC = () => {
 
                 <div className="space-y-5">
                   {/* ─── Flexible Logo Uploader Box ─── */}
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3">
-                    <div className="flex items-center justify-between">
+                  <div className="p-5 rounded-2xl bg-muted/40 dark:bg-slate-900/60 border border-border/80 space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-foreground">
+                        <label className="block text-xs font-black uppercase tracking-wider text-foreground">
                           {t('settings.storeLogoLabel', 'LOGO ហាង / BRAND LOGO')}
                         </label>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -666,37 +666,39 @@ const SettingsPage: React.FC = () => {
                         </p>
                       </div>
                       {logoPreview || (siteLogo && siteLogo !== '/logo.svg') ? (
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                          <Check size={11} /> {t('settings.logoActive', 'Active Logo')}
+                        <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shadow-xs">
+                          <Check size={12} className="stroke-[2.5]" /> {t('settings.logoActive', 'Active Logo')}
                         </span>
                       ) : null}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
-                      {/* Logo Live Preview Thumbnail */}
-                      <div className="relative group w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-card border-2 border-dashed border-primary/40 dark:border-primary/30 flex items-center justify-center overflow-hidden p-2 shrink-0 shadow-xs">
+                    <div className="flex flex-col sm:flex-row items-center gap-5 pt-1">
+                      {/* Logo Live Preview Box (Fixed Dimension, Clean Contain) */}
+                      <div className="relative group w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white dark:bg-slate-950 border-2 border-dashed border-primary/40 dark:border-primary/30 flex items-center justify-center p-2.5 shrink-0 shadow-sm overflow-hidden hover:border-primary transition-all duration-200">
                         {isUploadingLogo ? (
-                          <div className="flex flex-col items-center justify-center text-primary gap-1">
-                            <Loader2 className="w-6 h-6 animate-spin" />
-                            <span className="text-[9px] font-bold">Uploading...</span>
+                          <div className="flex flex-col items-center justify-center text-primary gap-1.5">
+                            <Loader2 className="w-7 h-7 animate-spin" />
+                            <span className="text-[10px] font-bold">Uploading...</span>
                           </div>
                         ) : (
-                          <BrandLogo size="lg" customLogo={logoPreview || siteLogo} />
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BrandLogo size="lg" customLogo={logoPreview || siteLogo} bordered={false} />
+                          </div>
                         )}
 
                         {/* Hover change overlay */}
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="absolute inset-0 bg-black/65 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold"
+                          className="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px] text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer text-[11px] font-bold gap-1"
                         >
-                          <Camera className="w-4 h-4 mb-0.5" />
-                          <span>{t('settings.changeLogo', 'ផ្លាស់ប្តូរ')}</span>
+                          <Camera className="w-5 h-5 text-primary" />
+                          <span>{t('settings.changeLogo', 'ផ្លាស់ប្តូរ Logo')}</span>
                         </button>
                       </div>
 
                       {/* Actions & Specs */}
-                      <div className="flex-1 min-w-0 space-y-2 text-center sm:text-left">
+                      <div className="flex-1 min-w-0 space-y-2.5 text-center sm:text-left">
                         <input
                           ref={fileInputRef}
                           type="file"
@@ -705,14 +707,14 @@ const SettingsPage: React.FC = () => {
                           className="hidden"
                         />
 
-                        <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                        <div className="flex flex-wrap items-center gap-2.5 justify-center sm:justify-start">
                           <button
                             type="button"
                             disabled={isUploadingLogo}
                             onClick={() => fileInputRef.current?.click()}
-                            className="px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            className="px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-95 active:scale-95 transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
                           >
-                            {isUploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            {isUploadingLogo ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                             <span>{t('settings.uploadLogoBtn', 'ជ្រើសរើសរូបភាព Logo')}</span>
                           </button>
 
@@ -721,17 +723,22 @@ const SettingsPage: React.FC = () => {
                               type="button"
                               disabled={isUploadingLogo}
                               onClick={handleRemoveLogo}
-                              className="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer border border-rose-500/20 disabled:opacity-50"
+                              className="px-3.5 py-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-rose-500/20 disabled:opacity-50"
                             >
-                              <Trash2 size={13} />
+                              <Trash2 size={14} />
                               <span>{t('settings.removeLogoBtn', 'ដក Logo')}</span>
                             </button>
                           )}
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          គាំទ្រទម្រង់ <b>PNG, JPG, WebP, SVG</b> (ទំហំអតិបរមា 10MB)។ ណែនាំរូបភាពមានផ្ទៃថ្លា (Transparent) សម្រាប់ការបង្ហាញស្អាតឥតខ្ចោះ។
-                        </p>
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            គាំទ្រទម្រង់ <b>PNG, JPG, WebP, SVG</b> (ទំហំអតិបរមា 10MB)។
+                          </p>
+                          <p className="text-[11px] text-primary/80 font-medium">
+                            ✨ រូបភាពគ្រប់ទំហំនឹងត្រូវតម្រឹមឱ្យស្អាត (Clean Contain) ស្វ័យប្រវត្តិ មិនខូចទម្រង់ដើមឡើយ។
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -859,8 +866,8 @@ const SettingsPage: React.FC = () => {
                     </div>
                     <div className="bg-amber-500/5 dark:bg-slate-900 border border-dashed border-amber-500/30 rounded-2xl p-4 font-mono text-[11px] text-foreground space-y-2 shadow-inner">
                       {/* Thermal Receipt Logo Preview */}
-                      <div className="flex justify-center mb-1">
-                        <BrandLogo size="md" customLogo={logoPreview || siteLogo} className="grayscale" />
+                      <div className="flex justify-center my-1.5">
+                        <BrandLogo size="lg" customLogo={logoPreview || siteLogo} className="grayscale contrast-125 brightness-95" bordered={false} />
                       </div>
                       <div className="text-center font-bold text-sm tracking-wide">
                         {siteName || 'NEXPOS'}

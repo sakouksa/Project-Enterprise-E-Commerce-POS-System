@@ -81,14 +81,14 @@ export const GlobalPrintHeader: React.FC<GlobalPrintHeaderProps> = ({
         <div className="flex items-start gap-3 max-w-[420px]">
           {/* Logo container */}
           <div
-            style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', maxWidth: '44px', maxHeight: '44px' }}
-            className="w-11 h-11 min-w-11 min-h-11 rounded-lg border border-slate-300 bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden"
+            style={{ width: '52px', height: '52px', minWidth: '52px', minHeight: '52px', maxWidth: '52px', maxHeight: '52px' }}
+            className="w-[52px] h-[52px] min-w-[52px] min-h-[52px] rounded-xl border border-slate-300 bg-white p-1.5 flex items-center justify-center shrink-0 overflow-hidden shadow-xs"
           >
             <img
               src={company.logoUrl}
               alt={company.name}
-              style={{ width: '34px', height: '34px', maxWidth: '34px', maxHeight: '34px' }}
-              className="w-8 h-8 object-contain block shrink-0"
+              style={{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%' }}
+              className="w-full h-full object-contain block shrink-0"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none'
               }}

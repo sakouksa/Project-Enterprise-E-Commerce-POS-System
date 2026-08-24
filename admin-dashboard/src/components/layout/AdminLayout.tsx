@@ -768,26 +768,26 @@ const AdminLayout: React.FC = () => {
               {/* Header with Close Button */}
               <div
                 style={{ borderColor: sidebarConfig?.borderColor || 'rgba(128, 128, 128, 0.15)' }}
-                className="flex items-center justify-between h-16 px-4 border-b flex-shrink-0"
+                className="flex items-center justify-between h-[72px] px-4 border-b flex-shrink-0"
               >
                 <div
-                  className="flex items-center gap-2.5 cursor-pointer min-w-0"
+                  className="flex items-center gap-3 cursor-pointer min-w-0"
                   onClick={() => {
                     navigate('/dashboard')
                     setMobileOpen(false)
                   }}
                 >
-                  <BrandLogo size="sm" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+                  <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
                   <div className="overflow-hidden min-w-0">
                     <p
                       style={{ color: sidebarConfig?.textColor || undefined }}
-                      className="text-xs font-black uppercase tracking-wider leading-none truncate"
+                      className="text-sm font-black uppercase tracking-wider leading-none truncate"
                     >
                       {branding.brand_name || user?.company?.name || 'NexPOS'}
                     </p>
                     <span
                       style={{ color: sidebarConfig?.textColor || undefined }}
-                      className="text-[10px] opacity-70 font-bold block mt-0.5 truncate"
+                      className="text-[11px] opacity-70 font-semibold block mt-1 truncate"
                     >
                       {user?.branch?.name || t('common.management_system', 'Management System')}
                     </span>
@@ -882,25 +882,25 @@ const AdminLayout: React.FC = () => {
         {/* Logo Header with Spring Glow */}
         <div
           style={{ borderColor: sidebarConfig?.borderColor || 'rgba(128, 128, 128, 0.15)' }}
-          className="flex items-center h-16 px-3.5 border-b flex-shrink-0"
+          className="flex items-center h-[72px] px-3.5 border-b flex-shrink-0"
         >
           {!isCollapsed ? (
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-2.5 cursor-pointer min-w-0"
+              className="flex items-center gap-3 cursor-pointer min-w-0"
               onClick={() => navigate('/dashboard')}
             >
-              <BrandLogo size="sm" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+              <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
               <div className="overflow-hidden min-w-0">
                 <p
                   style={{ color: sidebarConfig?.textColor || undefined }}
-                  className="text-xs font-black uppercase tracking-wider leading-none truncate"
+                  className="text-sm font-black uppercase tracking-wider leading-none truncate"
                 >
                   {branding.brand_name || user?.company?.name || 'NexPOS'}
                 </p>
                 <span
                   style={{ color: sidebarConfig?.textColor || undefined }}
-                  className="text-[10px] opacity-70 font-bold block mt-0.5 truncate"
+                  className="text-[11px] opacity-70 font-semibold block mt-1 truncate"
                 >
                   {user?.branch?.name || t('common.management_system', 'Management System')}
                 </span>
@@ -908,12 +908,12 @@ const AdminLayout: React.FC = () => {
             </motion.div>
           ) : (
             <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileHover={{ scale: 1.08 }}
               className="mx-auto cursor-pointer"
               onClick={() => setCollapsed(false)}
               title={user?.company?.name || branding.brand_name || 'NexPOS'}
             >
-              <BrandLogo size="sm" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
+              <BrandLogo size="md" customLogo={branding.logo || user?.company?.logo} customName={branding.brand_name || user?.company?.name || 'NexPOS'} />
             </motion.div>
           )}
         </div>

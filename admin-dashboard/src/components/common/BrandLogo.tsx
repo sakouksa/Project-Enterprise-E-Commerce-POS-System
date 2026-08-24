@@ -7,31 +7,37 @@ import { getAbsoluteImageUrl } from '@/utils/image'
 interface BrandLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   className?: string
+  imageClassName?: string
   customLogo?: string | null
   customName?: string
   showText?: boolean
   showTagline?: boolean
   animated?: boolean
   onClick?: () => void
+  rounded?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full'
+  bordered?: boolean
 }
 
 const SIZE_MAP = {
-  xs: { box: 'w-7 h-7', img: 'w-5 h-5', text: 'text-xs', sub: 'text-[9px]' },
-  sm: { box: 'w-9 h-9', img: 'w-6 h-6', text: 'text-sm', sub: 'text-[10px]' },
-  md: { box: 'w-11 h-11', img: 'w-8 h-8', text: 'text-base', sub: 'text-xs' },
-  lg: { box: 'w-14 h-14 sm:w-16 sm:h-16', img: 'w-10 h-10 sm:w-12 sm:h-12', text: 'text-xl', sub: 'text-xs' },
-  xl: { box: 'w-20 h-20', img: 'w-16 h-16', text: 'text-2xl', sub: 'text-sm' },
+  xs: { box: 'w-8 h-8', rounded: 'rounded-xl', text: 'text-xs', sub: 'text-[9px]' },
+  sm: { box: 'w-10 h-10', rounded: 'rounded-xl', text: 'text-sm', sub: 'text-[10px]' },
+  md: { box: 'w-12 h-12', rounded: 'rounded-2xl', text: 'text-base', sub: 'text-xs' },
+  lg: { box: 'w-16 h-16 sm:w-20 sm:h-20', rounded: 'rounded-2xl sm:rounded-3xl', text: 'text-xl', sub: 'text-xs' },
+  xl: { box: 'w-24 h-24 sm:w-28 sm:h-28', rounded: 'rounded-3xl', text: 'text-2xl', sub: 'text-sm' },
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'sm',
   className = '',
+  imageClassName = '',
   customLogo,
   customName,
   showText = false,
   showTagline = false,
   animated = false,
   onClick,
+  rounded,
+  bordered = true,
 }) => {
   const { branding } = useCompanyStore()
   const { user } = useAuthStore()
@@ -49,21 +55,32 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const displayTagline = branding.brand_tagline || 'Next-Generation Enterprise POS'
 
   const dims = SIZE_MAP[size] || SIZE_MAP.sm
+  const appliedRounded = rounded ? `rounded-${rounded}` : dims.rounded
 
   const Content = (
-    <div className={`inline-flex items-center gap-2.5 ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick}>
-      <div className={`relative flex items-center justify-center shrink-0 rounded-2xl overflow-hidden ${dims.box}`}>
+    <div
+      className={`inline-flex items-center gap-3 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      onClick={onClick}
+    >
+      {/* ─── Master Logo Container (Fixed Aspect Ratio, Ultra-Clean Contain) ─── */}
+      <div
+        className={`relative flex items-center justify-center shrink-0 p-1.5 overflow-hidden transition-all duration-200 ${dims.box} ${appliedRounded} ${
+          bordered
+            ? 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs ring-1 ring-black/5 dark:ring-white/5'
+            : 'bg-transparent'
+        }`}
+      >
         {!imgError && logoUrl ? (
           <img
             src={logoUrl}
             alt={`${displayName} Logo`}
             onError={() => setImgError(true)}
-            className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200"
+            className={`w-full h-full max-w-full max-h-full object-contain filter drop-shadow-xs transition-transform duration-200 select-none ${imageClassName}`}
           />
         ) : (
-          /* Sleek fallback vector icon badge */
-          <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-500 flex items-center justify-center text-white font-black shadow-md">
-            <span className="leading-none text-white tracking-wider font-extrabold">
+          /* Sleek fallback vector monogram badge */
+          <div className="w-full h-full rounded-xl bg-gradient-to-tr from-rose-600 via-red-600 to-amber-500 flex items-center justify-center text-white font-black shadow-inner">
+            <span className="leading-none text-white tracking-wider font-extrabold text-sm uppercase">
               {displayName.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -72,11 +89,11 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
       {showText && (
         <div className="flex flex-col min-w-0 text-left">
-          <span className={`font-black tracking-tight leading-none text-slate-900 dark:text-white ${dims.text}`}>
+          <span className={`font-black tracking-tight leading-none text-slate-900 dark:text-white truncate ${dims.text}`}>
             {displayName}
           </span>
           {showTagline && (
-            <span className={`text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5 ${dims.sub}`}>
+            <span className={`text-slate-500 dark:text-slate-400 font-medium truncate mt-1 ${dims.sub}`}>
               {displayTagline}
             </span>
           )}

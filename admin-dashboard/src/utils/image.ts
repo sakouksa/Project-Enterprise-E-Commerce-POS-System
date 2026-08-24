@@ -94,3 +94,50 @@ export const getAbsoluteImageUrl = (urlOrPath?: any): string => {
 export const getStorageFileUrl = (urlOrPath?: any): string => {
   return getAbsoluteImageUrl(urlOrPath)
 }
+
+/**
+ * Returns a high-quality fallback photo for standard product categories.
+ */
+export const getProductFallbackPhoto = (categoryName?: string, productName?: string): string => {
+  const name = (categoryName || productName || '').toLowerCase()
+  if (name.includes('phone') || name.includes('mobile') || name.includes('smartphone')) {
+    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('laptop') || name.includes('computer') || name.includes('macbook')) {
+    return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('watch') || name.includes('smartwatch')) {
+    return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('camera')) {
+    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('headphone') || name.includes('earphone') || name.includes('audio')) {
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('shoe') || name.includes('sneaker')) {
+    return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('keyboard')) {
+    return 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80'
+  }
+  if (name.includes('apparel') || name.includes('cloth') || name.includes('shirt')) {
+    return 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'
+  }
+  return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80'
+}
+
+/**
+ * Resolves a product photo with automatic multi-tier fallback.
+ */
+export const resolveProductPhoto = (
+  primaryImage?: any,
+  images?: any[],
+  categoryName?: string,
+  productName?: string
+): string => {
+  const url = getAbsoluteImageUrl(primaryImage || (images && images.length > 0 ? images[0] : null))
+  if (url) return url
+  return getProductFallbackPhoto(categoryName, productName)
+}
+

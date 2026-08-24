@@ -6,7 +6,7 @@ import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import StatusBadge from '@/components/common/StatusBadge'
-import { getAbsoluteImageUrl } from '@/utils/image'
+import { ProductThumbnail } from './ProductThumbnail'
 import type { Product } from '../types/productsPage.types'
 
 interface ProductTableSectionProps {
@@ -103,31 +103,14 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                       </td>
                       {visibleColumns.image && (
                         <td>
-                          <div className="w-10 h-10 rounded-xl bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
-                            {(() => {
-                              const imgUrl = getAbsoluteImageUrl(p.primary_image || (p.images && p.images[0]) || (p as any).image)
-                              return imgUrl ? (
-                                <img
-                                  src={imgUrl}
-                                  alt={p.name}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none'
-                                    const parent = e.currentTarget.parentElement
-                                    if (parent && !parent.querySelector('.fallback-initial')) {
-                                      const span = document.createElement('span')
-                                      span.className = 'fallback-initial text-[10px] font-bold text-muted-foreground'
-                                      span.innerText = p.name[0]?.toUpperCase() || 'P'
-                                      parent.appendChild(span)
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-[10px] font-bold text-muted-foreground">{p.name[0]?.toUpperCase()}</span>
-                              )
-                            })()}
-                          </div>
+                          <ProductThumbnail
+                            name={p.name}
+                            primaryImage={p.primary_image}
+                            images={p.images}
+                            image={(p as any).image}
+                            categoryName={p.category?.name}
+                            size="sm"
+                          />
                         </td>
                       )}
                       {visibleColumns.name && (

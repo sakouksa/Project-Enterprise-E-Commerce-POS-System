@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { productService } from '@/services/productService'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import { getDynamicColorMatchedImage } from '../utils/colorResolver'
 import StatusBadge from '@/components/common/StatusBadge'
 import { formatDisplayDate } from '@/utils/formatters'
 import type { Product } from '../types/productsPage.types'
@@ -166,7 +167,14 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
     }
     if (list.length === 0) {
       const pImg = product.primary_image || (product as any).image
-      if (pImg) list.push(getAbsoluteImageUrl(pImg) || pImg)
+      if (pImg) {
+        const resolved = getAbsoluteImageUrl(pImg)
+        if (resolved) list.push(resolved)
+      }
+    }
+    if (list.length === 0) {
+      const fallback = getDynamicColorMatchedImage('Black', product.category?.name || product.name)
+      if (fallback) list.push(fallback)
     }
     return list
   }, [product])
@@ -498,7 +506,14 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                         src={allImages[selectedImageIndex]}
                         alt={product?.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                        onError={(e) => {
+                          const fallback = getDynamicColorMatchedImage('Black', product?.category?.name || product?.name)
+                          if (fallback && e.currentTarget.src !== fallback) {
+                            e.currentTarget.src = fallback
+                          } else {
+                            e.currentTarget.style.display = 'none'
+                          }
+                        }}
                       />
                     ) : (
                       <Package size={38} className="text-muted-foreground/40" />

@@ -5,7 +5,7 @@ import TableWrapper from '@/components/shared/TableWrapper'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import Pagination from '@/components/shared/Pagination'
 import StatusBadge from '@/components/common/StatusBadge'
-import { getAbsoluteImageUrl } from '@/utils/image'
+import { getAbsoluteImageUrl, resolveProductPhoto, getProductFallbackPhoto } from '@/utils/image'
 
 interface InventoryStockLevelsTableProps {
   data: any
@@ -129,7 +129,14 @@ export const InventoryStockLevelsTable: React.FC<InventoryStockLevelsTableProps>
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-lg border border-border bg-muted/20 overflow-hidden shrink-0">
                             {imgSrc ? (
-                              <img src={getAbsoluteImageUrl(imgSrc)} alt="prod" className="w-full h-full object-cover" />
+                              <img
+                                src={getAbsoluteImageUrl(imgSrc)}
+                                alt="prod"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
                                 <Package size={14} />

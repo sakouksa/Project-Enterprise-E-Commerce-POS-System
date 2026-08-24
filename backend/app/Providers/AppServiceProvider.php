@@ -45,6 +45,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Enforce HTTPS in production and when behind cloud reverse proxies (Render / Cloudflare)
+        if ($this->app->environment('production') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || request()->header('X-Forwarded-Proto') === 'https') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Global Spatie Activity log interceptor to store IP and User Agent in properties
         \Spatie\Activitylog\Models\Activity::creating(function ($activity) {
             $properties = $activity->properties ? $activity->properties->toArray() : [];

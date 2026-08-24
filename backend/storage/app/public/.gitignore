@@ -1,2 +1,12 @@
-*
+# Allow seeded images to be tracked in repository for zero-config production deployments
+!products/
+!products/**
+!categories/
+!categories/**
+!brands/
+!brands/**
+!banners/
+!banners/**
+!companies/
+!companies/**
 !.gitignore

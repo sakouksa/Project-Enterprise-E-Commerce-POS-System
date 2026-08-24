@@ -391,45 +391,53 @@ const LoginPage: React.FC = () => {
       const status = err.response?.status
       const backendMsg = err.response?.data?.message
 
-      let errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
-      let errorMessage = t('auth.errors.unknown', 'មានកំហុសមិនរំពឹងទុកបានកើតឡើង។ សូមព្យាយាមម្តងទៀត។')
+      // Standard OWASP Authentication Security Guideline (Prevent User Enumeration)
+      // Generic message for all credential errors (401, 404, 422)
+      const isCredentialError = status === 401 || status === 404 || status === 422
+
+      let errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ')
+      let errorMessage = t(
+        'auth.errors.invalidCredentials',
+        'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវឡើយ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នកឡើងវិញ។'
+      )
 
       if (!err.response) {
+        errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
         if (!navigator.onLine) {
-          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
-          errorMessage = t('auth.errors.offline')
+          errorMessage = t('auth.errors.offline', 'ឧបករណ៍របស់អ្នកកំពុងស្ថិតក្នុងស្ថានភាពគ្មានអ៊ីនធឺណិត (Offline)។')
         } else if (err.code === 'ECONNABORTED') {
-          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
-          errorMessage = t('auth.errors.timeout')
+          errorMessage = t('auth.errors.timeout', 'ការឆ្លើយតបពីប្រព័ន្ធចំណាយពេលយូរជ្រុល។ សូមព្យាយាមចូលម្តងទៀត។')
         } else {
-          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
-          errorMessage = t('auth.errors.networkError')
+          errorMessage = t('auth.errors.networkError', 'មិនអាចភ្ជាប់ទៅកាន់ប្រព័ន្ធបានឡើយ។ សូមពិនិត្យមើលការតភ្ជាប់អ៊ីនធឺណិត ឬ Wi-Fi របស់អ្នក។')
         }
-      } else if (status === 401) {
-        errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
-        errorMessage = t('auth.errors.401')
+      } else if (isCredentialError) {
+        errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ')
+        errorMessage = t(
+          'auth.errors.invalidCredentials',
+          'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវឡើយ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នកឡើងវិញ។'
+        )
       } else if (status === 403) {
-        errorTitle = t('auth.errorTitles.accessDenied', 'គណនីគ្មានសិទ្ធិ ឬត្រូវបានផ្អាក')
-        errorMessage = t('auth.errors.403')
-      } else if (status === 404) {
-        errorTitle = t('auth.errorTitles.notFound', 'រកមិនឃើញគណនី')
-        errorMessage = t('auth.errors.404')
+        errorTitle = t('auth.errorTitles.accessDenied', 'គណនីត្រូវបានផ្អាក ឬគ្មានសិទ្ធិ')
+        errorMessage = t(
+          'auth.errors.403',
+          'គណនីនេះត្រូវបានផ្អាក ឬគ្មានសិទ្ធិចូលប្រើប្រាស់ឡើយ។ សូមទាក់ទងអ្នកគ្រប់គ្រងប្រព័ន្ធ។'
+        )
       } else if (status === 419) {
         errorTitle = t('auth.errorTitles.sessionExpired', 'សេសសិនផុតកំណត់')
-        errorMessage = t('auth.errors.419')
-      } else if (status === 422) {
-        errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានមិនត្រឹមត្រូវ')
-        errorMessage = t('auth.errors.422')
+        errorMessage = t(
+          'auth.errors.419',
+          'សេសសិននៃការចូលបានផុតកំណត់។ សូមផ្ទុកទំព័រនេះឡើងវិញ (Refresh) ហើយព្យាយាមម្តងទៀត។'
+        )
       } else if (status === 429) {
-        errorTitle = t('auth.errorTitles.locked', 'គណនីត្រូវបានសោរបណ្តោះអាសន្ន')
-        errorMessage = t('auth.errors.429')
-      } else if (status === 500) {
-        errorTitle = t('auth.errorTitles.serverError', 'ប្រព័ន្ធកំពុងជួបបញ្ហា')
-        errorMessage = t('auth.errors.500')
-      } else if (status === 503) {
-        errorTitle = t('auth.errorTitles.maintenance', 'ម៉ាស៊ីនបម្រើកំពុងថែទាំ')
-        errorMessage = t('auth.errors.503')
-      } else if (backendMsg) {
+        errorTitle = t('auth.errorTitles.locked', 'គណនីត្រូវបានផ្អាកបណ្តោះអាសន្ន')
+        errorMessage = t(
+          'auth.errors.429',
+          'ដើម្បីសុវត្ថិភាព ការចូលត្រូវបានផ្អាកបណ្តោះអាសន្ន បន្ទាប់ពីការព្យាយាមមិនជោគជ័យច្រើនដង។ សូមរង់ចាំមួយភ្លែត រួចព្យាយាមម្តងទៀត។'
+        )
+      } else if (status >= 500) {
+        errorTitle = status === 503 ? t('auth.errorTitles.maintenance', 'ម៉ាស៊ីនបម្រើកំពុងថែទាំ') : t('auth.errorTitles.serverError', 'ប្រព័ន្ធកំពុងជួបបញ្ហា')
+        errorMessage = status === 503 ? t('auth.errors.503', 'ប្រព័ន្ធកំពុងស្ថិតក្រោមការថែទាំជាប្រចាំ។ សូមព្យាយាមចូលម្តងទៀតក្នុងពេលបន្តិចទៀត។') : t('auth.errors.500', 'មានបញ្ហាបច្ចេកទេសក្នុងប្រព័ន្ធ។ ក្រុមការងារ IT បានទទួលដំណឹង និងកំពុងពិនិត្យដោះស្រាយ។')
+      } else if (backendMsg && typeof backendMsg === 'string') {
         errorMessage = backendMsg
       }
 

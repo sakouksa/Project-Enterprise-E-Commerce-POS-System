@@ -10,6 +10,9 @@ const getBaseURL = () => {
   if (import.meta.env.DEV) {
     return '/api/v1'
   }
+  if (import.meta.env.PROD) {
+    return 'https://enterprise-pos-api.onrender.com/api/v1'
+  }
   const hostname = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
   return `http://${hostname}:8001/api/v1`
 }

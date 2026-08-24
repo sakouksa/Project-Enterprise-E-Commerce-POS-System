@@ -15,6 +15,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import WorkspaceTabs, { type WorkspaceTabItem } from '@/components/shared/WorkspaceTabs'
 import { useServerPagination } from '@/hooks/useServerPagination'
+import { getAbsoluteImageUrl } from '@/utils/image'
 import ResetButton from '@/components/shared/ResetButton'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
@@ -641,9 +642,7 @@ const EmployeesPage: React.FC = () => {
 
   const getPhotoUrl = (photoPath?: string) => {
     if (!photoPath) return null
-    if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) return photoPath
-    const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.split('/api')[0] : 'http://127.0.0.1:8001'
-    return `${baseUrl}/storage/${photoPath}`
+    return getAbsoluteImageUrl(photoPath) || null
   }
 
   const activeFiltersCount = [

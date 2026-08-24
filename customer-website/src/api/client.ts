@@ -5,8 +5,14 @@ const getBaseURL = (): string => {
   if (import.meta.env.VITE_STORE_API_URL) {
     return import.meta.env.VITE_STORE_API_URL
   }
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return `${import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '')}/store`
+  }
   if (import.meta.env.DEV) {
     return '/api/v1/store'
+  }
+  if (import.meta.env.PROD) {
+    return 'https://enterprise-pos-api.onrender.com/api/v1/store'
   }
   const hostname = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
   return `http://${hostname}:8001/api/v1/store`

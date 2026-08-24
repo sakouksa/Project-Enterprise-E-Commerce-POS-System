@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Upload, Star, Trash2, Image as ImageIcon } from 'lucide-react'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import { getDynamicColorMatchedImage } from '../utils/colorResolver'
 import type { CreateImagePreview } from '../types/productForm.types'
 
 interface ProductMediaSectionProps {
@@ -100,6 +101,12 @@ export const ProductMediaSection: React.FC<ProductMediaSectionProps> = ({
                   src={getAbsoluteImageUrl(img.url || img.image)}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   alt="catalog"
+                  onError={(e) => {
+                    const fallback = getDynamicColorMatchedImage('Black', productDetail?.category?.name || productDetail?.name)
+                    if (fallback && e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback
+                    }
+                  }}
                 />
                 {img.is_primary && (
                   <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-primary/95 text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-bold shadow-md z-10 backdrop-blur-xs">

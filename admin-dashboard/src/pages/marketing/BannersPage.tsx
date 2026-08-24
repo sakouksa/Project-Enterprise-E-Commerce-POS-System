@@ -13,6 +13,7 @@ import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import StatusBadge from '@/components/common/StatusBadge'
+import { getAbsoluteImageUrl } from '@/utils/image'
 import { useTranslation } from 'react-i18next'
 
 interface Banner {
@@ -32,10 +33,8 @@ const getImageUrl = (url?: string): string => {
   if (!url || url === '[]' || url === '""' || url.includes('/storage/[]')) {
     return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'
   }
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
-    return url
-  }
-  return `http://127.0.0.1:8001/storage/${url.replace(/^\//, '')}`
+  const resolved = getAbsoluteImageUrl(url)
+  return resolved || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'
 }
 
 const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {

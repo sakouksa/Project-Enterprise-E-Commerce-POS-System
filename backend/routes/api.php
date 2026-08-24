@@ -514,7 +514,6 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('cart-items', \App\Http\Controllers\Api\V1\Order\CartItemController::class);
         Route::apiResource('carts', \App\Http\Controllers\Api\V1\Order\CartController::class);
         Route::apiResource('cash-register-transactions', \App\Http\Controllers\Api\V1\POS\CashRegisterTransactionController::class);
-        Route::apiResource('cash-registers', \App\Http\Controllers\Api\V1\POS\CashRegisterController::class);
         Route::get('customer-addresses/export', [\App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class, 'export']);
         Route::post('customer-addresses/import', [\App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class, 'import']);
         Route::post('customer-addresses/bulk-delete', [\App\Http\Controllers\Api\V1\Customer\CustomerAddressController::class, 'bulkDelete']);

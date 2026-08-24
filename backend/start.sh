@@ -2,6 +2,11 @@
 set -e
 
 PORT="${PORT:-10000}"
+
+# Default CACHE_STORE and SESSION_DRIVER to file if not explicitly redis
+export CACHE_STORE="${CACHE_STORE:-file}"
+export SESSION_DRIVER="${SESSION_DRIVER:-file}"
+
 echo "==> Starting Enterprise POS Laravel Backend on port $PORT..."
 
 # Storage link & database migrations

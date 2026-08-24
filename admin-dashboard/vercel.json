@@ -4,6 +4,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/v1/storage/:path*",
+      "destination": "https://enterprise-pos-api.onrender.com/api/v1/storage/:path*"
+    },
+    {
+      "source": "/storage/:path*",
+      "destination": "https://enterprise-pos-api.onrender.com/api/v1/storage/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

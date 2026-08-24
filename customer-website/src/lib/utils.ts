@@ -38,26 +38,26 @@ export function calculateDiscountPercent(price: number, comparePrice: number): n
 export function getImageUrl(path?: string | null): string {
   if (!path) return '/images/placeholder-product.png'
 
-  // Convert absolute API storage URLs → relative path served via Vite proxy
-  // e.g. http://localhost:8001/api/v1/storage/products/x.webp → /api/v1/storage/products/x.webp
-  const storagePatterns = [
-    /^https?:\/\/[^/]+\/(api\/v1\/storage\/)/,  // http://host/api/v1/storage/...
-    /^https?:\/\/[^/]+\/storage\//,              // http://host/storage/...
-  ]
-  for (const pattern of storagePatterns) {
-    const m = path.match(pattern)
-    if (m) {
-      // Extract everything after the host, keep the path relative
-      const relativePath = path.replace(/^https?:\/\/[^/]+/, '')
-      return relativePath
-    }
+  // If already an absolute URL
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    // Upgrade http to https for Render backend
+    return path.replace(/^http:\/\/enterprise-pos-api\.onrender\.com/, 'https://enterprise-pos-api.onrender.com')
   }
 
-  // If it's a full external URL (not our own server), return as-is
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  // If data URI
+  if (path.startsWith('data:')) return path
 
-  // Relative path: return as-is
-  return path
+  // Clean path
+  const clean = path.replace(/^\/?(api\/v1\/storage\/|storage\/)/, '')
+
+  // In production, fallback to Render backend if needed, or relative for proxy
+  if (import.meta.env.PROD) {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://enterprise-pos-api.onrender.com/api/v1'
+    const origin = apiBase.replace(/\/api\/v1\/?$/, '')
+    return `${origin}/api/v1/storage/${clean}`
+  }
+
+  return `/api/v1/storage/${clean}`
 }
 
 export function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number) {

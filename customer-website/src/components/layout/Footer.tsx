@@ -18,6 +18,7 @@ import BrandPartnersMarquee from '@/components/storefront/BrandPartnersMarquee'
 import api from '@/lib/api'
 
 import { useStoreSettings } from '@/hooks'
+import { resolveMediaUrl } from '@/lib/utils'
 
 interface FooterProps {
   storeInfo?: {
@@ -100,14 +101,16 @@ export const Footer: React.FC<FooterProps> = ({ storeInfo }) => {
       <div className="container-site py-12 lg:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8">
         {/* Column 1: Store Brand Info, Hotlines & Opening Hours (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            {logo && !logoError ? (
-              <img
-                src={logo}
-                alt={name}
-                onError={() => setLogoError(true)}
-                className="h-10 w-auto max-w-[160px] object-contain rounded-lg brightness-110"
-              />
+          <Link to="/" className="flex items-center gap-3 group">
+            {!logoError ? (
+              <div className="h-11 max-w-[160px] flex items-center justify-center rounded-xl overflow-hidden">
+                <img
+                  src={resolveMediaUrl(logo, 'company') || '/logo.png'}
+                  alt={name}
+                  onError={() => setLogoError(true)}
+                  className="h-10 w-auto max-w-full object-contain rounded-xl select-none brightness-110"
+                />
+              </div>
             ) : (
               <div className="w-9 h-9 rounded-2xl bg-[#2C376B] flex items-center justify-center shadow-md">
                 <span className="text-white font-black text-base font-display">{name.charAt(0)}</span>

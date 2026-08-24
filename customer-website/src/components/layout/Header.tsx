@@ -23,7 +23,7 @@ import {
 } from '@/stores'
 import { useCartStore } from '@/stores/cartStore'
 import { useStoreSettings, useScrollPosition } from '@/hooks'
-import { cn } from '@/lib/utils'
+import { cn, resolveMediaUrl } from '@/lib/utils'
 import Navbar from './Navbar'
 import TopUtilityBar from './TopUtilityBar'
 import GlobalSearchBar from './GlobalSearchBar'
@@ -72,14 +72,14 @@ export const Header: React.FC<{ announcement?: any }> = ({ announcement }) => {
         <div className="container-site">
           <div className="flex items-center justify-between gap-3 lg:gap-5 h-20">
             {/* Store Brand Logo & Name (Dynamically loaded from Backend) */}
-            <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-              {storeSettings?.site_logo && !logoError ? (
-                <div className="h-11 flex items-center justify-center">
+            <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">
+              {!logoError ? (
+                <div className="h-11 max-w-[170px] flex items-center justify-center rounded-xl overflow-hidden">
                   <img
-                    src={storeSettings.site_logo}
+                    src={resolveMediaUrl(storeSettings?.site_logo, 'company') || '/logo.png'}
                     alt={siteName}
                     onError={() => setLogoError(true)}
-                    className="h-10 w-auto max-w-[170px] object-contain rounded-lg group-hover:scale-105 transition-transform"
+                    className="h-10 w-auto max-w-full object-contain rounded-xl select-none group-hover:scale-105 transition-transform"
                   />
                 </div>
               ) : (

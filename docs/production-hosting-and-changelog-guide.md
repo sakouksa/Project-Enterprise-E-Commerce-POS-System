@@ -1,81 +1,91 @@
-# 🏢 មគ្គុទ្ទេសក៍លម្អិតស្ដីពី៖ ការកែលម្អប្រព័ន្ធ និងការរៀបចំ Hosting មួយជំហានម្តងៗ
-# (Comprehensive Production Hosting & Full System Changelog Guide)
+# 🏢 មគ្គុទ្ទេសក៍លម្អិតកម្រិត Enterprise៖ ការកែលម្អប្រព័ន្ធ និងការរៀបចំ Hosting មួយជំហានម្តងៗ ពីដើមដល់ចប់
+# (The Definitive Enterprise Production Hosting & Complete System Audit Guide)
 
-> **គម្រោង (Project):** Enterprise E-Commerce + POS System  
-> **ឯកសារសម្រាប់ (Target Audience):** Software Engineers, DevOps Engineers, System Administrators, និង Junior Developers  
-> **ភាសា (Language):** ភាសាខ្មែរ (Khmer) លាយជាមួយ English Technical Terms ដើម្បីងាយស្រួលយល់ និងអនុវត្តជាក់ស្ដែង ១០០%។
+> **គម្រោង (Project):** Enterprise Omnichannel E-Commerce + Point of Sale (POS) System  
+> **គោលបំណង (Purpose):** ឯកសារនេះត្រូវបានរៀបចំឡើងជា **មគ្គុទ្ទេសក៍ពេញលេញ និងលម្អិតបំផុត (Master Guide)** ពន្យល់រាល់ការកែលម្អប្រព័ន្ធ និងជំហាននីមួយៗក្នុងការយកគម្រោងទាំងមូលទៅដាក់ដំណើរការលើ **Production Server (Hosting & Deployment)** ពីដើមរហូតដល់ចប់ ដោយគ្មានការរំលងជំហានណាមួយឡើយ។  
+> **ភាសា (Language):** ភាសាខ្មែរ (Khmer) បកស្រាយយ៉ាងក្បោះក្បាយ អមដោយ English Technical Terms និង Command ជាក់ស្ដែង ១០០%។
 
 ---
 
-# តារាងមាតិកា (Table of Contents)
+# 📑 តារាងមាតិកាពេញលេញ (Complete Table of Contents)
 
-1. [ផ្នែកទី ១៖ របាយការណ៍លម្អិតនៃការកែលម្អទាំងអស់ដែលបានធ្វើ (Full System Changelog)](#ផ្នែកទី-១-របាយការណ៍លម្អិតនៃការកែលម្អទាំងអស់ដែលបានធ្វើ)
+1. [ជំពូកទី ១៖ សវនកម្មប្រព័ន្ធ និងការកែលម្អទាំងអស់ពីដើមដល់ចប់ (Full System Audit & Changelog)](#ជំពូកទី-១-សវនកម្មប្រព័ន្ធ-និងការកែលម្អទាំងអស់ពីដើមដល់ចប់)
    - [១.១. ការធ្វើ Full Technical SEO Audit & Google Search Optimization](#១១-ការធ្វើ-full-technical-seo-audit--google-search-optimization)
-   - [១.២. ការធ្វើ Global DRY Refactor & Master Reusable Components](#១២-ការធ្វើ-global-dry-refactor--master-reusable-components)
+   - [១.២. ការធ្វើ Global DRY Refactor & Master Shared Components](#១២-ការធ្វើ-global-dry-refactor--master-shared-components)
    - [១.៣. ស្ថាបត្យកម្ម Clean Architecture & Modular App Layer](#១៣-ស្ថាបត្យកម្ម-clean-architecture--modular-app-layer)
    - [១.៤. ការដំឡើង Brand Logo & Favicon Suite ផ្លូវការ](#១៤-ការដំឡើង-brand-logo--favicon-suite-ផ្លូវការ)
-2. [ផ្នែកទី ២៖ ស្ថាបត្យកម្ម Hosting និងលំហូរទិន្នន័យ (System Hosting Topology)](#ផ្នែកទី-២-ស្ថាបត្យកម្ម-hosting-និងលំហូរទិន្នន័យ)
-3. [ផ្នែកទី ៣៖ ការជ្រើសរើសទំហំ Server និង Cloud Provider (Hardware Sizing Matrix)](#ផ្នែកទី-៣-ការជ្រើសរើសទំហំ-server-និង-cloud-provider)
-4. [ផ្នែកទី ៤៖ មគ្គុទ្ទេសក៍ Hosting លើ VPS / Dedicated Linux Server (Docker Production)](#ផ្នែកទី-៤-មគ្គុទ្ទេសក៍-hosting-លើ-vps--dedicated-linux-server)
-   - [ជំហានទី ១៖ ការតភ្ជាប់ SSH និងការពង្រឹងសុវត្ថិភាព Server (Hardening & Firewall)](#ជំហានទី-១-ការតភ្ជាប់-ssh-និងការពង្រឹងសុវត្ថិភាព-server)
-   - [ជំហានទី ២៖ ការដំឡើង Docker Engine & Docker Compose](#ជំហានទី-២-ការដំឡើង-docker-engine--docker-compose)
+2. [ជំពូកទី ២៖ ស្ថាបត្យកម្មប្រព័ន្ធ និងលំហូរទិន្នន័យ (System Architecture & Network Topology)](#ជំពូកទី-២-ស្ថាបត្យកម្មប្រព័ន្ធ-និងលំហូរទិន្នន័យ)
+   - [២.១. ការបែងចែក Sub-Projects ក្នុង Monorepo](#២១-ការបែងចែក-sub-projects-ក្នុង-monorepo)
+   - [២.២. ដ្យាក្រាមលំហូរទិន្នន័យ និង Network Ports](#២២-ដ្យាក្រាមលំហូរទិន្នន័យ-និង-network-ports)
+3. [ជំពូកទី ៣៖ ការជ្រើសរើសទំហំ Server និង Cloud Provider (Hardware Sizing Matrix)](#ជំពូកទី-៣-ការជ្រើសរើសទំហំ-server-និង-cloud-provider)
+4. [ជំពូកទី ៤៖ មគ្គុទ្ទេសក៍ Hosting លើ VPS / Dedicated Server (Docker Production) — មួយជំហានម្តងៗ](#ជំពូកទី-៤-មគ្គុទ្ទេសក៍-hosting-លើ-vps--dedicated-server-docker-production)
+   - [ជំហានទី ១៖ ការតភ្ជាប់ SSH និងការពង្រឹងសុវត្ថិភាពម៉ាស៊ីន (Server Hardening & Firewall)](#ជំហានទី-១-ការតភ្ជាប់-ssh-និងការពង្រឹងសុវត្ថិភាពម៉ាស៊ីន)
+   - [ជំហានទី ២៖ ការដំឡើង Docker Engine & Docker Compose v2](#ជំហានទី-២-ការដំឡើង-docker-engine--docker-compose-v2)
    - [ជំហានទី ៣៖ ការចង Domain Name & DNS Records (A Records)](#ជំហានទី-៣-ការចង-domain-name--dns-records)
-   - [ជំហានទី ៤៖ ការ Clone Code និងការកំណត់ Environment Variables (.env)](#ជំហានទី-៤-ការ-clone-code-និងការកំណត់-environment-variables)
-   - [ជំហានទី ៥៖ ការដំឡើង SSL/TLS Certificate ដោយឥតគិតថ្លៃ (Let's Encrypt)](#ជំហានទី-៥-ការដំឡើង-ssltls-certificate-ដោយឥតគិតថ្លៃ)
+   - [ជំហានទី ៤៖ ការ Clone Code និងការកំណត់ Environment Variables (.env) លម្អិត](#ជំហានទី-៤-ការ-clone-code-និងការកំណត់-environment-variables-លម្អិត)
+   - [ជំហានទី ៥៖ ការដំឡើង SSL/TLS Certificate ដោយឥតគិតថ្លៃ (Let's Encrypt Certbot)](#ជំហានទី-៥-ការដំឡើង-ssltls-certificate-ដោយឥតគិតថ្លៃ)
    - [ជំហានទី ៦៖ ការ Launch Docker Production Containers](#ជំហានទី-៦-ការ-launch-docker-production-containers)
    - [ជំហានទី ៧៖ Database Migration, Initial Seeding & Production Cache](#ជំហានទី-៧-database-migration-initial-seeding--production-cache)
    - [ជំហានទី ៨៖ ការរៀបចំ Cron Job (Scheduler) និង Queue Worker](#ជំហានទី-៨-ការរៀបចំ-cron-job-និង-queue-worker)
    - [ជំហានទី ៩៖ របៀប Update Code ថ្មីដោយមិនបាច់បិទ Website (Zero-Downtime Deploy)](#ជំហានទី-៩-របៀប-update-code-ថ្មីដោយមិនបាច់បិទ-website)
-   - [ជំហានទី ១០៖ ប្រព័ន្ធ Backup Database ដោយស្វ័យប្រវត្តិ](#ជំហានទី-១០-ប្រព័ន្ធ-backup-database-ដោយស្វ័យប្រវត្តិ)
-5. [ផ្នែកទី ៥៖ មគ្គុទ្ទេសក៍ Hosting លើ Serverless Cloud (Vercel + Render / Railway)](#ផ្នែកទី-៥-មគ្គុទ្ទេសក៍-hosting-លើ-serverless-cloud)
+   - [ជំហានទី ១០៖ ប្រព័ន្ធ Backup Database ដោយស្វ័យប្រវត្តិ (Automated Backup & Retention)](#ជំហានទី-១០-ប្រព័ន្ធ-backup-database-ដោយស្វ័យប្រវត្តិ)
+5. [ជំពូកទី ៥៖ មគ្គុទ្ទេសក៍ Hosting លើ Serverless Cloud (Vercel + Render / Railway)](#ជំពូកទី-៥-មគ្គុទ្ទេសក៍-hosting-លើ-serverless-cloud)
    - [៥.១. ការ Deploy Customer Website លើ Vercel](#៥១-ការ-deploy-customer-website-លើ-vercel)
    - [៥.២. ការ Deploy Admin Dashboard & POS លើ Vercel](#៥២-ការ-deploy-admin-dashboard--pos-លើ-vercel)
    - [៥.៣. ការ Deploy Laravel Backend + PostgreSQL + Redis លើ Render / Railway](#៥៣-ការ-deploy-laravel-backend--postgresql--redis-លើ-render--railway)
-6. [ផ្នែកទី ៦៖ បញ្ហាដែលជួបញឹកញាប់ និងវិធីដោះស្រាយ (Troubleshooting & FAQs)](#ផ្នែកទី-៦-បញ្ហាដែលជួបញឹកញាប់-និងវិធីដោះស្រាយ)
+6. [ជំពូកទី ៦៖ បញ្ហាដែលជួបញឹកញាប់ និងវិធីដោះស្រាយ (Troubleshooting & FAQs)](#ជំពូកទី-៦-បញ្ហាដែលជួបញឹកញាប់-និងវិធីដោះស្រាយ)
 
 ---
 
-# ផ្នែកទី ១៖ របាយការណ៍លម្អិតនៃការកែលម្អទាំងអស់ដែលបានធ្វើ
+# ជំពូកទី ១៖ សវនកម្មប្រព័ន្ធ និងការកែលម្អទាំងអស់ពីដើមដល់ចប់
+
+ផ្នែកនេះបង្ហាញយ៉ាងលម្អិតអំពីអ្វីៗទាំងអស់ដែលត្រូវបាន Audit, Refactor, ដំឡើង និងកែលម្អនៅក្នុងគម្រោង៖
+
+---
 
 ## ១.១. ការធ្វើ Full Technical SEO Audit & Google Search Optimization
 
-### 🔴 បញ្ហាចាស់ (Previous Problems):
-* Website ដំណើរការជា Single Page Application (SPA) ដោយគ្មាន XML Sitemap ពិតប្រាកដ ឬ robots.txt dynamic ចេញពី Database។ Google Crawlers មិនអាចស្វែងរកទំព័រទំនិញថ្មីៗបានលឿនឡើយ។
-* គ្មាន Structured Data (Schema.org JSON-LD) ធ្វើឱ្យ Google Search មិនអាចបង្ហាញ Rich Snippets ដូចជា តម្លៃទំនិញ ($), ចំនួនផ្កាយ Rating (⭐), និងស្ថានភាពមានក្នុងស្តុក (In Stock)។
-* Social Media Sharing (Facebook, Telegram, Twitter) បង្ហាញតែរូបភាពទទេ ឬអក្សរ Default គ្មានភាពទាក់ទាញ។
+### 🔴 បញ្ហាដើម (Initial Problems):
+1. **គ្មាន Server-Side XML Sitemap:** Website ដំណើរការជា React Single Page Application (SPA) ដែល Render តាម Client-side។ គ្មាន XML Sitemap សម្រាប់ផ្ញើទៅ Google Search Console ធ្វើឱ្យ Google Bot ពិបាកស្វែងរកទំព័រទំនិញថ្មីៗ។
+2. **គ្មាន Robots.txt Dynamic:** គ្មានឯកសារបញ្ជា Bots ធ្វើឱ្យ Crawlers អាចចូលទៅ Index ទំព័រឯកជនដូចជា Cart, Checkout, ឬ Account Dashboard ដែលនាំឱ្យខាតបង់ Crawl Budget និងប៉ះពាល់ SEO Ranking។
+3. **បាត់បង់ Structured Data (Schema.org JSON-LD):** គ្មានទិន្នន័យ Structured Data ធ្វើឱ្យ Google Search បង្ហាញត្រឹមតែ Plain Link ធម្មតា ដោយគ្មាន Rich Snippets (ដូចជា តម្លៃទំនិញ $, ចំនួនផ្កាយ Rating ⭐, ស្ថានភាពក្នុងស្តុក In Stock, ឬ Sitelinks Searchbox)។
+4. **Duplicate Content & Broken Canonical Links:** URLs មួយចំនួនអាចចូលបានតាមច្រើនផ្លូវ ដែលបង្កហានិភ័យ Duplicate Content Penalty ពី Google Algorithm។
+5. **Social Media Previews ខូច:** ពេល Share Link ទៅកាន់ Facebook, Telegram, ឬ Twitter វាមិនបង្ហាញរូបភាព Thumbnail ត្រឹមត្រូវ ឬចេញរូបភាពទទេរ។
 
-### 🟢 ដំណោះស្រាយដែលបានបង្កើត និងកែសម្រួល (Fixes Implemented):
+### 🟢 ដំណោះស្រាយ និងការកែទម្រង់ដែលបានសម្រេច (Fixes Implemented):
 1. **Backend Dynamic XML Sitemap & Robots Engine:**
-   * បង្កើត [`backend/app/Http/Controllers/Api/SeoController.php`](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/backend/app/Http/Controllers/Api/SeoController.php) ដែលភ្ជាប់ជាមួយ Route `/sitemap.xml` និង `/robots.txt`។
-   * ទាញយកបញ្ជី Products, Categories, Brands, និង Blog Articles ពិតប្រាកដចេញពី PostgreSQL Database ដោយស្វ័យប្រវត្តិ ព្រមទាំងដាក់ `lastmod`, `changefreq: daily`, និង `priority: 0.9`។
-   * កំណត់ `robots.txt` ឱ្យ Googlebot ចូល Crawl ទំព័រសាធារណៈ និង Disallow ផ្លូវឯកជន (`/cart`, `/checkout`, `/account/`, `/auth/`)។
+   * បង្កើត [`backend/app/Http/Controllers/Api/SeoController.php`](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/backend/app/Http/Controllers/Api/SeoController.php) ភ្ជាប់ជាមួយ routes `/sitemap.xml` និង `/robots.txt`។
+   * ទាញយកទិន្នន័យជាក់ស្ដែងពី PostgreSQL Database រួមមាន៖ All Active Products (`/products/{slug}`), All Categories (`/category/{slug}`), All Brands (`/brand/{slug}`), All Published Blog Posts (`/blog/{slug}`), និង Static Pages (Home, About, Contact, FAQs, Policies)។
+   * កំណត់ `lastmod` តាមកាលបរិច្ឆេទ Update ចុងក្រោយ, `changefreq: daily`, និង `priority` ចន្លោះពី `0.5` ដល់ `1.0`។
+   * កំណត់ `robots.txt` អនុញ្ញាត Googlebot ចូល Crawl ទំព័រសាធារណៈ និង Disallow ផ្លូវឯកជន (`/cart`, `/checkout`, `/account/`, `/auth/`) ព្រមទាំងភ្ជាប់ Sitemap URL ត្រឹមត្រូវ។
 2. **SEO Engine ស្ដង់ដារ (`src/components/seo/SEOHead.tsx`):**
-   * បង្កើត Dynamic Canonical URL Generator ដើម្បីការពារបញ្ហា Duplicate Content Penalty ពី Google Search។
+   * បង្កើត Dynamic Canonical URL Generator សម្រាប់ Normalize URLs ទាំងអស់។
    * OpenGraph & Twitter Card Meta Tags ជាមួយ Locale Mapping ស្វ័យប្រវត្តិ (`km_KH`, `en_US`, `th_TH`, `vi_VN`, `zh_CN`)។
    * **៧ ប្រភេទ Structured Data Schemas (JSON-LD):**
-     1. `Product` Schema (ឈ្មោះទំនិញ, តម្លៃ, រូបិយប័ណ្ណ, SKU, Stock Status, Brand, និង Reviews Rating)
-     2. `BreadcrumbList` Schema (ឋានានុក្រមទំព័រ)
-     3. `FAQPage` Schema (សំណួរ-ចម្លើយលើទំព័រ FAQ)
-     4. `Article` Schema (សម្រាប់អត្ថបទបច្ចេកវិទ្យា និង Blog)
-     5. `WebSite` Schema (ភ្ជាប់ជាមួយ Sitelinks Searchbox)
-     6. `Organization` Schema (ឈ្មោះក្រុមហ៊ុន, Logo, Hotlines, អាសយដ្ឋាន)
-     7. `LocalBusiness` / `Store` Schema (Geo-coordinates និងម៉ោងបើកធ្វើការ)។
+     * `Product` Schema (ឈ្មោះទំនិញ, តម្លៃ, រូបិយប័ណ្ណ, SKU, Stock Status, Brand, Reviews Rating)
+     * `BreadcrumbList` Schema (ឋានានុក្រមទំព័រសម្រាប់ Google Search Results)
+     * `FAQPage` Schema (សម្រាប់ទំព័រ FAQs)
+     * `Article` Schema (សម្រាប់អត្ថបទបច្ចេកវិទ្យា និង Blog)
+     * `WebSite` Schema (ភ្ជាប់ជាមួយ Sitelinks Searchbox)
+     * `Organization` Schema (ឈ្មោះក្រុមហ៊ុន, Logo, Hotlines, អាសយដ្ឋាន)
+     * `LocalBusiness` / `Store` Schema (Geo-coordinates, អាសយដ្ឋាន និងម៉ោងបើកធ្វើការ)។
 
 ---
 
-## ១.២. ការធ្វើ Global DRY Refactor & Master Reusable Components
+## ១.២. ការធ្វើ Global DRY Refactor & Master Shared Components
 
-### 🔴 បញ្ហាចាស់ (Previous Problems):
-* មាន Product Card ចំនួន ២ ដាច់ដោយឡែកពីគ្នា (`CustomerProductCard.tsx` និង `ProductCard.tsx`) ដែលសរសេរកូដ Wishlist, Cart, Currency format, និង Discount math ស្ទួនៗគ្នា។
-* មាន Section ចំនួន ៨ លើ Homepage (Featured, Arrivals, Deals, Best Sellers, etc.) ដែលជាកូដ Copy-Paste ដូចគ្នា ៩៩%។
+### 🔴 បញ្ហាដើម (Initial Problems):
+1. **Product Cards ស្ទួនគ្នា:** មាន File ២ ដាច់ដោយឡែកពីគ្នា (`CustomerProductCard.tsx` 310 lines និង `ProductCard.tsx` 202 lines) ដែលសរសេរ Logic ដូចគ្នា (Wishlist toggle, Add to cart, Currency conversion, Image fallbacks) នាំឱ្យពិបាកថែទាំ។
+2. **Copy-Pasted Product Sections:** Section ចំនួន ៨ លើ Homepage (Featured, Arrivals, Deals, Best Sellers, Popular, Rated, Recent, Recommended) គឺជាកូដ Copy-Paste ដូចគ្នា ៩៩%។
+3. **Price & Currency Calculation រាយប៉ាយ:** ការគណនាបញ្ចុះតម្លៃ Percentage Discount និង Strikethrough Price ត្រូវបានសរសេរដោយដៃរាយប៉ាយតាមទំព័រនីមួយៗ។
 
-### 🟢 ដំណោះស្រាយដែលបានបង្កើត និងកែសម្រួល (Fixes Implemented):
+### 🟢 ដំណោះស្រាយ និងការកែទម្រង់ដែលបានសម្រេច (Fixes Implemented):
 1. **Master `ProductCard.tsx`** ([`src/components/ecommerce/ProductCard.tsx`](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/customer-website/src/components/ecommerce/ProductCard.tsx)):
    * បង្រួបបង្រួមជា Master Component តែមួយគត់ដែល Support 4 Variants៖
      * `default`: កាតទំនិញស្ដង់ដារសម្រាប់ Grid លើ Homepage និង Catalog
      * `compact`: កាតទំហំតូចសម្រាប់ Sidebar និង Drawer
      * `featured`: កាតទំហំធំសម្រាប់ Flash Sale Banners
-     * `horizontal`: កាតទម្រង់ផ្តេកសម្រាប់ List View Mode និង Cart / Wishlist
+     * `horizontal`: កាតទម្រង់ផ្តេកសម្រាប់ List View Mode និង Cart / Wishlist Table
 2. **Master `ProductSection.tsx`** ([`src/components/ecommerce/ProductSection.tsx`](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/customer-website/src/components/ecommerce/ProductSection.tsx)):
    * បង្រួញ Section ទាំង ៨ ឱ្យមកប្រើ Reusable Master Component ដោយគ្រាន់តែបញ្ជូន Props ខ្លីៗ។
 3. **Shared Presentation & Domain Components:**
@@ -93,55 +103,75 @@
 
 ## ១.៣. ស្ថាបត្យកម្ម Clean Architecture & Modular App Layer
 
-### 🔴 បញ្ហាចាស់ (Previous Problems):
-* `App.tsx` ផ្ទុកកូដ 172 បន្ទាត់លាយបញ្ចូលគ្នាទាំង Routing, React Query, Theme Sync, Route Guards និង Lazy Routes ទាំងអស់។
-* API Client ស្ថិតនៅ ២ កន្លែង (`src/api/client.ts` និង `src/lib/api.ts`) ធ្វើឱ្យ Developer ថ្មីពិបាកដឹងថាគួរ Import ពីណា។
+### 🔴 បញ្ហាដើម (Initial Problems):
+1. **Monolithic `App.tsx`:** ផ្ទុកកូដ 172 បន្ទាត់លាយបញ្ចូលគ្នាទាំង Router, QueryClient, Theme sync effect, Route Guards និង 30+ Lazy routes ទាំងអស់ក្នុង file តែមួយ។
+2. **API Client ស្ទួនគ្នា:** មានទាំង `src/api/client.ts` និង `src/lib/api.ts` ធ្វើឱ្យ Developer ថ្មីច្រឡំ។
 
-### 🟢 ដំណោះស្រាយដែលបានបង្កើត និងកែសម្រួល (Fixes Implemented):
-* បង្កើត **Application Root Layer** ស្ដង់ដារ (`src/app/`):
-  * `src/app/providers/QueryProvider.tsx`: TanStack React Query Client Setup
+### 🟢 ដំណោះស្រាយ និងការកែទម្រង់ដែលបានសម្រេច (Fixes Implemented):
+* **បង្កើត `src/app/` Layer ស្ដង់ដារ:**
+  * `src/app/providers/QueryProvider.tsx`: TanStack React Query Client Setup (ជាមួយ Stale Time 5 នាទី និង Auto-retry)
   * `src/app/providers/ThemeProvider.tsx`: Dark/Light System Theme Synchronization
   * `src/app/providers/FaviconProvider.tsx`: Dynamic Favicon Synchronization
   * `src/app/router/RouteGuards.tsx`: `ProtectedRoute` (សម្រាប់ Account) និង `GuestRoute` (សម្រាប់ Login/Register)
   * `src/app/router/routes.tsx`: Lazy-loaded Page Routes Declarations
-  * `src/app/router/AppRouter.tsx`: Main Route Tree
+  * `src/app/router/AppRouter.tsx`: Main Route Tree ស្អាត និងងាយស្រួលពង្រីក
   * `src/app/App.tsx`: Clean Root Composition Component
-* បង្កើត **Custom Domain Hooks (`src/hooks/`)**: `useAddToCart.ts`, `useWishlist.ts`, `useInfiniteProducts.ts`, `useSearch.ts`
-* បង្កើត **Centralized API Services (`src/services/`)**: `cartService.ts`, `wishlistService.ts`, `orderService.ts`, `productService.ts`, `authService.ts`
-* បង្កើត **Centralized Query Keys (`src/constants/queryKeys.ts`)**។
+* **Domain Custom Hooks (`src/hooks/`):**
+  * `useWishlist.ts`: គ្រប់គ្រង Optimistic State Mutation និង Sync ជាមួយ Backend API
+  * `useAddToCart.ts`: គ្រប់គ្រង Cart Additions, Quantity, Variants និង Instant Feedback
+  * `useInfiniteProducts.ts`: គ្រប់គ្រង Infinite Scroll Pagination តាម Intersection Observer
+  * `useSearch.ts`: គ្រប់គ្រង URL Search Synchronization (AI Search, Keyword Search, SKU Search)
+* **Centralized API Services (`src/services/`):**
+  * `cartService.ts`, `wishlistService.ts`, `orderService.ts`, `productService.ts`, `authService.ts`, `storeSettingsService.ts`
+* **React Query Keys Dictionary:**
+  * [`src/constants/queryKeys.ts`](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/customer-website/src/constants/queryKeys.ts): Dictionary កំណត់ Key សម្រាប់ Server Caching ទាំងអស់។
 
 ---
 
 ## ១.៤. ការដំឡើង Brand Logo & Favicon Suite ផ្លូវការ
 
-### 🔴 បញ្ហាចាស់ (Previous Problems):
-* លើ Browser Tab និង Google Search លោត Icon ពណ៌ស្វាយរបស់ Vite (Default Icon)។
+### 🔴 បញ្ហាដើម (Initial Problems):
+* Browser Tab, Bookmarks និង Google Search Results បង្ហាញ Icon ពណ៌ស្វាយរបស់ Vite (Default Placeholder Icon)។
 
-### 🟢 ដំណោះស្រាយដែលបានបង្កើត និងកែសម្រួល (Fixes Implemented):
+### 🟢 ដំណោះស្រាយ និងការកែទម្រង់ដែលបានសម្រេច (Fixes Implemented):
 * បង្កើត Icon ផ្លូវការរបស់ **NexTech Enterprise (ពណ៌ក្រហម Rounded Emblem)** គ្រប់ទំហំស្ដង់ដារពិភពលោក៖
-  1. `public/favicon.svg`: Scalable Vector Icon កម្រិតច្បាស់ខ្ពស់
-  2. `public/favicon.ico`: Multi-size (16x16, 32x32, 48x48, 64x64) សម្រាប់ Windows Taskbar & Google Search
+  1. `public/favicon.svg`: Scalable Vector Icon កម្រិតច្បាស់ខ្ពស់សម្រាប់ Modern Web Browsers
+  2. `public/favicon.ico`: Multi-size ICO (16x16, 32x32, 48x48, 64x64) សម្រាប់ Windows Taskbar & Google Search
   3. `public/favicon-48x48.png`, `favicon-32x32.png`, `favicon-16x16.png`
   4. `public/apple-touch-icon.png` (180x180 សម្រាប់ Apple Safari & iOS Home Screen)
   5. `public/android-chrome-192x192.png` & `512x512.png` (សម្រាប់ Android PWA)
   6. `public/site.webmanifest`: កំណត់ PWA Name និង Theme Color `#e11d48`
-  7. `FaviconProvider.tsx`: ធ្វើបច្ចុប្បន្នភាព Icon លើ Tab ដោយស្វ័យប្រវត្តិកាលណា Admin ប្តូរ Logo ក្នុង Backend។
+  7. `FaviconProvider.tsx`: ធ្វើបច្ចុប្បន្នភាព Icon លើ Tab ដោយស្វ័យប្រវត្តិកាលណា Admin ប្តូរ Logo ក្នុង Backend Admin Panel។
 
 ---
 
-# ផ្នែកទី ២៖ ស្ថាបត្យកម្ម Hosting និងលំហូរទិន្នន័យ (System Hosting Topology)
+# ជំពូកទី ២៖ ស្ថាបត្យកម្មប្រព័ន្ធ និងលំហូរទិន្នន័យ
 
-ប្រព័ន្ធនេះត្រូវបានរចនាឡើងជា **Decoupled Omnichannel Architecture** ដែលបំបែក Frontend, Backend, Database, និង Mobile App ចេញពីគ្នាដើម្បីធានា High Performance, High Availability និង Scalability៖
+## ២.១. ការបែងចែក Sub-Projects ក្នុង Monorepo
+
+```text
+Project-Enterprise-E-Commerce-POS-System/
+├── backend/                  # Laravel 12 REST API + PostgreSQL 16 + Redis 7
+├── customer-website/         # E-Commerce Storefront SPA (React 19 + Vite + Tailwind CSS)
+├── admin-dashboard/          # Admin Dashboard & Point of Sale (POS) SPA (React 19 + Vite)
+├── mobile_app/               # Cross-platform Mobile App (Flutter 3.x for Android & iOS)
+├── docker/                   # Dockerfile & Configuration Files
+├── scripts/                  # Deployment, Rollback, and Backup Scripts
+├── docs/                     # Comprehensive Project Documentation
+└── docker-compose.prod.yml   # Multi-Container Production Orchestration
+```
+
+---
+
+## ២.២. ដ្យាក្រាមលំហូរទិន្នន័យ និង Network Ports
 
 ```
-                                  [ INTERNET CLIENTS ]
+                                  [ PUBLIC INTERNET ]
                                             │
                ┌────────────────────────────┼────────────────────────────┐
-               │                            │                            │
-        [ Web Browsers ]             [ Admin / POS ]             [ Flutter Mobile ]
-               │                            │                            │
-               ▼                            ▼                            │
-      https://www.example.com      https://admin.example.com             │
+               │ Port 443 (HTTPS)           │ Port 443 (HTTPS)           │ Port 443 (HTTPS)
+               ▼                            ▼                            ▼
+      https://www.example.com      https://admin.example.com     https://api.example.com
                │                            │                            │
                ▼                            ▼                            │
        [ Customer SPA ]             [ Admin / POS SPA ]                  │
@@ -149,73 +179,86 @@
                │                            │                            │
                └───────────────────┬────────┘                            │
                                    │                                     │
-                                   ▼                                     ▼
-                        https://api.example.com                https://api.example.com/api/v1
+                                   ▼                                     │
+                        https://api.example.com/api/v1 ◀─────────────────┘
                                    │
                                    ▼
                        [ Nginx Reverse Proxy Gateway ]
-                       (SSL Offloading / Port 80 & 443)
+                       (Handles SSL, Routing, Gzip, Rate Limiting)
                                    │
-                                   ▼
+                                   ▼ Port 9000 (Internal FastCGI)
                     [ Laravel 12 API (PHP 8.3-FPM) ]
                                    │
                     ┌──────────────┴──────────────┐
-                    ▼                             ▼
+                    ▼ Port 5432 (Internal)        ▼ Port 6379 (Internal)
          [ PostgreSQL 16 DB ]            [ Redis 7 In-Memory ]
-         (Persistent Storage)            (Cache, Session, Queues)
+         (Data Persistent Volume)        (Cache, Session, Queues)
 ```
-
-### តួនាទីរបស់ផ្នែកនីមួយៗ (Component Responsibilities):
-1. **Customer Storefront (`www.example.com`):** Static Single Page Application (SPA) បង្កើតដោយ React 19 + Vite + Tailwind CSS។
-2. **Admin Dashboard & POS (`admin.example.com`):** SPA សម្រាប់គ្រប់គ្រងទំនិញ, ស្តុក, ការបញ្ជាទិញ, បុគ្គលិក, របាយការណ៍ និងការលក់ POS។
-3. **Laravel Backend API (`api.example.com`):** REST API ទទួលខុសត្រូវលើ Business Logic, Auth (Sanctum), Payment, Inventory Pessimistic Locking, និង Data Validation។
-4. **PostgreSQL 16 Database:** រក្សាទុកទិន្នន័យ Transactional ទាំងអស់ (ACID compliant)។
-5. **Redis 7:** គ្រប់គ្រង Cache, User Sessions, និង Background Job Queues (Emails, Invoices, Stock Sync)។
 
 ---
 
-# ផ្នែកទី ៣៖ ការជ្រើសរើសទំហំ Server និង Cloud Provider
+# ជំពូកទី ៣៖ ការជ្រើសរើសទំហំ Server និង Cloud Provider
 
-| កម្រិតអាជីវកម្ម (Tier) | ចំនួន POS & Daily Orders | ទំហំ Server ដែលណែនាំ (Recommended Specs) | Cloud Providers សមស្រប | តម្លៃប៉ាន់ស្មាន/ខែ |
+| កម្រិតអាជីវកម្ម (Tier) | ចំនួន POS & Daily Orders | ទំហំ Server ដែលណែនាំ (Hardware Specs) | Cloud Providers សមស្រប | តម្លៃប៉ាន់ស្មាន/ខែ |
 | :--- | :--- | :--- | :--- | :--- |
 | **Starter Tier** | 1 - 5 POS Terminals<br>< 1,000 Orders/day | **4 vCPUs, 8 GB RAM, 80 GB NVMe SSD** | Hetzner CPX31 / DigitalOcean Droplet | **$25 - $45 / mo** |
 | **Standard Enterprise** | 5 - 25 POS Terminals<br>5,000+ Orders/day | **8 vCPUs, 16 GB RAM, 160 GB NVMe SSD** | Hetzner CPX41 / AWS EC2 c6i.xlarge | **$60 - $120 / mo** |
 | **High Scale / Multi-Branch** | 25+ POS Terminals<br>20,000+ Orders/day | **16 vCPUs, 32 GB RAM, Managed DB Cluster** | AWS (EC2 + RDS Postgres + ElastiCache) | **$200 - $450 / mo** |
 
-> [!TIP]
-> **អនុសាសន៍ល្អបំផុតសម្រាប់តម្លៃ និងល្បឿន:** ប្រើ **Hetzner Cloud (CPX31 / CPX41)** ឬ **DigitalOcean** ប្រសិនបើចង់បាន Server ឯករាជ្យដែលមានតម្លៃសមរម្យ និងល្បឿន CPU ខ្ពស់។
+---
+
+# ជំពូកទី ៤៖ មគ្គុទ្ទេសក៍ Hosting លើ VPS / Dedicated Server (Docker Production)
+
+មគ្គុទ្ទេសក៍នេះបង្ហាញជំហានជាក់ស្ដែង ១០០% ក្នុងការដំឡើងលើ **Ubuntu 24.04 LTS ឬ Ubuntu 22.04 LTS**។
 
 ---
 
-# ផ្នែកទី ៤៖ មគ្គុទ្ទេសក៍ Hosting លើ VPS / Dedicated Linux Server (Docker Production)
+### ជំហានទី ១៖ ការតភ្ជាប់ SSH និងការពង្រឹងសុវត្ថិភាពម៉ាស៊ីន
 
-នេះជាវិធីសាស្រ្តចម្បងដែល **Enterprise-Ready ១០០%** ព្រោះវាមាន Nginx Gateway, PostgreSQL 16, Redis 7, និង SSL Certificate រួចជាស្រេចក្នុង Docker Containers។
-
----
-
-### ជំហានទី ១៖ ការតភ្ជាប់ SSH និងការពង្រឹងសុវត្ថិភាព Server
-
-1. **តភ្ជាប់ចូលទៅកាន់ Server តាមរយៈ Terminal (Mac/Linux) ឬ PowerShell/PuTTY (Windows):**
+1. **តភ្ជាប់ចូលទៅកាន់ Server តាមរយៈ SSH Terminal:**
    ```bash
    ssh root@YOUR_SERVER_IP
    ```
 
-2. **Update ប្រព័ន្ធប្រតិបត្តិការ Ubuntu ឱ្យឡើងកំណែចុងក្រោយ:**
+2. **Update ប្រព័ន្ធប្រតិបត្តិការ Ubuntu ឱ្យឡើងជំនាន់ចុងក្រោយបង្អស់:**
    ```bash
    apt update && apt upgrade -y
-   apt install -y curl wget git ufw htop unzip software-properties-common nano ca-certificates gnupg
+   apt install -y curl wget git ufw htop unzip software-properties-common nano ca-certificates gnupg fail2ban
    ```
 
-3. **បង្កើត Deployer User ថ្មី (មិនប្រើ Root ដោយផ្ទាល់ដើម្បីសុវត្ថិភាព):**
+3. **បង្កើត Deployer User (ដើម្បីកុំប្រើ Root ដោយផ្ទាល់):**
    ```bash
    adduser deployer
    usermod -aG sudo deployer
    ```
 
-4. **កំណត់ UFW Firewall (ការពារ Hacker មិនឱ្យ Scan ឃើញ Database):**
+4. **រៀបចំ SSH Key Authentication (បិទ Password Login ការពារ Brute Force Attack):**
+   * នៅលើកុំព្យូទ័រផ្ទាល់ខ្លួនរបស់អ្នក (Local Terminal) បង្កើត SSH Key ប្រសិនបើមិនទាន់មាន៖
+     ```bash
+     ssh-keygen -t ed25519 -C "admin@example.com"
+     ssh-copy-id deployer@YOUR_SERVER_IP
+     ```
+   * នៅលើ Server កែសម្រួល `/etc/ssh/sshd_config`៖
+     ```bash
+     nano /etc/ssh/sshd_config
+     ```
+     កំណត់៖
+     ```text
+     PermitRootLogin no
+     PasswordAuthentication no
+     PubkeyAuthentication yes
+     ```
+   * Restart SSH Service៖
+     ```bash
+     systemctl restart ssh
+     ```
+
+5. **កំណត់ UFW Firewall (ការពារ Database មិនឱ្យលេចធ្លាយទៅក្រៅ):**
    ```bash
-   # អនុញ្ញាតតែ Port ដែលចាំបាច់បំផុត
-   ufw allow 22/tcp    # SSH Management
+   # អនុញ្ញាតតែ Port ចាំបាច់
+   ufw default deny incoming
+   ufw default allow outgoing
+   ufw allow 22/tcp    # SSH
    ufw allow 80/tcp    # HTTP (Let's Encrypt & HTTPS Redirect)
    ufw allow 443/tcp   # HTTPS (Web, Admin, Mobile API Traffic)
    
@@ -226,9 +269,9 @@
 
 ---
 
-### ជំហានទី ២៖ ការដំឡើង Docker Engine & Docker Compose
+### ជំហានទី ២៖ ការដំឡើង Docker Engine & Docker Compose v2
 
-ដំណើរការ Command ផ្លូវការរបស់ Docker៖
+ដំណើរការ Script ផ្លូវការរបស់ Docker៖
 
 ```bash
 # ទាញយក និងដំឡើង Docker
@@ -249,11 +292,11 @@ docker compose version
 
 ចូលទៅកាន់ផ្ទាំងគ្រប់គ្រង Domain របស់អ្នក (ឧ. **Cloudflare**, **Namecheap**, **GoDaddy**) រួចបង្កើត **A Records** ដូចខាងក្រោម៖
 
-| Record Type | Host / Name | Value / IP Address | TTL | ពន្យល់ |
+| Record Type | Host / Name | Target / Value (IP) | TTL | ពន្យល់ពីតួនាទី |
 | :--- | :--- | :--- | :--- | :--- |
-| **A** | `@` (ឬ `example.com`) | `YOUR_SERVER_IP` | Auto | ទំព័រដើម Customer Website |
-| **A** | `www` | `YOUR_SERVER_IP` | Auto | Customer Website Subdomain |
-| **A** | `admin` | `YOUR_SERVER_IP` | Auto | ផ្ទាំងគ្រប់គ្រង Admin & POS |
+| **A** | `@` (ឬ `example.com`) | `YOUR_SERVER_IP` | Auto | ទំព័រដើម Customer Storefront |
+| **A** | `www` | `YOUR_SERVER_IP` | Auto | Subdomain WWW នៃ Storefront |
+| **A** | `admin` | `YOUR_SERVER_IP` | Auto | ផ្ទាំងគ្រប់គ្រង Admin Dashboard & POS |
 | **A** | `api` | `YOUR_SERVER_IP` | Auto | Laravel REST API Gateway |
 
 > [!IMPORTANT]
@@ -261,7 +304,7 @@ docker compose version
 
 ---
 
-### ជំហានទី ៤៖ ការ Clone Code និងការកំណត់ Environment Variables
+### ជំហានទី ៤៖ ការ Clone Code និងការកំណត់ Environment Variables លម្អិត
 
 1. **ចូលទៅកាន់ Folder `/var/www` និង Clone Repository:**
    ```bash
@@ -340,7 +383,7 @@ docker compose version
 
 ---
 
-### ជំហានទី ៥៖ ការដំឡើង SSL/TLS Certificate ដោយឥតគិតថ្លៃ (Let's Encrypt)
+### ជំហានទី ៥៖ ការដំឡើង SSL/TLS Certificate ដោយឥតគិតថ្លៃ
 
 ដំឡើង Certbot និងស្នើសុំ SSL Certificate សម្រាប់ Domains ទាំងអស់៖
 
@@ -359,6 +402,7 @@ certbot certonly --standalone \
 ```
 
 * SSL Files នឹងត្រូវរក្សាទុកនៅ៖ `/etc/letsencrypt/live/example.com/fullchain.pem` និង `privkey.pem`។
+* Certbot មាន Timer សម្រាប់ Auto-renew ដោយស្វ័យប្រវត្តិកាលណាផុតកំណត់ ៩០ ថ្ងៃ។
 
 ---
 
@@ -367,7 +411,7 @@ certbot certonly --standalone \
 ដំណើរការ Build Docker Containers ទាំងអស់៖
 
 ```bash
-# Build Production Images
+# Build Production Images ទាំងអស់ (Multi-stage build)
 docker compose -f docker-compose.prod.yml build
 
 # ចាប់ផ្ដើមដំណើរការ Containers ទាំងអស់ក្នុង Background
@@ -473,7 +517,7 @@ docker compose -f docker-compose.prod.yml exec backend php artisan optimize
 
 ---
 
-# ផ្នែកទី ៥៖ មគ្គុទ្ទេសក៍ Hosting លើ Serverless Cloud (Vercel + Render / Railway)
+# ជំពូកទី ៥៖ មគ្គុទ្ទេសក៍ Hosting លើ Serverless Cloud (Vercel + Render / Railway)
 
 ជម្រើសនេះគឺសម្រាប់អ្នកដែលចង់ប្រើ Platform-as-a-Service (PaaS) ដោយមិនចង់គ្រប់គ្រង Linux VPS Server ដោយខ្លួនឯង។
 
@@ -556,7 +600,7 @@ docker compose -f docker-compose.prod.yml exec backend php artisan optimize
 
 ---
 
-# ផ្នែកទី ៦៖ បញ្ហាដែលជួបញឹកញាប់ និងវិធីដោះស្រាយ (Troubleshooting & FAQs)
+# ជំពូកទី ៦៖ បញ្ហាដែលជួបញឹកញាប់ និងវិធីដោះស្រាយ (Troubleshooting & FAQs)
 
 ### ១. បញ្ហា CORS Error (`Access-Control-Allow-Origin`)
 * **មូលហេតុ:** Frontend ផ្ញើ Request ពី Domain ផ្សេងដែលមិនទាន់បានចុះឈ្មោះក្នុង Backend CORS Config។

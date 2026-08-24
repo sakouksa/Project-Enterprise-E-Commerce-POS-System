@@ -7,6 +7,8 @@ Welcome to the comprehensive technical documentation for the **Enterprise E-Comm
 ## 🗂️ Complete Documentation Index
 
 ### 1. 🏗️ Architecture & Core Design
+- [**Master Architecture & Teaching Guide (២១ ផ្នែកពេញលេញ)**](./enterprise-pos-architecture-and-teaching-guide.md): ឯកសារវិភាគស្ថាបត្យកម្មប្រព័ន្ធពេញលេញ និងមេរៀនបង្រៀន ១០ ដំណាក់កាលសម្រាប់ Junior ដល់ Senior Architect។
+- [**Image Storage & Media Architecture**](./image-storage.md): ឯកសារណែនាំស្តង់ដារគ្រប់គ្រង Media Storage, Public HTTPS URLs, និង Universal Fallback Engine។
 - [**System Overview & Architecture**](./architecture/system-overview.md): High-level system architecture, monorepo topology, micro-service/modular monolith design, communication flows, and core technology stack.
 - [**Backend Architecture**](./architecture/backend-architecture.md): Laravel 11 modular structure, DDD patterns, Event-Driven Architecture, Redis caching, job queues, and security.
 - [**Frontend Architecture**](./architecture/frontend-architecture.md): React 18 + TypeScript + Vite Admin & POS, Workspace Tabs, 5-Language i18n system (`km`, `en`, `zh`, `th`, `vi`), and state management.

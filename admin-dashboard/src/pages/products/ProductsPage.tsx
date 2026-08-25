@@ -14,6 +14,12 @@ import ResetButton from '@/components/shared/ResetButton'
 import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import {
+  HeaderActionsGroup,
+  AddButton,
+  ExportButton,
+  ImportButton,
+} from '@/components/common'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { formatCurrency } from '@/utils/formatters'
@@ -269,45 +275,36 @@ const ProductsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <HeaderActionsGroup>
           {activeWorkspaceTab === 'products' && (
             <>
-              <button
+              <ImportButton
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
-              >
-                <Upload size={15} />
-                <span>{t('importCSV', 'Import CSV')}</span>
-              </button>
-              <button
+                label={t('importCSV', 'នាំចូល CSV')}
+              />
+              <ExportButton
                 onClick={handleExport}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
-              >
-                <Download size={15} />
-                <span>{t('exportCSV', 'Export CSV')}</span>
-              </button>
+                label={t('exportCSV', 'នាំចេញ CSV')}
+              />
             </>
           )}
-          <button
+          <AddButton
             onClick={handleSubTabAddClick}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-          >
-            <Plus size={16} />
-            <span>
-              {activeWorkspaceTab === 'products'
-                ? t('addProduct', 'Add product')
+            label={
+              activeWorkspaceTab === 'products'
+                ? t('addProduct', 'បន្ថែមទំនិញ')
                 : activeWorkspaceTab === 'categories'
-                ? t('addCategory', 'Add Category')
+                ? t('addCategory', 'បន្ថែមប្រភេទទំនិញ')
                 : activeWorkspaceTab === 'brands'
-                ? t('addBrand', 'Add Brand')
+                ? t('addBrand', 'បន្ថែមម៉ាកយីហោ')
                 : activeWorkspaceTab === 'units'
-                ? t('addUnit', 'Add Unit')
+                ? t('addUnit', 'បន្ថែមឯកតារាប់')
                 : activeWorkspaceTab === 'attributes'
-                ? t('addAttribute', 'Add Attribute')
-                : t('addTaxRule', 'Add Tax Rate')}
-            </span>
-          </button>
-        </div>
+                ? t('addAttribute', 'បន្ថែមគុណលក្ខណៈ')
+                : t('addTaxRule', 'បន្ថែមអត្រាពន្ធ')
+            }
+          />
+        </HeaderActionsGroup>
       </div>
 
       {/* KPI Overview Cards */}

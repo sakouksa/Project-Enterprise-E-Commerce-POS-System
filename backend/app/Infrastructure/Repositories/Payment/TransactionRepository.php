@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Payment;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Payment\Transaction;
+use App\Repositories\Payment\TransactionRepository as BaseTransactionRepository;
 
-class TransactionRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Payment\TransactionRepository
+ */
+class TransactionRepository extends BaseTransactionRepository
 {
-    public function __construct(Transaction $model)
-    {
-        parent::__construct($model);
-    }
 }

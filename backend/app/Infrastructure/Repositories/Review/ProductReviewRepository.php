@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Review;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Review\ProductReview;
+use App\Repositories\Review\ProductReviewRepository as BaseProductReviewRepository;
 
-class ProductReviewRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Review\ProductReviewRepository
+ */
+class ProductReviewRepository extends BaseProductReviewRepository
 {
-    public function __construct(ProductReview $model)
-    {
-        parent::__construct($model);
-    }
 }

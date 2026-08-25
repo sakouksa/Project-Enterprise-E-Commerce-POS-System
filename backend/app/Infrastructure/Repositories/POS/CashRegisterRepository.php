@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\POS;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\POS\CashRegister;
+use App\Repositories\POS\CashRegisterRepository as BaseCashRegisterRepository;
 
-class CashRegisterRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\POS\CashRegisterRepository
+ */
+class CashRegisterRepository extends BaseCashRegisterRepository
 {
-    public function __construct(CashRegister $model)
-    {
-        parent::__construct($model);
-    }
 }

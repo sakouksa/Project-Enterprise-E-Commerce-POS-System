@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\ProductVariant;
+use App\Repositories\Product\ProductVariantRepository as BaseProductVariantRepository;
 
-class ProductVariantRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Product\ProductVariantRepository
+ */
+class ProductVariantRepository extends BaseProductVariantRepository
 {
-    public function __construct(ProductVariant $model)
-    {
-        parent::__construct($model);
-    }
 }

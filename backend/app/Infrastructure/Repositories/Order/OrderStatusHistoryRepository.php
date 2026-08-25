@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Order;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Order\OrderStatusHistory;
+use App\Repositories\Order\OrderStatusHistoryRepository as BaseOrderStatusHistoryRepository;
 
-class OrderStatusHistoryRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Order\OrderStatusHistoryRepository
+ */
+class OrderStatusHistoryRepository extends BaseOrderStatusHistoryRepository
 {
-    public function __construct(OrderStatusHistory $model)
-    {
-        parent::__construct($model);
-    }
 }

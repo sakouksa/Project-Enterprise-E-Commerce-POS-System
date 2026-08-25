@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Purchase;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Purchase\PurchaseReturn;
+use App\Repositories\Purchase\PurchaseReturnRepository as BasePurchaseReturnRepository;
 
-class PurchaseReturnRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Purchase\PurchaseReturnRepository
+ */
+class PurchaseReturnRepository extends BasePurchaseReturnRepository
 {
-    public function __construct(PurchaseReturn $model)
-    {
-        parent::__construct($model);
-    }
 }

@@ -2,15 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\Category;
+use App\Repositories\Product\CategoryRepository as BaseCategoryRepository;
 
-use App\Domain\Contracts\Repositories\Product\CategoryRepositoryInterface;
-
-class CategoryRepository extends BaseRepository implements CategoryRepositoryInterface
+/**
+ * Compatibility bridge to App\Repositories\Product\CategoryRepository
+ */
+class CategoryRepository extends BaseCategoryRepository
 {
-    public function __construct(Category $model)
-    {
-        parent::__construct($model);
-    }
 }

@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Log;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Log\ActivityLog;
+use App\Repositories\Log\ActivityLogRepository as BaseActivityLogRepository;
 
-class ActivityLogRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Log\ActivityLogRepository
+ */
+class ActivityLogRepository extends BaseActivityLogRepository
 {
-    public function __construct(ActivityLog $model)
-    {
-        parent::__construct($model);
-    }
 }

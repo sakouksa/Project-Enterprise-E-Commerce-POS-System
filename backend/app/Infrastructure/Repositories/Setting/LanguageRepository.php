@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Setting;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Setting\Language;
+use App\Repositories\Setting\LanguageRepository as BaseLanguageRepository;
 
-class LanguageRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Setting\LanguageRepository
+ */
+class LanguageRepository extends BaseLanguageRepository
 {
-    public function __construct(Language $model)
-    {
-        parent::__construct($model);
-    }
 }

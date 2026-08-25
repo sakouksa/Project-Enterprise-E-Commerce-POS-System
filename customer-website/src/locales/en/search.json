@@ -4,5 +4,10 @@
   "search.by_sku": "Search By SKU",
   "search.placeholder_ai": "Search with AI (e.g. RTX 4060, Apple M3, gaming laptop)...",
   "search.placeholder_name": "Search by product name (e.g. MacBook Pro, ASUS ROG)...",
-  "search.placeholder_sku": "Search by SKU or Barcode (e.g. LAP-2026-X1)..."
+  "search.placeholder_sku": "Search by SKU or Barcode (e.g. LAP-2026-X1)...",
+  "search.filter_mode": "Search Filter Mode",
+  "search.searching_with": "Searching products with",
+  "search.see_all_results_for": "See all results for",
+  "search.recent_searches": "Recent Searches",
+  "search.clear": "Clear"
 }

@@ -153,5 +153,10 @@
   "feed.load_error": "Không thể tải thêm sản phẩm",
   "feed.retry": "Thử lại",
   "feed.back_to_top": "Về đầu trang",
-  "feed.showing_count": "Hiển thị {{count}} trên {{total}} sản phẩm"
+  "feed.showing_count": "Hiển thị {{count}} trên {{total}} sản phẩm",
+  "popup.exclusive_offer": "ƯU ĐÃI ĐẶC BIỆT",
+  "popup.limited_time": "Khuyến mãi có hạn áp dụng trên toàn bộ 25 tỉnh thành.",
+  "popup.shop_now": "Mua ngay",
+  "popup.dont_show_today": "Không hiển thị lại khuyến mãi này hôm nay",
+  "popup.close": "Đóng"
 }

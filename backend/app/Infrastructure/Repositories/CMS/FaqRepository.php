@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\CMS;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\CMS\Faq;
+use App\Repositories\CMS\FaqRepository as BaseFaqRepository;
 
-class FaqRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\CMS\FaqRepository
+ */
+class FaqRepository extends BaseFaqRepository
 {
-    public function __construct(Faq $model)
-    {
-        parent::__construct($model);
-    }
 }

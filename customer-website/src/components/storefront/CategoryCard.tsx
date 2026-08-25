@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import { cn, resolveMediaUrl } from '@/lib/utils'
 
 export interface CategoryItem {
   id: number
@@ -20,7 +20,8 @@ interface CategoryCardProps {
 
 export const CategoryCard = React.memo<CategoryCardProps>(({ category, className }) => {
   const { t } = useTranslation()
-  const defaultPlaceholder = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80'
+  const fallbackPlaceholder = '/images/placeholder-product.png'
+  const imgSrc = resolveMediaUrl(category.image, 'category') || fallbackPlaceholder
 
   return (
     <Link
@@ -32,10 +33,10 @@ export const CategoryCard = React.memo<CategoryCardProps>(({ category, className
     >
       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-50 dark:bg-slate-800/80 overflow-hidden mb-3.5 p-1.5 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
         <img
-          src={category.image || defaultPlaceholder}
+          src={imgSrc}
           alt={category.name}
           onError={(e) => {
-            ;(e.target as HTMLImageElement).src = defaultPlaceholder
+            ;(e.target as HTMLImageElement).src = fallbackPlaceholder
           }}
           className="w-full h-full object-contain rounded-xl"
           loading="lazy"

@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Inventory;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Inventory\InventoryMovement;
+use App\Repositories\Inventory\InventoryMovementRepository as BaseInventoryMovementRepository;
 
-class InventoryMovementRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Inventory\InventoryMovementRepository
+ */
+class InventoryMovementRepository extends BaseInventoryMovementRepository
 {
-    public function __construct(InventoryMovement $model)
-    {
-        parent::__construct($model);
-    }
 }

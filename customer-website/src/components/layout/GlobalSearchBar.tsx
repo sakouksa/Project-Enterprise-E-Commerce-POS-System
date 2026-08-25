@@ -138,7 +138,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({ className }) =
                   className="absolute top-full left-0 mt-1.5 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 z-50 select-none divide-y divide-slate-100 dark:divide-slate-800"
                 >
                   <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 py-1">
-                    Search Filter Mode
+                    {t('search.filter_mode', 'Search Filter Mode')}
                   </div>
 
                   <div className="pt-1 space-y-0.5">
@@ -223,7 +223,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({ className }) =
             {isSearching && (
               <div className="px-4 py-3 text-xs text-slate-400 flex items-center gap-2">
                 <span className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                <span>Searching products with {activeMode.label}...</span>
+                <span>{t('search.searching_with', 'Searching products with')} {activeMode.label}...</span>
               </div>
             )}
 
@@ -279,7 +279,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({ className }) =
                 >
                   <div className="flex items-center gap-2">
                     <Search className="w-3.5 h-3.5" />
-                    <span>See all results for "{query}"</span>
+                    <span>{t('search.see_all_results_for', 'See all results for')} "{query}"</span>
                   </div>
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -292,7 +292,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({ className }) =
                 <div className="flex items-center justify-between px-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Recent Searches</span>
+                    <span>{t('search.recent_searches', 'Recent Searches')}</span>
                   </div>
                   <button
                     type="button"
@@ -300,7 +300,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({ className }) =
                     className="hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span>Clear</span>
+                    <span>{t('search.clear', 'Clear')}</span>
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 px-2">

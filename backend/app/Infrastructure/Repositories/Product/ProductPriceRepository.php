@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\ProductPrice;
+use App\Repositories\Product\ProductPriceRepository as BaseProductPriceRepository;
 
-class ProductPriceRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Product\ProductPriceRepository
+ */
+class ProductPriceRepository extends BaseProductPriceRepository
 {
-    public function __construct(ProductPrice $model)
-    {
-        parent::__construct($model);
-    }
 }

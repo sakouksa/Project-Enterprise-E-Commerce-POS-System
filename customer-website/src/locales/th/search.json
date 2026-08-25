@@ -2,7 +2,12 @@
   "search.ai_search": "ค้นหาด้วย AI",
   "search.by_name": "ค้นหาตามชื่อ",
   "search.by_sku": "ค้นหาตาม SKU",
-  "search.placeholder_ai": "ค้นหาด้วย AI (เช่น RTX 4060, แล็ปท็อป, Apple M3)...",
+  "search.placeholder_ai": "ค้นหาด้วย AI (เช่น RTX 4060, Apple M3, โน้ตบุ๊กเกมมิ่ง)...",
   "search.placeholder_name": "ค้นหาตามชื่อสินค้า (เช่น MacBook Pro, ASUS ROG)...",
-  "search.placeholder_sku": "ค้นหาตามรหัส SKU หรือ บาร์โค้ด (เช่น LAP-2026-X1)..."
+  "search.placeholder_sku": "ค้นหาตาม SKU หรือบาร์โค้ด (เช่น LAP-2026-X1)...",
+  "search.filter_mode": "โหมดการค้นหา",
+  "search.searching_with": "กำลังค้นหาสินค้าด้วย",
+  "search.see_all_results_for": "ดูผลลัพธ์ทั้งหมดสำหรับ",
+  "search.recent_searches": "การค้นหาล่าสุด",
+  "search.clear": "ล้าง"
 }

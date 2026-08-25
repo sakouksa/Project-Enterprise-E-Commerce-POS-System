@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Inventory;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Inventory\StockOpnameItem;
+use App\Repositories\Inventory\StockOpnameItemRepository as BaseStockOpnameItemRepository;
 
-class StockOpnameItemRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Inventory\StockOpnameItemRepository
+ */
+class StockOpnameItemRepository extends BaseStockOpnameItemRepository
 {
-    public function __construct(StockOpnameItem $model)
-    {
-        parent::__construct($model);
-    }
 }

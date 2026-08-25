@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Order;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Order\Cart;
+use App\Repositories\Order\CartRepository as BaseCartRepository;
 
-class CartRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Order\CartRepository
+ */
+class CartRepository extends BaseCartRepository
 {
-    public function __construct(Cart $model)
-    {
-        parent::__construct($model);
-    }
 }

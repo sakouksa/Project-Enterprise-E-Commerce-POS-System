@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Setting;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Setting\City;
+use App\Repositories\Setting\CityRepository as BaseCityRepository;
 
-class CityRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Setting\CityRepository
+ */
+class CityRepository extends BaseCityRepository
 {
-    public function __construct(City $model)
-    {
-        parent::__construct($model);
-    }
 }

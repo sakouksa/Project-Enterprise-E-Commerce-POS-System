@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Shipping;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Shipping\ShippingMethod;
+use App\Repositories\Shipping\ShippingMethodRepository as BaseShippingMethodRepository;
 
-class ShippingMethodRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Shipping\ShippingMethodRepository
+ */
+class ShippingMethodRepository extends BaseShippingMethodRepository
 {
-    public function __construct(ShippingMethod $model)
-    {
-        parent::__construct($model);
-    }
 }

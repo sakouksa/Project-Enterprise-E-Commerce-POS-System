@@ -14,7 +14,8 @@ class Banner extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'company_id', 'store_id', 'title', 'subtitle', 'image',
+        'company_id', 'store_id', 'title', 'subtitle', 'badge',
+        'discount_tag', 'button_text', 'theme_gradient', 'image',
         'mobile_image', 'link', 'position', 'sort_order', 'starts_at',
         'ends_at', 'is_active',
     ];
@@ -43,7 +44,7 @@ class Banner extends Model
         $img = $this->attributes['image'] ?? null;
         
         if (!$img || $img === '[]' || $img === '""' || $img === 'null' || str_contains($img, 'blob:http') || str_contains($img, '/storage/[]')) {
-            return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80';
+            return url('api/v1/storage/banners/banner_hero_1.webp');
         }
 
         if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://') || str_starts_with($img, 'data:')) {

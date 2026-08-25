@@ -1,28 +1,35 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Edit2, Trash2, RefreshCw, X, Image as ImageIcon, Loader2, Upload, Link as LinkIcon, Settings } from 'lucide-react'
+import {
+  Search, X, Edit2, Trash2, Upload, Image as ImageIcon
+} from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
-import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import StatusBadge from '@/components/common/StatusBadge'
+import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
+import { EnterpriseModal, ModalFooter, AddButton, FilterButton, RefreshButton } from '@/components/common'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import { useTranslation } from 'react-i18next'
+import BannerFilterDrawer from './components/BannerFilterDrawer'
 
 interface Banner {
   id: number
   title: string
+  subtitle?: string | null
+  badge?: string | null
+  discount_tag?: string | null
   image?: string
   image_url?: string
   link_url?: string
-  position: 'home_hero' | 'home_secondary' | 'category' | 'popup'
+  position: 'hero' | 'sidebar' | 'popup' | 'footer' | string
   sort_order: number
   is_active: boolean
   starts_at?: string
@@ -31,17 +38,17 @@ interface Banner {
 
 const getImageUrl = (url?: string): string => {
   if (!url || url === '[]' || url === '""' || url.includes('/storage/[]')) {
-    return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'
+    return '/logo.png'
   }
   const resolved = getAbsoluteImageUrl(url)
-  return resolved || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'
+  return resolved || '/logo.png'
 }
 
 const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, triggerAdd }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['marketing', 'common', 'toast', 'confirm'])
   const toast = useToast()
   const qc = useQueryClient()
-    const {
+  const {
     page,
     setPage,
     perPage,
@@ -52,13 +59,30 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
     reset,
     adjustAfterDelete,
   } = useServerPagination({ storageKey: 'banners' })
+
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null)
 
+  // Selection & Bulk Actions state (Customer CRM Standard)
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+
+  // Filter drawer & filter parameters
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [positionFilter, setPositionFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const resetAllFilters = () => {
+    setSearch('')
+    setPositionFilter('all')
+    setStatusFilter('all')
+    setSelectedRows([])
+    setPage(1)
+  }
+
   // Column visibility state
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
-  const [visibleColumns, setVisibleColumns] = useState({
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     preview: true,
     title: true,
     position: true,
@@ -68,17 +92,15 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
     actions: true,
   })
 
-  const toggleColumn = (col: keyof typeof visibleColumns) => {
-    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }))
-  }
-
   // Form states
   const [title, setTitle] = useState('')
+  const [subtitle, setSubtitle] = useState('')
+  const [badge, setBadge] = useState('')
+  const [discountTag, setDiscountTag] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [base64Image, setBase64Image] = useState<string>('')
   const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload')
-  const [buttonColor, setButtonColor] = useState('#3B82F6')
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -121,10 +143,38 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
   }, [triggerAdd])
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['banners', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/banners', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryKey: ['banners', page, debouncedSearch, perPage, positionFilter, statusFilter],
+    queryFn: () => api.get('/banners', {
+      params: {
+        page,
+        search: debouncedSearch,
+        per_page: perPage,
+        position: positionFilter,
+        status: statusFilter,
+      }
+    }).then(r => r.data),
     placeholderData: (prev) => prev,
   })
+
+  const banners: Banner[] = data?.data ?? []
+  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
+
+  // Bulk Selection Handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(banners.map((b) => b.id))
+    } else {
+      setSelectedRows([])
+    }
+  }
+
+  const handleSelectRow = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedRows((prev) => [...prev, id])
+    } else {
+      setSelectedRows((prev) => prev.filter((i) => i !== id))
+    }
+  }
 
   const createMutation = useMutation({
     mutationFn: (newBanner: any) => api.post('/banners', newBanner, {
@@ -132,7 +182,7 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banners'] })
-      toast.success(t('toast.created', { item: t('nav.banners') }))
+      toast.success(t('toast.created', { item: t('marketing.banners') }))
       closeModal()
     },
     onError: (err: any) => {
@@ -146,7 +196,7 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banners'] })
-      toast.success(t('toast.updated', { item: t('nav.banners') }))
+      toast.success(t('toast.updated', { item: t('marketing.banners') }))
       closeModal()
     },
     onError: (err: any) => {
@@ -158,25 +208,43 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
     mutationFn: (id: number) => api.delete(`/banners/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banners'] })
-      toast.success(t('toast.deleted', { item: t('nav.banners') }))
+      toast.success(t('toast.deleted', { item: t('marketing.banners', 'ផ្ទាំងបដា') }))
       setDeleteTarget(null)
-      adjustAfterDelete(banners.length)
+      setSelectedRows((prev) => prev.filter((i) => i !== deleteTarget?.id))
+      adjustAfterDelete(1)
     },
-    onError: () => {
-      toast.error(t('toast.error'))
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'ការលុបបរាជ័យ'))
       setDeleteTarget(null)
     },
   })
 
-  const banners: Banner[] = data?.data ?? []
-  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => api.post('/banners/bulk-delete', { ids }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['banners'] })
+      toast.success(t('bulkDeleteSuccess', t('marketing.bulkDeleteSuccess', 'ផ្ទាំងបដាដែលបានជ្រើសរើសត្រូវបានលុបដោយជោគជ័យ')))
+      const deletedCount = selectedRows.length
+      setSelectedRows([])
+      setBulkDeleteConfirmOpen(false)
+      adjustAfterDelete(deletedCount)
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'ការលុបបរាជ័យ'))
+      setBulkDeleteConfirmOpen(false)
+    }
+  })
 
   const openCreateModal = () => {
     setEditingBanner(null)
     setTitle('')
+    setSubtitle('')
+    setBadge('')
+    setDiscountTag('')
     setImageUrl('')
     setSelectedFile(null)
     setBase64Image('')
+    setImageMode('upload')
     setLinkUrl('')
     setPosition('hero')
     setSortOrder(0)
@@ -188,18 +256,22 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
 
   const openEditModal = (banner: any) => {
     setEditingBanner(banner)
-    setTitle(banner.title)
+    setTitle(banner.title || '')
+    setSubtitle(banner.subtitle || '')
+    setBadge(banner.badge || '')
+    setDiscountTag(banner.discount_tag || '')
     setSelectedFile(null)
     setBase64Image('')
     const img = banner.image_url || banner.image || ''
     setImageUrl(img)
+    setImageMode(img.startsWith('http') || img.startsWith('/storage') ? 'url' : 'upload')
     const lnk = banner.link_url || banner.link || ''
     setLinkUrl(lnk)
     setPosition((banner.position as any) || 'hero')
-    setSortOrder(banner.sort_order || 0)
+    setSortOrder(banner.sort_order ?? 0)
     setIsActive(banner.is_active ?? true)
-    setStartsAt(banner.starts_at ? banner.starts_at.split('T')[0] : '')
-    setEndsAt(banner.ends_at ? banner.ends_at.split('T')[0] : '')
+    setStartsAt(banner.starts_at ? banner.starts_at.split(/[T ]/)[0] : '')
+    setEndsAt(banner.ends_at ? banner.ends_at.split(/[T ]/)[0] : '')
     setModalOpen(true)
   }
 
@@ -213,17 +285,20 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) {
-      toast.error('Please enter a banner title.')
+      toast.error(t('toast.required', { field: t('marketing.bannerTitle') }))
       return
     }
     if (!selectedFile && !imageUrl.trim()) {
-      toast.error('Please select an image file or provide an image URL.')
+      toast.error(t('toast.required', { field: t('marketing.bannerImage') }))
       return
     }
 
     const formData = new FormData()
     formData.append('company_id', '1')
     formData.append('title', title)
+    formData.append('subtitle', subtitle || '')
+    formData.append('badge', badge || '')
+    formData.append('discount_tag', discountTag || '')
     formData.append('position', position)
     formData.append('sort_order', String(sortOrder))
     formData.append('is_active', isActive ? '1' : '0')
@@ -238,6 +313,7 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
       }
     } else if (imageUrl && !imageUrl.startsWith('blob:') && !imageUrl.includes('/storage/[]') && imageUrl !== '[]') {
       formData.append('image', imageUrl)
+      formData.append('image_url', imageUrl)
     }
 
     if (editingBanner) {
@@ -248,381 +324,649 @@ const BannersPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab
     }
   }
 
+  const getPositionBadge = (pos: string) => {
+    switch (pos) {
+      case 'hero':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            {t('posHero', t('marketing.posHero', 'ផ្ទាំងបដាធំទំព័រដើម'))}
+          </span>
+        )
+      case 'sidebar':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+            {t('posSidebar', t('marketing.posSidebar', 'ផ្ទាំងបដាចំហៀង'))}
+          </span>
+        )
+      case 'popup':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            {t('posPopup', t('marketing.posPopup', 'ផ្ទាំងបដាផុសឡើង'))}
+          </span>
+        )
+      default:
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {t('posFooter', t('marketing.posFooter', 'ផ្ទាំងបដាខាងក្រោម'))}
+          </span>
+        )
+    }
+  }
+
   return (
     <div className="space-y-5">
       {!isTab && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{t('nav.banners')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('banners', t('marketing.banners', 'ផ្ទាំងបដា'))}</h1>
             <p className="text-muted-foreground text-sm">
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90">
-            <Plus size={16} />
-            {t('common.add')}
-          </button>
+          <AddButton
+            onClick={openCreateModal}
+            label={t('addBanner', t('marketing.addBanner', 'បន្ថែមផ្ទាំងបដាថ្មី'))}
+          />
         </div>
       )}
 
-      <div className="bg-card rounded-xl border border-border p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-56">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-              placeholder={t('common.search')}
-              className="form-input pl-9"
-            />
-          </div>
-          <button
-            onClick={() => qc.invalidateQueries({ queryKey: ['banners'] })}
-            className="p-2 text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors cursor-pointer select-none"
-            title={t('common.refresh', 'Refresh')}
-          >
-            <RefreshCw size={14} />
-          </button>
+      {/* Bulk Selection Panel (Customer CRM Standard) */}
+      <BulkSelectionBanner
+        selectedCount={selectedRows.length}
+        onDelete={() => setBulkDeleteConfirmOpen(true)}
+        onClear={() => setSelectedRows([])}
+        deleteLabel={t('common.deleteSelected', 'លុបដែលបានជ្រើស')}
+        deleteLoading={bulkDeleteMutation.isPending}
+      />
 
-          {/* Toggle Columns Settings Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
-              className="p-2 text-muted-foreground border border-border rounded-xl hover:bg-muted transition-colors cursor-pointer select-none"
-              title={t('products.toggleColumns', 'Columns')}
-            >
-              <Settings size={14} />
-            </button>
-            {columnDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setColumnDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1 text-left">
-                  <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">{t('products.toggleColumns', 'Toggle Columns')}</p>
-                  {Object.keys(visibleColumns).map(col => (
-                    <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                      <input
-                        type="checkbox"
-                        checked={visibleColumns[col as keyof typeof visibleColumns]}
-                        onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
-                        className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                      />
-                      <span>
-                        {col === 'preview' ? 'Preview' :
-                         col === 'title' ? 'Title' :
-                         col === 'position' ? 'Position' :
-                         col === 'sortOrder' ? 'Sort Order' :
-                         col === 'status' ? 'Status' :
-                         col === 'activePeriod' ? 'Active Period' : 'Actions'}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </>
+      {/* Unified Enterprise Toolbar (Customer CRM Architecture) */}
+      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
+          {/* Search bar with clear button */}
+          <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder={t('searchPlaceholder', t('marketing.searchPlaceholder', 'ស្វែងរកចំណងជើង, តំណភ្ជាប់...'))}
+              className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-xs font-medium"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); setPage(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                type="button"
+                title={t('common.clear', 'សម្អាត')}
+              >
+                <X size={14} />
+              </button>
             )}
           </div>
+
+          {/* Global Filter Button */}
+          <FilterButton
+            onClick={() => setFilterDrawerOpen(true)}
+            isActive={positionFilter !== 'all' || statusFilter !== 'all'}
+            label={t('common.filter', 'ចម្រោះ')}
+          />
+
+          {/* Reset Filters */}
+          <ResetButton onClick={resetAllFilters} />
+        </div>
+
+        {/* Action Controls: Refresh & Column Settings */}
+        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
+          <RefreshButton
+            onClick={() => qc.invalidateQueries({ queryKey: ['banners'] })}
+            loading={isFetching}
+            title={t('common.refresh', 'ផ្ទុកឡើងវិញ')}
+          />
+
+          <ColumnSettingsPopover
+            columns={[
+              { key: 'preview', label: t('preview', t('marketing.preview', 'រូបភាពមើលមុន')) },
+              { key: 'title', label: t('bannerTitle', t('marketing.bannerTitle', 'ចំណងជើងផ្ទាំងបដា')) },
+              { key: 'position', label: t('position', t('marketing.position', 'ទីតាំងបង្ហាញ')) },
+              { key: 'sortOrder', label: t('sortOrder', t('marketing.sortOrder', 'លំដាប់លំដោយ')) },
+              { key: 'status', label: t('activeStatus', t('marketing.activeStatus', 'ស្ថានភាព')) },
+              { key: 'activePeriod', label: t('activePeriod', t('marketing.activePeriod', 'រយៈពេលសកម្ម')) },
+              { key: 'actions', label: t('actions', t('marketing.actions', 'សកម្មភាព')) },
+            ]}
+            visibleColumns={visibleColumns}
+            onChange={(cols) => setVisibleColumns(cols)}
+          />
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-      <TableWrapper isFetching={isFetching}>
-        <table className="w-full data-table">
-            <thead>
-              <tr>
-                {visibleColumns.preview && <th className="text-left">Preview</th>}
-                {visibleColumns.title && <th className="text-left">Title</th>}
-                {visibleColumns.position && <th className="text-left">Position</th>}
-                {visibleColumns.sortOrder && <th className="text-left">Sort Order</th>}
-                {visibleColumns.status && <th className="text-left">{t('common.status')}</th>}
-                {visibleColumns.activePeriod && <th className="text-left">Active Period</th>}
-                {visibleColumns.actions && <th className="text-right">{t('common.actions')}</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    {visibleColumns.preview && <td><div className="skeleton h-10 w-16 rounded" /></td>}
-                    {visibleColumns.title && <td><div className="skeleton h-4 w-28 rounded" /></td>}
-                    {visibleColumns.position && <td><div className="skeleton h-4 w-16 rounded" /></td>}
-                    {visibleColumns.sortOrder && <td><div className="skeleton h-4 w-8 rounded" /></td>}
-                    {visibleColumns.status && <td><div className="skeleton h-4 w-12 rounded" /></td>}
-                    {visibleColumns.activePeriod && <td><div className="skeleton h-4 w-32 rounded" /></td>}
-                    {visibleColumns.actions && <td><div className="skeleton h-4 w-12 rounded ml-auto" /></td>}
+      {/* Table Section */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+        <TableWrapper isFetching={isLoading}>
+          <div className="overflow-x-auto">
+            <table className="w-full data-table border-collapse text-left text-sm">
+              <thead className="bg-muted/40 sticky top-0 border-b border-border z-10 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="w-12 px-4 py-3.5 text-center">
+                    <input
+                      type="checkbox"
+                      checked={banners.length > 0 && selectedRows.length === banners.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                      title={t('common.selectAll', 'ជ្រើសរើសទាំងអស់')}
+                    />
+                  </th>
+                  {visibleColumns.preview && (
+                    <th className="w-24 px-4 py-3.5 whitespace-nowrap text-left">
+                      {t('preview', t('marketing.preview', 'រូបភាពមើលមុន'))}
+                    </th>
+                  )}
+                  {visibleColumns.title && (
+                    <th className="min-w-[220px] px-4 py-3.5 text-left">
+                      {t('bannerTitle', t('marketing.bannerTitle', 'ចំណងជើងផ្ទាំងបដា'))}
+                    </th>
+                  )}
+                  {visibleColumns.position && (
+                    <th className="min-w-[170px] px-4 py-3.5 text-left whitespace-nowrap">
+                      {t('position', t('marketing.position', 'ទីតាំងបង្ហាញ'))}
+                    </th>
+                  )}
+                  {visibleColumns.sortOrder && (
+                    <th className="w-28 px-4 py-3.5 text-center whitespace-nowrap">
+                      {t('sortOrder', t('marketing.sortOrder', 'លំដាប់លំដោយ'))}
+                    </th>
+                  )}
+                  {visibleColumns.status && (
+                    <th className="w-28 px-4 py-3.5 text-center whitespace-nowrap">
+                      {t('activeStatus', t('marketing.activeStatus', 'ស្ថានភាព'))}
+                    </th>
+                  )}
+                  {visibleColumns.activePeriod && (
+                    <th className="min-w-[180px] px-4 py-3.5 text-left whitespace-nowrap">
+                      {t('activePeriod', t('marketing.activePeriod', 'រយៈពេលសកម្ម'))}
+                    </th>
+                  )}
+                  {visibleColumns.actions && (
+                    <th className="w-24 px-4 py-3.5 text-right whitespace-nowrap pr-5">
+                      {t('actions', t('marketing.actions', 'សកម្មភាព'))}
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {isLoading && (
+                  <tr>
+                    <td colSpan={(Object.values(visibleColumns).filter(Boolean).length || 7) + 1} className="p-4">
+                      <LoadingSkeleton rows={5} />
+                    </td>
                   </tr>
-                ))
-              ) : (
-                banners.map((banner) => (
-                  <tr key={banner.id}>
-                    {visibleColumns.preview && (
-                      <td>
-                        <img
-                          src={getImageUrl(banner.image_url || banner.image)}
-                          alt={banner.title}
-                          className="w-16 h-10 object-cover rounded-lg border border-border shadow-2xs"
-                          onError={(e) => {
-                            ;(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80'
-                          }}
+                )}
+                {!isLoading && banners.length > 0 && (
+                  banners.map((banner) => (
+                    <tr
+                      key={banner.id}
+                      className={`hover:bg-muted/30 transition-colors ${selectedRows.includes(banner.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}
+                    >
+                      <td className="w-12 px-4 py-3 align-middle text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(banner.id)}
+                          onChange={(e) => handleSelectRow(banner.id, e.target.checked)}
+                          className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
                         />
                       </td>
-                    )}
-                    {visibleColumns.title && <td className="font-medium text-foreground">{banner.title}</td>}
-                    {visibleColumns.position && <td className="text-sm font-mono">{banner.position}</td>}
-                    {visibleColumns.sortOrder && <td>{banner.sort_order}</td>}
-                    {visibleColumns.status && (
-                      <td>
-                        <StatusBadge status={banner.is_active} />
-                      </td>
-                    )}
-                    {visibleColumns.activePeriod && (
-                      <td className="text-sm text-muted-foreground">
-                        {banner.starts_at || banner.ends_at ? (
-                          <span>
-                            {banner.starts_at ? new Date(banner.starts_at).toLocaleDateString() : 'Start'}
-                            {' - '}
-                            {banner.ends_at ? new Date(banner.ends_at).toLocaleDateString() : 'End'}
+                      {visibleColumns.preview && (
+                        <td className="px-4 py-3 align-middle">
+                          <img
+                            src={getImageUrl(banner.image_url || banner.image)}
+                            alt={banner.title}
+                            className="w-16 h-10 object-cover rounded-xl border border-border shadow-xs bg-slate-900 shrink-0"
+                            onError={(e) => {
+                              ;(e.target as HTMLImageElement).src = '/logo.png'
+                            }}
+                          />
+                        </td>
+                      )}
+                      {visibleColumns.title && (
+                        <td className="px-4 py-3 align-middle">
+                          <div className="font-bold text-foreground text-sm">{banner.title}</div>
+                          {banner.subtitle && (
+                            <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5 max-w-md">{banner.subtitle}</div>
+                          )}
+                        </td>
+                      )}
+                      {visibleColumns.position && (
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          {getPositionBadge(banner.position)}
+                        </td>
+                      )}
+                      {visibleColumns.sortOrder && (
+                        <td className="px-4 py-3 align-middle text-center whitespace-nowrap">
+                          <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-md bg-muted/60 text-foreground border border-border/40 inline-block">
+                            {banner.sort_order}
                           </span>
-                        ) : (
-                          'Always Active'
-                        )}
-                      </td>
-                    )}
-                    {visibleColumns.actions && (
-                      <td className="text-right flex items-center justify-end gap-2">
-                        <button onClick={() => openEditModal(banner)} className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground">
-                          <Edit2 size={14} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(banner)} className="p-1 hover:bg-red-50 rounded text-muted-foreground hover:text-red-500">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    )}
+                        </td>
+                      )}
+                      {visibleColumns.status && (
+                        <td className="px-4 py-3 align-middle text-center whitespace-nowrap">
+                          <StatusBadge status={banner.is_active} />
+                        </td>
+                      )}
+                      {visibleColumns.activePeriod && (
+                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground font-mono whitespace-nowrap">
+                          {banner.starts_at || banner.ends_at ? (
+                            <span>
+                              {banner.starts_at ? new Date(banner.starts_at).toLocaleDateString() : 'Start'}
+                              {' → '}
+                              {banner.ends_at ? new Date(banner.ends_at).toLocaleDateString() : 'End'}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium font-sans inline-flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              {t('alwaysActive', t('marketing.alwaysActive', 'សកម្មជានិច្ច'))}
+                            </span>
+                          )}
+                        </td>
+                      )}
+                      {visibleColumns.actions && (
+                        <td className="px-4 py-3 align-middle text-right whitespace-nowrap pr-5">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => openEditModal(banner)}
+                              className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-2xs"
+                              title={t('common.edit', 'កែសម្រួល')}
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(banner)}
+                              className="p-2 hover:bg-rose-500/10 rounded-xl text-muted-foreground hover:text-rose-500 transition-all cursor-pointer shadow-2xs"
+                              title={t('common.delete', 'លុប')}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+                {!isLoading && banners.length === 0 && (
+                  <tr>
+                    <td colSpan={(Object.values(visibleColumns).filter(Boolean).length || 7) + 1} className="py-16 text-center">
+                      <EmptyState message={t('common.noData', 'មិនមានទិន្នន័យទេ')} />
+                    </td>
                   </tr>
-                ))
-              )}
-              {!isLoading && banners.length === 0 && (
-                <tr>
-                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length || 1} className="py-16 text-center">
-                    <ImageIcon size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                    <p className="text-muted-foreground">{t('common.noData')}</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-      </TableWrapper>
-        <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TableWrapper>
+        <Pagination
+          currentPage={pagination.current_page}
+          lastPage={pagination.last_page}
+          total={pagination.total}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={setPerPage}
+        />
       </div>
 
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card w-full max-w-md border border-border rounded-xl shadow-2xl overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {editingBanner ? 'Edit Banner' : 'Add Banner'}
-                </h3>
-                <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
-                  <X size={18} />
-                </button>
+      {/* Banner Filter Drawer (Customer CRM Style) */}
+      <BannerFilterDrawer
+        isOpen={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        positionFilter={positionFilter}
+        setPositionFilter={(val) => { setPositionFilter(val); setPage(1); }}
+        statusFilter={statusFilter}
+        setStatusFilter={(val) => { setStatusFilter(val); setPage(1); }}
+        onReset={resetAllFilters}
+      />
+
+      {/* ══════════════════════════════════════════════════════════
+          GLOBAL ENTERPRISE MODAL: ADD / EDIT BANNER
+      ══════════════════════════════════════════════════════════ */}
+      <EnterpriseModal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={
+          editingBanner
+            ? t('marketing.editBanner', 'កែសម្រួលផ្ទាំងបដា')
+            : t('marketing.addBanner', 'បន្ថែមផ្ទាំងបដាថ្មី')
+        }
+        subtitle={t('marketing.bannerSubtitle', 'គ្រប់គ្រងផ្ទាំងផ្សព្វផ្សាយពាណិជ្ជកម្ម និងប្រូម៉ូសិនលើគេហទំព័រ')}
+        icon={<ImageIcon size={20} />}
+        iconVariant="purple"
+        size="2xl"
+        badge={
+          editingBanner ? (
+            <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-muted dark:bg-slate-800 text-muted-foreground border border-border/60">
+              #{editingBanner.id}
+            </span>
+          ) : undefined
+        }
+        footer={
+          <ModalFooter
+            onCancel={closeModal}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            isEdit={Boolean(editingBanner)}
+            submitLabel={
+              editingBanner
+                ? t('marketing.saveChanges', t('common.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ'))
+                : t('marketing.saveBanner', t('common.save', 'រក្សាទុកផ្ទាំងបដា'))
+            }
+            cancelLabel={t('common.cancel', 'បោះបង់')}
+            onSubmit={handleSubmit}
+          />
+        }
+      >
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+
+            {/* ══════════════════════════════════════════════════
+                ព័ត៌មានទូទៅ & ខ្លឹមសារ (Content Information)
+            ══════════════════════════════════════════════════ */}
+            <div className="space-y-4">
+              <div className="pb-2 border-b border-border/70">
+                <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
+                  {t('bannerContentSection', t('marketing.bannerContentSection', 'ព័ត៌មានទូទៅ & ខ្លឹមសារបដា'))}
+                </h4>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto no-scrollbar">
+              <div className="space-y-4">
+                {/* Banner Title */}
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Banner Title</label>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">
+                    {t('bannerTitle', t('marketing.bannerTitle', 'ចំណងជើងផ្ទាំងបដា'))} <span className="text-rose-500">*</span>
+                  </label>
                   <input
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                     required
-                    placeholder="e.g. Premium Home Hero Banner"
-                    className="form-input"
+                    placeholder={t('bannerTitlePlaceholder', t('marketing.bannerTitlePlaceholder', 'ឧ. NEXT-GEN PRO GAMING ARENA'))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
                   />
                 </div>
-                {/* Banner Image Input Section with Mode Switcher */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase">
-                      Banner Image <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border">
-                      <button
-                        type="button"
-                        onClick={() => setImageMode('upload')}
-                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all ${
-                          imageMode === 'upload' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        📁 File Upload
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setImageMode('url')}
-                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all ${
-                          imageMode === 'url' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        🔗 Image URL
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {imageMode === 'upload' ? (
-                    imageUrl ? (
-                      <div className="relative group border border-border rounded-xl p-3 bg-muted/30 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <img
-                            src={getImageUrl(imageUrl)}
-                            alt="Banner preview"
-                            className="w-14 h-14 object-cover rounded-lg border border-border shadow-xs flex-shrink-0"
-                            onError={(e) => {
-                              ;(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80'
-                            }}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-foreground truncate">
-                              {selectedFile ? selectedFile.name : title || 'Banner Image'}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
-                              {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : imageUrl}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors flex-shrink-0"
-                          title="Remove Image"
-                        >
-                          <X size={15} />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="border-2 border-dashed border-border/80 hover:border-primary/50 bg-muted/20 hover:bg-primary/5 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                        <div className="p-2.5 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform mb-2">
-                          <Upload size={18} />
-                        </div>
-                        <span className="text-xs font-semibold text-foreground">Click or drag image file here</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">Supports PNG, JPG, WEBP, SVG (max 5MB)</span>
-                      </label>
-                    )
-                  ) : (
-                    <div>
-                      <input
-                        type="text"
-                        value={imageUrl}
-                        onChange={e => setImageUrl(e.target.value)}
-                        placeholder="https://example.com/banner-image.jpg"
-                        className="form-input text-xs font-mono"
-                      />
-                    </div>
-                  )}
+
+                {/* Subtitle / Description */}
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">
+                    {t('bannerDescription', t('marketing.bannerDescription', 'ចំណងជើងរង / ការពិពណ៌នា'))}
+                  </label>
+                  <textarea
+                    value={subtitle}
+                    onChange={e => setSubtitle(e.target.value)}
+                    rows={2}
+                    placeholder={t('bannerDescPlaceholder', t('marketing.bannerDescPlaceholder', 'ឧ. ឧបករណ៍ហ្គេមអាជីព RTX 5090, 240Hz OLED Displays...'))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none shadow-2xs"
+                  />
                 </div>
 
-                {/* Target Link URL (Optional) */}
+                {/* Badge Label & Discount Tag */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      {t('badgeLabel', t('marketing.badgeLabel', 'ស្លាកសញ្ញា'))}
+                    </label>
+                    <input
+                      value={badge}
+                      onChange={e => setBadge(e.target.value)}
+                      placeholder={t('badgePlaceholder', t('marketing.badgePlaceholder', 'ឧ. ហាងផ្លូវការ'))}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      {t('discountTag', t('marketing.discountTag', 'ស្លាកបញ្ចុះតម្លៃ'))}
+                    </label>
+                    <input
+                      value={discountTag}
+                      onChange={e => setDiscountTag(e.target.value)}
+                      placeholder={t('discountPlaceholder', t('marketing.discountPlaceholder', 'ឧ. បញ្ចុះតម្លៃ 35%'))}
+                      className="w-full px-3.5 py-2 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════
+                រូបភាព & តំណភ្ជាប់ (Image & Target Link)
+            ══════════════════════════════════════════════════ */}
+            <div className="space-y-4 pt-1">
+              <div className="pb-2 border-b border-border/70">
+                <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
+                  {t('bannerMediaSection', t('marketing.bannerMediaSection', 'រូបភាព & តំណភ្ជាប់គោលដៅ'))}
+                </h4>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mode Switcher */}
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-foreground">
+                    {t('bannerImage', t('marketing.bannerImage', 'រូបភាពបដា'))} <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border">
+                    <button
+                      type="button"
+                      onClick={() => setImageMode('upload')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        imageMode === 'upload' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {t('fileUpload', t('marketing.fileUpload', 'បង្ហោះរូបភាព'))}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageMode('url')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        imageMode === 'url' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {t('imageUrl', t('marketing.imageUrl', 'តំណភ្ជាប់រូបភាព'))}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Upload or URL Preview */}
+                {imageMode === 'upload' ? (
+                  imageUrl ? (
+                    <div className="relative group border border-border rounded-2xl p-3.5 bg-card dark:bg-slate-800/80 flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <img
+                          src={getImageUrl(imageUrl)}
+                          alt="Banner preview"
+                          className="w-16 h-12 object-cover rounded-xl border border-border shadow-xs flex-shrink-0 bg-slate-950"
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).src = '/logo.png'
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-foreground truncate">
+                            {selectedFile ? selectedFile.name : title || 'Banner Image'}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
+                            {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : imageUrl}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors flex-shrink-0 cursor-pointer"
+                        title={t('common.remove', 'លុបរូបភាព')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="border-2 border-dashed border-border/80 hover:border-primary/50 bg-card/60 dark:bg-slate-800/50 hover:bg-primary/5 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <div className="p-3 rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform mb-2">
+                        <Upload size={20} />
+                      </div>
+                      <span className="text-xs font-bold text-foreground">
+                        {t('dragOrUpload', t('marketing.dragOrUpload', 'ចុច ឬអូសទម្លាក់រូបភាពនៅទីនេះ'))}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground mt-0.5">
+                        {t('imageFormatHint', t('marketing.imageFormatHint', 'គាំទ្រ PNG, JPG, WEBP, SVG (ទំហំអតិបរមា 5MB)'))}
+                      </span>
+                    </label>
+                  )
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      value={imageUrl}
+                      onChange={e => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/banner-image.jpg"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
+                    />
+                  </div>
+                )}
+
+                {/* Target Link URL */}
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Link URL (Optional)
+                  <label className="block text-xs font-bold text-foreground mb-1.5">
+                    {t('targetLink', t('marketing.targetLink', 'តំណភ្ជាប់គោលដៅ'))}
                   </label>
                   <input
                     type="text"
                     value={linkUrl}
                     onChange={e => setLinkUrl(e.target.value)}
-                    placeholder="https://example.com/promo-target"
-                    className="form-input text-xs font-mono"
+                    placeholder={t('targetLinkPlaceholder', t('marketing.targetLinkPlaceholder', 'https://example.com/promo-target'))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════
+                ទីតាំង & កាលវិភាគ (Placement & Schedule)
+            ══════════════════════════════════════════════════ */}
+            <div className="space-y-4 pt-1">
+              <div className="pb-2 border-b border-border/70">
+                <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
+                  {t('bannerPlacementSection', t('marketing.bannerPlacementSection', 'ទីតាំងបង្ហាញ & ការកំណត់កាលវិភាគ'))}
+                </h4>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Position */}
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      {t('position', t('marketing.position', 'ទីតាំងបង្ហាញ'))}
+                    </label>
+                    <select
+                      value={position}
+                      onChange={e => setPosition(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium shadow-2xs"
+                    >
+                      <option value="hero">{t('posHero', t('marketing.posHero', 'ផ្ទាំងបដាធំទំព័រដើម'))}</option>
+                      <option value="sidebar">{t('posSidebar', t('marketing.posSidebar', 'ផ្ទាំងបដាចំហៀង'))}</option>
+                      <option value="popup">{t('posPopup', t('marketing.posPopup', 'ផ្ទាំងបដាផុសឡើង'))}</option>
+                      <option value="footer">{t('posFooter', t('marketing.posFooter', 'ផ្ទាំងបដាខាងក្រោម'))}</option>
+                    </select>
+                  </div>
+
+                  {/* Sort Order */}
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      {t('sortOrder', t('marketing.sortOrder', 'លំដាប់លំដោយ'))}
+                    </label>
+                    <input
+                      type="number"
+                      value={sortOrder}
+                      onChange={e => setSortOrder(Number(e.target.value))}
+                      min={0}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Position</label>
-                  <select
-                    value={position}
-                    onChange={e => setPosition(e.target.value as any)}
-                    className="form-input"
-                  >
-                    <option value="hero">Hero Main Banner</option>
-                    <option value="sidebar">Sidebar / Secondary Banner</option>
-                    <option value="popup">Popup Promo Banner</option>
-                    <option value="footer">Footer Banner</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Sort Order</label>
-                  <input
-                    type="number"
-                    value={sortOrder}
-                    onChange={e => setSortOrder(Number(e.target.value))}
-                    min={0}
-                    className="form-input"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Starts At & Ends At */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Starts At</label>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      {t('startsAt', t('marketing.startsAt', 'កាលបរិច្ឆេទចាប់ផ្តើម'))}
+                    </label>
                     <input
                       type="date"
                       value={startsAt}
                       onChange={e => setStartsAt(e.target.value)}
-                      className="form-input"
+                      className="w-full px-3.5 py-2 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Ends At</label>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      {t('endsAt', t('marketing.endsAt', 'កាលបរិច្ឆេទបញ្ចប់'))}
+                    </label>
                     <input
                       type="date"
                       value={endsAt}
                       onChange={e => setEndsAt(e.target.value)}
-                      className="form-input"
+                      className="w-full px-3.5 py-2 rounded-xl border border-border bg-card dark:bg-slate-800/80 text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={isActive}
-                    onChange={e => setIsActive(e.target.checked)}
-                    className="rounded text-blue-600 focus:ring-blue-500"
-                  />
-                  <label htmlFor="isActive" className="text-sm font-medium text-foreground">{t('common.active')}</label>
-                </div>
 
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                  <button type="button" onClick={closeModal} className="px-4 py-2.5 text-xs font-semibold border border-border rounded-xl hover:bg-muted transition-colors">
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md transition-all flex items-center gap-2"
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && <Loader2 size={14} className="animate-spin" />}
-                    {t('common.save')}
-                  </button>
+                {/* Active Status */}
+                <div className="flex items-center gap-3 pt-2">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={isActive}
+                      onChange={e => setIsActive(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                  <label htmlFor="isActive" className="text-xs sm:text-sm font-bold text-foreground cursor-pointer select-none">
+                    {isActive ? t('active', t('marketing.active', 'សកម្ម')) : t('inactive', t('marketing.inactive', 'អសកម្ម'))}
+                  </label>
                 </div>
-              </form>
-            </motion.div>
+              </div>
+            </div>
+
           </div>
-        )}
-      </AnimatePresence>
+        </form>
+      </EnterpriseModal>
 
+      {/* Single Delete Dialog */}
       <ConfirmDialog
         open={!!deleteTarget}
-        title={t('confirm.deleteTitle', { item: 'Banner' })}
-        message={t('confirm.deleteMessage', { item: 'Banner', name: deleteTarget?.title })}
-        confirmText={t('confirm.confirmDelete')}
+        title={t('deleteBannerTitle', t('marketing.deleteBannerTitle', 'លុបផ្ទាំងបដា'))}
+        itemName={deleteTarget?.title}
+        confirmText={t('common.delete', t('confirm.confirmDelete', 'លុប'))}
+        cancelText={t('common.cancel', t('confirm.cancel', 'បោះបង់'))}
         loading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('bulkDeleteBannersTitle', t('marketing.bulkDeleteBannersTitle', 'លុបផ្ទាំងបដាដែលបានជ្រើស'))}
+        message={t('confirmBulkDeleteBannersMessage', {
+          count: selectedRows.length,
+          defaultValue: `តើអ្នកពិតជាចង់លុបផ្ទាំងបដាចំនួន ${selectedRows.length} ដែលបានជ្រើសរើសនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។`
+        }).replace('{{count}}', String(selectedRows.length))}
+        confirmText={t('common.delete', t('confirm.confirmDelete', 'លុប'))}
+        cancelText={t('common.cancel', t('confirm.cancel', 'បោះបង់'))}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
       />
     </div>
   )

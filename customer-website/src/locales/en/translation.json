@@ -153,5 +153,10 @@
   "feed.load_error": "Couldn't load more products",
   "feed.retry": "Try Again",
   "feed.back_to_top": "Back to Top",
-  "feed.showing_count": "Showing {{count}} of {{total}} products"
+  "feed.showing_count": "Showing {{count}} of {{total}} products",
+  "popup.exclusive_offer": "EXCLUSIVE OFFER",
+  "popup.limited_time": "Limited time promotion available across all 25 provinces.",
+  "popup.shop_now": "Shop Deal Now",
+  "popup.dont_show_today": "Don't show this promotion again today",
+  "popup.close": "Close"
 }

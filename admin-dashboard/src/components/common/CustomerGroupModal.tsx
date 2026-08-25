@@ -85,9 +85,10 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
   // Reset form on open / change of initialData
   useEffect(() => {
     if (isOpen) {
+      const defaultCompId = String(companies?.[0]?.id || companyId || '1')
       if (initialData) {
         reset({
-          company_id: String(initialData.company_id || companyId || '1'),
+          company_id: String(initialData.company_id || defaultCompId),
           name: initialData.name || '',
           discount_percent: Number(initialData.discount_percent || 0),
           description: initialData.description || '',
@@ -95,7 +96,7 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
         })
       } else {
         reset({
-          company_id: String(companyId || '1'),
+          company_id: defaultCompId,
           name: '',
           discount_percent: 0,
           description: '',
@@ -103,7 +104,7 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
         })
       }
     }
-  }, [isOpen, initialData, companyId, reset])
+  }, [isOpen, initialData, companyId, companies, reset])
 
   // Mutations
   const createMutation = useMutation({

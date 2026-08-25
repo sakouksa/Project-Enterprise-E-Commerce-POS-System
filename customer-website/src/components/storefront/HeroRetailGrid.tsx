@@ -1,9 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useCategories } from '@/hooks'
 import CategorySidebar from './CategorySidebar'
 import HeroBannerSlider, { type BannerItem } from './HeroBannerSlider'
-import { cn } from '@/lib/utils'
+import { cn, resolveMediaUrl } from '@/lib/utils'
 
 interface HeroRetailGridProps {
   banners?: BannerItem[]
@@ -11,33 +13,49 @@ interface HeroRetailGridProps {
 }
 
 export const HeroRetailGrid: React.FC<HeroRetailGridProps> = ({ banners = [], className }) => {
-  const quickCards = [
+  const { t } = useTranslation()
+  const { data: categories = [] } = useCategories()
+
+  const cardStyling = [
+    { bgGradient: 'from-[#f5b841] to-[#f7c844]', arrowBg: 'bg-[#e09e1f]' },
+    { bgGradient: 'from-[#e6007e] to-[#f06ea9]', arrowBg: 'bg-[#c4006b]' },
+    { bgGradient: 'from-[#f26565] to-[#f88585]', arrowBg: 'bg-[#db4848]' },
+  ]
+
+  // Dynamic quick category cards derived from real database categories
+  const quickCards = (categories.length >= 3 ? categories.slice(0, 3) : []).map((cat, idx) => ({
+    id: cat.id,
+    title: cat.name,
+    link: `/products?category=${cat.slug}`,
+    bgGradient: cardStyling[idx % 3].bgGradient,
+    arrowBg: cardStyling[idx % 3].arrowBg,
+    image: resolveMediaUrl(cat.image, 'category'),
+  }))
+
+  const displayCards = quickCards.length > 0 ? quickCards : [
     {
       id: 1,
-      title: 'កុំព្យូទ័រ & Laptops',
-      titleEn: 'Computers & Mac',
+      title: t('hero.computers_laptops', 'កុំព្យូទ័រ & Laptops'),
       link: '/products?category=laptops',
       bgGradient: 'from-[#f5b841] to-[#f7c844]',
       arrowBg: 'bg-[#e09e1f]',
-      image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80',
+      image: resolveMediaUrl('categories/laptops.webp', 'category'),
     },
     {
       id: 2,
-      title: 'ហ្គេម & Gaming Arena',
-      titleEn: 'Pro Gaming Gear',
+      title: t('hero.gaming_arena', 'ហ្គេម & Gaming Arena'),
       link: '/products?category=keyboards',
       bgGradient: 'from-[#e6007e] to-[#f06ea9]',
       arrowBg: 'bg-[#c4006b]',
-      image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=400&q=80',
+      image: resolveMediaUrl('categories/keyboards.webp', 'category'),
     },
     {
       id: 3,
-      title: 'សំឡេង & គ្រឿងបន្លាស់',
-      titleEn: 'Studio Audio & Accs',
-      link: '/products?category=audio-sound',
+      title: t('hero.audio_accessories', 'សំឡេង & គ្រឿងបន្លាស់'),
+      link: '/products?category=audio',
       bgGradient: 'from-[#f26565] to-[#f88585]',
       arrowBg: 'bg-[#db4848]',
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
+      image: resolveMediaUrl('categories/audio.webp', 'category'),
     },
   ]
 
@@ -53,9 +71,9 @@ export const HeroRetailGrid: React.FC<HeroRetailGridProps> = ({ banners = [], cl
             {/* Top: AEON Style Hero Banner Slider */}
             <HeroBannerSlider banners={banners} className="pt-0" />
 
-            {/* Bottom: 3 AEON Promotional Sub-Banners with Diagonal Arrow Button ↗ */}
+            {/* Bottom: 3 Promotional Sub-Banners with Diagonal Arrow Button ↗ */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-              {quickCards.map((card) => (
+              {displayCards.map((card) => (
                 <Link
                   key={card.id}
                   to={card.link}
@@ -66,7 +84,7 @@ export const HeroRetailGrid: React.FC<HeroRetailGridProps> = ({ banners = [], cl
                 >
                   {/* Left Title & Arrow Button */}
                   <div className="relative z-10 flex flex-col justify-between h-full space-y-2">
-                    <h3 className="text-xs sm:text-sm font-black font-display tracking-tight leading-snug drop-shadow-xs">
+                    <h3 className="text-xs sm:text-sm font-black font-display tracking-tight leading-snug drop-shadow-xs truncate max-w-[120px] sm:max-w-none">
                       {card.title}
                     </h3>
                     <div
@@ -84,8 +102,11 @@ export const HeroRetailGrid: React.FC<HeroRetailGridProps> = ({ banners = [], cl
                     <img
                       src={card.image}
                       alt={card.title}
-                      className="w-full h-full object-cover rounded-xl shadow-xs group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain rounded-xl shadow-xs group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src = '/images/placeholder-product.png'
+                      }}
                     />
                   </div>
                 </Link>

@@ -14,6 +14,7 @@ import ResetButton from '@/components/shared/ResetButton'
 import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { HeaderActionsGroup, AddButton, ExportButton } from '@/components/common'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
 import { useTranslation } from 'react-i18next'
@@ -375,60 +376,42 @@ const CustomersPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <HeaderActionsGroup>
           {activeTab === 'customers' ? (
             <>
-              <button
+              <ExportButton
                 onClick={handleExport}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
-              >
-                <Download size={15} />
-                <span>{t('customers.exportCsv', 'Export CSV')}</span>
-              </button>
-              <button
+                label={t('customers.exportCsv', 'នាំចេញ CSV')}
+              />
+              <AddButton
                 onClick={openCreateModal}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
-              >
-                <Plus size={16} />
-                <span>{t('customers.addCustomer', 'Add Customer')}</span>
-              </button>
+                label={t('customers.addCustomer', 'បន្ថែមអតិថិជន')}
+              />
             </>
           ) : activeTab === 'groups' ? (
             <>
-              <button
+              <ExportButton
                 onClick={() => groupsActions?.exportData?.()}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
-              >
-                <Download size={15} />
-                <span>{t('customers.exportCsv', 'Export CSV')}</span>
-              </button>
-              <button
+                label={t('customers.exportCsv', 'នាំចេញ CSV')}
+              />
+              <AddButton
                 onClick={() => groupsActions?.openAdd?.()}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
-              >
-                <Plus size={16} />
-                <span>{t('customers.addGroup', 'Add Group')}</span>
-              </button>
+                label={t('customers.addGroup', 'បន្ថែមក្រុមអតិថិជន')}
+              />
             </>
           ) : (
             <>
-              <button
+              <ExportButton
                 onClick={() => addressesActions?.exportData?.()}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
-              >
-                <Download size={15} />
-                <span>{t('customers.exportCsv', 'Export CSV')}</span>
-              </button>
-              <button
+                label={t('customers.exportCsv', 'នាំចេញ CSV')}
+              />
+              <AddButton
                 onClick={() => addressesActions?.openAdd?.()}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
-              >
-                <Plus size={16} />
-                <span>{t('customers.addAddress', 'Add Address')}</span>
-              </button>
+                label={t('customers.addAddress', 'បន្ថែមអាសយដ្ឋាន')}
+              />
             </>
           )}
-        </div>
+        </HeaderActionsGroup>
       </div>
 
       {/* Top Overview Cards (Clean Design & Always Visible at top across tab changes) */}

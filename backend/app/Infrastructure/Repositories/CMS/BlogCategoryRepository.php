@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\CMS;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\CMS\BlogCategory;
+use App\Repositories\CMS\BlogCategoryRepository as BaseBlogCategoryRepository;
 
-class BlogCategoryRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\CMS\BlogCategoryRepository
+ */
+class BlogCategoryRepository extends BaseBlogCategoryRepository
 {
-    public function __construct(BlogCategory $model)
-    {
-        parent::__construct($model);
-    }
 }

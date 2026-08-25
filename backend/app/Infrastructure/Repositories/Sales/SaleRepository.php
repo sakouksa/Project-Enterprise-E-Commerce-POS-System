@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Sales;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Sales\Sale;
+use App\Repositories\Sales\SaleRepository as BaseSaleRepository;
 
-class SaleRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Sales\SaleRepository
+ */
+class SaleRepository extends BaseSaleRepository
 {
-    public function __construct(Sale $model)
-    {
-        parent::__construct($model);
-    }
 }

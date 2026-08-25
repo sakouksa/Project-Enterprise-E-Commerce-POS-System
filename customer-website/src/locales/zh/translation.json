@@ -153,5 +153,10 @@
   "feed.load_error": "无法加载更多商品",
   "feed.retry": "重试",
   "feed.back_to_top": "返回顶部",
-  "feed.showing_count": "已显示 {{count}} / {{total}} 件商品"
+  "feed.showing_count": "已显示 {{count}} / {{total}} 件商品",
+  "popup.exclusive_offer": "独家特惠",
+  "popup.limited_time": "限时优惠活动，覆盖全国 25 个省市配送。",
+  "popup.shop_now": "立即抢购",
+  "popup.dont_show_today": "今天不再显示此促销弹窗",
+  "popup.close": "关闭"
 }

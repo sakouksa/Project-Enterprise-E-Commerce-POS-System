@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Log;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Log\LoginHistory;
+use App\Repositories\Log\LoginHistoryRepository as BaseLoginHistoryRepository;
 
-class LoginHistoryRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Log\LoginHistoryRepository
+ */
+class LoginHistoryRepository extends BaseLoginHistoryRepository
 {
-    public function __construct(LoginHistory $model)
-    {
-        parent::__construct($model);
-    }
 }

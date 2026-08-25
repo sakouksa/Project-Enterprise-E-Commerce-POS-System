@@ -1,5 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { storeSettingsService, categoryService, brandService, productService } from '@/services'
+import {
+  storeSettingsService,
+  categoryService,
+  brandService,
+  productService,
+  checkoutService,
+  type PaymentMethodItem,
+  type ShippingMethodItem,
+  type ProvinceItem,
+} from '@/services'
 import type { Category, Brand, StoreSettings, Banner } from '@/types/store'
 
 /**
@@ -44,5 +53,38 @@ export const useBanners = () => {
     queryKey: ['storefront', 'banners'],
     queryFn: () => productService.getBanners(),
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+/**
+ * Global hook to fetch and cache active Payment Methods from database
+ */
+export const usePaymentMethods = () => {
+  return useQuery<PaymentMethodItem[]>({
+    queryKey: ['storefront', 'payment-methods'],
+    queryFn: () => checkoutService.getPaymentMethods(),
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+/**
+ * Global hook to fetch and cache active Shipping Methods from database
+ */
+export const useShippingMethods = () => {
+  return useQuery<ShippingMethodItem[]>({
+    queryKey: ['storefront', 'shipping-methods'],
+    queryFn: () => checkoutService.getShippingMethods(),
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+/**
+ * Global hook to fetch and cache Cambodian Provinces from database
+ */
+export const useProvinces = () => {
+  return useQuery<ProvinceItem[]>({
+    queryKey: ['storefront', 'provinces'],
+    queryFn: () => checkoutService.getProvinces(),
+    staleTime: 10 * 60 * 1000,
   })
 }

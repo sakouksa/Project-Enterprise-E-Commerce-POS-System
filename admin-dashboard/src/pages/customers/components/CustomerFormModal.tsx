@@ -88,18 +88,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 {/* ══════════════════════════════════════════════════
                     ផ្នែកទី ១: ព័ត៌មានទូទៅ & រូបថត (SECTION 1)
                 ══════════════════════════════════════════════════ */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2.5 pb-1 border-b border-border/60">
-                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs">
-                      1
-                    </span>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/70">
                     <User size={16} className="text-primary shrink-0" />
-                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
                       {t('customers.formTabGeneral', 'ព័ត៌មានទូទៅ & រូបថត')}
                     </h4>
                   </div>
 
-                  <div className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-4">
+                  <div className="space-y-4">
                     {/* Profile Photo Upload */}
                     <div className="p-3.5 rounded-xl border border-border/80 bg-background/80 flex flex-col sm:flex-row items-center gap-4">
                       {photoPreview ? (
@@ -225,18 +222,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 {/* ══════════════════════════════════════════════════
                     ផ្នែកទី ២: ទំនាក់ទំនង & គណនី (SECTION 2)
                 ══════════════════════════════════════════════════ */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2.5 pb-1 border-b border-border/60">
-                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs">
-                      2
-                    </span>
+                <div className="space-y-4 pt-1">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/70">
                     <Phone size={16} className="text-primary shrink-0" />
-                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
                       {t('customers.formTabContact', 'ទំនាក់ទំនង & គណនី')}
                     </h4>
                   </div>
 
-                  <div className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-4">
+                  <div className="space-y-4">
                     {/* Email & Phone */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -325,18 +319,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 {/* ══════════════════════════════════════════════════
                     ផ្នែកទី ៣: ក្រុម & សមាជិកភាព (SECTION 3)
                 ══════════════════════════════════════════════════ */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2.5 pb-1 border-b border-border/60">
-                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs">
-                      3
-                    </span>
+                <div className="space-y-4 pt-1">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/70">
                     <Award size={16} className="text-primary shrink-0" />
-                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
                       {t('customers.formTabGroup', t('formTabGroup', 'ក្រុម & សមាជិកភាព'))}
                     </h4>
                   </div>
 
-                  <div className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-4">
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-foreground/90 mb-1">
                         {t('customers.customerGroup', t('customerGroup', 'ក្រុមអតិថិជន'))}
@@ -380,18 +371,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 {/* ══════════════════════════════════════════════════
                     ផ្នែកទី ៤: ហិរញ្ញវត្ថុ & ពន្ធដារ (SECTION 4)
                 ══════════════════════════════════════════════════ */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2.5 pb-1 border-b border-border/60">
-                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs">
-                      4
-                    </span>
+                <div className="space-y-4 pt-1">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/70">
                     <CreditCard size={16} className="text-primary shrink-0" />
-                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
                       {t('customers.formTabFinancial', t('formTabFinancial', 'ហិរញ្ញវត្ថុ & ពន្ធដារ'))}
                     </h4>
                   </div>
 
-                  <div className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-4">
+                  <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Credit Limit */}
                       <div>
@@ -447,18 +435,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 {/* ══════════════════════════════════════════════════
                     ផ្នែកទី ៥: កំណត់ចំណាំ & សង្ខេប (SECTION 5)
                 ══════════════════════════════════════════════════ */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2.5 pb-1 border-b border-border/60">
-                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs">
-                      5
-                    </span>
+                <div className="space-y-4 pt-1">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/70">
                     <FileText size={16} className="text-primary shrink-0" />
-                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-foreground tracking-wide">
                       {t('customers.formTabNotes', 'កំណត់ចំណាំ & សង្ខេប')}
                     </h4>
                   </div>
 
-                  <div className="p-4 rounded-xl border border-border/80 bg-muted/10 space-y-3">
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-foreground/90 mb-1">
                         {t('customers.internalNotes', 'កំណត់ចំណាំផ្ទៃក្នុង')}

@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Inventory;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Inventory\StockAdjustmentItem;
+use App\Repositories\Inventory\StockAdjustmentItemRepository as BaseStockAdjustmentItemRepository;
 
-class StockAdjustmentItemRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Inventory\StockAdjustmentItemRepository
+ */
+class StockAdjustmentItemRepository extends BaseStockAdjustmentItemRepository
 {
-    public function __construct(StockAdjustmentItem $model)
-    {
-        parent::__construct($model);
-    }
 }

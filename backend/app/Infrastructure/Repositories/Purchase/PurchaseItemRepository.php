@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Purchase;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Purchase\PurchaseItem;
+use App\Repositories\Purchase\PurchaseItemRepository as BasePurchaseItemRepository;
 
-class PurchaseItemRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Purchase\PurchaseItemRepository
+ */
+class PurchaseItemRepository extends BasePurchaseItemRepository
 {
-    public function __construct(PurchaseItem $model)
-    {
-        parent::__construct($model);
-    }
 }

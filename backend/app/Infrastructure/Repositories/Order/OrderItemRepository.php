@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Order;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Order\OrderItem;
+use App\Repositories\Order\OrderItemRepository as BaseOrderItemRepository;
 
-class OrderItemRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Order\OrderItemRepository
+ */
+class OrderItemRepository extends BaseOrderItemRepository
 {
-    public function __construct(OrderItem $model)
-    {
-        parent::__construct($model);
-    }
 }

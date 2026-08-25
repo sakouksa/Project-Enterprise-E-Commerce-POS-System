@@ -137,7 +137,7 @@ export const Footer: React.FC<FooterProps> = ({ storeInfo }) => {
               <Clock className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
               <div>
                 <div className="font-bold text-white">Opening Hours:</div>
-                <div className="text-slate-400">Monday to Sunday, 8:00 AM to 5:30 PM</div>
+                <div className="text-slate-400">{storeSettings?.store_hours || 'Monday to Sunday, 8:00 AM to 8:00 PM'}</div>
               </div>
             </div>
 
@@ -147,11 +147,14 @@ export const Footer: React.FC<FooterProps> = ({ storeInfo }) => {
               <div>
                 <div className="font-bold text-white">Sales Showroom Hotlines:</div>
                 <div className="text-slate-400 space-x-2 font-semibold">
-                  <a href="tel:012220152" className="hover:text-emerald-400 transition-colors">012 220 152</a>
-                  <span>•</span>
-                  <a href="tel:093456747" className="hover:text-emerald-400 transition-colors">093 456 747</a>
-                  <span>•</span>
-                  <a href="tel:0715777378" className="hover:text-emerald-400 transition-colors">071 5777 378</a>
+                  {(storeSettings?.hotlines && storeSettings.hotlines.length > 0 ? storeSettings.hotlines : [phone]).map((num, i, arr) => (
+                    <React.Fragment key={i}>
+                      <a href={`tel:${num.replace(/\s+/g, '')}`} className="hover:text-emerald-400 transition-colors">
+                        {num}
+                      </a>
+                      {i < arr.length - 1 && <span>•</span>}
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
             </div>
@@ -162,9 +165,9 @@ export const Footer: React.FC<FooterProps> = ({ storeInfo }) => {
               <div>
                 <div className="font-bold text-white">Service Center & Repair:</div>
                 <div className="text-slate-400 space-x-2 font-semibold">
-                  <a href="tel:012220135" className="hover:text-amber-400 transition-colors">012 220 135</a>
-                  <span>•</span>
-                  <a href="tel:093456735" className="hover:text-amber-400 transition-colors">093 456 735</a>
+                  <a href={`tel:${phone.replace(/\s+/g, '')}`} className="hover:text-amber-400 transition-colors">
+                    {phone}
+                  </a>
                 </div>
               </div>
             </div>
@@ -287,56 +290,66 @@ export const Footer: React.FC<FooterProps> = ({ storeInfo }) => {
         <div className="container-site flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Social Media Links */}
           <div className="flex items-center gap-2">
-            <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noreferrer"
-              className="w-8 h-8 rounded-full bg-[#1877F2] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
-              aria-label="Facebook"
-              title="Facebook"
-            >
-              <span className="font-black text-xs">f</span>
-            </a>
-            <a
-              href="https://tiktok.com"
-              target="_blank"
-              rel="noreferrer"
-              className="w-8 h-8 rounded-full bg-black text-white border border-slate-800 flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
-              aria-label="TikTok"
-              title="TikTok"
-            >
-              <span className="font-black text-xs">tk</span>
-            </a>
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noreferrer"
-              className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
-              aria-label="Instagram"
-              title="Instagram"
-            >
-              <span className="font-black text-xs">ig</span>
-            </a>
-            <a
-              href="https://t.me"
-              target="_blank"
-              rel="noreferrer"
-              className="w-8 h-8 rounded-full bg-[#24A1DE] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
-              aria-label="Telegram"
-              title="Telegram"
-            >
-              <span className="font-black text-xs">tg</span>
-            </a>
-            <a
-              href="https://youtube.com"
-              target="_blank"
-              rel="noreferrer"
-              className="w-8 h-8 rounded-full bg-[#FF0000] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
-              aria-label="YouTube"
-              title="YouTube"
-            >
-              <span className="font-black text-xs">yt</span>
-            </a>
+            {storeSettings?.socials?.facebook && (
+              <a
+                href={storeSettings.socials.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-[#1877F2] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
+                aria-label="Facebook"
+                title="Facebook"
+              >
+                <span className="font-black text-xs">f</span>
+              </a>
+            )}
+            {storeSettings?.socials?.tiktok && (
+              <a
+                href={storeSettings.socials.tiktok}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-black text-white border border-slate-800 flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
+                aria-label="TikTok"
+                title="TikTok"
+              >
+                <span className="font-black text-xs">tk</span>
+              </a>
+            )}
+            {storeSettings?.socials?.instagram && (
+              <a
+                href={storeSettings.socials.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
+                aria-label="Instagram"
+                title="Instagram"
+              >
+                <span className="font-black text-xs">ig</span>
+              </a>
+            )}
+            {storeSettings?.socials?.telegram && (
+              <a
+                href={storeSettings.socials.telegram}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-[#24A1DE] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
+                aria-label="Telegram"
+                title="Telegram"
+              >
+                <span className="font-black text-xs">tg</span>
+              </a>
+            )}
+            {storeSettings?.socials?.youtube && (
+              <a
+                href={storeSettings.socials.youtube}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-[#FF0000] text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xs"
+                aria-label="YouTube"
+                title="YouTube"
+              >
+                <span className="font-black text-xs">yt</span>
+              </a>
+            )}
           </div>
 
           {/* Copyright text */}

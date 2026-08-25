@@ -938,6 +938,94 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         )
       }
 
+      const isBannerContext =
+        `${title || ''}`.toLowerCase().includes('banner') ||
+        `${title || ''}`.includes('បដា') ||
+        `${title || ''}`.includes('横幅') ||
+        `${title || ''}`.includes('แบนเนอร์') ||
+        `${title || ''}`.includes('biểu ngữ')
+
+      if (isBannerContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                ផ្ទាំងបដា <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The banner <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                横幅 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                แบนเนอร์ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Biểu ngữ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The banner "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
+      const isCouponContext =
+        `${title || ''}`.toLowerCase().includes('coupon') ||
+        `${title || ''}`.includes('ប័ណ្ណ') ||
+        `${title || ''}`.includes('优惠券') ||
+        `${title || ''}`.includes('คูปอง') ||
+        `${title || ''}`.includes('phiếu giảm giá')
+
+      if (isCouponContext) {
+        return (
+          <>
+            {language === 'km' && (
+              <>
+                ប័ណ្ណបញ្ចុះតម្លៃ <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> នឹងត្រូវលុបចេញពីប្រព័ន្ធ។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+              </>
+            )}
+            {language === 'en' && (
+              <>
+                The coupon <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> will be removed from the system. This action cannot be undone.
+              </>
+            )}
+            {language === 'zh' && (
+              <>
+                优惠券 <span className="font-semibold text-slate-900 dark:text-white">“{itemName}”</span> 将从系统中删除，此操作无法撤销。
+              </>
+            )}
+            {language === 'th' && (
+              <>
+                คูปอง <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้
+              </>
+            )}
+            {language === 'vi' && (
+              <>
+                Phiếu giảm giá <span className="font-semibold text-slate-900 dark:text-white">"{itemName}"</span> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+              </>
+            )}
+            {!['km', 'en', 'zh', 'th', 'vi'].includes(language) && (
+              <>
+                The coupon "{itemName}" will be removed. This action cannot be undone.
+              </>
+            )}
+          </>
+        )
+      }
+
       return (
         <>
           {language === 'km' && (

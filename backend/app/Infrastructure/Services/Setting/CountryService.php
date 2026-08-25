@@ -2,44 +2,11 @@
 
 namespace App\Infrastructure\Services\Setting;
 
-use App\Infrastructure\Repositories\Setting\CountryRepository;
-use App\Models\Setting\Country;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use App\Services\Setting\CountryService as BaseCountryService;
 
-class CountryService
+/**
+ * Compatibility bridge to App\Services\Setting\CountryService
+ */
+class CountryService extends BaseCountryService
 {
-    public function __construct(private readonly CountryRepository $repository)
-    {
-    }
-
-    public function getAll(array $relations = []): Collection
-    {
-        return $this->repository->all(relations: $relations);
-    }
-
-    public function getPaginated(int $perPage = 15, array $relations = []): LengthAwarePaginator
-    {
-        return $this->repository->paginate($perPage, relations: $relations);
-    }
-
-    public function getById(int|string $id, array $relations = []): Country
-    {
-        return $this->repository->findById($id, relations: $relations);
-    }
-
-    public function create(array $data): Country
-    {
-        return $this->repository->create($data);
-    }
-
-    public function update(int|string $id, array $data): Country
-    {
-        return $this->repository->update($id, $data);
-    }
-
-    public function delete(int|string $id): bool
-    {
-        return $this->repository->delete($id);
-    }
 }

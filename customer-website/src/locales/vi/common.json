@@ -1,10 +1,15 @@
 {
   "common.view_all": "Xem tất cả",
+  "common.view_all_products": "Xem tất cả sản phẩm",
+  "common.view_all_in": "Xem tất cả trong",
+  "common.explore_promotion": "Khám phá khuyến mãi",
   "common.see_more": "Khám phá thêm",
   "common.loading": "Đang tải dữ liệu...",
   "common.no_products": "Không tìm thấy sản phẩm.",
   "common.no_categories": "Không có danh mục nào.",
   "common.no_items": "Chưa có dữ liệu vào lúc này.",
   "common.try_again": "Thử lại",
-  "common.items": "sản phẩm"
+  "common.items": "sản phẩm",
+  "common.products": "Sản phẩm",
+  "common.total": "Tổng cộng"
 }

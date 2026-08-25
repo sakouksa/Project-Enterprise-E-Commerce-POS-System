@@ -1,59 +1,113 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Enterprise E-Commerce + POS Backend (Laravel)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+An enterprise-grade RESTful API backend powering a Multi-Outlet Point of Sale (POS), E-Commerce Storefront, and ERP back-office platform built on Laravel and PostgreSQL.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🏛 Architecture & Principles
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The backend is built following **Clean Architecture & Domain-Driven Design (DDD)** with **Strict Consumer Separation**:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
+                           API CONSUMERS (Presentation)
+                                 │
+         ┌───────────────────────┼───────────────────────┐
+         │                       │                       │
+         ▼                       ▼                       ▼
+    ADMIN API              CUSTOMER API              MOBILE API
+  (/api/v1/admin/*)       (/api/v1/customer/*)    (/api/v1/mobile/*)
+  • Back-Office ERP       • Storefront Website    • POS Cashier App
+  • Financials & Reports  • Cart & Checkout       • Inventory Barcode
+  • Catalog Management    • Order Tracking        • Staff Mobile
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                     UNIFIED SERVICES LAYER (Core Logic)
+         ┌─────────────────────────────────────────────────────────┐
+         │ • InventoryService (Stock concurrency locking, rules)   │
+         │ • PricingService (Tax, coupons, discounts calculation)  │
+         │ • SaleService (POS transaction, invoice generation)     │
+         │ • OrderService (Order lifecycle & state transitions)    │
+         │ • ProductService, PurchaseService, CustomerService, ... │
+         └─────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+                     UNIFIED REPOSITORIES LAYER (Data Access)
+         ┌─────────────────────────────────────────────────────────┐
+         │ • BaseRepository (Eloquent CRUD, Pagination, SoftDelete)│
+         │ • Domain Repositories (Order, Product, Inventory, etc.) │
+         └─────────────────────────────────────────────────────────┘
+```
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 📁 Directory Structure
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+backend/app/
+├── Http/
+│   ├── Controllers/Api/V1/
+│   │   ├── Admin/             # Admin Dashboard & ERP back-office endpoints
+│   │   ├── Auth/              # Authentication, JWT tokens, profile security
+│   │   └── Customer/          # Customer storefront (Cart, Wishlist, Orders, Reviews)
+│   ├── Requests/{Domain}/     # Form Request validation rules
+│   ├── Resources/{Domain}/    # JSON API response transformers
+│   └── Middleware/            # Auth guards, localization, permission interceptors
+├── Models/{Domain}/           # Eloquent ORM persistence models
+├── Services/{Domain}/         # Core business logic, stock math, transaction engines
+├── Repositories/{Domain}/     # Database query abstractions & BaseRepository
+├── Jobs/                      # Queued background tasks
+├── Events/ & Listeners/       # Domain event listeners & notifications
+└── Policies/                  # Spatie role & permission policies
+```
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🚀 Quick Start
 
-### Premium Partners
+### Prerequisites
+- PHP 8.2+
+- Composer 2+
+- PostgreSQL 15+
+- Redis (optional, recommended for production queues)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Setup Instructions
+```bash
+# 1. Install dependencies
+composer install
 
-## Contributing
+# 2. Configure environment
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 3. Run database migrations & seeders
+php artisan migrate --seed
 
-## Code of Conduct
+# 4. Start local development server
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 🧪 Testing & Verification
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+# Run automated test suite
+php artisan test
 
-## License
+# Check PHP syntax validity across all files
+find app config database routes tests -name "*.php" -print0 | xargs -0 -n 1 php -l
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# List all registered routes
+php artisan route:list
+```
+
+---
+
+## 📖 Documentation
+Detailed technical documentation is available in the root `docs/` folder:
+- [Architecture Guide](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/backend/01-architecture.md)
+- [Folder Structure](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/backend/02-folder-structure.md)
+- [API Architecture & Routing](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/backend/03-api-architecture.md)
+- [Clean Architecture Refactor Report](file:///Users/macbook/Workspace/projects/showcase/Project-Enterprise-E-Commerce-POS-System/docs/backend/04-clean-architecture-refactor-report.md)

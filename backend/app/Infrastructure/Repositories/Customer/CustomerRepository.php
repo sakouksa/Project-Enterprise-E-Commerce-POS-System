@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Customer;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Customer\Customer;
+use App\Repositories\Customer\CustomerRepository as BaseCustomerRepository;
 
-class CustomerRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Customer\CustomerRepository
+ */
+class CustomerRepository extends BaseCustomerRepository
 {
-    public function __construct(Customer $model)
-    {
-        parent::__construct($model);
-    }
 }

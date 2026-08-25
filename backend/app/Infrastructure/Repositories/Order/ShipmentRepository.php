@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Order;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Order\Shipment;
+use App\Repositories\Order\ShipmentRepository as BaseShipmentRepository;
 
-class ShipmentRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Order\ShipmentRepository
+ */
+class ShipmentRepository extends BaseShipmentRepository
 {
-    public function __construct(Shipment $model)
-    {
-        parent::__construct($model);
-    }
 }

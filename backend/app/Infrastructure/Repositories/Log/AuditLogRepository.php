@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Log;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Log\AuditLog;
+use App\Repositories\Log\AuditLogRepository as BaseAuditLogRepository;
 
-class AuditLogRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Log\AuditLogRepository
+ */
+class AuditLogRepository extends BaseAuditLogRepository
 {
-    public function __construct(AuditLog $model)
-    {
-        parent::__construct($model);
-    }
 }

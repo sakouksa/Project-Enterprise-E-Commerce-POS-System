@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\Auth\ProfileResource;
-use App\Infrastructure\Services\Auth\ProfileService;
+use App\Services\Auth\ProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

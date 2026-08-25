@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Setting;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Setting\Country;
+use App\Repositories\Setting\CountryRepository as BaseCountryRepository;
 
-class CountryRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Setting\CountryRepository
+ */
+class CountryRepository extends BaseCountryRepository
 {
-    public function __construct(Country $model)
-    {
-        parent::__construct($model);
-    }
 }

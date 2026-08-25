@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Order;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Order\Wishlist;
+use App\Repositories\Order\WishlistRepository as BaseWishlistRepository;
 
-class WishlistRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Order\WishlistRepository
+ */
+class WishlistRepository extends BaseWishlistRepository
 {
-    public function __construct(Wishlist $model)
-    {
-        parent::__construct($model);
-    }
 }

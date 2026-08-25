@@ -72,13 +72,13 @@ export function calculateDiscountPercent(price: number, comparePrice?: number): 
 export type MediaFallbackType = 'product' | 'avatar' | 'brand' | 'category' | 'banner' | 'company' | 'general'
 
 export const DEFAULT_FALLBACKS: Record<MediaFallbackType, string> = {
-  product: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-  brand: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=300&auto=format&fit=crop&q=80',
-  category: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&auto=format&fit=crop&q=80',
-  banner: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80',
+  product: '/images/placeholder-product.png',
+  avatar: '/images/placeholder-product.png',
+  brand: '/logo.png',
+  category: '/images/placeholder-product.png',
+  banner: '/images/placeholder-product.png',
   company: '/logo.png',
-  general: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&auto=format&fit=crop&q=80',
+  general: '/images/placeholder-product.png',
 }
 
 export function getImageUrl(path?: any): string {

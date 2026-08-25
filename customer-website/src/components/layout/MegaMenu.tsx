@@ -38,9 +38,9 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             {/* ── Left Column: Categories List ──────────────────────────── */}
             <div className="col-span-3 border-r border-slate-100 dark:border-slate-800 pr-4 space-y-1">
               <div className="px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 mb-2">
-                <span>{t('nav.all_categories', 'Enterprise Categories')}</span>
+                <span>{t('nav.all_categories', 'All Categories')}</span>
                 <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">
-                  {categories.length} Total
+                  {categories.length} {t('common.total', 'Total')}
                 </span>
               </div>
 
@@ -100,10 +100,10 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                     <div>
                       <h4 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                         {getCategoryIconElement(activeCategory.slug)}
-                        <span>{activeCategory.name} Catalog</span>
+                        <span>{activeCategory.name} {t('nav.catalog', 'Catalog')}</span>
                       </h4>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {activeCategory.description || 'Explore official products with guaranteed authenticity'}
+                        {activeCategory.description || t('nav.genuine_tech_warranty', '100% Genuine Tech with Official Warranty')}
                       </p>
                     </div>
 
@@ -112,7 +112,7 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                       onClick={onClose}
                       className="flex items-center gap-1 text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700"
                     >
-                      <span>View All in {activeCategory.name}</span>
+                      <span>{t('common.view_all_in', 'View All in')} {activeCategory.name}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
@@ -131,7 +131,7 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                             {sub.name}
                           </span>
                           <span className="text-[10px] text-slate-400 mt-1">
-                            {sub.products_count ?? 0} Products
+                            {sub.products_count ?? 0} {t('common.items', 'items')}
                           </span>
                         </Link>
                       ))
@@ -142,21 +142,21 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                           onClick={onClose}
                           className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50/60 border border-slate-100 dark:border-slate-800 transition-all text-xs font-bold text-slate-700 dark:text-slate-300"
                         >
-                          💸 Best Value Models
+                          💸 {t('nav.best_value_models', 'Best Value Models')}
                         </Link>
                         <Link
                           to={`/products?category=${activeCategory.slug}&sort=deals`}
                           onClick={onClose}
                           className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-rose-50/60 border border-slate-100 dark:border-slate-800 transition-all text-xs font-bold text-rose-600 dark:text-rose-400"
                         >
-                          🔥 Discount Deals
+                          🔥 {t('nav.discount_deals', 'Discount Deals')}
                         </Link>
                         <Link
                           to={`/products?category=${activeCategory.slug}&sort=newest`}
                           onClick={onClose}
                           className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50/60 border border-slate-100 dark:border-slate-800 transition-all text-xs font-bold text-emerald-600 dark:text-emerald-400"
                         >
-                          ✨ New 2026 Releases
+                          ✨ {t('nav.new_2026_releases', 'New 2026 Releases')}
                         </Link>
                       </>
                     )}
@@ -169,7 +169,7 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             <div className="col-span-3 border-l border-slate-100 dark:border-slate-800 pl-4 space-y-4">
               <div>
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between mb-2">
-                  <span>{t('nav.featured_brands', 'Official Brands')}</span>
+                  <span>{t('nav.official_brands', 'Official Brands')}</span>
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 </div>
 
@@ -193,15 +193,17 @@ export const MegaMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               {/* Promo Banner Card inside Mega Menu */}
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#2C376B] to-slate-900 text-white shadow-lg space-y-2">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-blue-300">
-                  Enterprise Warranty
+                  {t('nav.enterprise_warranty', 'Enterprise Warranty')}
                 </div>
-                <div className="text-xs font-black">100% Genuine Tech with Official Warranty</div>
+                <div className="text-xs font-black">
+                  {t('nav.genuine_tech_warranty', '100% Genuine Tech with Official Warranty')}
+                </div>
                 <Link
                   to="/products?sort=deals"
                   onClick={onClose}
                   className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:underline pt-1"
                 >
-                  <span>Explore Special Promotions</span>
+                  <span>{t('nav.explore_special_promotions', 'Explore Special Promotions')}</span>
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>

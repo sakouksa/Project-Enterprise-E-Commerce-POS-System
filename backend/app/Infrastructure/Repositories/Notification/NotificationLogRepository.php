@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Notification;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Notification\NotificationLog;
+use App\Repositories\Notification\NotificationLogRepository as BaseNotificationLogRepository;
 
-class NotificationLogRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Notification\NotificationLogRepository
+ */
+class NotificationLogRepository extends BaseNotificationLogRepository
 {
-    public function __construct(NotificationLog $model)
-    {
-        parent::__construct($model);
-    }
 }

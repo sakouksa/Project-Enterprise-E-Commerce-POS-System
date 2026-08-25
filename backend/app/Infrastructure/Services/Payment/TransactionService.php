@@ -2,44 +2,11 @@
 
 namespace App\Infrastructure\Services\Payment;
 
-use App\Infrastructure\Repositories\Payment\TransactionRepository;
-use App\Models\Payment\Transaction;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use App\Services\Payment\TransactionService as BaseTransactionService;
 
-class TransactionService
+/**
+ * Compatibility bridge to App\Services\Payment\TransactionService
+ */
+class TransactionService extends BaseTransactionService
 {
-    public function __construct(private readonly TransactionRepository $repository)
-    {
-    }
-
-    public function getAll(array $relations = []): Collection
-    {
-        return $this->repository->all(relations: $relations);
-    }
-
-    public function getPaginated(int $perPage = 15, array $relations = []): LengthAwarePaginator
-    {
-        return $this->repository->paginate($perPage, relations: $relations);
-    }
-
-    public function getById(int|string $id, array $relations = []): Transaction
-    {
-        return $this->repository->findById($id, relations: $relations);
-    }
-
-    public function create(array $data): Transaction
-    {
-        return $this->repository->create($data);
-    }
-
-    public function update(int|string $id, array $data): Transaction
-    {
-        return $this->repository->update($id, $data);
-    }
-
-    public function delete(int|string $id): bool
-    {
-        return $this->repository->delete($id);
-    }
 }

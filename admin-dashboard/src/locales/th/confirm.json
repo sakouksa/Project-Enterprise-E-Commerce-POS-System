@@ -1,8 +1,9 @@
 {
-  "confirmDelete": "ยืนยันการลบ",
-  "deleteMessage": "คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?",
   "deleteTitle": "ยืนยันการลบ",
-  "confirm.confirmDelete": "Confirm Delete",
-  "confirm.deleteMessage": "Delete Message",
-  "confirm.deleteTitle": "Delete Title"
+  "deleteMessage": "คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้",
+  "confirmDelete": "ลบ",
+  "cancel": "ยกเลิก",
+  "bulkDeleteTitle": "ลบรายการที่เลือก",
+  "bulkDeleteMessage": "คุณแน่ใจหรือไม่ว่าต้องการลบรายการที่เลือกจำนวน {{count}} รายการ? การดำเนินการนี้ไม่สามารถยกเลิกได้",
+  "warningText": "รายการนี้จะถูกลบออกจากระบบ การดำเนินการนี้ไม่สามารถยกเลิกได้"
 }

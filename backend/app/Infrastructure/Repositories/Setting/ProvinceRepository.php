@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Setting;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Setting\Province;
+use App\Repositories\Setting\ProvinceRepository as BaseProvinceRepository;
 
-class ProvinceRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Setting\ProvinceRepository
+ */
+class ProvinceRepository extends BaseProvinceRepository
 {
-    public function __construct(Province $model)
-    {
-        parent::__construct($model);
-    }
 }

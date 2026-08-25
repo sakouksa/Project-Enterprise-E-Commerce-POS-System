@@ -153,5 +153,10 @@
   "feed.load_error": "ไม่สามารถโหลดสินค้าเพิ่มเติมได้",
   "feed.retry": "ลองใหม่อีกครั้ง",
   "feed.back_to_top": "กลับสู่ด้านบน",
-  "feed.showing_count": "แสดง {{count}} จาก {{total}} รายการ"
+  "feed.showing_count": "แสดง {{count}} จาก {{total}} รายการ",
+  "popup.exclusive_offer": "ข้อเสนอสุดพิเศษ",
+  "popup.limited_time": "โปรโมชั่นมีเวลาจำกัด พร้อมบริการจัดส่งทั่ว 25 จังหวัด",
+  "popup.shop_now": "ซื้อเลยตอนนี้",
+  "popup.dont_show_today": "ไม่ต้องแสดงโปรโมชั่นนี้อีกในวันนี้",
+  "popup.close": "ปิด"
 }

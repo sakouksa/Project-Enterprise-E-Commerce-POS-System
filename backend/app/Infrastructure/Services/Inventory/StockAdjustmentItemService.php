@@ -2,44 +2,11 @@
 
 namespace App\Infrastructure\Services\Inventory;
 
-use App\Infrastructure\Repositories\Inventory\StockAdjustmentItemRepository;
-use App\Models\Inventory\StockAdjustmentItem;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use App\Services\Inventory\StockAdjustmentItemService as BaseStockAdjustmentItemService;
 
-class StockAdjustmentItemService
+/**
+ * Compatibility bridge to App\Services\Inventory\StockAdjustmentItemService
+ */
+class StockAdjustmentItemService extends BaseStockAdjustmentItemService
 {
-    public function __construct(private readonly StockAdjustmentItemRepository $repository)
-    {
-    }
-
-    public function getAll(array $relations = []): Collection
-    {
-        return $this->repository->all(relations: $relations);
-    }
-
-    public function getPaginated(int $perPage = 15, array $relations = []): LengthAwarePaginator
-    {
-        return $this->repository->paginate($perPage, relations: $relations);
-    }
-
-    public function getById(int|string $id, array $relations = []): StockAdjustmentItem
-    {
-        return $this->repository->findById($id, relations: $relations);
-    }
-
-    public function create(array $data): StockAdjustmentItem
-    {
-        return $this->repository->create($data);
-    }
-
-    public function update(int|string $id, array $data): StockAdjustmentItem
-    {
-        return $this->repository->update($id, $data);
-    }
-
-    public function delete(int|string $id): bool
-    {
-        return $this->repository->delete($id);
-    }
 }

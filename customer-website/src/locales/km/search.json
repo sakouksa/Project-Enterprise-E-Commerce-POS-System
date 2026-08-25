@@ -4,5 +4,10 @@
   "search.by_sku": "ស្វែងរកតាម SKU",
   "search.placeholder_ai": "ស្វែងរកតាម AI (ឧ. RTX 4060, Laptop Gaming, Apple M3)...",
   "search.placeholder_name": "ស្វែងរកតាមឈ្មោះទំនិញ (ឧ. MacBook Pro, ASUS ROG)...",
-  "search.placeholder_sku": "ស្វែងរកតាមលេខកូដ SKU ឬ Barcode (ឧ. LAP-2026-X1)..."
+  "search.placeholder_sku": "ស្វែងរកតាមលេខកូដ SKU ឬ Barcode (ឧ. LAP-2026-X1)...",
+  "search.filter_mode": "ទម្រង់ស្វែងរក",
+  "search.searching_with": "កំពុងស្វែងរកទំនិញជាមួយ",
+  "search.see_all_results_for": "មើលលទ្ធផលទាំងអស់សម្រាប់",
+  "search.recent_searches": "ការស្វែងរកថ្មីៗ",
+  "search.clear": "សម្អាត"
 }

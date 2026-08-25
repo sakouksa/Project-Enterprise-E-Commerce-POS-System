@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Expense;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Expense\ExpenseCategory;
+use App\Repositories\Expense\ExpenseCategoryRepository as BaseExpenseCategoryRepository;
 
-class ExpenseCategoryRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Expense\ExpenseCategoryRepository
+ */
+class ExpenseCategoryRepository extends BaseExpenseCategoryRepository
 {
-    public function __construct(ExpenseCategory $model)
-    {
-        parent::__construct($model);
-    }
 }

@@ -2,56 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Employee;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Employee\Attendance;
+use App\Repositories\Employee\AttendanceRepository as BaseAttendanceRepository;
 
-class AttendanceRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Employee\AttendanceRepository
+ */
+class AttendanceRepository extends BaseAttendanceRepository
 {
-    public function __construct(Attendance $model)
-    {
-        parent::__construct($model);
-    }
-
-    public function paginateWithFilters(
-        array $filters = [],
-        int $perPage = 10,
-        string $sort = 'date',
-        string $order = 'desc'
-    ): \Illuminate\Pagination\LengthAwarePaginator {
-        $query = $this->model
-            ->with([
-                'employee:id,name,employee_number,photo,department_id,position_id',
-                'employee.department:id,name',
-                'employee.position:id,name'
-            ])
-            ->when($filters['search'] ?? null, function ($q, $search) {
-                $q->whereHas('employee', function ($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%")
-                       ->orWhere('employee_number', 'like', "%{$search}%");
-                });
-            })
-            ->when($filters['company_id'] ?? null, function ($q, $v) {
-                $q->whereHas('employee', fn($sq) => $sq->where('company_id', $v));
-            })
-            ->when($filters['branch_id'] ?? null, function ($q, $v) {
-                $q->whereHas('employee', fn($sq) => $sq->where('branch_id', $v));
-            })
-            ->when($filters['department_id'] ?? null, function ($q, $v) {
-                $q->whereHas('employee', fn($sq) => $sq->where('department_id', $v));
-            })
-            ->when($filters['position_id'] ?? null, function ($q, $v) {
-                $q->whereHas('employee', fn($sq) => $sq->where('position_id', $v));
-            })
-            ->when($filters['employee_id'] ?? null, fn($q, $v) => $q->where('employee_id', $v))
-            ->when($filters['date'] ?? null, fn($q, $v) => $q->where('date', $v))
-            ->when($filters['date_start'] ?? null, fn($q, $v) => $q->where('date', '>=', $v))
-            ->when($filters['date_end'] ?? null, fn($q, $v) => $q->where('date', '<=', $v))
-            ->when($filters['status'] ?? null, fn($q, $v) => $q->where('status', $v));
-
-        $allowedSorts = ['date', 'check_in', 'check_out', 'status', 'created_at'];
-        $sort = in_array($sort, $allowedSorts) ? $sort : 'date';
-
-        return $query->orderBy($sort, $order === 'asc' ? 'asc' : 'desc')
-                     ->paginate($perPage);
-    }
 }

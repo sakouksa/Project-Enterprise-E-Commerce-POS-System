@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Inventory;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Inventory\StockTransferItem;
+use App\Repositories\Inventory\StockTransferItemRepository as BaseStockTransferItemRepository;
 
-class StockTransferItemRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Inventory\StockTransferItemRepository
+ */
+class StockTransferItemRepository extends BaseStockTransferItemRepository
 {
-    public function __construct(StockTransferItem $model)
-    {
-        parent::__construct($model);
-    }
 }

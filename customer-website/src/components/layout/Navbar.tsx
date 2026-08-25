@@ -25,6 +25,7 @@ export const Navbar: React.FC = () => {
   const [trackOpen, setTrackOpen] = useState(false)
   const [warrantyOpen, setWarrantyOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
+  const megaTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Use global custom hook for official brands
   const { data: dbBrands = [] } = useBrands()
@@ -41,6 +42,18 @@ export const Navbar: React.FC = () => {
   const isDeals = location.search.includes('sort=deals')
   const topBrands = dbBrands.slice(0, 10)
 
+  const handleMegaEnter = () => {
+    if (megaTimerRef.current) clearTimeout(megaTimerRef.current)
+    setMegaOpen(true)
+  }
+
+  const handleMegaLeave = () => {
+    if (megaTimerRef.current) clearTimeout(megaTimerRef.current)
+    megaTimerRef.current = setTimeout(() => {
+      setMegaOpen(false)
+    }, 180)
+  }
+
   return (
     <>
       <div
@@ -50,21 +63,27 @@ export const Navbar: React.FC = () => {
         <div className="container-site flex items-center h-12">
           {/* ── Continuous Navigation Links Row (Clean & Fit without scrolling) ── */}
           <div className="flex items-center gap-0.5 xl:gap-1.5 w-full flex-nowrap text-xs xl:text-[13px] font-bold">
-            {/* 1. ALL CATEGORIES Mega Menu Button */}
-            <button
-              onClick={() => setMegaOpen(!megaOpen)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 bg-[#2C376B] hover:bg-[#202952] text-white text-xs font-black uppercase tracking-wider transition-all rounded-lg shadow-xs mr-1 cursor-pointer flex-shrink-0',
-                megaOpen && 'bg-blue-700'
-              )}
-              title={t('nav.all_categories', 'All Categories')}
+            {/* 1. ALL CATEGORIES Mega Menu Button with Hover & Click Support */}
+            <div
+              onMouseEnter={handleMegaEnter}
+              onMouseLeave={handleMegaLeave}
+              className="relative flex-shrink-0 mr-1"
             >
-              <Menu className="w-4 h-4 flex-shrink-0" />
-              <span className="whitespace-nowrap">{t('nav.all_categories', 'All Categories')}</span>
-              <ChevronDown
-                className={cn('w-3.5 h-3.5 transition-transform duration-200 flex-shrink-0', megaOpen && 'rotate-180')}
-              />
-            </button>
+              <button
+                onClick={() => setMegaOpen(!megaOpen)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2 bg-[#2C376B] hover:bg-[#202952] text-white text-xs font-black uppercase tracking-wider transition-all rounded-lg shadow-xs cursor-pointer',
+                  megaOpen && 'bg-blue-700'
+                )}
+                title={t('nav.all_categories', 'All Categories')}
+              >
+                <Menu className="w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">{t('nav.all_categories', 'All Categories')}</span>
+                <ChevronDown
+                  className={cn('w-3.5 h-3.5 transition-transform duration-200 flex-shrink-0', megaOpen && 'rotate-180')}
+                />
+              </button>
+            </div>
 
             {/* 2. HOME */}
             <Link
@@ -246,7 +265,9 @@ export const Navbar: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                   <div>
                     <div>{t('nav.warranty_check', 'Warranty Check')}</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Check serial number validity</div>
+                    <div className="text-[10px] text-slate-400 font-normal">
+                      {t('nav.warranty_check_sub', 'Check serial number validity')}
+                    </div>
                   </div>
                 </button>
                 <button
@@ -256,7 +277,9 @@ export const Navbar: React.FC = () => {
                   <Package className="w-4 h-4 text-blue-500 flex-shrink-0" />
                   <div>
                     <div>{t('nav.track_order', 'Track Order')}</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Live delivery tracking</div>
+                    <div className="text-[10px] text-slate-400 font-normal">
+                      {t('nav.track_order_sub', 'Live delivery tracking')}
+                    </div>
                   </div>
                 </button>
                 <Link
@@ -317,8 +340,10 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Full Category Mega Menu Flyout */}
-        <MegaMenu isOpen={megaOpen} onClose={() => setMegaOpen(false)} />
+        {/* Full Category Mega Menu Flyout with Hover enter/leave support */}
+        <div onMouseEnter={handleMegaEnter} onMouseLeave={handleMegaLeave}>
+          <MegaMenu isOpen={megaOpen} onClose={() => setMegaOpen(false)} />
+        </div>
       </div>
 
       <TrackOrderModal isOpen={trackOpen} onClose={() => setTrackOpen(false)} />

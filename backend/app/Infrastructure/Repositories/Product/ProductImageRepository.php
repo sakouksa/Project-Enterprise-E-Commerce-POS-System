@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\ProductImage;
+use App\Repositories\Product\ProductImageRepository as BaseProductImageRepository;
 
-class ProductImageRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Product\ProductImageRepository
+ */
+class ProductImageRepository extends BaseProductImageRepository
 {
-    public function __construct(ProductImage $model)
-    {
-        parent::__construct($model);
-    }
 }

@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Shipping;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Shipping\ShippingRate;
+use App\Repositories\Shipping\ShippingRateRepository as BaseShippingRateRepository;
 
-class ShippingRateRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Shipping\ShippingRateRepository
+ */
+class ShippingRateRepository extends BaseShippingRateRepository
 {
-    public function __construct(ShippingRate $model)
-    {
-        parent::__construct($model);
-    }
 }

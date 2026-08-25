@@ -2,44 +2,11 @@
 
 namespace App\Infrastructure\Services\Order;
 
-use App\Infrastructure\Repositories\Order\CartItemRepository;
-use App\Models\Order\CartItem;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use App\Services\Order\CartItemService as BaseCartItemService;
 
-class CartItemService
+/**
+ * Compatibility bridge to App\Services\Order\CartItemService
+ */
+class CartItemService extends BaseCartItemService
 {
-    public function __construct(private readonly CartItemRepository $repository)
-    {
-    }
-
-    public function getAll(array $relations = []): Collection
-    {
-        return $this->repository->all(relations: $relations);
-    }
-
-    public function getPaginated(int $perPage = 15, array $relations = []): LengthAwarePaginator
-    {
-        return $this->repository->paginate($perPage, relations: $relations);
-    }
-
-    public function getById(int|string $id, array $relations = []): CartItem
-    {
-        return $this->repository->findById($id, relations: $relations);
-    }
-
-    public function create(array $data): CartItem
-    {
-        return $this->repository->create($data);
-    }
-
-    public function update(int|string $id, array $data): CartItem
-    {
-        return $this->repository->update($id, $data);
-    }
-
-    public function delete(int|string $id): bool
-    {
-        return $this->repository->delete($id);
-    }
 }

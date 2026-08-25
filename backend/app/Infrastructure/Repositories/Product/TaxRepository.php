@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\Tax;
+use App\Repositories\Product\TaxRepository as BaseTaxRepository;
 
-class TaxRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Product\TaxRepository
+ */
+class TaxRepository extends BaseTaxRepository
 {
-    public function __construct(Tax $model)
-    {
-        parent::__construct($model);
-    }
 }

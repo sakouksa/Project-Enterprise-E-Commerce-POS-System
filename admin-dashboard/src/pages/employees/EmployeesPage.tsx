@@ -13,6 +13,13 @@ import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import {
+  HeaderActionsGroup,
+  AddButton,
+  ExportButton,
+  ImportButton,
+  QrKioskButton,
+} from '@/components/common'
 import WorkspaceTabs, { type WorkspaceTabItem } from '@/components/shared/WorkspaceTabs'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import { getAbsoluteImageUrl } from '@/utils/image'
@@ -692,39 +699,27 @@ const EmployeesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2.5">
-          <button
+        <HeaderActionsGroup>
+          <QrKioskButton
             onClick={() => setKioskModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 transition-all duration-200 cursor-pointer shadow-xs"
-          >
-            <QrCode size={16} />
-            <span>{t('employees.launch_qr_kiosk', 'QR Kiosk')}</span>
-          </button>
+            label={t('employees.launch_qr_kiosk', 'បើក QR Kiosk')}
+          />
 
-          <button
+          <ImportButton
             onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 hover:bg-muted/80 dark:hover:bg-slate-800 text-foreground dark:text-slate-200 transition-all duration-200 cursor-pointer shadow-xs"
-          >
-            <Upload size={16} />
-            <span>{t('employees.import_csv', 'នាំចូល CSV')}</span>
-          </button>
+            label={t('employees.import_csv', 'នាំចូល CSV')}
+          />
 
-          <button
+          <ExportButton
             onClick={handleExport}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 hover:bg-muted/80 dark:hover:bg-slate-800 text-foreground dark:text-slate-200 transition-all duration-200 cursor-pointer shadow-xs"
-          >
-            <Download size={16} />
-            <span>{t('employees.export_csv', 'នាំចេញ CSV')}</span>
-          </button>
+            label={t('employees.export_csv', 'នាំចេញ CSV')}
+          />
 
-          <button
+          <AddButton
             onClick={() => openCreateModal()}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200 cursor-pointer"
-          >
-            <Plus size={16} />
-            <span>{activeTab === 'attendance' ? t('employees.add_attendance', 'Add Attendance') : t('employees.add_employee', 'Add Employee')}</span>
-          </button>
-        </div>
+            label={activeTab === 'attendance' ? t('employees.add_attendance', 'កត់ត្រាវត្តមានថ្មី') : t('employees.add_employee', 'បន្ថែមបុគ្គលិក')}
+          />
+        </HeaderActionsGroup>
       </div>
 
       {/* Summary KPI Cards */}

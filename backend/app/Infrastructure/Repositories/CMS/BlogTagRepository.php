@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\CMS;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\CMS\BlogTag;
+use App\Repositories\CMS\BlogTagRepository as BaseBlogTagRepository;
 
-class BlogTagRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\CMS\BlogTagRepository
+ */
+class BlogTagRepository extends BaseBlogTagRepository
 {
-    public function __construct(BlogTag $model)
-    {
-        parent::__construct($model);
-    }
 }

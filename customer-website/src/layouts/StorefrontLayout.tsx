@@ -7,6 +7,7 @@ import CartDrawer from '@/components/layout/CartDrawer'
 import MobileBottomNav from '@/components/layout/MobileBottomNav'
 import ScrollToTop from '@/components/common/ScrollToTop'
 import OfflineBanner from '@/components/common/OfflineBanner'
+import PromoBannerPopup from '@/components/common/PromoBannerPopup'
 import { useCartStore } from '@/stores/cartStore'
 import { WEBSITE_SCHEMA, ORGANIZATION_SCHEMA } from '@/components/seo/SEOHead'
 import api from '@/lib/api'
@@ -46,6 +47,7 @@ const StorefrontLayout: React.FC = () => {
         <CartDrawer />
         <MobileBottomNav />
         <ScrollToTop />
+        <PromoBannerPopup />
       </div>
     </>
   )

@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\AttributeValue;
+use App\Repositories\Product\AttributeValueRepository as BaseAttributeValueRepository;
 
-class AttributeValueRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Product\AttributeValueRepository
+ */
+class AttributeValueRepository extends BaseAttributeValueRepository
 {
-    public function __construct(AttributeValue $model)
-    {
-        parent::__construct($model);
-    }
 }

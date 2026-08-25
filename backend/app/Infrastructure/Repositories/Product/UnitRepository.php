@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Product;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Product\Unit;
+use App\Repositories\Product\UnitRepository as BaseUnitRepository;
 
-class UnitRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Product\UnitRepository
+ */
+class UnitRepository extends BaseUnitRepository
 {
-    public function __construct(Unit $model)
-    {
-        parent::__construct($model);
-    }
 }

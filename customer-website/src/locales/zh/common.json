@@ -1,10 +1,15 @@
 {
   "common.view_all": "查看全部",
+  "common.view_all_products": "查看全部商品",
+  "common.view_all_in": "查看全部于",
+  "common.explore_promotion": "探索特惠活动",
   "common.see_more": "探索更多",
   "common.loading": "加载中...",
   "common.no_products": "未找到相关商品。",
   "common.no_categories": "暂无商品分类。",
   "common.no_items": "暂无数据展示。",
   "common.try_again": "重试",
-  "common.items": "件商品"
+  "common.items": "件商品",
+  "common.products": "件商品",
+  "common.total": "总计"
 }

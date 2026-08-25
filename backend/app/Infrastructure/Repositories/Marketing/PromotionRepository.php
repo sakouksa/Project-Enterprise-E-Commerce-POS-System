@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Marketing;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Marketing\Promotion;
+use App\Repositories\Marketing\PromotionRepository as BasePromotionRepository;
 
-class PromotionRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Marketing\PromotionRepository
+ */
+class PromotionRepository extends BasePromotionRepository
 {
-    public function __construct(Promotion $model)
-    {
-        parent::__construct($model);
-    }
 }

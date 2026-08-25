@@ -3,9 +3,17 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Infrastructure\Repositories\Product\ProductRepository;
-use App\Infrastructure\Services\Auth\AuthService;
-use App\Infrastructure\Services\Product\ProductService;
+use App\Repositories\Product\ProductRepository;
+use App\Repositories\Product\CategoryRepository;
+use App\Repositories\Auth\ProfileRepository;
+use App\Repositories\Order\OrderRepository;
+use App\Services\Auth\AuthService;
+use App\Services\Auth\ProfileService;
+use App\Services\Product\ProductService;
+use App\Services\Inventory\InventoryService;
+use App\Services\Sales\PricingService;
+use App\Services\Sales\SaleService;
+use App\Services\Order\OrderService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,27 +28,51 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(AuthService::class, AuthService::class);
         $this->app->singleton(
             \App\Domain\Contracts\Repositories\Auth\ProfileRepositoryInterface::class,
-            \App\Infrastructure\Repositories\Auth\ProfileRepository::class
+            ProfileRepository::class
         );
-        $this->app->singleton(\App\Infrastructure\Services\Auth\ProfileService::class, \App\Infrastructure\Services\Auth\ProfileService::class);
+        $this->app->singleton(ProfileService::class, ProfileService::class);
 
         // ─── Product ──────────────────────────────────────────────────────────
         $this->app->singleton(
             \App\Domain\Contracts\Repositories\Product\ProductRepositoryInterface::class,
-            \App\Infrastructure\Repositories\Product\ProductRepository::class
+            ProductRepository::class
         );
         $this->app->singleton(
             \App\Domain\Contracts\Repositories\Product\CategoryRepositoryInterface::class,
-            \App\Infrastructure\Repositories\Product\CategoryRepository::class
+            CategoryRepository::class
         );
         $this->app->singleton(ProductService::class, ProductService::class);
 
         // ─── Order ────────────────────────────────────────────────────────────
         $this->app->singleton(
             \App\Domain\Contracts\Repositories\Order\OrderRepositoryInterface::class,
-            \App\Infrastructure\Repositories\Order\OrderRepository::class
+            OrderRepository::class
         );
         $this->app->singleton(OrderService::class, OrderService::class);
+
+        // ─── Unified Domain / Application Services ────────────────────────────
+        $this->app->singleton(InventoryService::class, InventoryService::class);
+        $this->app->singleton(PricingService::class, PricingService::class);
+        $this->app->singleton(SaleService::class, SaleService::class);
+
+        // ─── Legacy / Compatibility Bridges ──────────────────────────────────
+        $this->app->singleton(\App\Domain\Inventory\Services\InventoryService::class, function ($app) {
+            return $app->make(InventoryService::class);
+        });
+        $this->app->singleton(\App\Domain\Sales\Services\PricingService::class, function ($app) {
+            return $app->make(PricingService::class);
+        });
+        $this->app->singleton(\App\Infrastructure\Services\Auth\AuthService::class, function ($app) {
+            return $app->make(AuthService::class);
+        });
+        $this->app->singleton(\App\Infrastructure\Services\Product\ProductService::class, function ($app) {
+            return $app->make(ProductService::class);
+        });
+
+        // ─── Application Actions (Use Cases) ──────────────────────────────────
+        $this->app->singleton(\App\Application\Purchase\ReceivePurchaseAction::class);
+        $this->app->singleton(\App\Application\Sales\CreateSaleAction::class);
+        $this->app->singleton(\App\Application\Order\CheckoutAction::class);
     }
 
     public function boot(): void

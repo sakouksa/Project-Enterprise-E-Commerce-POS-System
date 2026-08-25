@@ -1,8 +1,13 @@
 {
   "search.ai_search": "AI 智能搜索",
   "search.by_name": "按名称搜索",
-  "search.by_sku": "按SKU搜索",
-  "search.placeholder_ai": "AI 智能搜索 (例如 RTX 4060, 游戏本, Apple M3)...",
-  "search.placeholder_name": "按商品名称搜索 (例如 MacBook Pro, 华硕天选)...",
-  "search.placeholder_sku": "输入SKU编号或条形码 (例如 LAP-2026-X1)..."
+  "search.by_sku": "按 SKU 搜索",
+  "search.placeholder_ai": "AI 智能搜索（例如：RTX 4060、Apple M3、游戏笔记本）...",
+  "search.placeholder_name": "输入商品名称搜索（例如：MacBook Pro、华硕天选）...",
+  "search.placeholder_sku": "输入 SKU 或条形码搜索（例如：LAP-2026-X1）...",
+  "search.filter_mode": "搜索筛选模式",
+  "search.searching_with": "正在使用以下模式搜索商品：",
+  "search.see_all_results_for": "查看全部搜索结果：",
+  "search.recent_searches": "最近搜索",
+  "search.clear": "清空"
 }

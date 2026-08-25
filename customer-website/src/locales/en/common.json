@@ -1,10 +1,15 @@
 {
   "common.view_all": "View All",
+  "common.view_all_products": "View All Products",
+  "common.view_all_in": "View All in",
+  "common.explore_promotion": "Explore Promotion",
   "common.see_more": "Explore More",
   "common.loading": "Loading...",
   "common.no_products": "No products found.",
   "common.no_categories": "No categories available.",
   "common.no_items": "No items to display at this time.",
   "common.try_again": "Try Again",
-  "common.items": "items"
+  "common.items": "items",
+  "common.products": "Products",
+  "common.total": "Total"
 }

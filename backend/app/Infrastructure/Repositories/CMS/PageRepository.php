@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\CMS;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\CMS\Page;
+use App\Repositories\CMS\PageRepository as BasePageRepository;
 
-class PageRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\CMS\PageRepository
+ */
+class PageRepository extends BasePageRepository
 {
-    public function __construct(Page $model)
-    {
-        parent::__construct($model);
-    }
 }

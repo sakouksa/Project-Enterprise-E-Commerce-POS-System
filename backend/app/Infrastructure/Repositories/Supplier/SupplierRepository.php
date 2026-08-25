@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Repositories\Supplier;
 
-use App\Infrastructure\Repositories\BaseRepository;
-use App\Models\Supplier\Supplier;
+use App\Repositories\Supplier\SupplierRepository as BaseSupplierRepository;
 
-class SupplierRepository extends BaseRepository
+/**
+ * Compatibility bridge to App\Repositories\Supplier\SupplierRepository
+ */
+class SupplierRepository extends BaseSupplierRepository
 {
-    public function __construct(Supplier $model)
-    {
-        parent::__construct($model);
-    }
 }

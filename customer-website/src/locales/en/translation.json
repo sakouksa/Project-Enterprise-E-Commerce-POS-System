@@ -154,8 +154,12 @@
   "feed.retry": "Try Again",
   "feed.back_to_top": "Back to Top",
   "feed.showing_count": "Showing {{count}} of {{total}} products",
+  "popup.badge": "EXCLUSIVE PROMO",
   "popup.exclusive_offer": "EXCLUSIVE OFFER",
-  "popup.limited_time": "Limited time promotion available across all 25 provinces.",
+  "popup.discount_tag": "SAVE UP TO $300",
+  "popup.title": "HAPPY TECH WEEKEND",
+  "popup.subtitle": "Monthly exclusive electronics festival with huge discounts on Laptops, Mac & Gaming Gear 2026.",
+  "popup.limited_time": "Limited time promotion available across all 25 provinces",
   "popup.shop_now": "Shop Deal Now",
   "popup.dont_show_today": "Don't show this promotion again today",
   "popup.close": "Close"

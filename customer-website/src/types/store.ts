@@ -116,16 +116,27 @@ export interface ProductItem {
 }
 
 export interface Banner {
-  id: number
+  id: number | string
+  company_id?: number
+  store_id?: number
   title?: string
   subtitle?: string
   badge?: string
   badge_color?: string
   image?: string
+  image_url?: string
+  mobile_image?: string
   link?: string
+  link_url?: string
   button_text?: string
   category_tag?: string
+  discount_tag?: string
+  position?: string
+  is_active?: boolean
+  sort_order?: number
   order?: number
+  starts_at?: string
+  ends_at?: string
 }
 
 export interface SearchSuggestion {

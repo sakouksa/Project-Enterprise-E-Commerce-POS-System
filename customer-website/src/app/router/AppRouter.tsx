@@ -52,6 +52,10 @@ export const AppRouter: React.FC = () => {
             <Route index element={<HomePage />} />
             <Route path="products" element={<ProductListPage />} />
             <Route path="products/:slug" element={<ProductDetailPage />} />
+            <Route path="promotions" element={<ProductListPage />} />
+            <Route path="promotion" element={<ProductListPage />} />
+            <Route path="deals" element={<ProductListPage />} />
+            <Route path="offers" element={<ProductListPage />} />
             <Route path="category/:slug" element={<ProductListPage />} />
             <Route path="brand/:slug" element={<ProductListPage />} />
             <Route path="search" element={<SearchPage />} />

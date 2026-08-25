@@ -154,8 +154,12 @@
   "feed.retry": "Thử lại",
   "feed.back_to_top": "Về đầu trang",
   "feed.showing_count": "Hiển thị {{count}} trên {{total}} sản phẩm",
+  "popup.badge": "ƯU ĐÃI ĐẶC BIỆT",
   "popup.exclusive_offer": "ƯU ĐÃI ĐẶC BIỆT",
-  "popup.limited_time": "Khuyến mãi có hạn áp dụng trên toàn bộ 25 tỉnh thành.",
+  "popup.discount_tag": "GIẢM ĐẾN $300",
+  "popup.title": "HAPPY TECH WEEKEND",
+  "popup.subtitle": "Lễ hội mua sắm thiết bị công nghệ hàng tháng với ưu đãi cực sốc cho Laptops, Mac & Gaming Gear 2026.",
+  "popup.limited_time": "Khuyến mãi có hạn áp dụng trên toàn bộ 25 tỉnh thành",
   "popup.shop_now": "Mua ngay",
   "popup.dont_show_today": "Không hiển thị lại khuyến mãi này hôm nay",
   "popup.close": "Đóng"

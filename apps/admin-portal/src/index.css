@@ -146,6 +146,18 @@
   .data-table td {
     @apply px-4 py-3 text-sm text-foreground border-b border-border whitespace-nowrap align-middle;
   }
+  .data-table th.text-right,
+  .data-table td.text-right,
+  .data-table th.\!text-right,
+  .data-table td.\!text-right {
+    text-align: right;
+  }
+  .data-table th.text-center,
+  .data-table td.text-center,
+  .data-table th.\!text-center,
+  .data-table td.\!text-center {
+    text-align: center;
+  }
   .data-table tr:hover td {
     @apply bg-muted/30;
   }

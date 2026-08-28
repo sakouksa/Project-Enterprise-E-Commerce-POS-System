@@ -31,11 +31,6 @@ export const INITIAL_VISIBLE_COLUMNS_MAP: Record<Tab, Record<string, boolean>> =
     department: true,
     basic_salary: true,
     status: true,
-    branch: false,
-    gender: false,
-    join_date: false,
-    created_at: false,
-    id: false,
   },
   departments: {
     name: true,
@@ -43,7 +38,6 @@ export const INITIAL_VISIBLE_COLUMNS_MAP: Record<Tab, Record<string, boolean>> =
     positions: true,
     employees: true,
     status: true,
-    id: false,
   },
   positions: {
     name: true,
@@ -51,7 +45,6 @@ export const INITIAL_VISIBLE_COLUMNS_MAP: Record<Tab, Record<string, boolean>> =
     department: true,
     employees: true,
     status: true,
-    id: false,
   },
   attendance: {
     date: true,
@@ -61,10 +54,6 @@ export const INITIAL_VISIBLE_COLUMNS_MAP: Record<Tab, Record<string, boolean>> =
     check_out: true,
     worked_hours: true,
     status: true,
-    dept_pos: false,
-    late: false,
-    overtime: false,
-    device_method: false,
   },
   payrolls: {
     period_month: true,
@@ -75,7 +64,7 @@ export const INITIAL_VISIBLE_COLUMNS_MAP: Record<Tab, Record<string, boolean>> =
     overtime: true,
     net_salary: true,
     status: true,
-    paid_at: false,
   },
 }
+
 

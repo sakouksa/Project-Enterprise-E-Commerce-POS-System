@@ -60,7 +60,7 @@ class Product extends Model
                 });
             }
             if ($this->exists) {
-                return (float) Inventory::whereIn('variant_id', $this->variants()->pluck('id'))->sum('quantity');
+                return (float) Inventory::whereIn('product_variant_id', $this->variants()->pluck('id'))->sum('quantity');
             }
         }
         if ($this->relationLoaded('inventories')) {

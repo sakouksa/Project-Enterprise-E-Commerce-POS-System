@@ -19,6 +19,18 @@ use Illuminate\Support\Str;
 
 class CartController extends BaseApiController
 {
+    // ─── GET /api/v1/carts ───────────────────────────────────────────────────
+
+    public function index(Request $request): JsonResponse
+    {
+        $perPage = (int) $request->input('per_page', 15);
+        $carts = Cart::with(['customer', 'items.product', 'items.variant'])
+            ->latest()
+            ->paginate($perPage);
+
+        return $this->paginatedResponse($carts, 'Carts retrieved successfully');
+    }
+
     // ─── GET /api/v1/store/cart ───────────────────────────────────────────────
 
     public function show(Request $request): JsonResponse

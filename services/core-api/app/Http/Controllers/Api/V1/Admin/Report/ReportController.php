@@ -68,6 +68,92 @@ class ReportController extends BaseApiController
     }
 
     /**
+     * GET /api/v1/reports/products
+     */
+    public function products(Request $request): JsonResponse
+    {
+        $totalProducts = \App\Models\Product\Product::count();
+        $activeProducts = \App\Models\Product\Product::where('status', 'active')->count();
+        $featuredProducts = \App\Models\Product\Product::where('is_featured', true)->count();
+        $withVariants = \App\Models\Product\Product::where('has_variants', true)->count();
+
+        return $this->successResponse([
+            'total_products'    => $totalProducts,
+            'active_products'   => $activeProducts,
+            'featured_products' => $featuredProducts,
+            'variant_products'  => $withVariants,
+        ]);
+    }
+
+    /**
+     * GET /api/v1/reports/customers
+     */
+    public function customers(Request $request): JsonResponse
+    {
+        $totalCustomers = \App\Models\Customer\Customer::count();
+        $activeCustomers = \App\Models\Customer\Customer::where('is_active', true)->count();
+        $groupsCount = \App\Models\Customer\CustomerGroup::count();
+
+        return $this->successResponse([
+            'total_customers'  => $totalCustomers,
+            'active_customers' => $activeCustomers,
+            'groups_count'     => $groupsCount,
+        ]);
+    }
+
+    /**
+     * GET /api/v1/reports/expenses
+     */
+    public function expenses(Request $request): JsonResponse
+    {
+        $startDate = $request->start_date ?? $request->date_from;
+        $endDate   = $request->end_date   ?? $request->date_to;
+
+        $expenses = Expense::when($startDate, fn($q, $sd) => $q->where('expense_date', '>=', $sd))
+            ->when($endDate, fn($q, $ed) => $q->where('expense_date', '<=', $ed))
+            ->get();
+
+        return $this->successResponse([
+            'total_expenses' => $expenses->sum('amount'),
+            'expenses_count' => $expenses->count(),
+        ]);
+    }
+
+    /**
+     * GET /api/v1/reports/profit-loss
+     */
+    public function profitLoss(Request $request): JsonResponse
+    {
+        $startDate = $request->start_date ?? $request->date_from;
+        $endDate   = $request->end_date   ?? $request->date_to;
+
+        $sales = Sale::completed()
+            ->when($startDate, fn($q, $sd) => $q->where('date', '>=', $sd))
+            ->when($endDate, fn($q, $ed) => $q->where('date', '<=', $ed))
+            ->sum('grand_total');
+
+        $purchases = Purchase::received()
+            ->when($startDate, fn($q, $sd) => $q->where('date', '>=', $sd))
+            ->when($endDate, fn($q, $ed) => $q->where('date', '<=', $ed))
+            ->sum('grand_total');
+
+        $expenses = Expense::when($startDate, fn($q, $sd) => $q->where('expense_date', '>=', $sd))
+            ->when($endDate, fn($q, $ed) => $q->where('expense_date', '<=', $ed))
+            ->sum('amount');
+
+        $grossProfit = $sales - $purchases;
+        $netProfit   = $grossProfit - $expenses;
+
+        return $this->successResponse([
+            'total_sales'     => (float) $sales,
+            'total_purchases' => (float) $purchases,
+            'total_expenses'  => (float) $expenses,
+            'gross_profit'    => (float) $grossProfit,
+            'net_profit'      => (float) $netProfit,
+        ]);
+    }
+
+    /**
      * GET /api/v1/reports/export-inventory
      */
     public function exportInventory(): \Symfony\Component\HttpFoundation\StreamedResponse

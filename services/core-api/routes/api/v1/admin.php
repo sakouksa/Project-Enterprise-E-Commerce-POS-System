@@ -248,12 +248,12 @@ Route::middleware('auth.jwt')->group(function () {
     Route::post('suppliers/{id}/restore',       [SupplierController::class, 'restore']);
     Route::delete('suppliers/{id}/force',       [SupplierController::class, 'forceDelete']);
 
+    Route::get('purchases/returns',             [PurchaseReturnController::class, 'index']);
     Route::apiResource('purchases',             PurchaseController::class);
     Route::post('purchases/{id}/receive',       [PurchaseController::class, 'receive']);
     Route::post('purchases/{id}/cancel',        [PurchaseController::class, 'cancel']);
     Route::post('purchases/{id}/record-payment', [PurchaseController::class, 'recordPayment']);
 
-    Route::get('purchases/returns',             [PurchaseReturnController::class, 'index']);
     Route::post('purchase-returns/bulk-delete', [PurchaseReturnController::class, 'bulkDelete']);
     Route::apiResource('purchase-returns',       PurchaseReturnController::class);
     Route::post('purchase-returns/{id}/approve', [PurchaseReturnController::class, 'approve']);

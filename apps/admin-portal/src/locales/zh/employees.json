@@ -68,6 +68,8 @@
   "delete": "删除",
   "id": "序号",
   "photo": "照片",
+  "contact": "联系方式",
+  "department_and_position": "部门与职位",
   "code": "编码",
   "date": "日期",
   "employee": "员工",

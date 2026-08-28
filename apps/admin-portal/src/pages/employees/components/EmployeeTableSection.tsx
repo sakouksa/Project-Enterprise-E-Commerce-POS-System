@@ -1,5 +1,5 @@
 import React from 'react'
-import { Check, Edit, Eye, Trash2, Printer, Plus, User, Briefcase, Users, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react'
+import { Check, Edit, Eye, Trash2, Printer, Plus, User, Briefcase, Users, RotateCcw, ChevronUp, ChevronDown, Phone, Mail, Building2 } from 'lucide-react'
 import { EmployeeAvatar } from './EmployeeAvatar'
 import { useTranslation } from 'react-i18next'
 import TableWrapper from '@/components/shared/TableWrapper'
@@ -71,16 +71,12 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                 {activeTab === 'employees' && (
                   <>
                     {visibleColumns.id && <th className="cursor-pointer select-none" onClick={() => handleSort('id')}>{t('employees.id', 'ID')} {renderSortIcon('id')}</th>}
-                    {visibleColumns.photo && <th>{t('employees.photo', 'Photo')}</th>}
-                    {visibleColumns.employee_number && <th className="cursor-pointer select-none" onClick={() => handleSort('employee_number')}>{t('employees.employee_number', 'Employee Number')} {renderSortIcon('employee_number')}</th>}
-                    {visibleColumns.name && <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>{t('employees.name', 'Name')} {renderSortIcon('name')}</th>}
-                    {visibleColumns.email && <th className="cursor-pointer select-none" onClick={() => handleSort('email')}>{t('employees.email', 'Email')} {renderSortIcon('email')}</th>}
-                    {visibleColumns.phone && <th>{t('employees.phone', 'Phone')}</th>}
+                    {visibleColumns.employee && <th className="cursor-pointer select-none" onClick={() => handleSort('name')}>{t('employees.employee', 'Employee')} {renderSortIcon('name')}</th>}
+                    {visibleColumns.contact && <th>{t('employees.contact', 'Contact')}</th>}
+                    {visibleColumns.department && <th>{t('employees.department_and_position', 'Department & Role')}</th>}
                     {visibleColumns.branch && <th>{t('employees.branch', 'Branch')}</th>}
-                    {visibleColumns.department && <th>{t('employees.department', 'Department')}</th>}
-                    {visibleColumns.position && <th>{t('employees.position', 'Position')}</th>}
                     {visibleColumns.gender && <th>{t('employees.gender', 'Gender')}</th>}
-                    {visibleColumns.basic_salary && <th className="cursor-pointer select-none" onClick={() => handleSort('basic_salary')}>{t('employees.basic_salary', 'Basic Salary')} {renderSortIcon('basic_salary')}</th>}
+                    {visibleColumns.basic_salary && <th className="cursor-pointer select-none text-right" onClick={() => handleSort('basic_salary')}>{t('employees.basic_salary', 'Basic Salary')} {renderSortIcon('basic_salary')}</th>}
                     {visibleColumns.join_date && <th className="cursor-pointer select-none" onClick={() => handleSort('join_date')}>{t('employees.join_date', 'Join Date')} {renderSortIcon('join_date')}</th>}
                     {visibleColumns.created_at && <th className="cursor-pointer select-none" onClick={() => handleSort('created_at')}>{t('employees.created_at', 'Created At')} {renderSortIcon('created_at')}</th>}
                     {visibleColumns.status && <th className="cursor-pointer select-none" onClick={() => handleSort('status')}>{t('employees.status', 'Status')} {renderSortIcon('status')}</th>}
@@ -164,39 +160,95 @@ export const EmployeeTableSection: React.FC<EmployeeTableSectionProps> = ({
                       </td>
                     {activeTab === 'employees' && (
                       <>
-                        {visibleColumns.id && <td>{r.id}</td>}
-                        {visibleColumns.photo && (
+                        {visibleColumns.id && <td className="font-mono text-xs text-muted-foreground">{r.id}</td>}
+                        {visibleColumns.employee && (
+                          <td className="py-2.5">
+                            <div className="flex items-center gap-3">
+                              <EmployeeAvatar
+                                photo={r.photo}
+                                name={r.name}
+                                id={r.id}
+                                size="md"
+                                getPhotoUrl={getPhotoUrl}
+                              />
+                              <div>
+                                <span
+                                  className="font-bold text-sm text-foreground hover:text-primary cursor-pointer transition-colors block"
+                                  onClick={() => openViewDrawer(r)}
+                                >
+                                  {r.name}
+                                </span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="font-mono text-[11px] font-medium text-primary/80 bg-primary/10 dark:bg-primary/20 px-1.5 py-0.2 rounded">
+                                    {r.employee_number || `EMP-${String(r.id).padStart(4, '0')}`}
+                                  </span>
+                                  {r.gender && (
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-medium ${
+                                      r.gender === 'male'
+                                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                        : 'bg-pink-500/10 text-pink-600 dark:text-pink-400'
+                                    }`}>
+                                      {r.gender === 'male' ? t('employees.male', 'Male') : t('employees.female', 'Female')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        )}
+                        {visibleColumns.contact && (
                           <td>
-                            <EmployeeAvatar
-                              photo={r.photo}
-                              name={r.name}
-                              id={r.id}
-                              size="md"
-                              getPhotoUrl={getPhotoUrl}
-                            />
+                            <div className="space-y-0.5">
+                              <div className="text-xs font-medium text-foreground">{r.email ?? 'N/A'}</div>
+                              {r.phone && (
+                                <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-1">
+                                  <Phone size={10} className="opacity-70" />
+                                  <span>{r.phone}</span>
+                                </div>
+                              )}
+                            </div>
                           </td>
                         )}
-                        {visibleColumns.employee_number && <td className="font-mono text-xs">{r.employee_number}</td>}
-                        {visibleColumns.name && (
-                          <td className="font-semibold text-foreground hover:text-primary cursor-pointer" onClick={() => openViewDrawer(r)}>
-                            {r.name}
+                        {visibleColumns.department && (
+                          <td>
+                            <div className="space-y-0.5">
+                              <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                <Briefcase size={12} className="text-primary/70 shrink-0" />
+                                <span>{r.department?.name ?? 'General'}</span>
+                              </div>
+                              <div className="text-[11px] text-muted-foreground pl-4">
+                                {r.position?.name ?? '-'}
+                              </div>
+                            </div>
                           </td>
                         )}
-                        {visibleColumns.email && <td className="text-xs text-muted-foreground">{r.email ?? 'N/A'}</td>}
-                        {visibleColumns.phone && <td>{r.phone ?? 'N/A'}</td>}
-                        {visibleColumns.branch && <td>{r.branch?.name ?? 'N/A'}</td>}
-                        {visibleColumns.department && <td>{r.department?.name ?? 'N/A'}</td>}
-                        {visibleColumns.position && <td>{r.position?.name ?? 'N/A'}</td>}
+                        {visibleColumns.branch && (
+                          <td className="text-xs text-muted-foreground">
+                            {r.branch?.name ?? 'N/A'}
+                          </td>
+                        )}
                         {visibleColumns.gender && (
                           <td className="capitalize text-xs">
-                            <span className={`px-2 py-0.5 rounded-full font-medium ${r.gender === 'male' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400'}`}>
-                              {r.gender === 'male' ? t('employees.male', 'Male') : r.gender === 'female' ? t('employees.female', 'Female') : r.gender}
+                            <span className={`px-2 py-0.5 rounded-full font-medium ${
+                              r.gender === 'male'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                                : 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400'
+                            }`}>
+                              {r.gender === 'male' ? t('employees.male', 'Male') : t('employees.female', 'Female')}
                             </span>
                           </td>
                         )}
-                        {visibleColumns.basic_salary && <td className="font-semibold font-mono">${Number(r.basic_salary).toLocaleString()}</td>}
-                        {visibleColumns.join_date && <td>{r.join_date ? new Date(r.join_date).toLocaleDateString() : 'N/A'}</td>}
-                        {visibleColumns.created_at && <td className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>}
+                        {visibleColumns.basic_salary && (
+                          <td className="font-semibold font-mono text-sm text-right">
+                            ${Number(r.basic_salary ?? 0).toLocaleString()}
+                          </td>
+                        )}
+                        {visibleColumns.join_date && (
+                          <td className="text-xs">{r.join_date ? new Date(r.join_date).toLocaleDateString() : 'N/A'}</td>
+                        )}
+                        {visibleColumns.created_at && (
+                          <td className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
+                        )}
                         {visibleColumns.status && (
                           <td>
                             <StatusBadge status={r.status} />

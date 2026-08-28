@@ -68,6 +68,8 @@
   "delete": "Delete",
   "id": "ID",
   "photo": "Photo",
+  "contact": "Contact",
+  "department_and_position": "Department & Role",
   "code": "Code",
   "date": "Date",
   "employee": "Employee",

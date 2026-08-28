@@ -1,0 +1,68 @@
+{
+  "chatbot": {
+    "title": "Shop Assistant",
+    "online_status": "Online • Instant Help",
+    "welcome_title": "Shop Assistant AI",
+    "welcome_subtitle": "Hello! 👋 I'm your AI shopping assistant. I can help you find products, check prices, track orders, and answer questions.",
+    "input_placeholder": "Ask me anything about products, orders, shipping...",
+    "quick_actions": {
+      "find_products": "Find Products",
+      "best_sellers": "Best Sellers",
+      "deals": "Deals & Offers",
+      "track_order": "Track Order",
+      "support": "Customer Support",
+      "telegram_bot": "Telegram Bot"
+    },
+    "quick_queries": {
+      "find_products": "Show popular products in your catalog",
+      "best_sellers": "What are your best-selling items?",
+      "deals": "Show me current special offers and discounts",
+      "track_order": "I want to check the status of my order",
+      "support": "I would like to talk to customer support"
+    },
+    "product": {
+      "view": "View",
+      "add": "Add",
+      "added": "Added",
+      "in_stock": "• In Stock",
+      "out_of_stock": "• Out of Stock",
+      "no_image": "No Image"
+    },
+    "order": {
+      "order_number": "Order",
+      "total": "Total Amount:",
+      "date": "Date:",
+      "carrier": "Carrier:",
+      "tracking_no": "Tracking #:",
+      "payment": "Payment:",
+      "view_tracking": "View Full Tracking Details"
+    },
+    "support_ticket": {
+      "title": "Support Ticket",
+      "subtitle": "Our support team is notified. A specialist will assist you promptly."
+    },
+    "telegram_modal": {
+      "title": "Connect with Telegram Bot",
+      "subtitle": "Search products, manage your cart, and track orders directly inside Telegram!",
+      "code_label": "Your 6-Digit Telegram Link Code:",
+      "copy_command": "Copy /link command",
+      "copied": "Copied to Clipboard!",
+      "how_to_link": "How to link:",
+      "step_1": "Click \"Open Telegram Bot\" below.",
+      "step_2": "In the chat, send /link {code}",
+      "step_3": "Your cart and order history will automatically sync!",
+      "guest_notice": "You can browse products with our Telegram bot as a guest, or log in to sync your cart and orders.",
+      "open_bot": "Open Telegram Bot",
+      "encrypted": "End-to-end encrypted • Safe & Verified"
+    },
+    "actions": {
+      "clear_chat": "Clear Chat History",
+      "minimize": "Minimize",
+      "close": "Close Chat",
+      "open_tooltip": "Chat with AI Assistant",
+      "thinking": "AI Assistant is thinking...",
+      "clear_confirm": "Are you sure you want to clear your conversation history?",
+      "connection_error": "Sorry, I encountered a temporary connection issue. Please try again in a moment or select one of the quick options below."
+    }
+  }
+}

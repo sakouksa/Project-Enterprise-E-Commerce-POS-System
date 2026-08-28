@@ -44,12 +44,12 @@ services:
   # ─── 3. Laravel 12 Backend API (PHP 8.3-FPM + Supervisor Queues/Cron) ─────────
   backend:
     build:
-      context: ./backend
+      context: ./services/core-api
       dockerfile: docker/Dockerfile.prod
     container_name: enterprise_pos_backend_prod
     restart: unless-stopped
     env_file:
-      - ./backend/.env.production
+      - ./services/core-api/.env.production
     volumes:
       - backend_storage:/var/www/storage
     networks:
@@ -60,10 +60,10 @@ services:
       redis:
         condition: service_healthy
 
-  # ─── 4. React Admin Dashboard (SPA) ──────────────────────────────────────────
+  # ─── 4. React Admin Portal (SPA) ─────────────────────────────────────────────
   admin:
     build:
-      context: ./admin-dashboard
+      context: ./apps/admin-portal
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${ADMIN_VITE_API_URL:-https://api.example.com/api/v1}
@@ -72,10 +72,10 @@ services:
     networks:
       - enterprise_pos_internal
 
-  # ─── 5. React Customer Website (SPA) ─────────────────────────────────────────
+  # ─── 5. React Customer Storefront (SPA) ──────────────────────────────────────
   website:
     build:
-      context: ./customer-website
+      context: ./apps/storefront
       dockerfile: Dockerfile
       args:
         VITE_STORE_API_URL: ${WEBSITE_VITE_STORE_API_URL:-https://api.example.com/api/v1/store}
@@ -94,9 +94,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infrastructure/docker/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
       - backend_storage:/var/www/storage:ro
-      - ./docker/ssl:/etc/nginx/ssl:ro
+      - ./infrastructure/docker/ssl:/etc/nginx/ssl:ro
       - certbot_www:/var/www/certbot:ro
     networks:
       - enterprise_pos_internal

@@ -1,0 +1,68 @@
+{
+  "chatbot": {
+    "title": "智能客服",
+    "online_status": "在线 • 实时秒回",
+    "welcome_title": "AI 购物助手",
+    "welcome_subtitle": "您好！👋 我是您的 AI 智能购物管家。我可以帮您查找商品、对比价格、查询订单物流以及解答各类疑问。",
+    "input_placeholder": "向我咨询商品、订单、物流或售后问题...",
+    "quick_actions": {
+      "find_products": "查找商品",
+      "best_sellers": "热销榜单",
+      "deals": "特惠活动",
+      "track_order": "追踪订单",
+      "support": "人工客服",
+      "telegram_bot": "Telegram 机器人"
+    },
+    "quick_queries": {
+      "find_products": "推荐一下商城的热门商品",
+      "best_sellers": "目前销量最高的是哪些商品？",
+      "deals": "现在有什么折扣和限时优惠？",
+      "track_order": "我想查询我最近的订单状态",
+      "support": "我想联系人工客服团队"
+    },
+    "product": {
+      "view": "查看",
+      "add": "加购",
+      "added": "已加入",
+      "in_stock": "• 有现货",
+      "out_of_stock": "• 暂时缺货",
+      "no_image": "暂无图片"
+    },
+    "order": {
+      "order_number": "订单编号",
+      "total": "订单总计:",
+      "date": "下单时间:",
+      "carrier": "物流公司:",
+      "tracking_no": "运单号 #:",
+      "payment": "支付状态:",
+      "view_tracking": "查看完整物流轨迹"
+    },
+    "support_ticket": {
+      "title": "客服工单",
+      "subtitle": "客服团队已收到您的申请，专员将尽快与您联系处理。"
+    },
+    "telegram_modal": {
+      "title": "连接 Telegram 机器人",
+      "subtitle": "直接在 Telegram 中搜索商品、管理购物车和实时追踪订单！",
+      "code_label": "您的 6 位关联绑定码：",
+      "copy_command": "复制 /link 命令",
+      "copied": "已成功复制到剪贴板！",
+      "how_to_link": "绑定步骤：",
+      "step_1": "点击下方的“打开 Telegram 机器人”。",
+      "step_2": "在对话框中发送 /link {code}",
+      "step_3": "您的购物车和历史订单将自动同步关联！",
+      "guest_notice": "您可以以访客身份体验机器人，或登录账户后同步您的个人数据。",
+      "open_bot": "打开 Telegram 机器人",
+      "encrypted": "端到端安全加密 • 权威认证"
+    },
+    "actions": {
+      "clear_chat": "清空对话记录",
+      "minimize": "最小化",
+      "close": "关闭会话",
+      "open_tooltip": "与 AI 助手对话",
+      "thinking": "AI 助手正在思考中...",
+      "clear_confirm": "确定要清空当前的对话记录吗？",
+      "connection_error": "抱歉，网络连接暂时出现波动，请稍后再试或点击下方快捷选项。"
+    }
+  }
+}

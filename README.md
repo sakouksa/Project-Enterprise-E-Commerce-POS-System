@@ -27,67 +27,81 @@ An enterprise-grade, high-performance omnichannel commerce platform designed for
 
 ```text
 Project-Enterprise-E-Commerce-POS-System/
+├── apps/                               # 📱 All Client & Web Applications
+│   ├── storefront/                     # React 19 + TypeScript + Vite (Customer E-Commerce)
+│   ├── admin-portal/                   # React 19 + TypeScript + Vite (Admin & Web POS)
+│   ├── mobile-pos/                     # Flutter Multiplatform App (iOS, Android, POS Terminal)
+│   └── docs-portal/                    # Interactive Engineering Documentation Web Portal
 │
-├── admin-dashboard/        # React 18 + TypeScript + Vite (Admin & Web POS)
+├── services/                           # ⚙️ Backend Services & APIs
+│   └── core-api/                       # Laravel 12 REST API Engine, PostgreSQL 16, Redis Queues
 │
-├── backend/                # Laravel 11 REST API, MySQL 8, Redis Queues
+├── infrastructure/                     # 🚀 DevOps, Gateway & Containerization
+│   └── docker/                         # Nginx Master Gateway & SSL Configurations
 │
-├── customer-website/       # Customer E-Commerce Web Storefront
+├── database/                           # 🗄️ Database dumps & seed archives
+├── docs/                               # 📚 System Architecture & Engineering Specifications
+│   ├── architecture/                   # System, Frontend, Backend & Mobile Architecture
+│   ├── api/                            # REST API Standards & Endpoints Catalog
+│   └── database/                       # PostgreSQL/MySQL Schema Overview & Data Dictionary
 │
-├── mobile_app/             # Flutter Multiplatform App (iOS, Android, Mobile POS)
+├── scripts/                            # 🛠️ Deployment, Backup & Automation Scripts
 │
-├── docs/                   # Complete Engineering Documentation
-│   ├── architecture/       # System, Frontend, Backend & Mobile Architecture
-│   ├── api/                # REST API Standards & Endpoints Catalog
-│   └── database/           # MySQL Schema Overview & Data Dictionary
-│
-├── .github/                # GitHub Actions CI/CD & Issue/PR Templates
-│   ├── workflows/          # CI workflows for Backend, Admin, Web, and Mobile
-│   ├── ISSUE_TEMPLATE/     # Bug report & Feature request templates
+├── .github/                            # 🤖 GitHub Actions CI/CD & Templates
+│   ├── workflows/                      # CI workflows for Core API, Admin, Storefront, Mobile
+│   ├── ISSUE_TEMPLATE/                 # Bug report & Feature request templates
 │   └── pull_request_template.md
 │
-├── docker-compose.yml      # Multi-container orchestration (PHP, Nginx, MySQL, Redis)
-└── README.md               # Root Documentation
+├── docker-compose.yml                  # Root Development Docker Orchestration
+├── docker-compose.staging.yml          # Staging Docker Orchestration
+├── docker-compose.prod.yml             # Production Docker Orchestration
+└── package.json                        # Monorepo Workspace & Runner Scripts
 ```
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### Option 1: Run with Docker Compose (Recommended)
+### Option 1: Monorepo Root Commands (Fastest)
 
 ```bash
-# 1. Clone the repository
-git clone <repository-url>
-cd Project-Enterprise-E-Commerce-POS-System
+# Install dependencies across all apps
+npm install
 
-# 2. Start all backend services (PHP, Nginx, MySQL, Redis, Queue, Scheduler)
+# Run Core API, Admin Portal, and Storefront simultaneously
+npm run dev
+
+# Run everything including the Documentation Portal
+npm run dev:all
+```
+
+---
+
+### Option 2: Run with Docker Compose (Recommended)
+
+```bash
+# 1. Start all backend and database containers
 docker compose up -d
 
-# 3. Initialize Laravel backend
+# 2. Initialize Laravel Core API
 docker compose exec app composer install
 docker compose exec app cp .env.example .env
 docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
 
-# 4. Start the Admin Dashboard
-cd admin-dashboard
-npm install
-npm run dev
-
-# 5. Start the Customer Website
-cd ../customer-website
-npm install
-npm run dev
+# 3. Access applications:
+# - Storefront:       http://localhost:5173
+# - Admin Portal:     http://localhost:5174
+# - Core API Backend: http://localhost:8000
 ```
 
 ---
 
-### Option 2: Local Manual Setup
+### Option 3: Local Manual Setup
 
-#### 1. Backend (Laravel API)
+#### 1. Backend Core API (Laravel)
 ```bash
-cd backend
+cd services/core-api
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -95,27 +109,35 @@ php artisan migrate --seed
 php artisan serve --port=8000
 ```
 
-#### 2. Admin Dashboard & POS
+#### 2. Admin Portal & POS (React 19)
 ```bash
-cd admin-dashboard
-npm install
-npm run dev
-# Running at: http://localhost:5173
-```
-
-#### 3. Customer Website
-```bash
-cd customer-website
+cd apps/admin-portal
 npm install
 npm run dev
 # Running at: http://localhost:5174
 ```
 
-#### 4. Mobile App (Flutter)
+#### 3. Customer Storefront (React 19)
 ```bash
-cd mobile_app
+cd apps/storefront
+npm install
+npm run dev
+# Running at: http://localhost:5173
+```
+
+#### 4. Mobile POS App (Flutter)
+```bash
+cd apps/mobile-pos
 flutter pub get
 flutter run
+```
+
+#### 5. Documentation Portal
+```bash
+cd apps/docs-portal
+npm install
+npm run dev
+# Running at: http://localhost:5175
 ```
 
 ---
@@ -140,10 +162,10 @@ For in-depth architecture diagrams, data models, and API specifications, consult
 - **Pull Request Template**: See [`.github/pull_request_template.md`](./.github/pull_request_template.md).
 - **Issue Templates**: Bug reports and feature suggestions in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/).
 - **Automated CI Workflows**:
-  - `backend-ci.yml`: Automated PHPUnit tests, migrations check, and PHP 8.2/8.3 matrix testing.
-  - `admin-dashboard-ci.yml`: Node 20/22 type checks & Vite build verification.
-  - `customer-website-ci.yml`: Storefront build verification.
-  - `mobile-app-ci.yml`: Flutter static analysis and tests.
+  - `core-api-ci.yml`: Automated PHPUnit tests, migrations check, and PHP 8.2/8.3 matrix testing.
+  - `admin-portal-ci.yml`: Node 20/22 type checks & Vite build verification.
+  - `storefront-ci.yml`: Storefront build verification.
+  - `mobile-pos-ci.yml`: Flutter static analysis and tests.
 
 ---
 

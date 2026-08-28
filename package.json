@@ -3,16 +3,20 @@
   "version": "1.0.0",
   "description": "Enterprise E-Commerce + POS System",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ],
   "scripts": {
-    "dev:backend": "cd backend && php artisan serve --port=8000",
-    "dev:admin": "cd admin-dashboard && npm run dev",
-    "dev:customer": "cd customer-website && npm run dev",
-    "dev:docs": "cd docs-website && npm run dev",
-    "build:docs": "cd docs-website && npm run build",
-    "dev": "npx concurrently -n \"BACKEND,ADMIN,CUSTOMER\" -c \"blue,green,magenta\" \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:customer\"",
-    "dev:all": "npx concurrently -n \"BACKEND,ADMIN,CUSTOMER,DOCS\" -c \"blue,green,magenta,yellow\" \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:customer\" \"npm run dev:docs\"",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "dev:api": "cd services/core-api && php artisan serve --port=8000",
+    "dev:admin": "cd apps/admin-portal && npm run dev",
+    "dev:storefront": "cd apps/storefront && npm run dev",
+    "dev:docs": "cd apps/docs-portal && npm run dev",
+    "build:docs": "cd apps/docs-portal && npm run build",
+    "dev": "npx concurrently -n \"API,ADMIN,STOREFRONT\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:storefront\"",
+    "dev:all": "npx concurrently -n \"API,ADMIN,STOREFRONT,DOCS\" -c \"blue,green,magenta,yellow\" \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:storefront\" \"npm run dev:docs\"",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   }
 }

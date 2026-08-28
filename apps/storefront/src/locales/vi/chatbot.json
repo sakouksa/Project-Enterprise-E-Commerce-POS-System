@@ -1,0 +1,68 @@
+{
+  "chatbot": {
+    "title": "Trợ Lý Cửa Hàng",
+    "online_status": "Trực tuyến • Hỗ trợ tức thì",
+    "welcome_title": "Trợ Lý Mua Sắm AI",
+    "welcome_subtitle": "Xin chào! 👋 Tôi là trợ lý AI thông minh của bạn. Tôi có thể giúp bạn tìm sản phẩm, xem giá, theo dõi đơn hàng và giải đáp thắc mắc.",
+    "input_placeholder": "Hỏi về sản phẩm, đơn hàng, giao hàng...",
+    "quick_actions": {
+      "find_products": "Tìm sản phẩm",
+      "best_sellers": "Bán chạy nhất",
+      "deals": "Khuyến mãi hot",
+      "track_order": "Theo dõi đơn",
+      "support": "Hỗ trợ khách hàng",
+      "telegram_bot": "Telegram Bot"
+    },
+    "quick_queries": {
+      "find_products": "Hiển thị các sản phẩm phổ biến trong cửa hàng",
+      "best_sellers": "Sản phẩm nào đang bán chạy nhất?",
+      "deals": "Cho tôi xem các ưu đãi và giảm giá đặc biệt",
+      "track_order": "Tôi muốn kiểm tra tình trạng đơn hàng của mình",
+      "support": "Tôi muốn liên hệ bộ phận hỗ trợ khách hàng"
+    },
+    "product": {
+      "view": "Xem",
+      "add": "Thêm",
+      "added": "Đã thêm",
+      "in_stock": "• Còn hàng",
+      "out_of_stock": "• Hết hàng",
+      "no_image": "Không có ảnh"
+    },
+    "order": {
+      "order_number": "Đơn hàng",
+      "total": "Tổng số tiền:",
+      "date": "Ngày đặt:",
+      "carrier": "Đơn vị vận chuyển:",
+      "tracking_no": "Mã vận đơn #:",
+      "payment": "Thanh toán:",
+      "view_tracking": "Xem chi tiết hành trình vận chuyển"
+    },
+    "support_ticket": {
+      "title": "Phiếu yêu cầu hỗ trợ",
+      "subtitle": "Yêu cầu đã được gửi đến đội ngũ hỗ trợ. Chúng tôi sẽ phản hồi bạn sớm nhất."
+    },
+    "telegram_modal": {
+      "title": "Kết nối với Telegram Bot",
+      "subtitle": "Tìm kiếm sản phẩm, quản lý giỏ hàng và theo dõi đơn hàng ngay trong Telegram!",
+      "code_label": "Mã liên kết 6 chữ số của bạn:",
+      "copy_command": "Sao chép lệnh /link",
+      "copied": "Đã sao chép vào bộ nhớ tạm!",
+      "how_to_link": "Hướng dẫn liên kết:",
+      "step_1": "Nhấn nút \"Mở Telegram Bot\" bên dưới.",
+      "step_2": "Trong khung chat, gửi lệnh /link {code}",
+      "step_3": "Giỏ hàng và lịch sử đơn hàng của bạn sẽ được đồng bộ tự động!",
+      "guest_notice": "Bạn có thể duyệt sản phẩm với Telegram Bot của chúng tôi hoặc đăng nhập để đồng bộ.",
+      "open_bot": "Mở Telegram Bot",
+      "encrypted": "Mã hóa đầu cuối • An toàn tuyệt đối"
+    },
+    "actions": {
+      "clear_chat": "Xóa lịch sử trò chuyện",
+      "minimize": "Thu nhỏ",
+      "close": "Đóng cửa sổ chat",
+      "open_tooltip": "Trò chuyện cùng trợ lý AI",
+      "thinking": "Trợ lý AI đang suy nghĩ...",
+      "clear_confirm": "Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?",
+      "connection_error": "Xin lỗi, đã xảy ra sự cố kết nối tạm thời. Vui lòng thử lại sau giây lát."
+    }
+  }
+}

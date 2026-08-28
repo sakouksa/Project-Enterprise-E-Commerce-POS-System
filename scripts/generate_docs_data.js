@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 console.log('--- Generating Documentation Data from Real Project ---');
 
 // 1. Scan all Migrations to extract all 99 tables
-const migDir = path.join(__dirname, '../backend/database/migrations');
+const migDir = path.join(__dirname, '../services/core-api/database/migrations');
 const migFiles = fs.readdirSync(migDir).filter(f => f.endsWith('.php'));
 const tablesMap = new Map();
 
@@ -100,7 +100,7 @@ for (const file of migFiles) {
         ...(tableName.includes('sale_id') ? [{ type: 'belongsTo', targetTable: 'sales', targetModel: 'Sale', foreignKey: 'sale_id' }] : []),
         ...(tableName.includes('purchase_id') ? [{ type: 'belongsTo', targetTable: 'purchases', targetModel: 'Purchase', foreignKey: 'purchase_id' }] : []),
       ],
-      usedByFrontend: ['admin-dashboard', 'customer-website', 'mobile_app'],
+      usedByFrontend: ['admin-portal', 'storefront', 'mobile-pos'],
       usedByApi: [`/api/v1/${tableName.replace(/_/g, '-')}`]
     });
   }
@@ -111,11 +111,11 @@ const dbOut = `import { DatabaseTable } from '../types/docs';
 export const DATABASE_TABLES: DatabaseTable[] = ${JSON.stringify(Array.from(tablesMap.values()), null, 2)};
 `;
 
-fs.writeFileSync(path.join(__dirname, '../docs-website/src/data/databaseSchemaData.ts'), dbOut, 'utf8');
+fs.writeFileSync(path.join(__dirname, '../apps/docs-portal/src/data/databaseSchemaData.ts'), dbOut, 'utf8');
 console.log(`Saved databaseSchemaData.ts with ${tablesMap.size} tables.`);
 
 // 2. Extract API routes from artisan route:list
-const rawRoutes = execSync('php artisan route:list --json', { cwd: path.join(__dirname, '../backend'), encoding: 'utf8' });
+const rawRoutes = execSync('php artisan route:list --json', { cwd: path.join(__dirname, '../services/core-api'), encoding: 'utf8' });
 const allRoutes = JSON.parse(rawRoutes);
 const appRoutes = allRoutes.filter(r => r.uri.startsWith('api/'));
 
@@ -167,11 +167,11 @@ const apiOut = `import { ApiEndpoint } from '../types/docs';
 export const API_ROUTES: ApiEndpoint[] = ${JSON.stringify(formattedApiRoutes, null, 2)};
 `;
 
-fs.writeFileSync(path.join(__dirname, '../docs-website/src/data/apiRoutesData.ts'), apiOut, 'utf8');
+fs.writeFileSync(path.join(__dirname, '../apps/docs-portal/src/data/apiRoutesData.ts'), apiOut, 'utf8');
 console.log(`Saved apiRoutesData.ts with ${formattedApiRoutes.length} endpoints.`);
 
 // 3. Extract Spatie Permissions
-const rolesPermissionsContent = fs.readFileSync(path.join(__dirname, '../backend/database/seeders/RolesPermissionsSeeder.php'), 'utf8');
+const rolesPermissionsContent = fs.readFileSync(path.join(__dirname, '../services/core-api/database/seeders/RolesPermissionsSeeder.php'), 'utf8');
 const permNodes = [];
 
 const explicitPerms = [
@@ -265,5 +265,5 @@ const permOut = `import { PermissionNode } from '../types/docs';
 export const PERMISSION_NODES: PermissionNode[] = ${JSON.stringify(permNodes, null, 2)};
 `;
 
-fs.writeFileSync(path.join(__dirname, '../docs-website/src/data/permissionsData.ts'), permOut, 'utf8');
+fs.writeFileSync(path.join(__dirname, '../apps/docs-portal/src/data/permissionsData.ts'), permOut, 'utf8');
 console.log(`Saved permissionsData.ts with ${permNodes.length} permissions.`);

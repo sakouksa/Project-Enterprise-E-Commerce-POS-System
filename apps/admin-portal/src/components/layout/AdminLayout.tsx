@@ -716,13 +716,30 @@ const AdminLayout: React.FC = () => {
     setMobileOpen(false)
   }, [location.pathname])
 
-  // Handle responsive resizing
+  // Handle responsive resizing (flexible auto-expand on large screens and auto-collapse on small/medium screens)
   useEffect(() => {
+    let prevWidth = typeof window !== 'undefined' ? window.innerWidth : 1280
+
     const handleResize = () => {
-      if (window.innerWidth < 1280 && window.innerWidth >= 640) {
+      const currentWidth = window.innerWidth
+
+      // When expanding from small/medium screen (<1280) to large screen (>=1280): auto-expand
+      if (prevWidth < 1280 && currentWidth >= 1280) {
+        setCollapsed(false)
+      }
+      // When shrinking from large screen (>=1280) to medium screen (<1280): auto-collapse
+      else if (prevWidth >= 1280 && currentWidth < 1280 && currentWidth >= 640) {
         setCollapsed(true)
       }
+
+      // Close mobile drawer when resized to desktop (>=640)
+      if (currentWidth >= 640) {
+        setMobileOpen(false)
+      }
+
+      prevWidth = currentWidth
     }
+
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -741,7 +758,7 @@ const AdminLayout: React.FC = () => {
     }
   }
 
-  const isCollapsed = collapsed || sidebarConfig?.collapsed
+  const isCollapsed = collapsed
   const sidebarWidth = isCollapsed
     ? '68px'
     : sidebarConfig?.width

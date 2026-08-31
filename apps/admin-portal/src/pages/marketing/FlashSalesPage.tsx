@@ -7,7 +7,7 @@ import {
   Settings, Eye, Copy, Clock, Users, ArrowUpRight, Sliders, Lock, Unlock,
   Calendar, ShoppingBag, Award, AlertTriangle, ShieldCheck, Flame, Boxes, Coins
 } from 'lucide-react'
-import api from '@/api/client'
+import { marketingService } from '@/services/marketingService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -207,7 +207,7 @@ const FlashSalesPage: React.FC = () => {
   // API Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['flash-sales', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/flash-sales', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => marketingService.getFlashSales({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
@@ -355,7 +355,7 @@ const FlashSalesPage: React.FC = () => {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: (newSale: any) => api.post('/flash-sales', newSale),
+    mutationFn: (newSale: any) => marketingService.createFlashSale(newSale),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['flash-sales'] })
       toast.success(t('toast.created', { item: t('nav.flashSales') }))
@@ -367,7 +367,7 @@ const FlashSalesPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/flash-sales/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => marketingService.updateFlashSale(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['flash-sales'] })
       toast.success(t('toast.updated', { item: t('nav.flashSales') }))
@@ -379,7 +379,7 @@ const FlashSalesPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/flash-sales/${id}`),
+    mutationFn: (id: number) => marketingService.deleteFlashSale(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['flash-sales'] })
       toast.success(t('toast.deleted', { item: t('nav.flashSales') }))
@@ -394,7 +394,7 @@ const FlashSalesPage: React.FC = () => {
 
   const toggleStatusMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
-      api.put(`/flash-sales/${id}`, { is_active }),
+      marketingService.updateFlashSale(id, { is_active }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['flash-sales'] })
       toast.success('Flash sale status updated.')
@@ -459,7 +459,7 @@ const FlashSalesPage: React.FC = () => {
   // ── CSV Export & Import Handlers ─────────────────────────────────────────
 
   const handleExportCSV = () => {
-    toast.info('Exporting Flash Sales CSV dataset...')
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
     setTimeout(() => {
       const headers = ['ID', 'Flash Sale Name', 'Starts At', 'Ends At', 'Products Count', 'Active Status']
       const rows = (sales.length > 0 ? sales : salesRaw).map((s) => [
@@ -468,11 +468,12 @@ const FlashSalesPage: React.FC = () => {
         s.starts_at ? new Date(s.starts_at).toLocaleString() : '',
         s.ends_at ? new Date(s.ends_at).toLocaleString() : '',
         s.products_count || 0,
-        s.is_active ? 'Active' : 'Inactive',
+        s.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
       ])
       downloadCsv('flash_sales_campaigns', headers, rows)
-      toast.success(`Exported ${rows.length} flash sales to CSV!`)
-    }, 300)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
   }
 
   const handleFileSelectForImport = (file: File) => {

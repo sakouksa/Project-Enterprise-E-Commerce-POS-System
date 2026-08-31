@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion'
 import {
   Megaphone, Plus, Search, Filter, RefreshCw, Download, Upload, Settings
 } from 'lucide-react'
-import api from '@/api/client'
+import { marketingService } from '@/services/marketingService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -23,8 +23,8 @@ import { formatJsonValue, formatDateTimeLocal, type Promotion } from './types/pr
 
 const PromotionsPage: React.FC = () => {
   const { t } = useTranslation()
-  const toast = useToast()
   const qc = useQueryClient()
+  const toast = useToast()
 
   const {
     page,
@@ -83,7 +83,7 @@ const PromotionsPage: React.FC = () => {
   // Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['promotions', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/promotions', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => marketingService.getPromotions({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
@@ -210,7 +210,7 @@ const PromotionsPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (newPromo: any) => api.post('/promotions', newPromo),
+    mutationFn: (newPromo: any) => marketingService.createPromotion(newPromo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['promotions'] })
       toast.success('Promotion created successfully.')
@@ -220,7 +220,7 @@ const PromotionsPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/promotions/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => marketingService.updatePromotion(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['promotions'] })
       toast.success('Promotion updated successfully.')
@@ -230,7 +230,7 @@ const PromotionsPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/promotions/${id}`),
+    mutationFn: (id: number) => marketingService.deletePromotion(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['promotions'] })
       toast.success('Promotion deleted successfully.')
@@ -244,7 +244,7 @@ const PromotionsPage: React.FC = () => {
   })
 
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => api.put(`/promotions/${id}`, { is_active }),
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => marketingService.updatePromotion(id, { is_active }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['promotions'] })
       toast.success('Promotion status updated.')

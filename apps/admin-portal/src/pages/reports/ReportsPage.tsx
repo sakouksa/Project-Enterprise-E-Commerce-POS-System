@@ -11,7 +11,7 @@ import {
   TrendingUp, TrendingDown, DollarSign, Package,
   Calendar, Loader2, ShoppingBag, CheckCircle,
 } from 'lucide-react'
-import api from '@/api/client'
+import { reportService } from '@/services/reportService'
 import { useToast } from '@/hooks/useToast'
 import SalesReportPage from './SalesReportPage'
 import PurchaseReportPage from './PurchaseReportPage'
@@ -52,25 +52,25 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
 
   const { data: salesReport, isLoading: salesLoading, refetch: refetchSales } = useQuery({
     queryKey: ['report-sales', filters],
-    queryFn: () => api.get('/reports/sales', { params: filters }).then(r => r.data.data),
+    queryFn: () => reportService.salesSummary(filters),
     enabled: currentType === 'sales',
   })
 
   const { data: purchaseReport, isLoading: purchaseLoading, refetch: refetchPurchases } = useQuery({
     queryKey: ['report-purchases', filters],
-    queryFn: () => api.get('/purchase-report', { params: filters }).then(r => r.data.data),
+    queryFn: () => reportService.purchaseSummary(filters),
     enabled: currentType === 'purchase' || currentType === 'purchases',
   })
 
   const { data: inventoryReport, isLoading: invLoading, refetch: refetchInventory } = useQuery({
     queryKey: ['report-inventory', filters],
-    queryFn: () => api.get('/reports/inventory', { params: filters }).then(r => r.data.data),
+    queryFn: () => reportService.inventorySummary(filters),
     enabled: currentType === 'inventory',
   })
 
   const { data: profitReport, isLoading: profitLoading, refetch: refetchProfit } = useQuery({
     queryKey: ['report-profit', filters],
-    queryFn: () => api.get('/reports/profit-loss', { params: filters }).then(r => r.data.data),
+    queryFn: () => reportService.profitLossSummary(filters),
     enabled: currentType === 'profit-loss',
   })
 
@@ -78,16 +78,8 @@ const ReportsPage: React.FC<{ type?: string }> = ({ type = 'sales' }) => {
     setExporting(true)
     toast.info(t('toast.exportingExcel', 'Downloading Excel report, please wait...'))
     try {
-      const endpoint = currentType === 'inventory'
-        ? '/reports/inventory/export'
-        : (currentType === 'purchase' || currentType === 'purchases')
-        ? '/reports/purchase/export'
-        : '/reports/sales/export'
-
-      const response = await api.get(endpoint, {
-        params: { ...filters, format: 'excel' },
-        responseType: 'blob',
-      })
+      const typeKey = (currentType === 'purchase' || currentType === 'purchases') ? 'purchase' : currentType
+      const response = await reportService.exportReport(typeKey, 'csv', { ...filters, format: 'excel' })
       const url = URL.createObjectURL(response.data)
       const a = document.createElement('a')
       a.href = url

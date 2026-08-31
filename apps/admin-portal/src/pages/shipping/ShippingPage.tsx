@@ -5,13 +5,14 @@ import { AnimatePresence } from 'framer-motion'
 import {
   Truck, Plus, Search, Filter, RefreshCw, Download, Upload, Settings
 } from 'lucide-react'
-import api from '@/api/client'
+import { shippingService } from '@/services/shippingService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { downloadCsv } from '@/utils/export'
 import { useTranslation } from 'react-i18next'
 
 import { ShippingStatsCards } from './components/ShippingStatsCards'
@@ -102,19 +103,19 @@ const ShippingPage: React.FC = () => {
   // API Main Query
   const { data: listData, isLoading, isFetching } = useQuery({
     queryKey: [activeTab, page, debouncedSearch, perPage],
-    queryFn: () => api.get(`/${activeTab}`, { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => shippingService.getItemsByTab(activeTab, { page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const { data: methodsList } = useQuery({
     queryKey: ['shipping-methods-list'],
-    queryFn: () => api.get('/shipping-methods', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => shippingService.getShippingMethods({ per_page: 100 }),
     enabled: activeTab === 'shipping-rates' || activeTab === 'shipments',
   })
 
   const { data: zonesList } = useQuery({
     queryKey: ['shipping-zones-list'],
-    queryFn: () => api.get('/shipping-zones', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => shippingService.getShippingZones({ per_page: 100 }),
     enabled: activeTab === 'shipping-rates',
   })
 
@@ -199,7 +200,7 @@ const ShippingPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post(`/${activeTab}`, payload),
+    mutationFn: (payload: any) => shippingService.createItemByTab(activeTab, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       closeModal()
@@ -209,7 +210,7 @@ const ShippingPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/${activeTab}/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => shippingService.updateItemByTab(activeTab, id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       closeModal()
@@ -219,7 +220,7 @@ const ShippingPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/${activeTab}/${id}`),
+    mutationFn: (id: number) => shippingService.deleteItemByTab(activeTab, id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       setConfirmOpen(false)
@@ -302,7 +303,27 @@ const ShippingPage: React.FC = () => {
     }
   }
 
-  const handleExportCSV = () => toast.info(`Exporting ${activeTab} CSV dataset...`)
+  const handleExportCSV = () => {
+    if (!records.length) {
+      toast.error(t('common.noDataToExport', 'មិនមានទិន្នន័យដើម្បីនាំចេញទេ!'))
+      return
+    }
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
+    setTimeout(() => {
+      const headers = ['ID', 'Name/Title', 'Code/Tracking', 'Provider/Zone', 'Status', 'Created At']
+      const rows = records.map((r: any) => [
+        r.id || '',
+        r.name || r.title || r.method_name || r.tracking_number || '',
+        r.code || r.tracking_number || '',
+        r.provider || r.carrier || r.zone_name || activeTab,
+        r.is_active !== false && r.status !== 'inactive' ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
+        r.created_at ? new Date(r.created_at).toLocaleDateString() : '',
+      ])
+      downloadCsv(`shipping_${activeTab}`, headers, rows)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
+  }
 
   const handleFileSelectForImport = (file: File) => {
     setImportFile(file)

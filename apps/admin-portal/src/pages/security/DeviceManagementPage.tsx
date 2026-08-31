@@ -16,29 +16,29 @@ import {
   ShieldAlert,
   Loader2
 } from 'lucide-react'
-import api, { getDeviceId } from '../../api/client'
+import { getDeviceId } from '../../api/client'
+import { securityService } from '@/services/securityService'
 import { showToast } from '../../utils/toast'
-import { SensitiveActionModal } from '../../components/security/SensitiveActionModal'
+import { SensitiveActionModal } from './components/SensitiveActionModal'
 
 interface DeviceItem {
   id: number
   device_id: string
   device_name: string
-  device_type: string
-  browser: string | null
-  os: string | null
-  platform: string | null
-  app_version: string | null
-  ip_address: string | null
-  status: 'active' | 'revoked' | 'expired' | 'suspicious'
-  is_current_device: boolean
-  last_active_at: string
+  device_type: 'desktop' | 'mobile' | 'tablet' | 'unknown' | string
+  browser: string
+  platform: string
+  os: string
+  ip_address: string
+  location: string
+  last_activity_at: string
+  last_active_at?: string
   created_at: string
-  user?: {
-    id: number
-    name: string
-    username: string
-  }
+  is_current: boolean
+  is_current_device?: boolean
+  status?: string
+  revoked_at: string | null
+  [key: string]: any
 }
 
 export const DeviceManagementPage: React.FC = () => {
@@ -57,9 +57,9 @@ export const DeviceManagementPage: React.FC = () => {
   const fetchDevices = async () => {
     try {
       setLoading(true)
-      const res = await api.get('/devices')
-      if (res.data?.success) {
-        setDevices(res.data.data || [])
+      const res = await securityService.getDevices()
+      if (res.success || res.data) {
+        setDevices(res.data || res || [])
       }
     } catch (err: any) {
       showToast.error(err?.response?.data?.message || 'Failed to load devices')
@@ -75,8 +75,8 @@ export const DeviceManagementPage: React.FC = () => {
   const handleRevokeSingle = async () => {
     if (!selectedDevice) return
     try {
-      const res = await api.post(`/devices/${selectedDevice.id}/revoke`)
-      if (res.data?.success) {
+      const res = await securityService.revokeDevice(selectedDevice.id)
+      if (res.success || res) {
         showToast.success(t('security:devices.revokeSuccess', 'Device session revoked successfully'))
         fetchDevices()
       }
@@ -90,8 +90,8 @@ export const DeviceManagementPage: React.FC = () => {
 
   const handleRevokeAllOthers = async () => {
     try {
-      const res = await api.post('/devices/revoke-others')
-      if (res.data?.success) {
+      const res = await securityService.revokeAllOtherDevices()
+      if (res.success || res) {
         showToast.success(t('security:devices.revokeAllSuccess', 'Signed out of all other devices successfully'))
         fetchDevices()
       }

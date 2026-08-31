@@ -16,6 +16,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { translateString } from '@/lib/i18n'
+import CloseButton from './CloseButton'
 
 export type ConfirmVariant = 'danger' | 'warning' | 'info' | 'success'
 export type ConfirmActionType =
@@ -218,7 +219,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const { language } = useThemeStore()
+  const { language: rawLanguage } = useThemeStore()
+  const language = rawLanguage as string
   const { t } = useTranslation(['common', 'products', 'buttons', 'security'])
 
   const isExecuting = isPending || loading
@@ -1191,14 +1193,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onCancel}
+              <CloseButton
+                onClose={onCancel}
                 disabled={isExecuting}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-40 shrink-0"
-              >
-                <X size={18} />
-              </button>
+                size="sm"
+                variant="ghost"
+                className="shrink-0 -mt-1 -mr-1"
+              />
             </div>
 
             {/* Optional Custom Message Body */}

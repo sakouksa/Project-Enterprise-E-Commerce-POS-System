@@ -12,6 +12,11 @@ export interface ProductListParams {
   is_featured?: boolean
   sort?:        string
   order?:       'asc' | 'desc'
+  sort_by?:     string
+  sort_order?:  'asc' | 'desc'
+  low_stock?:   boolean
+  inventory?:   string
+  [key: string]: any
 }
 
 export interface ProductPayload {
@@ -51,26 +56,44 @@ export const productService = {
   list: (params: ProductListParams = {}) =>
     api.get('/products', { params }).then(r => r.data),
 
+  /** GET /products/dashboard-statistics */
+  dashboardStatistics: () =>
+    api.get('/products/dashboard-statistics').then(r => r.data.data ?? r.data),
+
   /** GET /products/:id — full detail with relations */
-  show: (id: number) =>
+  show: (id: number | string) =>
     api.get(`/products/${id}`).then(r => r.data.data),
 
   /** POST /products */
-  create: (payload: ProductPayload) =>
-    api.post('/products', payload).then(r => r.data.data),
+  create: (payload: ProductPayload | any) =>
+    api.post('/products', payload).then(r => r.data.data ?? r.data),
 
   /** PUT /products/:id */
-  update: (id: number, payload: Partial<ProductPayload>) =>
-    api.put(`/products/${id}`, payload).then(r => r.data.data),
+  update: (id: number | string, payload: Partial<ProductPayload> | any) =>
+    api.put(`/products/${id}`, payload).then(r => r.data.data ?? r.data),
 
   /** DELETE /products/:id */
-  delete: (id: number) =>
+  delete: (id: number | string) =>
     api.delete(`/products/${id}`).then(r => r.data),
+
+  /** POST /products/bulk-delete */
+  bulkDelete: (ids: (number | string)[]) =>
+    api.post('/products/bulk-delete', { ids }).then(r => r.data),
+
+  /** POST /products/import */
+  import: (formData: FormData) =>
+    api.post('/products/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+
+  /** GET /products/export */
+  export: () =>
+    api.get('/products/export', { responseType: 'blob' }),
 
   // ── Images ──────────────────────────────────────────────────────────────────
 
   /** POST /products/:id/images  (multipart) */
-  uploadImages: (productId: number, files: File[], primaryIndex = 0) => {
+  uploadImages: (productId: number | string, files: File[], primaryIndex = 0) => {
     const fd = new FormData()
     files.forEach(f => fd.append('images[]', f))
     fd.append('primary_index', String(primaryIndex))
@@ -84,50 +107,50 @@ export const productService = {
     api.post('/product-images', data).then(r => r.data),
 
   /** DELETE /products/:productId/images/:imageId */
-  deleteImage: (productId: number, imageId: number) =>
+  deleteImage: (productId: number | string, imageId: number | string) =>
     api.delete(`/products/${productId}/images/${imageId}`).then(r => r.data),
 
   /** PUT /product-images/:id — set primary or sort_order */
-  updateImage: (imageId: number, data: { is_primary?: boolean; sort_order?: number }) =>
+  updateImage: (imageId: number | string, data: { is_primary?: boolean; sort_order?: number }) =>
     api.put(`/product-images/${imageId}`, data).then(r => r.data),
 
   // ── Variants ─────────────────────────────────────────────────────────────────
 
   /** GET /products/:id/variants */
-  getVariants: (productId: number) =>
+  getVariants: (productId: number | string) =>
     api.get(`/products/${productId}/variants`).then(r => r.data.data ?? []),
 
   /** POST /product-variants */
   createVariant: (payload: {
-    product_id: number; name: string; sku?: string
+    product_id: number | string; name: string; sku?: string
     cost_price?: number; selling_price: number; is_active?: boolean; attribute_values?: number[]
   }) => api.post('/product-variants', payload).then(r => r.data.data),
 
   /** PUT /product-variants/:id */
-  updateVariant: (variantId: number, payload: {
+  updateVariant: (variantId: number | string, payload: {
     name?: string; sku?: string; cost_price?: number; selling_price?: number
     compare_price?: number; barcode?: string; is_active?: boolean; attribute_values?: number[]
   }) => api.put(`/product-variants/${variantId}`, payload).then(r => r.data.data),
 
   /** DELETE /product-variants/:id */
-  deleteVariant: (variantId: number) =>
+  deleteVariant: (variantId: number | string) =>
     api.delete(`/product-variants/${variantId}`).then(r => r.data),
 
   /** POST /product-variants/bulk-delete */
-  bulkDeleteVariants: (ids: number[]) =>
+  bulkDeleteVariants: (ids: (number | string)[]) =>
     api.post('/product-variants/bulk-delete', { ids }).then(r => r.data),
 
   // ── Tiered Prices ─────────────────────────────────────────────────────────────
 
   /** POST /product-prices */
   createPrice: (payload: {
-    product_id: number; price_type: string
+    product_id: number | string; price_type: string
     min_qty: number; price: number; currency_code?: string
     start_date?: string; end_date?: string
   }) => api.post('/product-prices', payload).then(r => r.data.data),
 
   /** DELETE /product-prices/:id */
-  deletePrice: (priceId: number) =>
+  deletePrice: (priceId: number | string) =>
     api.delete(`/product-prices/${priceId}`).then(r => r.data),
 }
 

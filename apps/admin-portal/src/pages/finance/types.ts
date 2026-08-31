@@ -46,3 +46,24 @@ export interface TaxForm {
   type: string
   is_active: boolean
 }
+
+export interface PaymentMethodForm {
+  name: string
+  code: string
+  type: string
+  fee_percent: string
+  fee_fixed: string
+  available_pos: boolean
+  available_online: boolean
+  is_active: boolean
+}
+
+export interface TransactionForm {
+  type: string
+  amount: string
+  description: string
+  reference_type: string
+  reference_id: string
+  payment_method_id: string
+}
+

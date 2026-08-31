@@ -403,6 +403,20 @@ export const isRouteActive = (
   return false
 }
 
+const getRadiusValue = (r?: string) => {
+  if (!r) return '0.75rem'
+  if (r === 'rounded-none') return '0px'
+  if (r === 'rounded-sm') return '0.125rem'
+  if (r === 'rounded' || r === 'rounded-md' || r === '0.375rem') return '0.375rem'
+  if (r === 'rounded-lg' || r === '0.5rem') return '0.5rem'
+  if (r === 'rounded-xl' || r === '0.75rem') return '0.75rem'
+  if (r === 'rounded-2xl' || r === '1rem') return '1rem'
+  if (r === 'rounded-3xl' || r === '1.5rem') return '1.5rem'
+  if (r === 'rounded-full' || r === 'rounded-pill') return '9999px'
+  if (r.endsWith('px') || r.endsWith('rem') || r.endsWith('%')) return r
+  return '0.75rem'
+}
+
 // ─── SidebarItem Component with Micro-Animations & Curated Icon Colors ─────────
 
 const SidebarItem: React.FC<{
@@ -447,7 +461,7 @@ const SidebarItem: React.FC<{
   }, [location.pathname, isGroupActive])
 
   const paddingClass = collapsed ? 'py-2 px-1 justify-center' : (sidebarConfig?.compact ? 'py-1.5 px-2' : 'py-2 px-2.5')
-  const roundedStyle = sidebarConfig?.roundedStyle || '0.75rem'
+  const roundedRadius = getRadiusValue(sidebarConfig?.roundedStyle)
 
   const customTextColor = sidebarConfig?.textColor
   const customActiveBg = sidebarConfig?.activeBgColor || 'hsl(var(--primary))'
@@ -471,7 +485,7 @@ const SidebarItem: React.FC<{
           whileTap={{ scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           style={{
-            borderRadius: roundedStyle,
+            borderRadius: roundedRadius,
             color: isGroupActive ? customActiveBg : (customTextColor || undefined),
             backgroundColor: isGroupActive ? `${customActiveBg}18` : undefined,
           }}
@@ -551,7 +565,7 @@ const SidebarItem: React.FC<{
                     to={child.path}
                     onClick={onItemClick}
                     style={{
-                      borderRadius: roundedStyle,
+                      borderRadius: roundedRadius,
                       backgroundColor: isChildActive ? customActiveBg : undefined,
                       color: isChildActive ? customActiveText : (customTextColor || undefined),
                     }}
@@ -594,7 +608,7 @@ const SidebarItem: React.FC<{
       title={collapsed ? t(item.labelKey) : undefined}
       onClick={onItemClick}
       style={{
-        borderRadius: roundedStyle,
+        borderRadius: roundedRadius,
         backgroundColor: isSingleActive ? customActiveBg : undefined,
         color: isSingleActive ? customActiveText : (customTextColor || undefined),
       }}

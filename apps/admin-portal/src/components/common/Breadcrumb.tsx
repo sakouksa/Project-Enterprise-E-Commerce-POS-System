@@ -23,7 +23,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className = '', showHome
       {showHome && (
         <Link to="/dashboard" className="hover:text-foreground flex items-center gap-1 transition-colors">
           <Home size={12} />
-          {t('nav.dashboard', 'ទំព័រដើម')}
+          {t('nav.dashboard', 'Dashboard')}
         </Link>
       )}
       {items.map((item, index) => {

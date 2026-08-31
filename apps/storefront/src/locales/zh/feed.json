@@ -1,9 +1,0 @@
-{
-  "feed.loading_more": "正在加载更多商品...",
-  "feed.reached_end": "已为您展示全部商品",
-  "feed.all_caught_up": "所有商品加载完成",
-  "feed.load_error": "无法加载更多商品",
-  "feed.retry": "重试",
-  "feed.back_to_top": "返回顶部",
-  "feed.showing_count": "已显示 {{count}} / {{total}} 件商品"
-}

@@ -2,7 +2,8 @@ import React from 'react'
 import { DollarSign, ShoppingBag, ShoppingCart, Percent, Receipt, TrendingUp, Users, Vault, Lock, Layers, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import api from '@/api/client'
+import { posService } from '@/services/posService'
+import { dashboardService } from '@/services/dashboardService'
 
 interface POSTopCardsProps {
   cartTotal: number
@@ -22,11 +23,11 @@ export const POSTopCards: React.FC<POSTopCardsProps> = ({
   // ── Fetch real daily stats from API ─────────────────────────────────────
   const { data: dailyStats, isLoading: loadingStats } = useQuery({
     queryKey: ['pos-daily-stats'],
-    queryFn: () => api.get('/pos/sales', {
-      params: { date: new Date().toISOString().split('T')[0], per_page: 1 }
+    queryFn: () => posService.getSales({
+      date: new Date().toISOString().split('T')[0], per_page: 1
     }).then(r => {
       // The API returns paginated sales; we use total count + sum from meta
-      const meta = r.data?.meta ?? r.data?.pagination ?? {}
+      const meta = r.data?.meta ?? r.meta ?? r.pagination ?? {}
       return {
         totalCount: meta.total ?? 0,
         totalAmount: meta.total_amount ?? null,
@@ -39,7 +40,7 @@ export const POSTopCards: React.FC<POSTopCardsProps> = ({
   // ── Fetch today's dashboard stats ────────────────────────────────────────
   const { data: dashStats } = useQuery({
     queryKey: ['dashboard-stats-pos'],
-    queryFn: () => api.get('/dashboard/stats').then(r => r.data?.data ?? {}),
+    queryFn: () => dashboardService.getStats().then(r => r.data ?? r ?? {}),
     staleTime: 60000,
     retry: false,
   })

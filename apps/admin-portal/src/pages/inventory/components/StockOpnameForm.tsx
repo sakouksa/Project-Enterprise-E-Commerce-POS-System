@@ -18,16 +18,19 @@ import {
   RotateCcw,
   Check
 } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/api/client'
+import { inventoryService } from '@/services/inventoryService'
+import { companyService } from '@/services/companyService'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/hooks/useToast'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
+import { FormHeader, FormFooter } from '@/components/common'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface StockOpnameFormProps {
   opnameId?: number | null
-  onClose: () => void
+  onClose?: () => void
 }
 
 type FilterTab = 'all' | 'discrepancy' | 'matched' | 'surplus' | 'deficit'
@@ -36,8 +39,26 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
   const { t } = useTranslation(['inventory', 'buttons', 'common', 'products'])
   const toast = useToast()
   const qc = useQueryClient()
-  const [currentOpnameId, setCurrentOpnameId] = useState<number | null>(opnameId || null)
+  const navigate = useNavigate()
+  const params = useParams<{ id?: string }>()
+  
+  const initialId = opnameId ?? (params.id ? Number(params.id) : null)
+  const [currentOpnameId, setCurrentOpnameId] = useState<number | null>(initialId)
   const isEdit = !!currentOpnameId
+
+  useEffect(() => {
+    if (params.id && Number(params.id) !== currentOpnameId) {
+      setCurrentOpnameId(Number(params.id))
+    }
+  }, [params.id])
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose()
+    } else {
+      navigate('/inventory?tab=opnames')
+    }
+  }
 
   // Form States
   const [warehouseId, setWarehouseId] = useState('')
@@ -51,13 +72,13 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
   // Queries
   const { data: detail, isLoading: loadingDetail } = useQuery({
     queryKey: ['stock-opname-detail', currentOpnameId],
-    queryFn: () => api.get(`/stock-opnames/${currentOpnameId}`).then(r => r.data.data),
+    queryFn: () => inventoryService.getOpname(currentOpnameId!),
     enabled: isEdit,
   })
 
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses-list'],
-    queryFn: () => api.get('/warehouses').then(r => r.data.data),
+    queryFn: () => companyService.getWarehouses().then(r => r.data),
   })
 
   // Auto fill form if editing
@@ -83,67 +104,14 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     [warehouses, warehouseId]
   )
 
-  const totalDiff = useMemo(
-    () => items.reduce((acc, it) => acc + (it.physical_quantity - it.system_quantity), 0),
-    [items]
-  )
-
-  const totalSystemUnits = useMemo(
-    () => items.reduce((acc, it) => acc + (it.system_quantity || 0), 0),
-    [items]
-  )
-
-  const totalPhysicalUnits = useMemo(
-    () => items.reduce((acc, it) => acc + (it.physical_quantity || 0), 0),
-    [items]
-  )
-
-  const discrepancyCount = useMemo(
-    () => items.filter(it => it.physical_quantity !== it.system_quantity).length,
-    [items]
-  )
-
-  const matchedCount = useMemo(
-    () => items.filter(it => it.physical_quantity === it.system_quantity).length,
-    [items]
-  )
-
-  const surplusCount = useMemo(
-    () => items.filter(it => it.physical_quantity > it.system_quantity).length,
-    [items]
-  )
-
-  const deficitCount = useMemo(
-    () => items.filter(it => it.physical_quantity < it.system_quantity).length,
-    [items]
-  )
-
-  // Filtered items list based on search and tab
-  const filteredItems = useMemo(() => {
-    return items.filter(it => {
-      const pName = (it.product?.name || '').toLowerCase()
-      const pSku = (it.product?.sku || '').toLowerCase()
-      const q = searchQuery.toLowerCase().trim()
-      const matchesSearch = !q || pName.includes(q) || pSku.includes(q)
-
-      if (!matchesSearch) return false
-
-      const diff = it.physical_quantity - it.system_quantity
-      if (activeFilterTab === 'discrepancy') return diff !== 0
-      if (activeFilterTab === 'matched') return diff === 0
-      if (activeFilterTab === 'surplus') return diff > 0
-      if (activeFilterTab === 'deficit') return diff < 0
-      return true
-    })
-  }, [items, searchQuery, activeFilterTab])
-
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/stock-opnames', payload),
+    mutationFn: (payload: any) => inventoryService.createOpname(payload),
     onSuccess: (res: any) => {
       const created = res?.data?.data || res?.data
       if (created?.id) {
         setCurrentOpnameId(created.id)
+        navigate(`/inventory/opnames/${created.id}/edit`, { replace: true })
         qc.invalidateQueries({ queryKey: ['stock-opnames'] })
         qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
         qc.invalidateQueries({ queryKey: ['stock-opname-detail', created.id] })
@@ -151,7 +119,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
       } else {
         qc.invalidateQueries({ queryKey: ['stock-opnames'] })
         qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
-        onClose()
+        handleClose()
       }
     },
     onError: (err: any) => {
@@ -160,50 +128,34 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     }
   })
 
+  const updateItemsMutation = useMutation({
+    mutationFn: (updatedItems: any[]) => inventoryService.updateOpnameItems(currentOpnameId!, updatedItems),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stock-opname-detail', currentOpnameId] })
+      qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
+      toast.success(t('countsSavedSuccess', t('inventory.countsSavedSuccess', 'Physical counts saved successfully.')))
+    },
+    onError: (err: any) => {
+      const errMsg = err?.response?.data?.message || err?.message || 'Server error.'
+      toast.error(`${t('countsSaveError', t('inventory.countsSaveError', 'Failed to save physical counts'))}: ${errMsg}`)
+    }
+  })
+
   const completeMutation = useMutation({
-    mutationFn: (opnameItems: any) => api.post(`/stock-opnames/${currentOpnameId}/complete`, { items: opnameItems }),
+    mutationFn: () => inventoryService.completeOpname(currentOpnameId!),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stock-opnames'] })
       qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
       qc.invalidateQueries({ queryKey: ['inventory-levels'] })
       qc.invalidateQueries({ queryKey: ['inventory-dashboard-stats'] })
       toast.success(t('reconcileSuccess', t('inventory.reconcileSuccess', 'Stock opname count completed and discrepancies reconciled!')))
-      onClose()
+      handleClose()
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || 'Unexpected server error.'
       toast.error(`${t('opnameCompleteError', t('inventory.opnameCompleteError', 'Failed to complete stock opname'))}: ${errMsg}`)
     }
   })
-
-  const handleItemChange = (index: number, field: string, value: any) => {
-    setItems(prev => prev.map((item, i) => {
-      if (i === index) {
-        return { ...item, [field]: value }
-      }
-      return item
-    }))
-  }
-
-  const handleStepPhysicalQuantity = (index: number, delta: number) => {
-    setItems(prev => prev.map((item, i) => {
-      if (i === index) {
-        const current = parseInt(String(item.physical_quantity)) || 0
-        const nextVal = Math.max(0, current + delta)
-        return { ...item, physical_quantity: nextVal }
-      }
-      return item
-    }))
-  }
-
-  const handleSetAllToMatch = () => {
-    setItems(prev => prev.map(it => ({
-      ...it,
-      physical_quantity: it.system_quantity,
-      notes: ''
-    })))
-    toast.success(t('setAllMatchSuccess', 'All physical counts set to match system quantities.'))
-  }
 
   const handleStartOpname = (e: React.FormEvent) => {
     e.preventDefault()
@@ -213,19 +165,119 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
     }
     createMutation.mutate({
       warehouse_id: parseInt(warehouseId),
-      notes,
+      notes: notes || 'Periodic Stock Audit',
     })
   }
 
-  const handleCompleteOpname = (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    const opnameItems = items.map(it => ({
-      id: it.id,
-      physical_quantity: parseFloat(it.physical_quantity.toString()),
-      notes: it.notes,
-    }))
-    completeMutation.mutate(opnameItems)
+  const handleItemChange = (index: number, field: 'physical_quantity' | 'notes', value: any) => {
+    setItems(prev => {
+      const next = [...prev]
+      if (next[index]) {
+        next[index] = { ...next[index], [field]: value }
+      }
+      return next
+    })
   }
+
+  const handleStepPhysicalQuantity = (index: number, delta: number) => {
+    setItems(prev => {
+      const next = [...prev]
+      if (next[index]) {
+        const currentQty = Number(next[index].physical_quantity) || 0
+        next[index] = { ...next[index], physical_quantity: Math.max(0, currentQty + delta) }
+      }
+      return next
+    })
+  }
+
+  const handleSetAllToMatch = () => {
+    setItems(prev => prev.map(it => ({
+      ...it,
+      physical_quantity: it.system_quantity,
+    })))
+  }
+
+  const handleSaveProgress = () => {
+    if (!currentOpnameId) return
+    const payload = items.map(it => ({
+      id: it.id,
+      physical_quantity: it.physical_quantity,
+      notes: it.notes || '',
+    }))
+    updateItemsMutation.mutate(payload)
+  }
+
+  const handleCompleteOpname = () => {
+    if (!currentOpnameId) return
+    // First save latest counts, then complete
+    const payload = items.map(it => ({
+      id: it.id,
+      physical_quantity: it.physical_quantity,
+      notes: it.notes || '',
+    }))
+    updateItemsMutation.mutate(payload, {
+      onSuccess: () => {
+        completeMutation.mutate()
+      }
+    })
+  }
+
+  // Matrix Filtered and Computed stats
+  const stats = useMemo(() => {
+    let totalItems = items.length
+    let matchedCount = 0
+    let discrepancyCount = 0
+    let surplusCount = 0
+    let deficitCount = 0
+    let totalSystemQty = 0
+    let totalPhysicalQty = 0
+
+    items.forEach(it => {
+      totalSystemQty += it.system_quantity
+      totalPhysicalQty += it.physical_quantity
+      const diff = it.physical_quantity - it.system_quantity
+      if (diff === 0) {
+        matchedCount++
+      } else {
+        discrepancyCount++
+        if (diff > 0) surplusCount++
+        else deficitCount++
+      }
+    })
+
+    const netVariance = totalPhysicalQty - totalSystemQty
+    const accuracy = totalItems > 0 ? ((matchedCount / totalItems) * 100).toFixed(1) : '100'
+
+    return {
+      totalItems,
+      matchedCount,
+      discrepancyCount,
+      surplusCount,
+      deficitCount,
+      totalSystemQty,
+      totalPhysicalQty,
+      netVariance,
+      accuracy,
+    }
+  }, [items])
+
+  const filteredItems = useMemo(() => {
+    return items.filter(it => {
+      const matchSearch = searchQuery === '' || 
+        it.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        it.product?.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        it.product?.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
+
+      if (!matchSearch) return false
+
+      const diff = it.physical_quantity - it.system_quantity
+      if (activeFilterTab === 'discrepancy') return diff !== 0
+      if (activeFilterTab === 'matched') return diff === 0
+      if (activeFilterTab === 'surplus') return diff > 0
+      if (activeFilterTab === 'deficit') return diff < 0
+      return true
+    })
+  }, [items, searchQuery, activeFilterTab])
 
   const formatNoteText = (noteText: string) => {
     if (!noteText) return ''
@@ -249,96 +301,89 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
   const isDone = status === 'done' || status === 'completed'
 
   return (
-    <div className="space-y-6">
-      
-      {/* ─── Top Dedicated Header Bar ──────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/80 p-5 sm:p-6 rounded-2xl shadow-xs">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            <CheckCircle2 size={24} />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
-                {isEdit
-                  ? t('opnameDetails', t('inventory.opnameDetails', 'Stock Audit Details'))
-                  : t('create_opname', t('inventory.create_opname', 'New Stock Audit'))}
-              </h1>
-              {isEdit && (
-                <span className="px-2.5 py-0.5 rounded-full font-mono text-xs font-bold bg-muted text-foreground border border-border">
-                  {detail?.reference_number || `OPN-${currentOpnameId}`}
-                </span>
-              )}
-              {isEdit && (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                  isDone
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                }`}>
-                  {isDone ? t('statusDone', 'Completed') : t('statusDraft', 'In Progress / Draft')}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t('opname_desc', t('inventory.opname_desc', 'Snap real-time system stock snapshot and reconcile on-ground physical inventory.'))}
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-all font-bold text-xs shadow-xs cursor-pointer active:scale-95 shrink-0 self-start sm:self-center"
-        >
-          <ArrowLeft size={16} />
-          <span>{t('backToOpnames', t('inventory.backToOpnames', 'Back to Stock List'))}</span>
-        </button>
-      </div>
+    <div className="w-full space-y-6 pb-12">
+      <FormHeader
+        isEdit={isEdit}
+        title={
+          isEdit
+            ? t('opnameDetails', 'Stock Opname Audit')
+            : t('create_opname', 'New Stock Opname')
+        }
+        subtitle={t('opname_desc', 'Snap system stock level snapshot and verify physical quantities.')}
+        breadcrumbs={[
+          { label: t('inventory', 'Inventory'), path: '/inventory' },
+          { label: t('opnames', 'Stock Opnames'), path: '/inventory?tab=opnames' },
+          { label: isEdit ? (detail?.reference_number || `OPN-${currentOpnameId}`) : t('create_opname', 'New Stock Opname') },
+        ]}
+        statusBadge={
+          isEdit ? (
+            <span className={`px-3 py-1 rounded-full text-xs font-black font-mono shadow-2xs ${
+              isDone
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+            }`}>
+              {isDone ? t('statusDone', 'Completed') : t('statusDraft', 'In Progress')}
+            </span>
+          ) : undefined
+        }
+        onBack={handleClose}
+        backLabel={t('common.back', 'Back')}
+      />
 
       {/* ─── INITIAL CREATION SCREEN (Before Snapshot) ────────────────────── */}
       {!isEdit && (
         <form onSubmit={handleStartOpname} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* Left Column: Form Setup (5 cols) */}
-            <div className="lg:col-span-5 bg-card border border-border/80 p-6 rounded-2xl shadow-xs space-y-5">
-              <div className="flex items-center gap-2.5 border-b border-border pb-3.5">
-                <Info size={16} className="text-primary" />
-                <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                  {t('generalInformation', t('inventory.generalInfoCard', 'Audit Parameters'))}
-                </h3>
+            {/* Left Column: Warehouse Selection & Setup (5 cols) */}
+            <div className="lg:col-span-5 bg-card border border-border/80 p-5 sm:p-6 rounded-3xl shadow-sm space-y-5">
+              <div className="flex items-center gap-2.5 border-b border-border/60 pb-3.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-2xs">
+                  <Warehouse size={16} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    {t('generalInfoCard', 'General Information')}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('auditScopeAndWarehouse', 'Audit Scope & Target Warehouse')}
+                  </p>
+                </div>
               </div>
 
-              {/* Warehouse Selection */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-foreground">
-                  {t('warehouse', t('inventory.warehouse', 'Target Warehouse Location'))} <span className="text-rose-500">*</span>
+              {/* Warehouse selector */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-foreground flex items-center justify-between">
+                  <span>{t('warehouse', 'Target Warehouse')} <span className="text-rose-500">*</span></span>
+                  {selectedWarehouseObj && (
+                    <span className="text-[10px] text-primary font-mono font-semibold">
+                      Code: {selectedWarehouseObj.code || `WH-${selectedWarehouseObj.id}`}
+                    </span>
+                  )}
                 </label>
                 <ModernSelect
+                  options={warehouses?.map((w: any) => ({
+                    value: w.id.toString(),
+                    label: w.name,
+                    subtitle: `${w.code || `WH-${w.id}`} • ${w.address || 'Active Location'}`,
+                  })) || []}
                   value={warehouseId}
-                  onChange={(val) => setWarehouseId(String(val))}
-                  options={[
-                    { value: '', label: t('selectWarehouseLocation', t('inventory.selectWarehouseLocation', 'Select Warehouse Location...')) },
-                    ...(warehouses ?? []).map((w: any) => ({ value: w.id, label: w.name })),
-                  ]}
-                  placeholder={t('selectWarehouseLocation', t('inventory.selectWarehouseLocation', 'Select Warehouse Location...'))}
+                  onChange={(val) => setWarehouseId(val)}
+                  placeholder={t('selectWarehousePlaceholder', 'Choose warehouse hub...')}
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  {t('warehouseSnapshotNotice', 'The system will instantly snap all products & current quantities in this warehouse.')}
-                </p>
               </div>
 
               {/* Audit Notes */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 pt-1">
                 <label className="block text-xs font-bold text-foreground">
-                  {t('notes', t('inventory.notes', 'Audit Notes / Purpose'))}
+                  {t('notes', 'Audit Notes / Purpose')}
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  placeholder={t('auditDescPlaceholder', t('inventory.auditDescPlaceholder', 'e.g., Monthly Cycle Count, Mid-Year Audit, End-of-Week Reconciliation...'))}
-                  className="w-full p-3.5 rounded-xl border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none font-medium placeholder:text-muted-foreground/60"
+                  rows={3}
+                  placeholder={t('auditDescPlaceholder', 'e.g., Monthly Cycle Count, Mid-Year Audit, End-of-Week Reconciliation...')}
+                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none font-medium placeholder:text-muted-foreground/60"
                 />
               </div>
 
@@ -347,7 +392,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                 <button
                   type="submit"
                   disabled={createMutation.isPending || !warehouseId}
-                  className="w-full py-3 text-xs font-bold text-white bg-primary hover:opacity-90 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-11 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {createMutation.isPending ? (
                     <>
@@ -357,7 +402,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                   ) : (
                     <>
                       <Warehouse size={16} />
-                      <span>{t('startAuditSnapshot', t('inventory.startAuditSnapshot', 'Start Stock Audit Snapshot'))}</span>
+                      <span>{t('startAuditSnapshot', 'Start Stock Audit Snapshot')}</span>
                     </>
                   )}
                 </button>
@@ -365,50 +410,50 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
             </div>
 
             {/* Right Column: Interactive Feature Card (7 cols) */}
-            <div className="lg:col-span-7 bg-card border border-border/80 p-6 sm:p-8 rounded-2xl shadow-xs flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-7 bg-card border border-border/80 p-6 sm:p-7 rounded-3xl shadow-sm flex flex-col justify-between space-y-6">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
                   <Sparkles size={14} />
                   <span>{t('smartCycleCounting', 'Enterprise Stock Audit Workflow')}</span>
                 </div>
-                <h3 className="text-lg font-black text-foreground tracking-tight">
+                <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight">
                   {t('howOpnameWorks', 'How Stock Audit & Count Verification Works')}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {t('opnameWorkflowExplanation', 'Stock Audit allows warehouse managers to record a frozen snapshot of book inventory, record actual physical items counted on the shelves, calculate discrepancy variances, and automatically reconcile stock levels upon completion.')}
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
-                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-1.5">
+                    <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-xs">
                       1
                     </div>
-                    <h4 className="text-xs font-bold text-foreground">{t('snapStock', 'Snap Stock')}</h4>
-                    <p className="text-[11px] text-muted-foreground">{t('snapStockDesc', 'Captures live quantities across all catalog SKUs in selected warehouse.')}</p>
+                    <h4 className="text-xs font-bold text-foreground">{t('snapStock', '1. Snap Stock')}</h4>
+                    <p className="text-[11px] text-muted-foreground leading-snug">{t('snapStockDesc', 'Captures live quantities across all catalog SKUs in selected warehouse.')}</p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                  <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-1.5">
+                    <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-xs">
                       2
                     </div>
-                    <h4 className="text-xs font-bold text-foreground">{t('physicalCount', 'Physical Count')}</h4>
-                    <p className="text-[11px] text-muted-foreground">{t('physicalCountDesc', 'Staff inputs actual verified quantities with quick steppers & variance tags.')}</p>
+                    <h4 className="text-xs font-bold text-foreground">{t('countAndVerify', '2. Count & Verify')}</h4>
+                    <p className="text-[11px] text-muted-foreground leading-snug">{t('countAndVerifyDesc', 'Count real stock in bins & aisles, enter counts with discrepancy alerts.')}</p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                  <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-1.5">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-xs">
                       3
                     </div>
-                    <h4 className="text-xs font-bold text-foreground">{t('reconcileStock', 'Reconcile')}</h4>
-                    <p className="text-[11px] text-muted-foreground">{t('reconcileStockDesc', 'Automatic inventory adjustments and audit movement logs generated.')}</p>
+                    <h4 className="text-xs font-bold text-foreground">{t('autoReconcile', '3. Auto Reconcile')}</h4>
+                    <p className="text-[11px] text-muted-foreground leading-snug">{t('autoReconcileDesc', 'Applies adjustment ledger movements and brings balance to 100%.')}</p>
                   </div>
                 </div>
               </div>
 
               {selectedWarehouseObj && (
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Warehouse size={18} />
                     </div>
                     <div className="min-w-0">
@@ -417,7 +462,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                     </div>
                   </div>
                   <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-white text-center shrink-0 shadow-2xs">
-                    {t('readyToSnap', 'Ready to Snap')}
+                    {t('readyToSnap', 'Ready to Snapshot')}
                   </span>
                 </div>
               )}
@@ -432,6 +477,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
         <div className="space-y-6">
           
           {/* Header Summary Strip */}
+          {/* Header Summary Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('auditedSKUs', 'Total SKUs Audited')}</span>
@@ -440,18 +486,18 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
 
             <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('system_qty', 'System Book Units')}</span>
-              <p className="text-xl font-black text-foreground font-mono">{totalSystemUnits}</p>
+              <p className="text-xl font-black text-foreground font-mono">{stats.totalSystemQty}</p>
             </div>
 
             <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('physical_qty', 'Physical Counted')}</span>
-              <p className="text-xl font-black text-foreground font-mono">{totalPhysicalUnits}</p>
+              <p className="text-xl font-black text-foreground font-mono">{stats.totalPhysicalQty}</p>
             </div>
 
             <div className="bg-card border border-border/80 p-4 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('variance', 'Net Discrepancy')}</span>
-              <p className={`text-xl font-black font-mono ${totalDiff > 0 ? 'text-emerald-600 dark:text-emerald-400' : totalDiff < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'}`}>
-                {totalDiff > 0 ? `+${totalDiff}` : totalDiff}
+              <p className={`text-xl font-black font-mono ${stats.netVariance > 0 ? 'text-emerald-600 dark:text-emerald-400' : stats.netVariance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'}`}>
+                {stats.netVariance > 0 ? `+${stats.netVariance}` : stats.netVariance}
               </p>
             </div>
           </div>
@@ -485,7 +531,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                       : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('discrepancies', 'Discrepancies')} ({discrepancyCount})
+                  {t('discrepancies', 'Discrepancies')} ({stats.discrepancyCount})
                 </button>
 
                 <button
@@ -497,7 +543,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                       : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('matched', 'Matched')} ({matchedCount})
+                  {t('matched', 'Matched')} ({stats.matchedCount})
                 </button>
 
                 <button
@@ -509,7 +555,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                       : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('surplus', 'Surplus (+)')} ({surplusCount})
+                  {t('surplus', 'Surplus (+)')} ({stats.surplusCount})
                 </button>
 
                 <button
@@ -521,7 +567,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                       : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {t('shortage', 'Shortage (-)')} ({deficitCount})
+                  {t('shortage', 'Shortage (-)')} ({stats.deficitCount})
                 </button>
               </div>
 
@@ -650,7 +696,7 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
                           ) : (
                             <input
                               type="text"
-                              value={formatNoteText(item.notes)}
+                              value={item.notes || ''}
                               onChange={(e) => handleItemChange(originalIndex, 'notes', e.target.value)}
                               placeholder={t('reasonDiffPlaceholder', t('inventory.reasonDiffPlaceholder', 'Reason for diff...'))}
                               className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-foreground text-xs focus:outline-none focus:border-primary transition-all font-medium placeholder:text-muted-foreground/50"
@@ -681,47 +727,32 @@ export const StockOpnameForm: React.FC<StockOpnameFormProps> = ({ opnameId, onCl
               </table>
             </div>
 
-            {/* Bottom Actions & Reconciliation Bar */}
-            <div className="p-5 border-t border-border bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-2">
-                <Info size={15} className="text-primary shrink-0" />
-                <span>
-                  {isDraft
-                    ? t('reconcileNotice', 'Review counted numbers above. Clicking "Verify & Reconcile" will update active warehouse stock.')
-                    : t('completedNotice', 'This audit is completed and stock reconciliations have already been applied.')}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-5 py-2.5 text-xs font-bold text-foreground border border-border rounded-xl hover:bg-muted transition-colors bg-card cursor-pointer active:scale-95"
-                >
-                  {t('close', 'Close')}
-                </button>
-
-                {isDraft && (
-                  <button
-                    type="button"
-                    onClick={() => handleCompleteOpname()}
-                    disabled={completeMutation.isPending}
-                    className="px-6 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    {completeMutation.isPending ? (
-                      <>
-                        <Loader2 size={15} className="animate-spin" />
-                        <span>{t('reconciling', 'Reconciling Stock...')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check size={16} />
-                        <span>{t('verifyAndReconcile', t('inventory.verifyAndReconcile', 'Verify & Reconcile Stock'))}</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
+            {/* ─── Global Form Footer ─── */}
+            <div className="p-4 sm:p-5 border-t border-border/70 bg-transparent">
+              <FormFooter
+                onCancel={handleClose}
+                cancelLabel={t('common.cancel', 'Cancel')}
+                isEdit={isEdit}
+                isSubmitting={completeMutation.isPending || updateItemsMutation.isPending}
+                showSubmit={isDraft}
+                submitLabel={t('reconcileStock', 'Reconcile & Complete Audit')}
+                submitIcon={<Check size={16} />}
+                onSubmit={() => handleCompleteOpname()}
+                showShortcutHint={false}
+                extraActions={
+                  isDraft ? (
+                    <button
+                      type="button"
+                      onClick={handleSaveProgress}
+                      disabled={updateItemsMutation.isPending}
+                      className="h-10 px-5 text-xs font-bold border border-border bg-card hover:bg-muted text-foreground rounded-xl flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                    >
+                      {updateItemsMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                      <span>{t('saveProgress', 'Save Progress')}</span>
+                    </button>
+                  ) : undefined
+                }
+              />
             </div>
 
           </div>

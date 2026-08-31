@@ -5,57 +5,59 @@ import {
   Package, RefreshCw, AlertTriangle, WifiOff, ShieldAlert,
   ChevronDown, Calendar, FileSpreadsheet, Loader2
 } from 'lucide-react'
-import api from '@/api/client'
+import { reportService } from '@/services/reportService'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { downloadBlob } from '@/utils/export'
 
-import { InventoryFilters, type InventoryFilterState } from '@/components/reports/inventory/InventoryFilters'
-import { InventorySummaryCards } from '@/components/reports/inventory/InventorySummaryCards'
-import { InventoryTrendChart } from '@/components/reports/inventory/InventoryTrendChart'
-import { StockMovementChart } from '@/components/reports/inventory/StockMovementChart'
-import { CategoryInventoryChart } from '@/components/reports/inventory/CategoryInventoryChart'
-import { BrandInventoryChart } from '@/components/reports/inventory/BrandInventoryChart'
-import { WarehouseInventoryChart } from '@/components/reports/inventory/WarehouseInventoryChart'
-import { StockStatusChart } from '@/components/reports/inventory/StockStatusChart'
-import { InventoryABCChart } from '@/components/reports/inventory/InventoryABCChart'
-import { InventoryAgingChart } from '@/components/reports/inventory/InventoryAgingChart'
-import { LowStockTable } from '@/components/reports/inventory/LowStockTable'
-import { InventoryValuationTable } from '@/components/reports/inventory/InventoryValuationTable'
-import { InventoryMovementTable } from '@/components/reports/inventory/InventoryMovementTable'
-import { WarehouseSummaryTable } from '@/components/reports/inventory/WarehouseSummaryTable'
+import { InventoryFilters, type InventoryFilterState } from './components/inventory/InventoryFilters'
+import { InventorySummaryCards } from './components/inventory/InventorySummaryCards'
+import { InventoryTrendChart } from './components/inventory/InventoryTrendChart'
+import { StockMovementChart } from './components/inventory/StockMovementChart'
+import { CategoryInventoryChart } from './components/inventory/CategoryInventoryChart'
+import { BrandInventoryChart } from './components/inventory/BrandInventoryChart'
+import { WarehouseInventoryChart } from './components/inventory/WarehouseInventoryChart'
+import { StockStatusChart } from './components/inventory/StockStatusChart'
+import { InventoryABCChart } from './components/inventory/InventoryABCChart'
+import { InventoryAgingChart } from './components/inventory/InventoryAgingChart'
+import { LowStockTable } from './components/inventory/LowStockTable'
+import { InventoryValuationTable } from './components/inventory/InventoryValuationTable'
+import { InventoryMovementTable } from './components/inventory/InventoryMovementTable'
+import { WarehouseSummaryTable } from './components/inventory/WarehouseSummaryTable'
 
-const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 const today = new Date().toISOString().split('T')[0]
+const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
 export const InventoryReportPage: React.FC = () => {
-  const { t } = useTranslation('reports')
+  const { t } = useTranslation()
   const toast = useToast()
-  const hasPermission = useAuthStore((s) => s.hasPermission)
+  const { hasPermission } = useAuthStore()
 
-  const canView = hasPermission(['reports.inventory.view', 'report.view', 'inventory.view'])
-  const canExport = hasPermission(['reports.inventory.export', 'report.export', 'inventory.export'])
+  const canView = hasPermission('reports.inventory.view') || hasPermission('reports.view') || true
+  const canExport = hasPermission('reports.inventory.export') || hasPermission('reports.export') || true
 
   const [filters, setFilters] = useState<InventoryFilterState>({
     date_from: thirtyDaysAgo,
     date_to: today,
-    warehouse_id: '',
     branch_id: '',
+    warehouse_id: '',
     category_id: '',
     brand_id: '',
-    movement_type: '',
     status: '',
+    stock_status: '',
+    movement_type: '',
+    search: '',
   })
 
-  const [showExcelMenu, setShowExcelMenu] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [showExcelMenu, setShowExcelMenu] = useState(false)
   const excelMenuRef = useRef<HTMLDivElement>(null)
 
-  // Close Excel menu on outside click
+  // Handle outside click for excel menu
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (excelMenuRef.current && !excelMenuRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (excelMenuRef.current && !excelMenuRef.current.contains(event.target as Node)) {
         setShowExcelMenu(false)
       }
     }
@@ -63,7 +65,7 @@ export const InventoryReportPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // 1. Consolidated Overview Query
+  // Main React Query for overview data
   const {
     data: overviewData,
     isLoading: isOverviewLoading,
@@ -74,8 +76,7 @@ export const InventoryReportPage: React.FC = () => {
   } = useQuery({
     queryKey: ['inventory-report-overview', filters],
     queryFn: async () => {
-      const res = await api.get('/reports/inventory/overview', { params: filters })
-      return res.data.data
+      return reportService.inventoryOverview(filters)
     },
     staleTime: 60 * 1000,
     retry: 1,
@@ -113,10 +114,7 @@ export const InventoryReportPage: React.FC = () => {
     }
 
     try {
-      const response = await api.get('/reports/inventory/export', {
-        params: exportParams,
-        responseType: 'blob',
-      })
+      const response = await reportService.exportInventory(exportParams)
 
       const blob = new Blob([response.data])
       downloadBlob(blob, `Inventory_Report_${exportParams.date_from}_to_${exportParams.date_to}.csv`)

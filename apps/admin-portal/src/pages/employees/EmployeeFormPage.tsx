@@ -23,7 +23,9 @@ import {
   UserCheck,
   Building
 } from 'lucide-react'
-import api from '@/api/client'
+import { employeeService } from '@/services/employeeService'
+import { companyService } from '@/services/companyService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
 import { FormHeader, FormFooter, LoadingSpinner } from '@/components/common'
 import CustomErrorMessage from '@/components/ui/CustomErrorMessage'
@@ -101,34 +103,34 @@ export const EmployeeFormPage: React.FC = () => {
     refetch: refetchDetail,
   } = useQuery({
     queryKey: ['employee-detail', employeeId],
-    queryFn: () => (employeeId ? api.get(`/employees/${employeeId}`).then(r => r.data.data) : null),
+    queryFn: () => (employeeId ? employeeService.show(employeeId) : null),
     enabled: isEdit && !isNaN(employeeId as number),
   })
 
   // Queries for Dropdowns
   const { data: companies = [] } = useQuery({
     queryKey: ['companies-list-dropdown'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getCompanies({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: branches = [] } = useQuery({
     queryKey: ['branches-list-dropdown'],
-    queryFn: () => api.get('/branches', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getBranches({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: departments = [] } = useQuery({
     queryKey: ['departments-list-dropdown'],
-    queryFn: () => api.get('/departments', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => employeeService.departments({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: positions = [] } = useQuery({
     queryKey: ['positions-list-dropdown'],
-    queryFn: () => api.get('/positions', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => employeeService.positions({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: users = [] } = useQuery({
     queryKey: ['users-list-dropdown'],
-    queryFn: () => api.get('/users', { params: { per_page: 200 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 200 }).then(r => r.data ?? []),
   })
 
   // Populate data in edit mode
@@ -172,14 +174,12 @@ export const EmployeeFormPage: React.FC = () => {
     setUploadingPhoto(true)
 
     try {
-      const res = await api.post('/employees/upload-photo', uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      const photoPath = res.data.data.path || res.data.data.url
+      const res = await employeeService.uploadPhoto(uploadData)
+      const photoPath = res.data?.path || res.data?.url || res.path || res.url
       setFormField('photo', photoPath)
-      toast.success(t('employees.photoUploaded', 'រូបថតបុគ្គលិកត្រូវបានបញ្ចូលជោគជ័យ'))
+      toast.success(t('employees.photoUploaded', 'Employee photo uploaded successfully.'))
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? t('employees.photoUploadFailed', 'មិនអាចបញ្ចូលរូបថតបានទេ'))
+      toast.error(err?.response?.data?.message ?? t('employees.photoUploadFailed', 'Failed to upload photo.'))
     } finally {
       setUploadingPhoto(false)
     }
@@ -194,19 +194,19 @@ export const EmployeeFormPage: React.FC = () => {
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       if (isEdit && employeeId) {
-        return api.put(`/employees/${employeeId}`, payload)
+        return employeeService.update(employeeId, payload)
       }
-      return api.post('/employees', payload)
+      return employeeService.create(payload)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['employees'] })
       qc.invalidateQueries({ queryKey: ['employees-list'] })
       qc.invalidateQueries({ queryKey: ['employees/stats'] })
-      toast.success(isEdit ? t('employees.updateSuccess', 'បានកែសម្រួលព័ត៌មានបុគ្គលិកជោគជ័យ') : t('employees.createSuccess', 'បានបង្កើតបុគ្គលិកថ្មីជោគជ័យ'))
+      toast.success(isEdit ? t('employees.updateSuccess', 'Employee updated successfully.') : t('employees.createSuccess', 'Employee created successfully.'))
       navigate('/employees')
     },
     onError: (err: any) => {
-      const message = err?.response?.data?.message || t('common.saveFailed', 'ការរក្សាទុកទិន្នន័យមិនបានជោគជ័យ')
+      const message = err?.response?.data?.message || t('common.saveFailed', 'Failed to save data.')
       toast.error(message)
     }
   })
@@ -215,12 +215,12 @@ export const EmployeeFormPage: React.FC = () => {
     e.preventDefault()
 
     if (!formData.name.trim()) {
-      toast.warning(t('employees.nameRequired', 'សូមបញ្ចូលឈ្មោះបុគ្គលិក'))
+      toast.warning(t('employees.nameRequired', 'Employee name is required.'))
       return
     }
 
     if (!formData.employee_number.trim()) {
-      toast.warning(t('employees.codeRequired', 'សូមបញ្ចូលលេខកូដបុគ្គលិក'))
+      toast.warning(t('employees.codeRequired', 'Employee number is required.'))
       return
     }
 
@@ -252,7 +252,7 @@ export const EmployeeFormPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <LoadingSpinner />
-        <span className="text-xs text-muted-foreground mt-2">{t('employees.loadingDetail', 'កំពុងទាញយកព័ត៌មានបុគ្គលិក...')}</span>
+        <span className="text-xs text-muted-foreground mt-2">{t('employees.loadingDetail', 'Loading employee profile...')}</span>
       </div>
     )
   }
@@ -261,7 +261,7 @@ export const EmployeeFormPage: React.FC = () => {
     return (
       <div className="p-6">
         <CustomErrorMessage
-          title={t('employees.errorLoading', 'មិនអាចទាញយកព័ត៌មានបុគ្គលិកបានទេ')}
+          title={t('employees.errorLoading', 'Failed to load employee details.')}
           message={detailError?.message || t('common.error', 'An error occurred')}
           onRetry={() => refetchDetail()}
         />
@@ -293,10 +293,10 @@ export const EmployeeFormPage: React.FC = () => {
         }`}
       />
       {formData.status === 'active'
-        ? t('employees.active', 'សកម្ម')
+        ? t('employees.active', 'Active')
         : formData.status === 'resigned'
-        ? t('employees.resigned', 'លាឈប់')
-        : t('employees.inactive', 'អសកម្ម')}
+        ? t('employees.resigned', 'Resigned')
+        : t('employees.inactive', 'Inactive')}
     </span>
   )
 
@@ -308,31 +308,31 @@ export const EmployeeFormPage: React.FC = () => {
         title={
           isEdit
             ? (formData.name
-                ? t('employees.editEmployeeTitle', 'កែសម្រួលបុគ្គលិក: {{name}}', { name: formData.name })
-                : t('employees.editEmployee', 'កែសម្រួលបុគ្គលិក'))
-            : t('employees.createEmployeeTitle', 'បង្កើតបុគ្គលិកថ្មី')
+                ? t('employees.editEmployeeTitle', 'Edit Employee: {{name}}', { name: formData.name })
+                : t('employees.editEmployee', 'Edit Employee'))
+            : t('employees.createEmployeeTitle', 'Create New Employee')
         }
         subtitle={
           isEdit
-            ? t('employees.editSubtitle', 'ធ្វើបច្ចុប្បន្នភាពទម្រង់ ដេប៉ាតឺម៉ង់ តួនាទី ប្រាក់បៀវត្សរ៍ និងព័ត៌មានបុគ្គលិក')
-            : t('employees.createSubtitle', 'បំពេញព័ត៌មានបុគ្គលិក ដេប៉ាតឺម៉ង់ តួនាទី ប្រាក់បៀវត្សរ៍ និងព័ត៌មានទំនាក់ទំនង')
+            ? t('employees.editSubtitle', 'Update profile, department, position, salary, and employee records.')
+            : t('employees.createSubtitle', 'Complete employee profile, department, position, salary, and contact info.')
         }
         statusBadge={statusBadge}
         breadcrumbs={[
-          { label: t('employees.employee_management', 'គ្រប់គ្រងបុគ្គលិក'), path: '/employees' },
+          { label: t('employees.employee_management', 'Employees'), path: '/employees' },
           {
             label: isEdit
-              ? t('employees.editEmployee', 'កែសម្រួលបុគ្គលិក')
-              : t('employees.createEmployee', 'បន្ថែមថ្មី'),
+              ? t('employees.editEmployee', 'Edit Employee')
+              : t('employees.createEmployee', 'Add New'),
           },
         ]}
         backPath="/employees"
-        backLabel={t('employees.back', 'ត្រឡប់ក្រោយ')}
+        backLabel={t('employees.back', 'Back')}
       />
 
       {/* Main Form Form Grid */}
       <form onSubmit={handleSubmit} className="space-y-6 w-full">
-        {/* ─── SECTION 1: ព័ត៌មានផ្ទាល់ខ្លួន & រូបថត (Personal Info & Photo Profile) ─── */}
+        {/* SECTION 1: Personal Info & Photo Profile */}
         <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xs space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-border/60 dark:border-slate-800">
             <div className="flex items-center gap-3">
@@ -341,17 +341,17 @@ export const EmployeeFormPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-sm sm:text-base text-foreground dark:text-slate-100">
-                  {t('employees.tabPersonal', 'ព័ត៌មានផ្ទាល់ខ្លួន & រូបថត')}
+                  {t('employees.tabPersonal', 'Personal Information & Photo')}
                 </h3>
                 <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                  {t('employees.personalDesc', 'រូបថតសម្គាល់ ឈ្មោះពេញ លេខសម្គាល់បុគ្គលិក ភេទ និងថ្ងៃខែឆ្នាំកំណើត')}
+                  {t('employees.personalDesc', 'Profile photo, full name, employee number, gender, and birth date.')}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground dark:text-slate-400 font-medium hidden sm:inline">
-                {t('employees.status', 'ស្ថានភាព')}:
+                {t('employees.status', 'Status')}:
               </span>
               <div className="flex items-center p-0.5 bg-muted/60 dark:bg-slate-800/80 rounded-xl border border-border/60 dark:border-slate-700">
                 {(['active', 'inactive', 'resigned'] as const).map(st => (
@@ -370,10 +370,10 @@ export const EmployeeFormPage: React.FC = () => {
                     }`}
                   >
                     {st === 'active'
-                      ? t('employees.active', 'សកម្ម')
+                      ? t('employees.active', 'Active')
                       : st === 'resigned'
-                      ? t('employees.resigned', 'លាឈប់')
-                      : t('employees.inactive', 'អសកម្ម')}
+                      ? t('employees.resigned', 'Resigned')
+                      : t('employees.inactive', 'Inactive')}
                   </button>
                 ))}
               </div>
@@ -400,17 +400,17 @@ export const EmployeeFormPage: React.FC = () => {
 
               <div className="space-y-1 mb-3">
                 <h4 className="text-xs font-bold text-foreground dark:text-slate-200">
-                  {t('employees.profilePhoto', 'រូបថតបុគ្គលិក')}
+                  {t('employees.profilePhoto', 'Profile Photo')}
                 </h4>
                 <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                  {t('employees.photoNote', 'PNG, JPG, WEBP (អតិបរមា 5MB)')}
+                  {t('employees.photoNote', 'PNG, JPG, WEBP (Max 5MB)')}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <label className="h-9 px-3.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95">
                   <Camera size={14} />
-                  <span>{photoPreview ? t('employees.changePhoto', 'ប្តូររូបថត') : t('employees.uploadPhoto', 'បញ្ចូលរូបថត')}</span>
+                  <span>{photoPreview ? t('employees.changePhoto', 'Change Photo') : t('employees.uploadPhoto', 'Upload Photo')}</span>
                   <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                 </label>
                 {photoPreview && (
@@ -418,7 +418,7 @@ export const EmployeeFormPage: React.FC = () => {
                     type="button"
                     onClick={handleRemovePhoto}
                     className="h-9 px-3 rounded-xl border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 text-xs font-bold inline-flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                    title={t('employees.delete', 'លុប')}
+                    title={t('employees.delete', 'Delete')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -432,7 +432,7 @@ export const EmployeeFormPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200">
-                    {t('employees.employee_number', 'លេខសម្គាល់បុគ្គលិក')} <span className="text-rose-500">*</span>
+                    {t('employees.employee_number', 'Employee ID')} <span className="text-rose-500">*</span>
                   </label>
                   <button
                     type="button"
@@ -440,7 +440,7 @@ export const EmployeeFormPage: React.FC = () => {
                     className="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-semibold cursor-pointer"
                   >
                     <Sparkles size={11} />
-                    <span>{t('employees.autoGenerate', 'ស្វ័យប្រវត្តិ')}</span>
+                    <span>{t('employees.autoGenerate', 'Auto Generate')}</span>
                   </button>
                 </div>
                 <input
@@ -456,14 +456,14 @@ export const EmployeeFormPage: React.FC = () => {
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('employees.name', 'ឈ្មោះពេញ')} <span className="text-rose-500">*</span>
+                  {t('employees.name', 'Full Name')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={e => setFormField('name', e.target.value)}
-                  placeholder={t('employees.namePlaceholder', 'ឧ. សុខ ចិន្តា / Sok Chenda')}
+                  placeholder={t('employees.namePlaceholder', 'e.g. Sok Chenda')}
                   className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] font-medium rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
@@ -471,23 +471,23 @@ export const EmployeeFormPage: React.FC = () => {
               {/* Gender */}
               <div>
                 <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('employees.gender', 'ភេទ')}
+                  {t('employees.gender', 'Gender')}
                 </label>
                 <select
                   value={formData.gender}
                   onChange={e => setFormField('gender', e.target.value)}
                   className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium cursor-pointer"
                 >
-                  <option value="male" className="dark:bg-slate-900">{t('employees.male', 'ប្រុស')}</option>
-                  <option value="female" className="dark:bg-slate-900">{t('employees.female', 'ស្រី')}</option>
-                  <option value="other" className="dark:bg-slate-900">{t('employees.other', 'ផ្សេងទៀត')}</option>
+                  <option value="male" className="dark:bg-slate-900">{t('employees.male', 'Male')}</option>
+                  <option value="female" className="dark:bg-slate-900">{t('employees.female', 'Female')}</option>
+                  <option value="other" className="dark:bg-slate-900">{t('employees.other', 'Other')}</option>
                 </select>
               </div>
 
               {/* Birth Date */}
               <div>
                 <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('employees.birth_date', 'ថ្ងៃខែឆ្នាំកំណើត')}
+                  {t('employees.birth_date', 'Birth Date')}
                 </label>
                 <div className="relative">
                   <Calendar size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
@@ -503,13 +503,13 @@ export const EmployeeFormPage: React.FC = () => {
               {/* NIK / National ID */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('employees.nik', 'លេខអត្តសញ្ញាណប័ណ្ណ / NIK')}
+                  {t('employees.nik', 'National ID / NIK')}
                 </label>
                 <input
                   type="text"
                   value={formData.nik}
                   onChange={e => setFormField('nik', e.target.value)}
-                  placeholder={t('employees.nikPlaceholder', 'ឧ. 32010203040001')}
+                  placeholder={t('employees.nikPlaceholder', 'e.g. 32010203040001')}
                   className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] font-mono rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                 />
               </div>
@@ -517,7 +517,7 @@ export const EmployeeFormPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ─── SECTION 2: ការងារ ដេប៉ាតឺម៉ង់ & សាខា (Work Placement, Department & Position) ─── */}
+        {/* SECTION 2: Work Placement, Department & Position */}
         <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xs space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-border/60 dark:border-slate-800">
             <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
@@ -525,10 +525,10 @@ export const EmployeeFormPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-sm sm:text-base text-foreground dark:text-slate-100">
-                {t('employees.tabWorkPlacement', 'ការងារ ដេប៉ាតឺម៉ង់ & សាខា')}
+                {t('employees.tabWorkPlacement', 'Work Placement, Department & Position')}
               </h3>
               <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                {t('employees.workPlacementDesc', 'កំណត់សាខាក្រុមហ៊ុន ដេប៉ាតឺម៉ង់ តួនាទី គណនីប្រព័ន្ធ និងកាលបរិច្ឆេទការងារ')}
+                {t('employees.workPlacementDesc', 'Configure company branch, department, position, system account, and employment dates.')}
               </p>
             </div>
           </div>
@@ -537,7 +537,7 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Company */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.company', 'ក្រុមហ៊ុនមេ')} <span className="text-rose-500">*</span>
+                {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
               </label>
               <select
                 value={formData.company_id}
@@ -555,7 +555,7 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Branch */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.branch', 'សាខា')} <span className="text-rose-500">*</span>
+                {t('employees.branch', 'Branch')} <span className="text-rose-500">*</span>
               </label>
               <select
                 value={formData.branch_id}
@@ -573,14 +573,14 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Department */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.department', 'ដេប៉ាតឺម៉ង់')}
+                {t('employees.department', 'Department')}
               </label>
               <select
                 value={formData.department_id}
                 onChange={e => setFormField('department_id', e.target.value)}
                 className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium cursor-pointer"
               >
-                <option value="" className="dark:bg-slate-900">{t('employees.selectDepartment', '-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --')}</option>
+                <option value="" className="dark:bg-slate-900">{t('employees.selectDepartment', '-- Select Department --')}</option>
                 {departments.map((dept: any) => (
                   <option key={dept.id} value={dept.id} className="dark:bg-slate-900">
                     {dept.name} {dept.code ? `(${dept.code})` : ''}
@@ -592,14 +592,14 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Position */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.position', 'តួនាទី / មុខតំណែង')}
+                {t('employees.position', 'Position')}
               </label>
               <select
                 value={formData.position_id}
                 onChange={e => setFormField('position_id', e.target.value)}
                 className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium cursor-pointer"
               >
-                <option value="" className="dark:bg-slate-900">{t('employees.selectPosition', '-- ជ្រើសរើសតួនាទី --')}</option>
+                <option value="" className="dark:bg-slate-900">{t('employees.selectPosition', '-- Select Position --')}</option>
                 {positions.map((pos: any) => (
                   <option key={pos.id} value={pos.id} className="dark:bg-slate-900">
                     {pos.name} {pos.code ? `(${pos.code})` : ''}
@@ -611,14 +611,14 @@ export const EmployeeFormPage: React.FC = () => {
             {/* System User Account Link */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.linkedUser', 'គណនីចូលប្រើប្រព័ន្ធ')}
+                {t('employees.linkedUser', 'System User Account')}
               </label>
               <select
                 value={formData.user_id}
                 onChange={e => setFormField('user_id', e.target.value)}
                 className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium cursor-pointer"
               >
-                <option value="" className="dark:bg-slate-900">{t('employees.noneUser', '-- មិនភ្ជាប់គណនី --')}</option>
+                <option value="" className="dark:bg-slate-900">{t('employees.noneUser', '-- None / Unlinked --')}</option>
                 {users.map((u: any) => (
                   <option key={u.id} value={u.id} className="dark:bg-slate-900">
                     {u.name} ({u.email})
@@ -630,7 +630,7 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Basic Salary */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.basic_salary', 'ប្រាក់ខែគោល ($)')}
+                {t('employees.basic_salary', 'Basic Salary ($)')}
               </label>
               <div className="relative">
                 <DollarSign size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
@@ -648,7 +648,7 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Join Date */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.join_date', 'ថ្ងៃចូលបម្រើការងារ')}
+                {t('employees.join_date', 'Join Date')}
               </label>
               <div className="relative">
                 <Calendar size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
@@ -664,7 +664,7 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Resign Date */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.resign_date', 'ថ្ងៃលាឈប់ពីការងារ')}
+                {t('employees.resign_date', 'Resign Date')}
               </label>
               <div className="relative">
                 <Calendar size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
@@ -679,7 +679,7 @@ export const EmployeeFormPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ─── SECTION 3: ទំនាក់ទំនង & អាសយដ្ឋាន (Contact & Residential Address) ─── */}
+        {/* SECTION 3: Contact & Residential Address */}
         <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xs space-y-5">
           <div className="flex items-center gap-3 pb-4 border-b border-border/60 dark:border-slate-800">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
@@ -687,10 +687,10 @@ export const EmployeeFormPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-sm sm:text-base text-foreground dark:text-slate-100">
-                {t('employees.tabContact', 'ទំនាក់ទំនង & អាសយដ្ឋានស្នាក់នៅ')}
+                {t('employees.tabContact', 'Contact & Residential Address')}
               </h3>
               <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                {t('employees.contactDesc', 'អ៊ីមែល លេខទូរស័ព្ទផ្ទាល់ខ្លួន និងអាសយដ្ឋានបច្ចុប្បន្ន')}
+                {t('employees.contactDesc', 'Email, personal phone number, and physical residential address.')}
               </p>
             </div>
           </div>
@@ -699,7 +699,7 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Email */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.email', 'អាសយដ្ឋានអ៊ីមែល')}
+                {t('employees.email', 'Email Address')}
               </label>
               <div className="relative">
                 <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
@@ -716,15 +716,16 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Phone */}
             <div>
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.phone', 'លេខទូរស័ព្ទ')}
+                {t('employees.phone', 'Phone Number')}
               </label>
               <div className="relative">
                 <Phone size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400 pointer-events-none" />
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="tel"
                   value={formData.phone}
-                  onChange={e => setFormField('phone', e.target.value)}
-                  placeholder="+855 12 345 678"
+                  onChange={e => setFormField('phone', e.target.value.replace(/[^\d+ -]/g, ''))}
+                  placeholder="012 345 678"
                   className="w-full h-10 min-h-[40px] pl-9 pr-3.5 py-2 text-xs sm:text-[13px] font-mono rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                 />
               </div>
@@ -733,25 +734,25 @@ export const EmployeeFormPage: React.FC = () => {
             {/* Address */}
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('employees.address', 'អាសយដ្ឋានបច្ចុប្បន្ន')}
+                {t('employees.address', 'Current Address')}
               </label>
               <textarea
                 value={formData.address}
                 onChange={e => setFormField('address', e.target.value)}
                 rows={3}
-                placeholder={t('employees.addressPlaceholder', 'ផ្ទះលេខ..., ផ្លូវ..., សង្កាត់..., ខណ្ឌ..., រាជធានីភ្នំពេញ')}
+                placeholder={t('employees.addressPlaceholder', 'House No, Street, Sangkat, Khan, Phnom Penh')}
                 className="w-full p-3.5 text-xs sm:text-[13px] resize-none rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 leading-relaxed focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
               />
             </div>
           </div>
         </div>
 
-        {/* ─── SECTION 4: កាតសង្ខេបព័ត៌មានបុគ្គលិក (Employee Summary Card) ─── */}
+        {/* SECTION 4: Employee Summary Card */}
         <div className="bg-gradient-to-br from-primary/5 via-card to-card dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border border-primary/20 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
           <div className="flex items-center gap-2.5">
             <Info size={16} className="text-primary" />
             <h4 className="text-xs font-bold text-foreground dark:text-slate-100 uppercase tracking-wider">
-              {t('employees.reviewSummary', 'សង្ខេបព័ត៌មានបុគ្គលិក (Live Preview)')}
+              {t('employees.reviewSummary', 'Employee Overview (Live Preview)')}
             </h4>
           </div>
 
@@ -769,18 +770,18 @@ export const EmployeeFormPage: React.FC = () => {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
-                    {formData.name || t('employees.unnamed', 'ឈ្មោះបុគ្គលិក...')}
+                    {formData.name || t('employees.unnamed', 'Employee Name...')}
                   </h3>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted dark:bg-slate-700 text-muted-foreground dark:text-slate-300 font-bold">
                     {formData.employee_number || 'EMP0000'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-slate-400 flex-wrap">
-                  <span>{selectedDept?.name || t('employees.noDept', 'គ្មានដេប៉ាតឺម៉ង់')}</span>
+                  <span>{selectedDept?.name || t('employees.noDept', 'No Department')}</span>
                   <span>•</span>
-                  <span>{selectedPos?.name || t('employees.noPos', 'គ្មានតួនាទី')}</span>
+                  <span>{selectedPos?.name || t('employees.noPos', 'No Position')}</span>
                   <span>•</span>
-                  <span>{selectedBranch?.name || t('employees.noBranch', 'សាខា')}</span>
+                  <span>{selectedBranch?.name || t('employees.noBranch', 'Branch')}</span>
                 </div>
               </div>
             </div>
@@ -788,7 +789,7 @@ export const EmployeeFormPage: React.FC = () => {
             <div className="flex items-center gap-3 self-end sm:self-center">
               {formData.basic_salary && (
                 <div className="text-right">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('employees.basic_salary', 'ប្រាក់ខែគោល')}</span>
+                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('employees.basic_salary', 'Basic Salary')}</span>
                   <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">
                     ${parseFloat(formData.basic_salary).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
@@ -802,18 +803,9 @@ export const EmployeeFormPage: React.FC = () => {
         {/* Global Sticky Form Footer */}
         <FormFooter
           cancelPath="/employees"
-          cancelLabel={t('employees.cancel', 'បោះបង់')}
+          cancelLabel={t('employees.cancel', 'Cancel')}
           isSubmitting={saveMutation.isPending}
-          submitLabel={isEdit ? t('employees.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ') : t('employees.createEmployee', 'បង្កើតបុគ្គលិក')}
-          infoSummary={
-            formData.name ? (
-              <span>
-                {t('employees.name', 'បុគ្គលិក')}: <strong className="text-foreground dark:text-slate-100 font-semibold">"{formData.name}"</strong> ({formData.employee_number})
-              </span>
-            ) : (
-              <span>{isEdit ? t('employees.editSubtitle', 'ធ្វើបច្ចុប្បន្នភាពទម្រង់បុគ្គលិក') : t('employees.createSubtitle', 'បំពេញព័ត៌មានដើម្បីចុះឈ្មោះបុគ្គលិកថ្មី')}</span>
-            )
-          }
+          submitLabel={isEdit ? t('employees.saveChanges', 'Save Changes') : t('employees.createEmployee', 'Create Employee')}
         />
       </form>
     </div>

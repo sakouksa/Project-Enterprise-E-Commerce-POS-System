@@ -255,11 +255,12 @@ export const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
                 <div>
                   <label className="label">Phone Number</label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 555-0100"
-                    className="input w-full"
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d+ -]/g, ''))}
+                    placeholder="012 345 678"
+                    className="input w-full font-mono"
                   />
                 </div>
               </div>

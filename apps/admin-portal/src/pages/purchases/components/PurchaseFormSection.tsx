@@ -97,34 +97,34 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
         isEdit={isEdit}
         title={
           isEdit
-            ? t('purchases.editPOTitle', 'កែសម្រួលការបញ្ជាទិញ: {{ref}}', { ref: `#${editPurchaseId}` })
-            : t('purchases.createPOTitle', 'បង្កើតការបញ្ជាទិញថ្មី')
+            ? t('purchases.editPOTitle', 'Edit Purchase Order: {{ref}}', { ref: `#${editPurchaseId}` })
+            : t('purchases.createPOTitle', 'Create Purchase Order')
         }
         subtitle={
           isEdit
-            ? t('purchases.editPOSubtitle', 'ធ្វើបច្ចុប្បន្នភាពមុខទំនិញ តម្លៃ និងព័ត៌មានលម្អិតនៃការបញ្ជាទិញ')
-            : t('purchases.createPOSubtitle', 'ជ្រើសរើសអ្នកផ្គត់ផ្គង់ ឃ្លាំង និងមុខទំនិញដើម្បីបង្កើតការបញ្ជាទិញចូល')
+            ? t('purchases.editPOSubtitle', 'Update items, pricing, and purchase order details')
+            : t('purchases.createPOSubtitle', 'Select supplier, destination warehouse, and products to create an inbound purchase order')
         }
         breadcrumbs={[
-          { label: t('nav.purchases', 'ការទិញទំនិញ'), path: '/purchases' },
+          { label: t('nav.purchases', 'Purchases'), path: '/purchases' },
           {
             label: isEdit
-              ? t('purchases.editPO', 'កែសម្រួលការបញ្ជាទិញ')
-              : t('purchases.createPO', 'បង្កើតការបញ្ជាទិញ'),
+              ? t('purchases.editPO', 'Edit Purchase Order')
+              : t('purchases.createPO', 'Create Purchase Order'),
           },
         ]}
         backPath="/purchases"
-        backLabel={t('common.back', 'ត្រឡប់ក្រោយ')}
+        backLabel={t('common.back', 'Back')}
         onBack={onCancel}
         isSubmitting={isSubmitting}
-        submitLabel={t('purchases.updatePO', 'រក្សាទុកការផ្លាស់ប្តូរ')}
+        submitLabel={t('purchases.updatePO', 'Save Changes')}
         onSubmit={onSubmit}
       />
 
       {editLoading && (
         <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-2 text-xs font-semibold text-primary">
           <Loader2 size={16} className="animate-spin" />
-          <span>{t('purchases.loadingItems', 'កំពុងផ្ទុកព័ត៌មានការបញ្ជាទិញ...')}</span>
+          <span>{t('purchases.loadingItems', 'Loading purchase order items...')}</span>
         </div>
       )}
 
@@ -136,10 +136,10 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              {t('purchases.orderInformation', 'ព័ត៌មានទូទៅនៃការបញ្ជាទិញ')}
+              {t('purchases.orderInformation', 'Order Information')}
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              {t('purchases.orderInformationDesc', 'កំណត់អ្នកផ្គត់ផ្គង់ ទីតាំងឃ្លាំង កាលបរិច្ឆេទ និងរូបិយប័ណ្ណទូទាត់')}
+              {t('purchases.orderInformationDesc', 'Specify supplier, destination warehouse, order date, and transaction currency')}
             </p>
           </div>
         </div>
@@ -149,13 +149,13 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           {/* Supplier */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.supplier', 'អ្នកផ្គត់ផ្គង់')} <span className="text-destructive">*</span>
+              {t('purchases.supplier', 'Supplier')} <span className="text-destructive">*</span>
             </label>
             <ModernSelect
               value={supplierId}
               onChange={(val) => setSupplierId(String(val))}
               options={[
-                { value: '', label: t('purchases.selectSupplier', 'ជ្រើសរើសអ្នកផ្គត់ផ្គង់') },
+                { value: '', label: t('purchases.selectSupplier', 'Select Supplier') },
                 ...suppliers.map((s: any) => ({
                   value: s.id,
                   label: s.name,
@@ -163,34 +163,34 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                   subtitle: s.phone || s.email,
                 })),
               ]}
-              placeholder={t('purchases.selectSupplier', 'ជ្រើសរើសអ្នកផ្គត់ផ្គង់')}
+              placeholder={t('purchases.selectSupplier', 'Select Supplier')}
             />
           </div>
 
           {/* Warehouse */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.warehouse', 'ឃ្លាំងទទួលទំនិញ')} <span className="text-destructive">*</span>
+              {t('purchases.warehouse', 'Receiving Warehouse')} <span className="text-destructive">*</span>
             </label>
             <ModernSelect
               value={warehouseId}
               onChange={(val) => setWarehouseId(String(val))}
               options={[
-                { value: '', label: t('purchases.selectWarehouse', 'ជ្រើសរើសឃ្លាំង') },
+                { value: '', label: t('purchases.selectWarehouse', 'Select Warehouse') },
                 ...warehouses.map((w: any) => ({
                   value: w.id,
                   label: w.name,
                   code: w.code,
                 })),
               ]}
-              placeholder={t('purchases.selectWarehouse', 'ជ្រើសរើសឃ្លាំង')}
+              placeholder={t('purchases.selectWarehouse', 'Select Warehouse')}
             />
           </div>
 
           {/* Branch */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.branch', 'សាខា')} <span className="text-destructive">*</span>
+              {t('purchases.branch', 'Branch')} <span className="text-destructive">*</span>
             </label>
             <ModernSelect
               value={branchId}
@@ -200,14 +200,14 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                 label: b.name,
                 code: b.code,
               }))}
-              placeholder={t('purchases.selectBranch', 'ជ្រើសរើសសាខា')}
+              placeholder={t('purchases.selectBranch', 'Select Branch')}
             />
           </div>
 
           {/* PO Date */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.date', 'កាលបរិច្ឆេទបញ្ជាទិញ')} <span className="text-destructive">*</span>
+              {t('purchases.date', 'Order Date')} <span className="text-destructive">*</span>
             </label>
             <input
               type="date"
@@ -220,9 +220,27 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
 
           {/* Due Date */}
           <div>
-            <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.dueDate', 'កាលបរិច្ឆេទកំណត់ទូទាត់')}
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-foreground/90">
+                {t('purchases.dueDate', 'Due Date')}
+              </label>
+              <div className="flex items-center gap-1">
+                {[7, 15, 30].map(days => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => {
+                      const base = poDate ? new Date(poDate) : new Date()
+                      base.setDate(base.getDate() + days)
+                      setDueDate(base.toISOString().split('T')[0])
+                    }}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground font-mono transition-colors cursor-pointer"
+                  >
+                    +{days}d
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="date"
               value={dueDate}
@@ -234,23 +252,23 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           {/* Currency */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.currency', 'រូបិយប័ណ្ណទូទាត់')} <span className="text-destructive">*</span>
+              {t('purchases.currency', 'Currency')} <span className="text-destructive">*</span>
             </label>
             <ModernSelect
               value={currencyCode}
               onChange={(val) => handleCurrencyChange(String(val))}
               options={[
-                { value: 'USD', label: 'USD ($ - ដុល្លារអាមេរិក)', code: 'USD' },
-                { value: 'KHR', label: 'KHR (៛ - រៀលខ្មែរ)', code: 'KHR' },
+                { value: 'USD', label: 'USD ($ - US Dollar)' },
+                { value: 'KHR', label: 'KHR (៛ - Khmer Riel)' },
               ]}
-              placeholder={t('purchases.selectCurrency', 'ជ្រើសរើសរូបិយប័ណ្ណ')}
+              placeholder={t('purchases.selectCurrency', 'Select Currency')}
             />
           </div>
 
           {/* Exchange Rate */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.exchangeRate', 'អត្រាប្តូរប្រាក់')} <span className="text-destructive">*</span>
+              {t('purchases.exchangeRate', 'Exchange Rate')} <span className="text-destructive">*</span>
             </label>
             <input
               type="number"
@@ -267,7 +285,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           {/* Shipping Cost */}
           <div>
             <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-              {t('purchases.shippingCost', 'ថ្លៃដឹកជញ្ជូន')} ({currencyCode})
+              {t('purchases.shippingCost', 'Shipping Cost')} ({currencyCode})
             </label>
             <input
               type="number"
@@ -289,10 +307,10 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              {t('purchases.orderItems', 'មុខទំនិញបញ្ជាទិញ')}
+              {t('purchases.orderItems', 'Order Items')}
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              {t('purchases.orderItemsDesc', 'ស្វែងរក និងជ្រើសរើសទំនិញពីកាតាឡុកដើម្បីទិញចូល')}
+              {t('purchases.orderItemsDesc', 'Search and select items from product catalog to add to purchase order')}
             </p>
           </div>
         </div>
@@ -300,7 +318,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
         {/* Search Bar */}
         <div>
           <label className="block text-xs font-semibold text-foreground/90 mb-1.5">
-            {t('purchases.searchAndAddProduct', 'ស្វែងរក និងបន្ថែមមុខទំនិញ')}
+            {t('purchases.searchAndAddProduct', 'Search & Add Product')}
           </label>
           <div className="relative">
             <button
@@ -311,7 +329,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
               <div className="flex items-center gap-2.5 text-muted-foreground">
                 <Search size={15} className="text-primary" />
                 <span className="font-medium text-xs sm:text-[13px]">
-                  {t('purchases.clickToSearchCatalog', 'ចុចដើម្បីស្វែងរកទំនិញក្នុងកាតាឡុក...')}
+                  {t('purchases.clickToSearchCatalog', 'Click to search catalog...')}
                 </span>
               </div>
               <span className="text-muted-foreground text-[11px] px-2 py-0.5 rounded-md bg-muted font-mono">▼</span>
@@ -333,7 +351,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                         autoFocus
                         value={prodSearch}
                         onChange={e => setProdSearch(e.target.value)}
-                        placeholder={t('purchases.searchCatalogPlaceholder', 'វាយបញ្ចូលឈ្មោះផលិតផល, SKU ឬបារកូដ...')}
+                        placeholder={t('purchases.searchCatalogPlaceholder', 'Type product name, SKU or barcode...')}
                         className="form-input w-full pl-10 text-xs sm:text-[13px] border border-border/80 rounded-xl p-2.5 bg-muted/20 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                       />
                     </div>
@@ -341,7 +359,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                     <div className="overflow-y-auto flex-1 divide-y divide-border/40 max-h-64 px-1">
                       {filteredProducts.length === 0 ? (
                         <div className="p-6 text-center text-xs text-muted-foreground">
-                          {t('purchases.noMatchingProducts', 'មិនមានផលិតផលដែលត្រូវគ្នានោះទេ។')}
+                          {t('purchases.noMatchingProducts', 'No matching products found.')}
                         </div>
                       ) : (
                         filteredProducts.map((item: any) => {
@@ -381,7 +399,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                                   ${Number(item.cost_price || 0).toFixed(2)}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground block font-medium">
-                                  {t('purchases.unitCost', 'តម្លៃដើម')}
+                                  {t('purchases.unitCost', 'Unit Cost')}
                                 </span>
                               </div>
                             </div>
@@ -401,13 +419,13 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-muted/40 border-b border-border/70">
-                <th className="py-3 px-4 font-bold text-muted-foreground">{t('purchases.product', 'ផលិតផល')}</th>
-                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-36">{t('purchases.quantity', 'បរិមាណ')}</th>
-                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-32">{t('purchases.unitCost', 'តម្លៃដើម/ឯកតា')} ({currencyCode})</th>
-                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-24">{t('purchases.disc', 'បញ្ចុះតម្លៃ %')}</th>
-                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-24">{t('purchases.taxPercent', 'ពន្ធ %')}</th>
-                <th className="py-3 px-4 font-bold text-muted-foreground text-right w-32">{t('purchases.total', 'សរុប')}</th>
-                <th className="py-3 px-3 text-center w-14 font-bold text-muted-foreground">{t('common.action', 'សកម្មភាព')}</th>
+                <th className="py-3 px-4 font-bold text-muted-foreground">{t('purchases.product', 'Product')}</th>
+                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-36">{t('purchases.quantity', 'Quantity')}</th>
+                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-32">{t('purchases.unitCost', 'Unit Cost')} ({currencyCode})</th>
+                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-24">{t('purchases.disc', 'Discount %')}</th>
+                <th className="py-3 px-3 font-bold text-muted-foreground text-center w-24">{t('purchases.taxPercent', 'Tax %')}</th>
+                <th className="py-3 px-4 font-bold text-muted-foreground text-right w-32">{t('purchases.total', 'Total')}</th>
+                <th className="py-3 px-3 text-center w-14 font-bold text-muted-foreground">{t('common.action', 'Action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -415,7 +433,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-muted-foreground">
                     <Package className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
-                    <p className="text-xs font-medium">{t('purchases.noProductsAdded', 'មិនទាន់មានផលិតផលត្រូវបានបន្ថែមនៅឡើយទេ។ សូមប្រើប្រអប់ស្វែងរកខាងលើដើម្បីបន្ថែមមុខទំនិញ។')}</p>
+                    <p className="text-xs font-medium">{t('purchases.noProductsAdded', 'No products added yet. Use search above to add items.')}</p>
                   </td>
                 </tr>
               ) : (
@@ -448,7 +466,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                               }
                             }}
                             className="px-2.5 py-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            title={t('common.decrease', 'កាត់បន្ថយ')}
+                            title={t('common.decrease', 'Decrease')}
                           >
                             <Minus size={13} />
                           </button>
@@ -467,7 +485,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                               updateFormItem(idx, 'quantity', (current + 1).toString())
                             }}
                             className="px-2.5 py-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            title={t('common.increase', 'បង្កើន')}
+                            title={t('common.increase', 'Increase')}
                           >
                             <Plus size={13} />
                           </button>
@@ -523,7 +541,7 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
                           type="button"
                           onClick={() => removeFormItem(idx)}
                           className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
-                          title={t('common.delete', 'លុបចេញ')}
+                          title={t('common.delete', 'Delete')}
                         >
                           <Trash size={14} />
                         </button>
@@ -544,14 +562,14 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           <div className="flex items-center gap-2 pb-2 border-b border-border/60">
             <FileText size={15} className="text-primary" />
             <h4 className="text-xs font-bold text-foreground">
-              {t('purchases.notes', 'កំណត់ចំណាំ & លក្ខខណ្ឌនៃការទិញ')}
+              {t('purchases.notes', 'Notes & Purchasing Terms')}
             </h4>
           </div>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
             rows={5}
-            placeholder={t('purchases.notesPlaceholder', 'បញ្ចូលព័ត៌មានលម្អិត ឬលក្ខខណ្ឌនៃការបញ្ជាទិញ...')}
+            placeholder={t('purchases.notesPlaceholder', 'Enter purchasing terms or special notes...')}
             className="form-input w-full text-xs sm:text-[13px] rounded-xl border border-border/80 bg-background p-3 resize-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
           />
         </div>
@@ -561,37 +579,37 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
           <div className="flex items-center gap-2 pb-2 border-b border-border/60">
             <DollarSign size={15} className="text-emerald-500" />
             <h4 className="text-xs font-bold text-foreground">
-              {t('purchases.financialSummary', 'សេចក្តីសង្ខេបហិរញ្ញវត្ថុ')}
+              {t('purchases.financialSummary', 'Financial Summary')}
             </h4>
           </div>
 
           <div className="space-y-2.5 text-xs sm:text-[13px]">
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">{t('purchases.subtotal', 'សរុបរង')}</span>
+              <span className="text-muted-foreground">{t('purchases.subtotal', 'Subtotal')}</span>
               <span className="font-mono font-bold text-foreground">
                 {formatCurrency(getDualValues(totals.subtotal, currencyCode, exchangeRate).usd, 'USD')}
               </span>
             </div>
             <div className="flex justify-between items-center text-destructive">
-              <span>{t('purchases.discount', 'ការបញ្ចុះតម្លៃ')}</span>
+              <span>{t('purchases.discount', 'Discount')}</span>
               <span className="font-mono font-bold">
                 - {formatCurrency(getDualValues(totals.discount_amount, currencyCode, exchangeRate).usd, 'USD')}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">{t('purchases.tax', 'ពន្ធ')}</span>
+              <span className="text-muted-foreground">{t('purchases.tax', 'Tax')}</span>
               <span className="font-mono font-bold text-foreground">
                 {formatCurrency(getDualValues(totals.tax_amount, currencyCode, exchangeRate).usd, 'USD')}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">{t('purchases.shippingCost', 'ថ្លៃដឹកជញ្ជូន')}</span>
+              <span className="text-muted-foreground">{t('purchases.shippingCost', 'Shipping Cost')}</span>
               <span className="font-mono font-bold text-foreground">
                 {formatCurrency(getDualValues(parseFloat(shippingCost) || 0, currencyCode, exchangeRate).usd, 'USD')}
               </span>
             </div>
             <div className="flex justify-between items-center pt-3 border-t border-border/80 font-bold text-sm sm:text-base">
-              <span className="text-foreground">{t('purchases.grandTotal', 'សរុបរួម')}</span>
+              <span className="text-foreground">{t('purchases.grandTotal', 'Grand Total')}</span>
               <span className="text-primary font-mono text-lg font-black">
                 {formatCurrency(getDualValues(totals.grand_total, currencyCode, exchangeRate).usd, 'USD')}
               </span>
@@ -606,8 +624,8 @@ export const PurchaseFormSection: React.FC<PurchaseFormSectionProps> = ({
         isSubmitting={isSubmitting}
         disabled={isSubmitting || formItems.length === 0}
         onCancel={onCancel}
-        cancelLabel={t('common.cancel', 'បោះបង់')}
-        submitLabel={isEdit ? t('purchases.updatePO', 'រក្សាទុកការផ្លាស់ប្តូរ') : t('purchases.createPO', 'បង្កើតការបញ្ជាទិញ')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        submitLabel={isEdit ? t('purchases.updatePO', 'Save Changes') : t('purchases.createPO', 'Create Purchase Order')}
       />
     </form>
   )

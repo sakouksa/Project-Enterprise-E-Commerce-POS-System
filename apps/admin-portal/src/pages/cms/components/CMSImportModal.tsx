@@ -30,7 +30,7 @@ export const CMSImportModal: React.FC<CMSImportModalProps> = ({
     <CsvImportModal
       isOpen={isOpen}
       onClose={onClose}
-      resourceName={t('cms.cms', 'Articles & Content')}
+      resourceName={t('cms.articlesContent', 'Articles & Content')}
       expectedHeaders={CMS_EXPECTED_HEADERS}
       importFile={importFile}
       setImportFile={(file) => {

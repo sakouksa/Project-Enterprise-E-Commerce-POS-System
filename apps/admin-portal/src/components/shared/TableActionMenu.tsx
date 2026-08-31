@@ -244,7 +244,11 @@ const TableActionMenu: React.FC<TableActionMenuProps> = ({
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left disabled:opacity-40 disabled:cursor-not-allowed ${colorClasses}`}
                 >
-                  {Icon && <Icon size={14} className="shrink-0" />}
+                  {React.isValidElement(item.icon) ? (
+                    item.icon
+                  ) : Icon ? (
+                    <Icon size={14} className="shrink-0" />
+                  ) : null}
                   <span className="truncate">{item.label}</span>
                 </button>
               )

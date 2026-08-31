@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, Package, Star, Edit2, Barcode, Copy, Check, Warehouse, Layers, Tag,
@@ -13,6 +14,13 @@ import { productService } from '@/services/productService'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import { getDynamicColorMatchedImage } from '../utils/colorResolver'
 import StatusBadge from '@/components/common/StatusBadge'
+import {
+  DetailDrawer,
+  DetailDrawerHeader,
+  DetailDrawerBody,
+  DetailDrawerFooter,
+  ModalHeader,
+} from '@/components/common'
 import { formatDisplayDate } from '@/utils/formatters'
 import type { Product } from '../types/productsPage.types'
 
@@ -20,6 +28,8 @@ interface ProductDetailDrawerProps {
   product: Product | null
   onClose: () => void
   onEdit: (product: Product) => void
+  onDuplicate?: (product: Product) => void
+  onQuickStockAdjust?: (product: Product) => void
   formatCurrency: (val: number) => string
 }
 
@@ -30,6 +40,8 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   product: initialProduct,
   onClose,
   onEdit,
+  onDuplicate,
+  onQuickStockAdjust,
   formatCurrency,
 }) => {
   const { t, i18n } = useTranslation(['products', 'common'])
@@ -434,67 +446,37 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   if (!initialProduct) return null
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-end print:static print:bg-transparent">
-        {/* Backdrop overlay */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 print:hidden"
-          onClick={onClose}
+    <>
+      <DetailDrawer
+        isOpen={!!initialProduct}
+        onClose={onClose}
+        size="2xl"
+      >
+        <DetailDrawerHeader
+          icon={<categoryInfo.Icon size={20} />}
+          iconVariant="primary"
+          title={t('productDetails', 'Product Details')}
+          subtitle={`${getCategoryName(product?.category?.name)} • ${product?.brand?.name || t('unbranded', 'Unbranded')}`}
+          badge={
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
+              #{product?.id}
+            </span>
+          }
+          actions={
+            <button
+              type="button"
+              onClick={() => setShowPrintModal(true)}
+              title={t('barcodePrintCenter', 'Barcode & Label Print Center')}
+              className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all flex items-center gap-1.5 shadow-2xs group cursor-pointer"
+            >
+              <Printer size={15} />
+              <span className="text-xs font-bold hidden sm:inline">{t('printBarcode', 'Print Label')}</span>
+            </button>
+          }
+          onClose={onClose}
         />
 
-        {/* Drawer Panel */}
-        <motion.div
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="bg-card w-full max-w-xl sm:max-w-2xl h-full shadow-2xl relative z-10 flex flex-col justify-between overflow-hidden border-l border-border/80 print:static print:w-full print:border-none print:shadow-none"
-        >
-          {/* Top Sticky Header */}
-          <div className="px-6 py-4 border-b border-border/70 bg-card/95 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-xs">
-                <categoryInfo.Icon size={20} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-extrabold text-foreground tracking-tight">
-                    {t('productDetails', 'Product Details')}
-                  </h3>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
-                    #{product?.id}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                  {getCategoryName(product?.category?.name)} • {product?.brand?.name || t('unbranded', 'Unbranded')}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setShowPrintModal(true)}
-                title={t('barcodePrintCenter', 'Barcode & Label Print Center')}
-                className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all flex items-center gap-1.5 shadow-2xs group"
-              >
-                <Printer size={15} />
-                <span className="text-xs font-bold hidden sm:inline">{t('printBarcode', 'Print Label')}</span>
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable Body Content */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+        <DetailDrawerBody>
             {/* Hero Clean Card */}
             <div className="p-5 rounded-3xl bg-muted/30 border border-border/70 shadow-2xs relative overflow-hidden">
               <div className="flex flex-col sm:flex-row gap-5">
@@ -1108,54 +1090,62 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                 </div>
               </motion.div>
             )}
-          </div>
+        </DetailDrawerBody>
 
-          {/* Sticky Footer Actions */}
-          <div className="px-6 py-4 border-t border-border/70 bg-card/95 backdrop-blur-md flex items-center justify-between gap-3 shrink-0 z-20 print:hidden">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 text-xs font-bold bg-muted hover:bg-muted/80 text-foreground rounded-xl border border-border transition-colors"
-            >
-              {t('closeBtn', 'Close')}
-            </button>
+        <DetailDrawerFooter
+          onClose={onClose}
+          closeLabel={t('closeBtn', 'Close')}
+          rightActions={
+            <>
+              {onQuickStockAdjust && (
+                <button
+                  type="button"
+                  onClick={() => { onClose(); onQuickStockAdjust(product as Product); }}
+                  className="px-3.5 py-2 text-xs font-bold bg-card hover:bg-muted text-foreground rounded-xl border border-border transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title={t('quickStockAdjust', 'Quick Stock Adjust')}
+                >
+                  <Warehouse size={13} className="text-primary" />
+                  <span className="hidden sm:inline">{t('quickStockAdjust', 'Adjust Stock')}</span>
+                </button>
+              )}
 
-            <button
-              onClick={() => { onClose(); onEdit(product as Product); }}
-              className="px-6 py-2.5 text-xs font-extrabold bg-primary text-white rounded-xl hover:opacity-90 flex items-center gap-2 shadow-sm transition-all"
-            >
-              <Edit2 size={14} />
-              <span>{t('editProduct', 'Edit Product')}</span>
-            </button>
-          </div>
-        </motion.div>
+              {onDuplicate && (
+                <button
+                  type="button"
+                  onClick={() => { onClose(); onDuplicate(product as Product); }}
+                  className="px-3.5 py-2 text-xs font-bold bg-card hover:bg-muted text-foreground rounded-xl border border-border transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title={t('duplicateProduct', 'Duplicate Product')}
+                >
+                  <Copy size={13} className="text-primary" />
+                  <span className="hidden sm:inline">{t('duplicateProduct', 'Duplicate')}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => { onClose(); onEdit(product as Product); }}
+                className="px-5 py-2 text-xs font-extrabold bg-primary text-white rounded-xl hover:opacity-90 flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+              >
+                <Edit2 size={14} />
+                <span>{t('editProduct', 'Edit Product')}</span>
+              </button>
+            </>
+          }
+        />
+      </DetailDrawer>
 
         {/* State-of-the-Art Barcode & Label Print Center Modal */}
         {showPrintModal && printTargetItem && (
           <div className="fixed inset-0 z-60 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-card max-w-2xl w-full rounded-3xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-border bg-muted/40 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-xs">
-                    <Barcode size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-foreground tracking-tight">
-                      {t('barcodePrintCenter', 'Barcode & Label Print Center')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {printTargetItem.name} • {printTargetItem.sku}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowPrintModal(false)}
-                  className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={t('barcodePrintCenter', 'Barcode & Label Print Center')}
+                subtitle={`${printTargetItem.name} • ${printTargetItem.sku}`}
+                icon={<Barcode size={20} />}
+                iconVariant="blue"
+                onClose={() => setShowPrintModal(false)}
+              />
 
               {/* Modal Body - 2 Columns */}
               <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 overflow-y-auto">
@@ -1381,8 +1371,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </AnimatePresence>
+    </>
   )
 }
 

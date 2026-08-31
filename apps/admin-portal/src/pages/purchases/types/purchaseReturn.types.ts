@@ -29,8 +29,8 @@ export interface PurchaseReturn {
 }
 
 export const RETURN_STATUS_BADGE: Record<string, string> = {
-  draft:     'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-  approved:  'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  completed: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  cancelled: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  draft:     'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20',
+  approved:  'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
+  completed: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
+  cancelled: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20',
 }

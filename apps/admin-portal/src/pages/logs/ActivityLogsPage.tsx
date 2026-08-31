@@ -11,6 +11,7 @@ import {
 import { useToast } from '@/hooks/useToast'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { CloseButton, CancelButton } from '@/components/common'
 import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
@@ -177,12 +178,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ log, onClose }) => {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <X size={20} />
-          </button>
+          <CloseButton onClose={onClose} size="md" color="rose" />
         </div>
 
         {/* Tabs */}
@@ -376,12 +372,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ log, onClose }) => {
 
         {/* Footer */}
         <div className="p-4 border-t border-border bg-muted/20 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-colors"
-          >
-            {t('common.close', 'Close')}
-          </button>
+          <CancelButton onClick={onClose} label={t('common.close', 'Close')} />
         </div>
       </div>
     </div>
@@ -471,24 +462,28 @@ const ActivityLogsPage: React.FC = () => {
   // Export Filtered Logs to CSV
   const handleExportCSV = () => {
     if (!logs.length) {
-      toast.error(t('activityLogs.no_data_export', 'No activity logs to export.'))
+      toast.error(t('activityLogs.no_data_export', t('common.noDataToExport', 'មិនមានទិន្នន័យដើម្បីនាំចេញទេ!')))
       return
     }
 
-    const headers = ['ID', 'Date Time', 'Causer', 'Email', 'Event', 'Module', 'Description', 'IP Address']
-    const rows = logs.map((l) => [
-      l.id,
-      formatDateTime(l.created_at),
-      l.causer?.name || 'System',
-      l.causer?.email || 'N/A',
-      l.event || 'Activity',
-      l.log_name || 'General',
-      l.description || '',
-      l.properties?.ip || 'N/A',
-    ])
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
+    setTimeout(() => {
+      const headers = ['ID', 'Date Time', 'Causer', 'Email', 'Event', 'Module', 'Description', 'IP Address']
+      const rows = logs.map((l) => [
+        l.id,
+        formatDateTime(l.created_at),
+        l.causer?.name || 'System',
+        l.causer?.email || 'N/A',
+        l.event || 'Activity',
+        l.log_name || 'General',
+        l.description || '',
+        l.properties?.ip || 'N/A',
+      ])
 
-    downloadCsv('activity_logs', headers, rows)
-    toast.success(t('activityLogs.export_success', 'Exported activity logs to CSV.'))
+      downloadCsv('activity_logs', headers, rows)
+      toast.dismiss(toastId)
+      toast.success(t('activityLogs.export_success', t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!')))
+    }, 400)
   }
 
   const handleResetFilters = () => {

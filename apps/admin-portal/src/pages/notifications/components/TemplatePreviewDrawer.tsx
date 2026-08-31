@@ -6,8 +6,9 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import type { NotificationTemplateItem } from '@/types/notification'
 import { formatShortDate } from '@/utils/formatters'
+import { CloseButton, CancelButton } from '@/components/common'
+import type { NotificationTemplateItem } from '@/types/notification'
 
 interface TemplatePreviewDrawerProps {
   open: boolean
@@ -124,12 +125,7 @@ const TemplatePreviewDrawer: React.FC<TemplatePreviewDrawerProps> = ({ open, tem
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
+            <CloseButton onClose={onClose} size="md" color="rose" />
           </div>
 
           {/* ── 2. SUB TABS (General Info / Live Multi-Channel Preview) ────── */}
@@ -345,12 +341,7 @@ const TemplatePreviewDrawer: React.FC<TemplatePreviewDrawerProps> = ({ open, tem
 
           {/* ── 4. FOOTER ────────────────────────────────────────────────────── */}
           <div className="p-4 border-t border-border bg-card flex items-center justify-end">
-            <button
-              onClick={onClose}
-              className="px-5 py-2 text-xs font-bold rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs"
-            >
-              Close
-            </button>
+            <CancelButton onClick={onClose} label="Close" />
           </div>
         </motion.div>
       </div>

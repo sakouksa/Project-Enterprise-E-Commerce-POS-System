@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ModalHeader, { type ModalHeaderIconVariant } from './ModalHeader'
 
@@ -33,6 +34,8 @@ export interface EnterpriseModalProps {
   closeOnEsc?: boolean
   /** Whether clicking the backdrop closes the modal (default: true) */
   closeOnBackdropClick?: boolean
+  /** Whether to render via React Portal (default: true) */
+  usePortal?: boolean
   /** Custom CSS class for the modal dialog panel */
   className?: string
   /** Custom CSS class for the inner scrollable body area */
@@ -65,6 +68,7 @@ export const EnterpriseModal: React.FC<EnterpriseModalProps> = ({
   showCloseButton = true,
   closeOnEsc = true,
   closeOnBackdropClick = true,
+  usePortal = true,
   className = '',
   bodyClassName = '',
 }) => {
@@ -92,13 +96,13 @@ export const EnterpriseModal: React.FC<EnterpriseModalProps> = ({
     }
   }, [isOpen, handleKeyDown])
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
         >
           {/* Backdrop */}
           <motion.div
@@ -146,6 +150,12 @@ export const EnterpriseModal: React.FC<EnterpriseModalProps> = ({
       )}
     </AnimatePresence>
   )
+
+  if (usePortal && typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body)
+  }
+
+  return modalContent
 }
 
 export default EnterpriseModal

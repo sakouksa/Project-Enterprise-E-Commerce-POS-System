@@ -12,8 +12,12 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { t } = useTranslation(['common', 'nav', 'finance'])
-  const location = useLocation()
-  const { navbar } = useThemeStore()
+  const { navbar, themeMode } = useThemeStore()
+  const isDark =
+    themeMode === 'dark' ||
+    (themeMode === 'system' &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   // Generate dynamic breadcrumbs based on active route path
   const pathSegments = location.pathname.split('/').filter(Boolean)
@@ -90,14 +94,33 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   const customTextColor = navbar?.textColor
 
-  const shadowClass =
-    navbar?.shadow === 'none'
-      ? 'shadow-none'
-      : navbar?.shadow === 'lg'
-      ? 'shadow-lg'
-      : navbar?.shadow === 'md'
-      ? 'shadow-md'
-      : 'shadow-sm'
+  const getShadowStyle = (shadow?: string, darkMode?: boolean) => {
+    if (!shadow || shadow === 'none') return 'none'
+
+    if (darkMode) {
+      switch (shadow) {
+        case 'sm':
+          return '0 3px 12px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3)'
+        case 'md':
+          return '0 8px 24px -2px rgba(0, 0, 0, 0.7), 0 4px 10px -2px rgba(0, 0, 0, 0.5)'
+        case 'lg':
+          return '0 18px 45px -4px rgba(0, 0, 0, 0.9), 0 8px 18px -4px rgba(0, 0, 0, 0.7)'
+        default:
+          return '0 3px 12px rgba(0, 0, 0, 0.45)'
+      }
+    }
+
+    switch (shadow) {
+      case 'sm':
+        return '0 2px 8px -1px rgba(0, 0, 0, 0.09), 0 1px 4px -1px rgba(0, 0, 0, 0.06)'
+      case 'md':
+        return '0 6px 20px -2px rgba(0, 0, 0, 0.16), 0 3px 8px -2px rgba(0, 0, 0, 0.1)'
+      case 'lg':
+        return '0 16px 36px -4px rgba(0, 0, 0, 0.28), 0 6px 16px -3px rgba(0, 0, 0, 0.16)'
+      default:
+        return '0 2px 8px -1px rgba(0, 0, 0, 0.09)'
+    }
+  }
 
   return (
     <header
@@ -107,8 +130,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         borderColor: navbar?.borderColor || undefined,
         height: navbar?.height ? `${navbar.height}px` : undefined,
         opacity: navbar?.transparency !== undefined ? navbar.transparency : 1,
+        boxShadow: getShadowStyle(navbar?.shadow, isDark),
       }}
-      className={`sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 border-b backdrop-blur-md transition-all duration-300 print:hidden ${shadowClass} ${
+      className={`sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 border-b backdrop-blur-md transition-all duration-300 print:hidden ${
         !navbar?.bgColor ? 'bg-white/70 dark:bg-slate-900/70 border-border/40' : ''
       }`}
     >

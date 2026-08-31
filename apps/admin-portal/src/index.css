@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --font-sans: 'Kantumruy Pro', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Kantumruy Pro', 'Battambang', 'Inter', system-ui, -apple-system, sans-serif;
     --background:  0 0% 100%;
     --foreground:  222 47% 11%;
     --card:        0 0% 100%;
@@ -36,7 +36,7 @@
     --input:       217 33% 17%;
     --ring:        224 71% 60%;
     --primary:     224 71% 60%;
-    --primary-foreground: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
     --secondary:   217 33% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted:       217 33% 17%;
@@ -56,7 +56,10 @@
   }
 
   body, input, textarea, select, button {
-    font-family: 'Kantumruy Pro', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* High-Contrast Text Selection */
@@ -140,11 +143,17 @@
   }
 
   /* Table styles */
+  .data-table {
+    @apply w-full border-collapse text-left;
+  }
+  .data-table thead {
+    @apply bg-muted/40 dark:bg-muted/20 border-b border-border;
+  }
   .data-table th {
-    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 bg-muted/50 text-left whitespace-nowrap align-middle;
+    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 bg-muted/40 dark:bg-muted/20 text-left whitespace-nowrap align-middle border-b border-border;
   }
   .data-table td {
-    @apply px-4 py-3 text-sm text-foreground border-b border-border whitespace-nowrap align-middle;
+    @apply px-4 py-3 text-sm text-foreground border-b border-border/80 whitespace-nowrap align-middle transition-colors;
   }
   .data-table th.text-right,
   .data-table td.text-right,
@@ -158,17 +167,24 @@
   .data-table td.\!text-center {
     text-align: center;
   }
-  .data-table tr:hover td {
-    @apply bg-muted/30;
+  .data-table tbody tr {
+    @apply bg-card transition-colors duration-150;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-muted/40 dark:bg-muted/20;
+  }
+  .data-table tbody tr.is-selected td,
+  .data-table tbody tr[aria-selected="true"] td {
+    @apply bg-primary/10 dark:bg-primary/15;
   }
 
   /* Badge variants */
-  .badge-success { @apply inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300; }
-  .badge-warning { @apply inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300; }
-  .badge-danger  { @apply inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300; }
-  .badge-info    { @apply inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300; }
-  .badge-purple  { @apply inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300; }
-  .badge-muted   { @apply inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200; }
+  .badge-success { @apply inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20; }
+  .badge-warning { @apply inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20; }
+  .badge-danger  { @apply inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20; }
+  .badge-info    { @apply inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20; }
+  .badge-purple  { @apply inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20; }
+  .badge-muted   { @apply inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20; }
 
   /* Sidebar item */
   .sidebar-item {
@@ -183,7 +199,8 @@
     @apply w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] bg-background text-foreground border border-border/80 rounded-lg
            placeholder:text-muted-foreground focus:outline-none focus:ring-2
            focus:ring-primary/20 focus:border-primary transition-all font-medium
-           dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500
+           dark:bg-slate-900/80 dark:border-slate-700/80 dark:text-slate-100 dark:placeholder:text-slate-500
+           dark:hover:border-slate-600 dark:focus:border-primary dark:focus:ring-primary/30
            dark:[color-scheme:dark];
   }
 
@@ -192,13 +209,15 @@
     @apply w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] bg-background text-foreground border border-border/80 rounded-lg
            placeholder:text-muted-foreground focus:outline-none focus:ring-2
            focus:ring-primary/20 focus:border-primary transition-all font-medium
-           dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500
+           dark:bg-slate-900/80 dark:border-slate-700/80 dark:text-slate-100 dark:placeholder:text-slate-500
+           dark:hover:border-slate-600 dark:focus:border-primary dark:focus:ring-primary/30
            dark:[color-scheme:dark];
   }
   .form-select {
     @apply w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] bg-background text-foreground border border-border/80 rounded-lg
            focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium
-           dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-100
+           dark:bg-slate-900/80 dark:border-slate-700/80 dark:text-slate-100
+           dark:hover:border-slate-600 dark:focus:border-primary dark:focus:ring-primary/30
            dark:[color-scheme:dark];
     font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
   }
@@ -207,7 +226,7 @@
     font-family: 'Kantumruy Pro', 'Inter', system-ui, sans-serif !important;
   }
   .label {
-    @apply block text-sm font-semibold text-foreground mb-1.5;
+    @apply block text-sm font-semibold text-foreground dark:text-slate-200 mb-1.5;
   }
 
   /* ── Custom Modern Checkbox with Dark Mode & Clean Aesthetics ── */
@@ -439,6 +458,18 @@
     pointer-events: none !important;
   }
 
+  /* When printing from a modal/portal print document, hide #root completely */
+  body.has-print-modal > #root,
+  body:has(#global-print-active-canvas) > #root {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   html, body {
     background: #ffffff !important;
     color: #000000 !important;
@@ -448,12 +479,15 @@
     height: auto !important;
     min-height: auto !important;
     overflow: visible !important;
-    font-size: 11pt !important;
+    font-size: 10pt !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  #root, main, .print-root {
+  /* Default page layout for direct page printing when not using modal */
+  body:not(.has-print-modal) #root,
+  body:not(.has-print-modal) main,
+  .print-root {
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
@@ -466,9 +500,23 @@
     border: none !important;
   }
 
+  /* Active Print Canvas Modal (Isolated 1-Page Document) */
+  #global-print-active-canvas {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
   @page {
-    size: auto;
-    margin: 4mm 6mm;
+    size: A4 portrait;
+    margin: 8mm 10mm;
   }
 }
 

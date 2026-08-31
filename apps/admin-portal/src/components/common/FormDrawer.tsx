@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import CloseButton from './CloseButton'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -88,12 +88,7 @@ const FormDrawer: React.FC<FormDrawerProps> = ({
                 </h2>
                 {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors ml-4 flex-shrink-0 border border-border/60"
-              >
-                <X size={16} />
-              </button>
+              <CloseButton onClose={onClose} size="md" variant="default" className="ml-4" />
             </div>
 
             {/* Content */}

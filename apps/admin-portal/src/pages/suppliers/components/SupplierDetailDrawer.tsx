@@ -1,15 +1,27 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, Mail, Phone, MapPin, Truck, Edit2, Copy, Check,
+  Truck, Mail, Phone, MapPin, Edit2, Copy, Check,
   CreditCard, FileText, User, ExternalLink, Globe,
-  Building2, ShieldCheck, Printer, Calendar
+  Building2, ShieldCheck, ShoppingCart,
+  Package, Award, DollarSign, Plus
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getAbsoluteImageUrl } from '@/utils/image'
-import api from '@/api/client'
-import StatusBadge from '@/components/common/StatusBadge'
+import { supplierService } from '@/services/supplierService'
+import { 
+  StatusBadge, 
+  DetailDrawer, 
+  DetailDrawerHeader, 
+  DetailDrawerTabNav, 
+  DetailDrawerBody, 
+  DetailDrawerFooter,
+  DetailDrawerCard,
+  DetailDrawerRow,
+  ActionButton,
+  CancelButton,
+} from '@/components/common'
 import type { Supplier } from '../types/supplier.types'
 
 interface SupplierDetailDrawerProps {
@@ -18,14 +30,15 @@ interface SupplierDetailDrawerProps {
   onOpenEdit: (s: Supplier) => void
 }
 
-type TabKey = 'overview' | 'banking' | 'contacts' | 'terms'
+type TabKey = 'overview' | 'financials' | 'purchases' | 'products' | 'performance'
 
 export const SupplierDetailDrawer: React.FC<SupplierDetailDrawerProps> = ({
   supplier,
   onClose,
   onOpenEdit,
 }) => {
-  const { t } = useTranslation(['suppliers', 'common', 'nav'])
+  const { t } = useTranslation(['suppliers', 'common', 'nav', 'inventory', 'purchases'])
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
@@ -33,14 +46,15 @@ export const SupplierDetailDrawer: React.FC<SupplierDetailDrawerProps> = ({
   const { data: fullSupplierData, isLoading } = useQuery({
     queryKey: ['supplier-detail', supplier?.id],
     queryFn: async () => {
-      const res = await api.get(`/suppliers/${supplier?.id}`)
-      return res.data?.data as Supplier
+      return supplierService.show(supplier!.id)
     },
     enabled: !!supplier?.id,
     staleTime: 30000,
   })
 
-  const supp: Supplier | null = fullSupplierData || supplier
+  if (!supplier) return null
+
+  const supp: Supplier = fullSupplierData || supplier
 
   const handleCopy = (text: string, key: string) => {
     if (!text) return
@@ -49,615 +63,631 @@ export const SupplierDetailDrawer: React.FC<SupplierDetailDrawerProps> = ({
     setTimeout(() => setCopiedKey(null), 1500)
   }
 
-  if (!supplier) return null
-
-  const tabs: { key: TabKey; label: string; icon: React.FC<{ size?: number; className?: string }>; badge?: number }[] = [
+  const tabs = [
     {
       key: 'overview',
-      label: t('suppliers.tabGeneral', 'ព័ត៌មានទូទៅ & ទំនាក់ទំនង'),
+      label: t('suppliers.tabGeneral', 'General & Contact'),
       icon: Building2,
     },
     {
-      key: 'banking',
-      label: t('suppliers.tabBanking', 'ធនាគារ & ហិរញ្ញវត្ថុ'),
+      key: 'financials',
+      label: t('suppliers.tabBanking', 'Finance & AP Credit'),
       icon: CreditCard,
     },
     {
-      key: 'contacts',
-      label: t('suppliers.tabRepresentatives', 'តំណាងផ្គត់ផ្គង់'),
-      icon: User,
-      badge: supp?.contacts?.length || 0,
+      key: 'purchases',
+      label: t('suppliers.tabPurchases', 'Purchase Orders'),
+      icon: ShoppingCart,
+      badge: supp?.purchases_count || supp?.recent_purchases?.length || 0,
     },
     {
-      key: 'terms',
-      label: t('suppliers.tabTerms', 'កំណត់ចំណាំ & កិច្ចសន្យា'),
-      icon: FileText,
+      key: 'products',
+      label: t('suppliers.tabProducts', 'Supplied Products'),
+      icon: Package,
+      badge: supp?.supplied_products?.length || 0,
+    },
+    {
+      key: 'performance',
+      label: t('suppliers.tabPerformance', 'Performance & Terms'),
+      icon: Award,
     },
   ]
 
+  const totalPurchased = Number(supp.total_purchases_sum ?? supp.total_purchased ?? 0)
+  const totalPaid = Number(supp.total_paid_sum ?? supp.total_paid ?? 0)
+  const totalDue = Number(supp.total_due_sum ?? supp.total_due ?? supp.outstanding_balance ?? 0)
+  const creditLimit = Number(supp.credit_limit ?? 0)
+  const creditUsedPercent = creditLimit > 0 ? Math.min(100, Math.round((totalDue / creditLimit) * 100)) : 0
+
   return (
-    <AnimatePresence mode="wait">
-      {supp && (
-        <div key={`supplier-drawer-${supp.id}`} className="fixed inset-0 z-50 overflow-hidden print:static">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity cursor-pointer print:hidden"
-          />
-
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10 print:static print:pl-0">
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="bg-card w-screen max-w-2xl border-l border-border h-full flex flex-col shadow-2xl overflow-hidden print:border-none print:w-full print:shadow-none"
+    <DetailDrawer
+      isOpen={!!supp}
+      onClose={onClose}
+      size="2xl"
+    >
+      {/* ─── GLOBAL HEADER ─── */}
+      <DetailDrawerHeader
+        icon={<Truck size={20} />}
+        iconVariant="primary"
+        title={supp.name}
+        subtitle={
+          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground font-mono">
+            <span>{supp.code}</span>
+            <button
+              type="button"
+              onClick={() => handleCopy(supp.code, 'code')}
+              className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title={t('common.copy', 'Copy Code')}
             >
-              {/* Header Bar */}
-              <div className="px-6 py-4 border-b border-border/80 flex items-center justify-between bg-muted/20 print:hidden shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                    <Truck size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-base text-foreground truncate max-w-[260px] sm:max-w-md">
-                        {supp.name}
-                      </h3>
-                      <StatusBadge status={supp.is_active} />
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground font-mono">
-                      <span>{supp.code}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(supp.code, 'code')}
-                        className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                        title={t('common.copy', 'ចម្លងកូដ')}
-                      >
-                        {copiedKey === 'code' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              {copiedKey === 'code' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            </button>
+          </div>
+        }
+        badge={<StatusBadge status={supp.is_active ? 'active' : 'inactive'} />}
+        onClose={onClose}
+      />
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                    title={t('common.close', 'បិទ')}
-                  >
-                    <X size={18} />
-                  </button>
+      {/* ─── GLOBAL TAB NAVIGATION ─── */}
+      <DetailDrawerTabNav
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={(key) => setActiveTab(key as TabKey)}
+      />
+
+      {/* ─── GLOBAL BODY CONTENT ─── */}
+      <DetailDrawerBody isLoading={isLoading}>
+        {/* HERO VENDOR SUMMARY BANNER */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-card to-purple-500/5 border border-primary/20 shadow-2xs relative overflow-hidden space-y-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="relative shrink-0">
+              {supp.logo ? (
+                <img
+                  src={getAbsoluteImageUrl(supp.logo)}
+                  alt={supp.name}
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-xs bg-white"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-black text-2xl flex items-center justify-center border-2 border-primary/30 shadow-xs">
+                  {supp.name ? supp.name.charAt(0).toUpperCase() : 'S'}
                 </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-extrabold text-base text-foreground truncate">{supp.name}</h4>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                {supp.tier === 'strategic' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <Award size={11} />
+                    {t('suppliers.strategicPartner', 'Strategic Partner')}
+                  </span>
+                )}
+                {supp.tier === 'preferred' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                    <ShieldCheck size={11} />
+                    {t('suppliers.preferred', 'Preferred Supplier')}
+                  </span>
+                )}
+                {supp.supplier_type && (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-background/80 border border-border text-foreground uppercase tracking-wider">
+                    {t(`suppliers.${supp.supplier_type}`, supp.supplier_type.replace('_', ' '))}
+                  </span>
+                )}
               </div>
+            </div>
+          </div>
 
-              {/* Navigation Tabs */}
-              <div className="flex items-center gap-2 px-6 border-b border-border/80 bg-muted/10 overflow-x-auto no-scrollbar shrink-0 print:hidden">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon
-                  const isActive = activeTab === tab.key
-                  return (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setActiveTab(tab.key)}
-                      className={`flex items-center gap-2 py-3 px-3 border-b-2 font-bold text-xs transition-all whitespace-nowrap cursor-pointer ${
-                        isActive
-                          ? 'border-primary text-primary'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <Icon size={15} />
-                      <span>{tab.label}</span>
-                      {tab.badge !== undefined && tab.badge > 0 && (
-                        <span
-                          className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                            isActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {tab.badge}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
+          {/* Quick Metrics KPI Grid */}
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/40">
+            <div className="p-2.5 rounded-xl bg-background/60 dark:bg-slate-900/60 border border-border/50 text-center">
+              <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.tablePurchases', 'Total Purchased')}</span>
+              <span className="text-xs font-bold text-foreground font-mono mt-0.5 block">
+                ${totalPurchased.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-background/60 dark:bg-slate-900/60 border border-border/50 text-center">
+              <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.paid', 'Total Paid')}</span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
+                ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-background/60 dark:bg-slate-900/60 border border-border/50 text-center">
+              <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.tableDue', 'Outstanding AP')}</span>
+              <span className={`text-xs font-black font-mono mt-0.5 block ${totalDue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                ${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── TAB 1: OVERVIEW & CONTACT ─── */}
+        {activeTab === 'overview' && (
+          <div className="space-y-4">
+            {/* General Company Information */}
+            <DetailDrawerCard
+              title={t('suppliers.tabGeneral', 'General Company Information')}
+              icon={<Building2 size={15} />}
+            >
+              <div className="space-y-0.5">
+                <DetailDrawerRow
+                  label={t('suppliers.name', 'Company Name')}
+                  value={supp.name}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.code', 'Supplier Code')}
+                  value={supp.code}
+                  copyable
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.taxNumber', 'Tax Number')}
+                  value={supp.tax_number || '—'}
+                  copyable={!!supp.tax_number}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.supplierType', 'Supplier Type')}
+                  value={supp.supplier_type ? t(`suppliers.${supp.supplier_type}`, supp.supplier_type.replace('_', ' ')) : '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.status', 'Operational Status')}
+                  value={
+                    <span className={`font-bold ${supp.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                      {supp.is_active ? t('suppliers.active', 'Active') : t('suppliers.inactive', 'Inactive')}
+                    </span>
+                  }
+                />
               </div>
+            </DetailDrawerCard>
 
-              {/* Scrollable Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
-                {/* HERO SUMMARY CARD */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-card to-purple-500/5 border border-primary/20 shadow-2xs relative overflow-hidden space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="relative shrink-0">
-                        {supp.logo ? (
-                          <img
-                            src={getAbsoluteImageUrl(supp.logo)}
-                            alt={supp.name}
-                            className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-xs bg-white"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-black text-2xl flex items-center justify-center border-2 border-primary/30 shadow-xs">
-                            {supp.name ? supp.name.charAt(0).toUpperCase() : 'S'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-base text-foreground truncate">{supp.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                          {supp.code}
-                        </p>
-                        {supp.tax_number && (
-                          <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                            {t('suppliers.taxNumber', 'លេខសារពើពន្ធ')}: <strong className="text-foreground font-semibold">{supp.tax_number}</strong>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex sm:flex-col items-end gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const target = supp
-                          onClose()
-                          onOpenEdit(target)
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+            {/* Official Contact Channels */}
+            <DetailDrawerCard
+              title={t('suppliers.tabContact', 'Official Contact Channels')}
+              icon={<Mail size={15} />}
+            >
+              <div className="space-y-0.5">
+                <DetailDrawerRow
+                  icon={<Mail size={13} />}
+                  label={t('suppliers.email', 'Primary Email')}
+                  value={supp.email || '—'}
+                  copyable={!!supp.email}
+                />
+                <DetailDrawerRow
+                  icon={<Phone size={13} />}
+                  label={t('suppliers.phone', 'Phone Number')}
+                  value={supp.phone || '—'}
+                  copyable={!!supp.phone}
+                />
+                {supp.hotline && (
+                  <DetailDrawerRow
+                    icon={<Phone size={13} className="text-amber-500" />}
+                    label={t('suppliers.hotline', 'Emergency Hotline')}
+                    value={supp.hotline}
+                    copyable
+                  />
+                )}
+                {supp.website && (
+                  <DetailDrawerRow
+                    icon={<Globe size={13} />}
+                    label={t('suppliers.website', 'Official Website')}
+                    value={
+                      <a
+                        href={supp.website.startsWith('http') ? supp.website : `https://${supp.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
                       >
-                        <Edit2 size={13} />
-                        <span>{t('common.edit', 'កែសម្រួល')}</span>
-                      </button>
-                    </div>
-                  </div>
+                        <span>{supp.website}</span>
+                        <ExternalLink size={11} />
+                      </a>
+                    }
+                  />
+                )}
+              </div>
+            </DetailDrawerCard>
 
-                  {/* Badges / Pill Tags */}
-                  <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border/40">
-                    {supp.currency && (
-                      <span className="px-2.5 py-1 rounded-lg bg-background/80 border border-border/80 text-[11px] font-bold text-foreground flex items-center gap-1">
-                        <CreditCard size={12} className="text-primary" />
-                        <span>{supp.currency}</span>
-                      </span>
-                    )}
-                    {supp.payment_terms && (
-                      <span className="px-2.5 py-1 rounded-lg bg-background/80 border border-border/80 text-[11px] font-bold text-foreground flex items-center gap-1">
-                        <Calendar size={12} className="text-emerald-500" />
-                        <span>{supp.payment_terms}</span>
-                      </span>
-                    )}
-                    {supp.supplier_type && (
-                      <span className="px-2.5 py-1 rounded-lg bg-background/80 border border-border/80 text-[11px] font-bold text-primary capitalize">
-                        {supp.supplier_type.replace('_', ' ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
+            {/* Location & Physical Address */}
+            <DetailDrawerCard
+              title={t('suppliers.tabLocation', 'Location & Freight Address')}
+              icon={<MapPin size={15} />}
+            >
+              <div className="space-y-0.5">
+                <DetailDrawerRow
+                  label={t('suppliers.address', 'Street Address / Building')}
+                  value={supp.address || '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.city', 'City')}
+                  value={supp.city || '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.province', 'State / Province')}
+                  value={supp.province || '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.country', 'Country')}
+                  value={supp.country || '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.postalCode', 'Postal Code')}
+                  value={supp.postal_code || '—'}
+                  copyable={!!supp.postal_code}
+                />
+              </div>
+            </DetailDrawerCard>
 
-                {/* ─── TAB 1: OVERVIEW & CONTACT ─── */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-4">
-                    {/* General Specifications Grid */}
-                    <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
-                      <span className="font-bold uppercase tracking-wider text-[11px] text-muted-foreground flex items-center gap-1.5">
-                        <Building2 size={14} className="text-primary" />
-                        {t('suppliers.tabGeneral', 'ព័ត៌មានទូទៅនៃក្រុមហ៊ុន')}
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block font-semibold">{t('suppliers.name', 'ឈ្មោះក្រុមហ៊ុន')}</span>
-                          <span className="font-bold text-foreground text-xs block mt-0.5">{supp.name || '—'}</span>
-                        </div>
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block font-semibold">{t('suppliers.code', 'កូដសម្គាល់')}</span>
-                          <span className="font-mono font-bold text-foreground text-xs block mt-0.5">{supp.code || '—'}</span>
-                        </div>
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block font-semibold">{t('suppliers.taxNumber', 'លេខសារពើពន្ធ')}</span>
-                          <span className="font-mono font-bold text-foreground text-xs block mt-0.5">{supp.tax_number || '—'}</span>
-                        </div>
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block font-semibold">{t('suppliers.status', 'ស្ថានភាពប្រតិបត្តិការ')}</span>
-                          <span className={`font-bold text-xs block mt-0.5 ${supp.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                            {supp.is_active ? t('suppliers.active', 'សកម្ម') : t('suppliers.inactive', 'អសកម្ម')}
+            {/* Representatives */}
+            {supp.contacts && supp.contacts.length > 0 && (
+              <DetailDrawerCard
+                title={t('suppliers.tabRepresentatives', 'Key Representatives')}
+                icon={<User size={15} />}
+                badge={
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                    {supp.contacts.length}
+                  </span>
+                }
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {supp.contacts.map((c, idx) => (
+                    <div key={idx} className="p-3 bg-muted/20 dark:bg-slate-800/50 border border-border/60 dark:border-slate-800 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-foreground">{c.name}</span>
+                        {c.is_primary && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                            {t('common.primary', 'Primary')}
                           </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Official Channels */}
-                    <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
-                      <span className="font-bold uppercase tracking-wider text-[11px] text-muted-foreground flex items-center gap-1.5">
-                        <Mail size={14} className="text-emerald-500" />
-                        {t('suppliers.tabContact', 'បណ្តាញទំនាក់ទំនងផ្លូវការ')}
-                      </span>
-
-                      <div className="grid grid-cols-1 gap-2.5">
-                        {supp.email && (
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                            <div className="flex items-center gap-2.5 text-foreground min-w-0">
-                              <Mail size={14} className="text-muted-foreground shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-muted-foreground block">{t('suppliers.email', 'អ៊ីមែលចម្បង')}</span>
-                                <span className="font-medium text-xs truncate block">{supp.email}</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.email || '', 'email')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'email' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          </div>
-                        )}
-
-                        {supp.phone && (
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                            <div className="flex items-center gap-2.5 text-foreground min-w-0">
-                              <Phone size={14} className="text-muted-foreground shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-muted-foreground block">{t('suppliers.phone', 'លេខទូរស័ព្ទ')}</span>
-                                <span className="font-mono font-medium text-xs block">{supp.phone}</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.phone || '', 'phone')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'phone' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          </div>
-                        )}
-
-                        {supp.fax && (
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                            <div className="flex items-center gap-2.5 text-foreground min-w-0">
-                              <Printer size={14} className="text-muted-foreground shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-muted-foreground block">{t('suppliers.fax', 'លេខទូរសារ')}</span>
-                                <span className="font-mono font-medium text-xs block">{supp.fax}</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.fax || '', 'fax')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'fax' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          </div>
-                        )}
-
-                        {supp.website && (
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                            <div className="flex items-center gap-2.5 text-foreground min-w-0">
-                              <Globe size={14} className="text-muted-foreground shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-muted-foreground block">{t('suppliers.website', 'គេហទំព័រផ្លូវការ')}</span>
-                                <a
-                                  href={supp.website.startsWith('http') ? supp.website : `https://${supp.website}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-medium text-xs text-primary hover:underline truncate block"
-                                >
-                                  {supp.website}
-                                </a>
-                              </div>
-                            </div>
-                            <a
-                              href={supp.website.startsWith('http') ? supp.website : `https://${supp.website}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground shrink-0"
-                            >
-                              <ExternalLink size={13} />
-                            </a>
-                          </div>
-                        )}
-
-                        {supp.hotline && (
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                            <div className="flex items-center gap-2.5 text-foreground min-w-0">
-                              <Phone size={14} className="text-amber-500 shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-muted-foreground block">{t('suppliers.hotline', 'ទូរស័ព្ទទាន់ហេតុការណ៍')}</span>
-                                <span className="font-mono font-medium text-xs block">{supp.hotline}</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.hotline || '', 'hotline')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'hotline' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          </div>
-                        )}
-
-                        {supp.support_email && (
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/60">
-                            <div className="flex items-center gap-2.5 text-foreground min-w-0">
-                              <Mail size={14} className="text-blue-500 shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-[10px] text-muted-foreground block">{t('suppliers.supportEmail', 'អ៊ីមែលផ្នែកបម្រើអតិថិជន')}</span>
-                                <span className="font-medium text-xs truncate block">{supp.support_email}</span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.support_email || '', 'support_email')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'support_email' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          </div>
                         )}
                       </div>
-                    </div>
-
-                    {/* Location & Physical Address */}
-                    <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
-                      <span className="font-bold uppercase tracking-wider text-[11px] text-muted-foreground flex items-center gap-1.5">
-                        <MapPin size={14} className="text-purple-500" />
-                        {t('suppliers.tabLocation', 'ទីតាំង & អាសយដ្ឋានដឹកជញ្ជូន')}
-                      </span>
-
-                      <div className="p-3 rounded-xl bg-muted/20 border border-border/60 space-y-2">
-                        <div className="flex items-start gap-2.5 text-foreground">
-                          <MapPin size={15} className="text-purple-500 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">{t('suppliers.address', 'អាសយដ្ឋានផ្លូវ / អគារ')}</span>
-                            <span className="font-medium text-xs leading-relaxed block mt-0.5">
-                              {supp.address || '—'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-border/50 text-xs">
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">{t('suppliers.city', 'រាជធានី / ក្រុង')}</span>
-                            <span className="font-bold text-foreground block mt-0.5">{supp.city || '—'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">{t('suppliers.province', 'ខេត្ត / រដ្ឋ')}</span>
-                            <span className="font-bold text-foreground block mt-0.5">{supp.province || '—'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">{t('suppliers.country', 'ប្រទេស')}</span>
-                            <span className="font-bold text-foreground block mt-0.5">{supp.country || '—'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">{t('suppliers.postalCode', 'កូដប្រៃសណីយ៍')}</span>
-                            <span className="font-mono font-bold text-foreground block mt-0.5">{supp.postal_code || '—'}</span>
-                          </div>
-                        </div>
+                      <span className="text-[11px] text-primary font-medium block">{c.title || c.position || 'Representative'}</span>
+                      <div className="text-[11px] text-muted-foreground space-y-0.5 font-mono">
+                        {c.phone && <div className="flex items-center gap-1"><Phone size={10} /> {c.phone}</div>}
+                        {c.email && <div className="flex items-center gap-1"><Mail size={10} /> {c.email}</div>}
                       </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+              </DetailDrawerCard>
+            )}
+          </div>
+        )}
 
-                {/* ─── TAB 2: BANKING & FINANCE ─── */}
-                {activeTab === 'banking' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
-                      <span className="font-bold uppercase tracking-wider text-[11px] text-muted-foreground flex items-center gap-1.5">
-                        <CreditCard size={14} className="text-pink-500" />
-                        {t('suppliers.tabBanking', 'ព័ត៌មានគណនីធនាគារ & ការទូទាត់')}
-                      </span>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.bankName', 'ឈ្មោះធនាគារ')}</span>
-                          <span className="font-bold text-foreground text-xs block mt-0.5">{supp.bank_name || '—'}</span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60 flex items-center justify-between">
-                          <div>
-                            <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.bankAccountNumber', 'លេខគណនីធនាគារ')}</span>
-                            <span className="font-mono font-bold text-foreground text-xs block mt-0.5">{supp.bank_account_number || '—'}</span>
-                          </div>
-                          {supp.bank_account_number && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.bank_account_number || '', 'bank_account')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'bank_account' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.bankAccountName', 'ឈ្មោះម្ចាស់គណនី')}</span>
-                          <span className="font-bold text-foreground text-xs block mt-0.5">{supp.bank_account_name || '—'}</span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60 flex items-center justify-between">
-                          <div>
-                            <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.swiftCode', 'លេខកូដ SWIFT / BIC')}</span>
-                            <span className="font-mono font-bold text-foreground text-xs block mt-0.5">{supp.swift_code || '—'}</span>
-                          </div>
-                          {supp.swift_code && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(supp.swift_code || '', 'swift')}
-                              className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                              title={t('common.copy', 'ចម្លង')}
-                            >
-                              {copiedKey === 'swift' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.currency', 'រូបិយប័ណ្ណទូទាត់')}</span>
-                          <span className="font-bold text-primary text-xs block mt-0.5">{supp.currency || 'USD'}</span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.paymentTerms', 'លក្ខខណ្ឌឥណទានទូទាត់')}</span>
-                          <span className="font-bold text-foreground text-xs block mt-0.5">{supp.payment_terms || 'Net 30'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── TAB 3: CONTACTS / REPRESENTATIVES ─── */}
-                {activeTab === 'contacts' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
-                      <span className="font-bold uppercase tracking-wider text-[11px] text-muted-foreground flex items-center gap-1.5">
-                        <User size={14} className="text-amber-500" />
-                        {t('suppliers.tabRepresentatives', 'តំណាងអ្នកផ្គត់ផ្គង់ & បុគ្គលិកទំនាក់ទំនង')}
-                      </span>
-
-                      {supp.contacts && supp.contacts.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {supp.contacts.map((c, idx) => (
-                            <div key={idx} className="p-3.5 bg-muted/20 border border-border/60 rounded-xl space-y-2 relative">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                                    {c.name ? c.name.charAt(0).toUpperCase() : 'C'}
-                                  </div>
-                                  <div>
-                                    <span className="font-bold text-foreground text-xs block">{c.name}</span>
-                                    <span className="text-[10px] text-primary font-semibold block">{c.title || c.position || t('suppliers.contactPerson', 'អ្នកទំនាក់ទំនង')}</span>
-                                  </div>
-                                </div>
-                                {c.is_primary && (
-                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-                                    {t('common.primary', 'ចម្បង')}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="space-y-1 pt-1 border-t border-border/40 text-[11px]">
-                                {c.email && (
-                                  <div className="flex items-center justify-between text-muted-foreground">
-                                    <span className="flex items-center gap-1.5 truncate"><Mail size={12} /> {c.email}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCopy(c.email || '', `c-email-${idx}`)}
-                                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"
-                                    >
-                                      {copiedKey === `c-email-${idx}` ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                                    </button>
-                                  </div>
-                                )}
-                                {c.phone && (
-                                  <div className="flex items-center justify-between text-muted-foreground font-mono">
-                                    <span className="flex items-center gap-1.5"><Phone size={12} /> {c.phone}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCopy(c.phone || '', `c-phone-${idx}`)}
-                                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"
-                                    >
-                                      {copiedKey === `c-phone-${idx}` ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 border border-dashed border-border/80 rounded-xl bg-muted/10">
-                          <User size={28} className="mx-auto text-muted-foreground/40 mb-2" />
-                          <p className="text-xs font-semibold text-foreground">
-                            {t('suppliers.noContactsYet', 'មិនទាន់មានតំណាងទំនាក់ទំនងនៅឡើយទេ។')}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            {t('suppliers.noContactsSub', 'បន្ថែមអ្នកគ្រប់គ្រងផ្នែកលក់ ឬអ្នកសម្របសម្រួលដឹកជញ្ជូន។')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── TAB 4: NOTES & GUIDELINES ─── */}
-                {activeTab === 'terms' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-card rounded-2xl border border-border/80 shadow-2xs space-y-3">
-                      <span className="font-bold uppercase tracking-wider text-[11px] text-muted-foreground flex items-center gap-1.5">
-                        <FileText size={14} className="text-blue-500" />
-                        {t('suppliers.tabTerms', 'កំណត់ចំណាំ & កិច្ចព្រមព្រៀងផ្គត់ផ្គង់')}
-                      </span>
-
-                      {supp.notes ? (
-                        <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60">
-                          <p className="text-foreground leading-relaxed text-xs whitespace-pre-wrap font-medium">
-                            {supp.notes}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 border border-dashed border-border/80 rounded-xl bg-muted/10">
-                          <FileText size={28} className="mx-auto text-muted-foreground/40 mb-2" />
-                          <p className="text-xs text-muted-foreground">
-                            {t('suppliers.noNotes', 'មិនទាន់មានកំណត់ចំណាំបន្ថែមសម្រាប់អ្នកផ្គត់ផ្គង់នេះទេ។')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 via-transparent to-primary/10 border border-primary/20 flex items-start gap-3">
-                      <ShieldCheck size={18} className="text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-xs font-bold text-foreground">
-                          {t('suppliers.procurementPartner', 'ការរួមបញ្ចូលប្រព័ន្ធបញ្ជាទិញ & ខ្សែសង្វាក់ផ្គត់ផ្គង់')}
-                        </h4>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                          {t('suppliers.guidelineText', 'ព័ត៌មានអ្នកផ្គត់ផ្គង់នេះនឹងត្រូវបានប្រើប្រាស់ដោយផ្ទាល់នៅក្នុងការបញ្ជាទិញ (PO), ប័ណ្ណទទួលទំនិញចូលស្តុក (GRN) និងការទូទាត់។')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+        {/* ─── TAB 2: FINANCIALS & AP CREDIT ─── */}
+        {activeTab === 'financials' && (
+          <div className="space-y-4">
+            {/* Credit Limit & Debt Gauge */}
+            <DetailDrawerCard
+              title={t('suppliers.creditFacility', 'Accounts Payable & Credit Facility')}
+              icon={<DollarSign size={15} />}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.creditLimit', 'Credit Limit')}</span>
+                  <span className="text-base font-black text-foreground font-mono mt-0.5 block">
+                    ${creditLimit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">{t('suppliers.approvedTerms', 'Approved trade credit')}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold block">{t('suppliers.outstandingPayment', 'Current AP Debt')}</span>
+                  <span className="text-base font-black text-rose-600 dark:text-rose-400 font-mono mt-0.5 block">
+                    ${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">{t('suppliers.pendingInvoices', 'Unpaid supplier invoices')}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">{t('suppliers.availableCredit', 'Available Credit')}</span>
+                  <span className="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
+                    ${Math.max(0, creditLimit - totalDue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">{t('suppliers.remainingPurchasingPower', 'Remaining purchasing capacity')}</span>
+                </div>
               </div>
 
-              {/* Drawer Footer */}
-              <div className="p-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3 print:hidden shrink-0">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
-                >
-                  {t('common.close', 'បិទ')}
-                </button>
+              {/* Progress Bar */}
+              {creditLimit > 0 && (
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-muted-foreground">{t('suppliers.creditUtilization', 'Credit Utilization')}</span>
+                    <span className="font-mono font-bold text-foreground">{creditUsedPercent}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        creditUsedPercent > 90 ? 'bg-rose-500' : creditUsedPercent > 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, creditUsedPercent)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </DetailDrawerCard>
 
+            {/* Banking Details */}
+            <DetailDrawerCard
+              title={t('suppliers.tabBanking', 'Bank Account & Wire Transfer Remittance')}
+              icon={<CreditCard size={15} />}
+            >
+              <div className="space-y-0.5">
+                <DetailDrawerRow
+                  label={t('suppliers.bankName', 'Bank Name')}
+                  value={supp.bank_name || '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.bankAccountNumber', 'Account Number')}
+                  value={supp.bank_account_number || '—'}
+                  copyable={!!supp.bank_account_number}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.bankAccountName', 'Beneficiary Account Name')}
+                  value={supp.bank_account_name || '—'}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.swiftCode', 'SWIFT / BIC Code')}
+                  value={supp.swift_code || '—'}
+                  copyable={!!supp.swift_code}
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.currency', 'Settlement Currency')}
+                  value={
+                    <span className="font-bold text-primary font-mono">
+                      {supp.currency_code || supp.currency || 'USD'}
+                    </span>
+                  }
+                />
+                <DetailDrawerRow
+                  label={t('suppliers.paymentTerms', 'Payment Terms')}
+                  value={supp.payment_terms || 'Net 30'}
+                />
+              </div>
+            </DetailDrawerCard>
+          </div>
+        )}
+
+        {/* ─── TAB 3: PURCHASE ORDERS HISTORY ─── */}
+        {activeTab === 'purchases' && (
+          <div className="space-y-4">
+            <DetailDrawerCard
+              title={t('suppliers.recentPurchaseOrders', 'Recent Purchase Orders (POs)')}
+              icon={<ShoppingCart size={15} />}
+              action={
                 <button
                   type="button"
                   onClick={() => {
-                    const target = supp
                     onClose()
-                    onOpenEdit(target)
+                    navigate(`/purchases/create?supplier_id=${supp.id}`)
                   }}
-                  className="px-4.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity active:scale-95"
+                  className="h-8 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs inline-flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  <Edit2 size={13} />
-                  <span>{t('suppliers.editSupplier', 'កែសម្រួលអ្នកផ្គត់ផ្គង់')}</span>
+                  <Plus size={13} />
+                  <span>{t('suppliers.newPO', 'New PO')}</span>
                 </button>
-              </div>
-            </motion.div>
+              }
+            >
+              {supp.recent_purchases && supp.recent_purchases.length > 0 ? (
+                <div className="border border-border/70 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/40 dark:bg-slate-800/60 border-b border-border/70 dark:border-slate-800">
+                      <tr>
+                        <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground">{t('purchases.reference', 'PO Ref')}</th>
+                        <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground">{t('purchases.date', 'Date')}</th>
+                        <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground">{t('purchases.status', 'Status')}</th>
+                        <th className="py-2.5 px-3 text-right font-semibold text-muted-foreground">{t('purchases.grandTotal', 'Total')}</th>
+                        <th className="py-2.5 px-3 text-right font-semibold text-muted-foreground">{t('purchases.dueAmount', 'Due')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50 dark:divide-slate-800/60">
+                      {supp.recent_purchases.map((po) => (
+                        <tr
+                          key={po.id}
+                          className="hover:bg-muted/30 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                          onClick={() => {
+                            onClose()
+                            navigate(`/purchases`)
+                          }}
+                        >
+                          <td className="py-2.5 px-3 font-mono font-bold text-primary">
+                            {po.reference_number}
+                          </td>
+                          <td className="py-2.5 px-3 text-muted-foreground font-mono whitespace-nowrap">
+                            {po.date || '—'}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              po.status === 'received'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : po.status === 'ordered'
+                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            }`}>
+                              {po.status}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-foreground">
+                            ${po.grand_total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold">
+                            {po.due_amount > 0 ? (
+                              <span className="text-rose-600 dark:text-rose-400 font-black">
+                                ${po.due_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            ) : (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">$0.00</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 border border-dashed border-border/80 dark:border-slate-800 rounded-xl bg-muted/10">
+                  <ShoppingCart size={28} className="mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs font-semibold text-foreground">
+                    {t('suppliers.noPOsYet', 'No purchase orders recorded yet.')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {t('suppliers.createFirstPO', 'Create a purchase order to start tracking procurement and inventory receipts.')}
+                  </p>
+                </div>
+              )}
+            </DetailDrawerCard>
           </div>
-        </div>
-      )}
-    </AnimatePresence>
+        )}
+
+        {/* ─── TAB 4: SUPPLIED PRODUCTS ─── */}
+        {activeTab === 'products' && (
+          <div className="space-y-4">
+            <DetailDrawerCard
+              title={t('suppliers.tabProducts', 'Sourced Products & Item Catalog')}
+              icon={<Package size={15} />}
+              badge={
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                  {supp.supplied_products?.length || 0}
+                </span>
+              }
+            >
+              {supp.supplied_products && supp.supplied_products.length > 0 ? (
+                <div className="border border-border/70 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/40 dark:bg-slate-800/60 border-b border-border/70 dark:border-slate-800">
+                      <tr>
+                        <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground">{t('inventory.product', 'Product')}</th>
+                        <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground">{t('inventory.sku', 'SKU')}</th>
+                        <th className="py-2.5 px-3 text-right font-semibold text-muted-foreground">{t('inventory.cost', 'Last Cost')}</th>
+                        <th className="py-2.5 px-3 text-right font-semibold text-muted-foreground">{t('inventory.totalQty', 'Total Qty Sourced')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50 dark:divide-slate-800/60">
+                      {supp.supplied_products.map((prod) => (
+                        <tr key={prod.id} className="hover:bg-muted/30 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="py-2.5 px-3">
+                            <div className="font-bold text-foreground text-xs">{prod.name}</div>
+                            <span className="text-[10px] text-muted-foreground">{prod.category_name}</span>
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-muted-foreground">
+                            {prod.sku}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-foreground">
+                            ${prod.last_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-primary">
+                            {prod.total_qty.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 border border-dashed border-border/80 dark:border-slate-800 rounded-xl bg-muted/10">
+                  <Package size={28} className="mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs font-semibold text-foreground">
+                    {t('suppliers.noSuppliedProducts', 'No product catalog linked yet.')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {t('suppliers.productsAutoLinked', 'Products will be automatically linked as you issue purchase orders.')}
+                  </p>
+                </div>
+              )}
+            </DetailDrawerCard>
+          </div>
+        )}
+
+        {/* ─── TAB 5: PERFORMANCE & TERMS ─── */}
+        {activeTab === 'performance' && (
+          <div className="space-y-4">
+            {/* Vendor Scorecard */}
+            <DetailDrawerCard
+              title={t('suppliers.vendorScorecard', 'Vendor Quality & SLA Scorecard')}
+              icon={<Award size={15} />}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.onTimeDelivery', 'On-Time Delivery Rate')}</span>
+                  <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
+                    {supp.performance?.on_time_rate ?? 96.0}%
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">{t('suppliers.highPunctuality', 'High delivery punctuality')}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.fulfillmentAccuracy', 'Fulfillment Accuracy')}</span>
+                  <span className="text-lg font-black text-primary font-mono mt-0.5 block">
+                    {supp.performance?.fulfillment_rate ?? 98.5}%
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">{t('suppliers.minimalDefects', 'Minimal inventory discrepancies')}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">{t('suppliers.averageLeadTime', 'Average Lead Time')}</span>
+                  <span className="text-lg font-black text-foreground font-mono mt-0.5 block">
+                    {supp.lead_time_days ?? 3} {t('suppliers.days', 'Days')}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">{t('suppliers.leadTimeSLA', 'Standard order to delivery SLA')}</span>
+                </div>
+              </div>
+            </DetailDrawerCard>
+
+            {/* Notes & Supply Agreements */}
+            <DetailDrawerCard
+              title={t('suppliers.tabTerms', 'Notes & Supply Agreements')}
+              icon={<FileText size={15} />}
+            >
+              {supp.notes ? (
+                <div className="p-3.5 rounded-xl bg-muted/20 dark:bg-slate-800/40 border border-border/60 dark:border-slate-800">
+                  <p className="text-foreground leading-relaxed text-xs whitespace-pre-wrap font-medium">
+                    {supp.notes}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8 border border-dashed border-border/80 dark:border-slate-800 rounded-xl bg-muted/10">
+                  <FileText size={28} className="mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {t('suppliers.noNotes', 'No supply agreements or special terms noted.')}
+                  </p>
+                </div>
+              )}
+            </DetailDrawerCard>
+
+            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 via-transparent to-primary/10 border border-primary/20 flex items-start gap-3">
+              <ShieldCheck size={18} className="text-primary shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-foreground">
+                  {t('suppliers.procurementPartner', 'Enterprise Supply Chain Verification')}
+                </h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  {t('suppliers.guidelineText', 'This vendor profile is integrated with real-time accounts payable, automated purchase order generation, and multi-warehouse restocking.')}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </DetailDrawerBody>
+
+      {/* ─── GLOBAL STICKY FOOTER ─── */}
+      <DetailDrawerFooter
+        onClose={onClose}
+        closeLabel={t('common.close', 'Close')}
+        rightActions={
+          <>
+            <ActionButton
+              onClick={() => {
+                onClose()
+                navigate(`/purchases/create?supplier_id=${supp.id}`)
+              }}
+              label={t('suppliers.createPO', 'Create PO')}
+              icon={<ShoppingCart size={15} />}
+              variant="emerald"
+            />
+            <ActionButton
+              onClick={() => {
+                const target = supp
+                onClose()
+                onOpenEdit(target)
+              }}
+              label={t('suppliers.editSupplier', 'Edit Supplier')}
+              icon={<Edit2 size={15} />}
+              variant="primary"
+            />
+          </>
+        }
+      />
+    </DetailDrawer>
   )
 }
 

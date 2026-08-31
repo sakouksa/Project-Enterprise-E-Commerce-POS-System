@@ -16,24 +16,24 @@ import {
   Loader2,
   CheckCircle2
 } from 'lucide-react'
-import api from '@/api/client'
+import { reportService } from '@/services/reportService'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { downloadBlob } from '@/utils/export'
 
-import PurchaseFilters, { type PurchaseFilterState } from '../../components/reports/purchase/PurchaseFilters'
-import PurchaseSummaryCards from '../../components/reports/purchase/PurchaseSummaryCards'
-import PurchaseTrendChart from '../../components/reports/purchase/PurchaseTrendChart'
-import SupplierChart from '../../components/reports/purchase/SupplierChart'
-import CategoryChart from '../../components/reports/purchase/CategoryChart'
-import BrandChart from '../../components/reports/purchase/BrandChart'
-import WarehouseChart from '../../components/reports/purchase/WarehouseChart'
-import PaymentStatusChart from '../../components/reports/purchase/PaymentStatusChart'
-import PurchaseReturnChart from '../../components/reports/purchase/PurchaseReturnChart'
-import TopSuppliersTable from '../../components/reports/purchase/TopSuppliersTable'
-import TopProductsTable from '../../components/reports/purchase/TopProductsTable'
-import PurchaseReportTable from '../../components/reports/purchase/PurchaseReportTable'
-import PurchaseReturnTable from '../../components/reports/purchase/PurchaseReturnTable'
+import PurchaseFilters, { type PurchaseFilterState } from './components/purchase/PurchaseFilters'
+import PurchaseSummaryCards from './components/purchase/PurchaseSummaryCards'
+import PurchaseTrendChart from './components/purchase/PurchaseTrendChart'
+import SupplierChart from './components/purchase/SupplierChart'
+import CategoryChart from './components/purchase/CategoryChart'
+import BrandChart from './components/purchase/BrandChart'
+import WarehouseChart from './components/purchase/WarehouseChart'
+import PaymentStatusChart from './components/purchase/PaymentStatusChart'
+import PurchaseReturnChart from './components/purchase/PurchaseReturnChart'
+import TopSuppliersTable from './components/purchase/TopSuppliersTable'
+import TopProductsTable from './components/purchase/TopProductsTable'
+import PurchaseReportTable from './components/purchase/PurchaseReportTable'
+import PurchaseReturnTable from './components/purchase/PurchaseReturnTable'
 
 export const PurchaseReportPage: React.FC = () => {
   const { t } = useTranslation('reports')
@@ -80,10 +80,7 @@ export const PurchaseReportPage: React.FC = () => {
   } = useQuery({
     queryKey: ['reports-purchase-overview', filters, trendGroupBy],
     queryFn: async () => {
-      const res = await api.get('/reports/purchase/overview', {
-        params: { ...filters, group_by: trendGroupBy }
-      })
-      return res.data?.data ?? {}
+      return reportService.purchaseOverview({ ...filters, group_by: trendGroupBy })
     },
     staleTime: 15000,
     refetchOnWindowFocus: false
@@ -97,10 +94,8 @@ export const PurchaseReportPage: React.FC = () => {
   } = useQuery({
     queryKey: ['reports-purchase-table', filters, page, search],
     queryFn: async () => {
-      const res = await api.get('/reports/purchase/table', {
-        params: { ...filters, page, per_page: 10, search }
-      })
-      return res.data?.data ?? { data: [], pagination: {} }
+      const res = await reportService.purchaseTable({ ...filters, page, per_page: 10, search })
+      return res?.data ?? res ?? { data: [], pagination: {} }
     },
     staleTime: 10000,
     refetchOnWindowFocus: false
@@ -113,10 +108,8 @@ export const PurchaseReportPage: React.FC = () => {
   } = useQuery({
     queryKey: ['reports-purchase-returns-table', filters],
     queryFn: async () => {
-      const res = await api.get('/reports/purchase/returns-table', {
-        params: { ...filters, page: 1, per_page: 10 }
-      })
-      return res.data?.data?.data ?? []
+      const res = await reportService.purchaseReturnsTable({ ...filters, page: 1, per_page: 10 })
+      return res?.data?.data ?? res?.data ?? res ?? []
     },
     staleTime: 10000,
     refetchOnWindowFocus: false
@@ -130,7 +123,7 @@ export const PurchaseReportPage: React.FC = () => {
       toast.info(t('purchase.toast.exportingExcel', 'Exporting Excel purchase report, please wait...'))
 
       let exportFilters = { ...filters }
-      if (presetRange && presetRange !== 'current') {
+      if (presetRange) {
         const today = new Date()
         let from = ''
         let to = today.toISOString().split('T')[0]
@@ -142,11 +135,14 @@ export const PurchaseReportPage: React.FC = () => {
           y.setDate(y.getDate() - 1)
           from = y.toISOString().split('T')[0]
           to = from
-        } else if (presetRange === 'this_week') {
-          const first = today.getDate() - today.getDay()
-          const firstDay = new Date(today.setDate(first))
-          from = firstDay.toISOString().split('T')[0]
-          to = new Date().toISOString().split('T')[0]
+        } else if (presetRange === 'last_7_days') {
+          const d = new Date(today)
+          d.setDate(d.getDate() - 7)
+          from = d.toISOString().split('T')[0]
+        } else if (presetRange === 'last_30_days') {
+          const d = new Date(today)
+          d.setDate(d.getDate() - 30)
+          from = d.toISOString().split('T')[0]
         } else if (presetRange === 'this_month') {
           const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
           from = firstDay.toISOString().split('T')[0]
@@ -158,10 +154,7 @@ export const PurchaseReportPage: React.FC = () => {
         exportFilters.date_to = to
       }
 
-      const response = await api.get('/reports/purchase/export', {
-        params: { ...exportFilters, format: 'excel' },
-        responseType: 'blob'
-      })
+      const response = await reportService.exportPurchase({ ...exportFilters, format: 'excel' })
 
       const blob = new Blob([response.data])
       const dateStamp = new Date().toISOString().split('T')[0]

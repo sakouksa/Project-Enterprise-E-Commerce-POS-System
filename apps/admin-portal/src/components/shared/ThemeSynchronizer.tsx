@@ -31,7 +31,7 @@ const ThemeSynchronizer: React.FC = () => {
 
     // 3. Primary Color & Fallbacks
     root.style.setProperty('--primary', hexToHsl(customizer.primaryColor))
-    root.style.setProperty('--primary-foreground', isDark ? '222 47% 11%' : '210 40% 98%')
+    root.style.setProperty('--primary-foreground', '210 40% 98%')
 
     // 4. Border Radii & Layout Settings
     root.style.setProperty('--radius', customizer.layout.cardRadius)
@@ -42,6 +42,48 @@ const ThemeSynchronizer: React.FC = () => {
     root.style.setProperty('--drawer-radius', customizer.layout.drawerRadius)
     root.style.setProperty('--container-padding', customizer.layout.padding)
 
+    const getRadiusVal = (r?: string) => {
+      if (!r) return '0.75rem'
+      if (r === 'rounded-none') return '0px'
+      if (r === 'rounded-sm') return '0.125rem'
+      if (r === 'rounded' || r === 'rounded-md' || r === '0.375rem') return '0.375rem'
+      if (r === 'rounded-lg' || r === '0.5rem') return '0.5rem'
+      if (r === 'rounded-xl' || r === '0.75rem') return '0.75rem'
+      if (r === 'rounded-2xl' || r === '1rem') return '1rem'
+      if (r === 'rounded-3xl' || r === '1.5rem') return '1.5rem'
+      if (r === 'rounded-full' || r === 'rounded-pill') return '9999px'
+      if (r.endsWith('px') || r.endsWith('rem') || r.endsWith('%')) return r
+      return '0.75rem'
+    }
+
+    const getShadowVal = (shadow?: string, darkMode?: boolean) => {
+      if (!shadow || shadow === 'none') return 'none'
+
+      if (darkMode) {
+        switch (shadow) {
+          case 'sm':
+            return '0 3px 12px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3)'
+          case 'md':
+            return '0 8px 24px -2px rgba(0, 0, 0, 0.7), 0 4px 10px -2px rgba(0, 0, 0, 0.5)'
+          case 'lg':
+            return '0 18px 45px -4px rgba(0, 0, 0, 0.9), 0 8px 18px -4px rgba(0, 0, 0, 0.7)'
+          default:
+            return '0 3px 12px rgba(0, 0, 0, 0.45)'
+        }
+      }
+
+      switch (shadow) {
+        case 'sm':
+          return '0 2px 8px -1px rgba(0, 0, 0, 0.09), 0 1px 4px -1px rgba(0, 0, 0, 0.06)'
+        case 'md':
+          return '0 6px 20px -2px rgba(0, 0, 0, 0.16), 0 3px 8px -2px rgba(0, 0, 0, 0.1)'
+        case 'lg':
+          return '0 16px 36px -4px rgba(0, 0, 0, 0.28), 0 6px 16px -3px rgba(0, 0, 0, 0.16)'
+        default:
+          return '0 2px 8px -1px rgba(0, 0, 0, 0.09)'
+      }
+    }
+
     // 5. Sidebar Styles
     root.style.setProperty('--sidebar-bg', customizer.sidebar.bgColor)
     root.style.setProperty('--sidebar-text', customizer.sidebar.textColor)
@@ -51,13 +93,14 @@ const ThemeSynchronizer: React.FC = () => {
     root.style.setProperty('--sidebar-hover-text', customizer.sidebar.hoverTextColor)
     root.style.setProperty('--sidebar-border', customizer.sidebar.borderColor)
     root.style.setProperty('--sidebar-width', `${customizer.sidebar.width}px`)
-    root.style.setProperty('--sidebar-radius', customizer.sidebar.roundedStyle)
+    root.style.setProperty('--sidebar-radius', getRadiusVal(customizer.sidebar.roundedStyle))
 
     // 6. Navbar Styles
     root.style.setProperty('--navbar-bg', hexToRgba(customizer.navbar.bgColor, customizer.navbar.transparency))
     root.style.setProperty('--navbar-text', customizer.navbar.textColor)
     root.style.setProperty('--navbar-border', customizer.navbar.borderColor)
     root.style.setProperty('--navbar-height', `${customizer.navbar.height}px`)
+    root.style.setProperty('--navbar-shadow', getShadowVal(customizer.navbar.shadow, isDark))
 
     // 7. Cards
     root.style.setProperty('--card-bg', customizer.card.bgColor)

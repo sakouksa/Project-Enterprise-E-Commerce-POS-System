@@ -2,11 +2,11 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, Loader2, RotateCcw, ShoppingBag, Calendar, Info, Package,
+  Loader2, RotateCcw, ShoppingBag, Calendar, Info, Package,
   AlertCircle, FileText, CheckCircle, Plus, Minus, Sparkles,
   ArrowRight, ShieldCheck, CreditCard, Warehouse, Save
 } from 'lucide-react'
-import { EnterpriseSelect } from '@/components/common'
+import { EnterpriseSelect, CloseButton } from '@/components/common'
 import { formatCurrency } from '../utils/purchaseCurrency'
 
 interface CreatePurchaseReturnModalProps {
@@ -118,13 +118,7 @@ export const CreatePurchaseReturnModal: React.FC<CreatePurchaseReturnModalProps>
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+              <CloseButton onClose={onClose} size="md" color="rose" />
             </div>
 
             {/* 2. Visual Process Stepper Banner (Fixed below header) */}

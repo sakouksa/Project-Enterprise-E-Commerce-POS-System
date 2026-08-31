@@ -254,20 +254,30 @@ export const PanelsTab: React.FC<PanelsTabProps> = ({
                 { label: t('settings.radiusSharp', 'Sharp'), val: 'rounded-md' },
                 { label: t('settings.radiusSmooth', 'Smooth'), val: 'rounded-xl' },
                 { label: t('settings.radiusPill', 'Pill'), val: 'rounded-2xl' },
-              ].map((r) => (
-                <button
-                  key={r.val}
-                  type="button"
-                  onClick={() => handleRoundedChange(r.val)}
-                  className={`py-1.5 px-2 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${
-                    (currentSidebar.roundedStyle || 'rounded-xl') === r.val
-                      ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted border-border/60'
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
+              ].map((r) => {
+                const currentNorm =
+                  !currentSidebar.roundedStyle || currentSidebar.roundedStyle === 'rounded-xl' || currentSidebar.roundedStyle === '0.75rem'
+                    ? 'rounded-xl'
+                    : currentSidebar.roundedStyle === 'rounded-2xl' || currentSidebar.roundedStyle === '1rem'
+                    ? 'rounded-2xl'
+                    : 'rounded-md'
+                const isSelected = currentNorm === r.val
+
+                return (
+                  <button
+                    key={r.val}
+                    type="button"
+                    onClick={() => handleRoundedChange(r.val)}
+                    className={`py-1.5 px-2 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                        : 'bg-muted/30 text-muted-foreground hover:bg-muted border-border/60'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

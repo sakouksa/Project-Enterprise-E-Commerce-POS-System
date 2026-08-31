@@ -7,9 +7,11 @@ import {
   Download, Upload, Filter, Settings, RotateCcw, QrCode, X, AlertCircle
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import api from '@/api/client'
+import { employeeService } from '@/services/employeeService'
+import { companyService } from '@/services/companyService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
-import { downloadBlob } from '@/utils/export'
+import { downloadCsv } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
@@ -154,37 +156,37 @@ const EmployeesPage: React.FC = () => {
   // Fetch Dashboard Stats & Lists
   const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ['employee-stats'],
-    queryFn: () => api.get('/employees/stats').then(r => r.data.data),
+    queryFn: () => employeeService.getStats(),
   })
 
   const { data: companiesList } = useQuery({
     queryKey: ['companies-list'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => companyService.getCompanies({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: branchesList } = useQuery({
     queryKey: ['branches-list'],
-    queryFn: () => api.get('/branches', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => companyService.getBranches({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: deptList } = useQuery({
     queryKey: ['departments-list'],
-    queryFn: () => api.get('/departments', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => employeeService.departments({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: posList } = useQuery({
     queryKey: ['positions-list'],
-    queryFn: () => api.get('/positions', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => employeeService.positions({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: usersList } = useQuery({
     queryKey: ['users-list'],
-    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => userService.list({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: empList } = useQuery({
     queryKey: ['employees-list'],
-    queryFn: () => api.get('/employees', { params: { per_page: 200 } }).then(r => r.data.data),
+    queryFn: () => employeeService.list({ per_page: 200 }).then(r => r.data),
   })
 
   // Fetch main list data
@@ -219,7 +221,7 @@ const EmployeesPage: React.FC = () => {
 
   const { data: listData, isLoading, isFetching } = useQuery({
     queryKey: [activeTab, page, debouncedSearch, perPage, sortBy, sortOrder, filterBranchId, filterDeptId, filterPosId, filterStatus, filterGender, filterDateStart, filterDateEnd, filterSalaryMin, filterSalaryMax],
-    queryFn: () => api.get(`/${activeTab}`, { params: buildFilters() }).then(r => r.data),
+    queryFn: () => employeeService.getItemsByTab(activeTab, buildFilters()),
     placeholderData: (prev) => prev,
   })
 
@@ -228,18 +230,18 @@ const EmployeesPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post(`/${activeTab}`, payload),
+    mutationFn: (payload: any) => employeeService.createItemByTab(activeTab, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       refetchStats()
       closeModal()
-      toast.success('Record created successfully.')
+      toast.success(t('employees.createSuccess', 'Record created successfully.'))
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to create record.')
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to create record.'))
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/${activeTab}/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => employeeService.updateItemByTab(activeTab, id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       refetchStats()
@@ -251,8 +253,7 @@ const EmployeesPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: ({ id, force }: { id: number; force?: boolean }) => {
-      const url = force ? `/${activeTab}/${id}/force` : `/${activeTab}/${id}`
-      return api.delete(url)
+      return employeeService.deleteItemByTab(activeTab, id)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
@@ -269,7 +270,7 @@ const EmployeesPage: React.FC = () => {
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post(`/${activeTab}/bulk-delete`, { ids }),
+    mutationFn: (ids: number[]) => employeeService.bulkDelete(activeTab, ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
       refetchStats()
@@ -289,17 +290,140 @@ const EmployeesPage: React.FC = () => {
     }
   })
 
-  // Export
-  const handleExport = () => {
-    toast.info('Generating export... download will begin shortly.')
-    api.get(`/${activeTab}/export`, { params: buildFilters(), responseType: 'blob' })
-      .then((res) => {
-        const blob = new Blob([res.data])
-        const dateStamp = new Date().toISOString().split('T')[0]
-        downloadBlob(blob, `${activeTab}_export_${dateStamp}.csv`)
-        toast.success('Export downloaded successfully.')
-      })
-      .catch(() => toast.error('Export failed. Please try again.'))
+  // Export with 5-Language Translation & Clean Toast Management
+  const handleExport = async () => {
+    const toastId = toast.info(t('employees.export_generating', 'Generating export... download will begin shortly.'))
+    try {
+      // Fetch full filtered list (up to 5000 records)
+      const res = await employeeService.getItemsByTab(activeTab, { ...buildFilters(), per_page: 5000, page: 1 })
+      const exportRecords = res.data?.data || records || []
+
+      let headers: string[] = []
+      let rows: (string | number | boolean | null | undefined)[][] = []
+
+      if (activeTab === 'departments') {
+        headers = [
+          t('employees.code', 'Code'),
+          t('employees.name', 'Name'),
+          t('employees.branch', 'Branch'),
+          t('employees.description', 'Description'),
+          t('employees.status', 'Status'),
+        ]
+        rows = exportRecords.map((dept: any) => [
+          dept.code || `DEPT-${dept.id}`,
+          dept.name || '',
+          dept.branch?.name || '',
+          dept.description || '',
+          dept.is_active ? t('employees.active', 'Active') : t('employees.inactive', 'Inactive'),
+        ])
+      } else if (activeTab === 'positions') {
+        headers = [
+          t('employees.code', 'Code'),
+          t('employees.name', 'Name'),
+          t('employees.department', 'Department'),
+          t('employees.description', 'Description'),
+          t('employees.status', 'Status'),
+        ]
+        rows = exportRecords.map((pos: any) => [
+          pos.code || `POS-${pos.id}`,
+          pos.name || '',
+          pos.department?.name || '',
+          pos.description || '',
+          pos.is_active ? t('employees.active', 'Active') : t('employees.inactive', 'Inactive'),
+        ])
+      } else if (activeTab === 'attendance') {
+        headers = [
+          t('employees.employee', 'Employee'),
+          t('employees.date', 'Date'),
+          t('employees.check_in', 'Check In'),
+          t('employees.check_out', 'Check Out'),
+          t('employees.status', 'Status'),
+          t('employees.notes', 'Notes'),
+        ]
+        rows = exportRecords.map((att: any) => [
+          att.employee?.name || `Employee #${att.employee_id}`,
+          att.date ? att.date.split('T')[0] : '',
+          att.check_in || '',
+          att.check_out || '',
+          att.status === 'present'
+            ? t('employees.present', 'Present')
+            : att.status === 'absent'
+            ? t('employees.absent', 'Absent')
+            : att.status === 'late'
+            ? t('employees.late', 'Late')
+            : att.status === 'leave'
+            ? t('employees.leave', 'Leave')
+            : att.status,
+          att.notes || '',
+        ])
+      } else if (activeTab === 'payrolls') {
+        headers = [
+          t('employees.employee', 'Employee'),
+          t('employees.period', 'Period'),
+          t('employees.basic_salary', 'Basic Salary'),
+          t('employees.allowances', 'Allowances'),
+          t('employees.deductions', 'Deductions'),
+          t('employees.overtime', 'Overtime Pay'),
+          t('employees.net_salary', 'Net Salary'),
+          t('employees.status', 'Status'),
+        ]
+        rows = exportRecords.map((pay: any) => [
+          pay.employee?.name || `Employee #${pay.employee_id}`,
+          pay.period_month || '',
+          Number(pay.basic_salary || 0).toFixed(2),
+          Number(pay.allowances || 0).toFixed(2),
+          Number(pay.deductions || 0).toFixed(2),
+          Number(pay.overtime_pay || 0).toFixed(2),
+          Number(pay.net_salary || 0).toFixed(2),
+          pay.status === 'paid'
+            ? t('employees.paid', 'Paid')
+            : pay.status === 'approved'
+            ? t('employees.approved', 'Approved')
+            : t('employees.pending', 'Draft'),
+        ])
+      } else {
+        // default 'employees' tab
+        headers = [
+          t('employees.employee_number', 'Employee Number'),
+          t('employees.name', 'Name'),
+          t('employees.email', 'Email'),
+          t('employees.phone', 'Phone'),
+          t('employees.gender', 'Gender'),
+          t('employees.department', 'Department'),
+          t('employees.position', 'Position'),
+          t('employees.basic_salary', 'Basic Salary'),
+          t('employees.join_date', 'Join Date'),
+          t('employees.status', 'Status'),
+        ]
+        rows = exportRecords.map((emp: any) => [
+          emp.employee_number || emp.code || `EMP-${emp.id}`,
+          emp.name || '',
+          emp.email || '',
+          emp.phone || '',
+          emp.gender === 'male'
+            ? t('employees.male', 'Male')
+            : emp.gender === 'female'
+            ? t('employees.female', 'Female')
+            : t('employees.other', 'Other'),
+          emp.department?.name || emp.department_name || '',
+          emp.position?.name || emp.position_name || '',
+          emp.basic_salary ? Number(emp.basic_salary).toFixed(2) : '0.00',
+          emp.join_date || '',
+          emp.status === 'active'
+            ? t('employees.active', 'Active')
+            : emp.status === 'resigned'
+            ? t('employees.resigned', 'Resigned')
+            : t('employees.inactive', 'Inactive'),
+        ])
+      }
+
+      downloadCsv(`${activeTab}`, headers, rows)
+      toast.dismiss(toastId)
+      toast.success(t('employees.export_success', 'Export downloaded successfully.'))
+    } catch {
+      toast.dismiss(toastId)
+      toast.error(t('employees.export_error', 'Export failed. Please try again.'))
+    }
   }
 
   // Import Upload
@@ -312,20 +436,18 @@ const EmployeesPage: React.FC = () => {
     const formData = new FormData()
     formData.append('file', importFile)
 
-    api.post(`/${activeTab}/import`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    employeeService.importData(activeTab, formData)
       .then(res => {
         setImporting(false)
-        const resData = res.data.data as ImportResult
+        const resData = (res.data?.data || res.data) as ImportResult
         setImportResult(resData)
-        if (resData.errors.length === 0) {
+        if (resData?.errors?.length === 0) {
           toast.success(`Successfully imported ${resData.success_count} records.`)
           qc.invalidateQueries({ queryKey: [activeTab] })
           refetchStats()
           closeImportModal()
         } else {
-          toast.warning(`Import completed with errors. ${resData.success_count} records imported.`)
+          toast.warning(`Import completed with errors. ${resData?.success_count || 0} records imported.`)
         }
       })
       .catch(err => {
@@ -342,14 +464,12 @@ const EmployeesPage: React.FC = () => {
     formData.append('photo', file)
     setUploadingPhoto(true)
     try {
-      const res = await api.post('/employees/upload-photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      const path = res.data.data.path || res.data.data.url
+      const res = await employeeService.uploadPhoto(formData)
+      const path = res.data?.path || res.data?.url || res.path || res.url
       setFormPhoto(path)
-      toast.success('Employee photo uploaded successfully.')
+      toast.success(t('employees.photoUploaded', 'Employee photo uploaded successfully.'))
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to upload photo.')
+      toast.error(err?.response?.data?.message ?? t('employees.photoUploadFailed', 'Failed to upload photo.'))
     } finally {
       setUploadingPhoto(false)
     }
@@ -666,11 +786,11 @@ const EmployeesPage: React.FC = () => {
   ].filter(Boolean).length
 
   const workspaceTabs: WorkspaceTabItem[] = [
-    { id: 'employees', label: t('employees.employees', 'បុគ្គលិក'), count: empList?.length, icon: Users },
-    { id: 'departments', label: t('employees.departments', 'ដេប៉ាតឺម៉ង់'), count: deptList?.length, icon: Briefcase },
-    { id: 'positions', label: t('employees.positions', 'តួនាទីការងារ'), count: posList?.length, icon: UserCheck },
-    { id: 'attendance', label: t('employees.attendance', 'វត្តមាន'), icon: Calendar },
-    { id: 'payrolls', label: t('employees.payrolls', 'ប្រាក់បៀវត្សរ៍'), icon: DollarSign },
+    { id: 'employees', label: t('employees.employees', 'Employees'), count: empList?.length, icon: Users },
+    { id: 'departments', label: t('employees.departments', 'Departments'), count: deptList?.length, icon: Briefcase },
+    { id: 'positions', label: t('employees.positions', 'Positions'), count: posList?.length, icon: UserCheck },
+    { id: 'attendance', label: t('employees.attendance', 'Attendance'), icon: Calendar },
+    { id: 'payrolls', label: t('employees.payrolls', 'Payrolls'), icon: DollarSign },
   ]
 
   const handleTabChange = (tabId: string) => {
@@ -682,8 +802,8 @@ const EmployeesPage: React.FC = () => {
     <div className="space-y-5 print:p-0">
       <Breadcrumb
         items={[
-          { label: t('nav.dashboard', 'ផ្ទាំងគ្រប់គ្រង'), path: '/dashboard' },
-          { label: t('nav.employees', 'គ្រប់គ្រងបុគ្គលិក') },
+          { label: t('nav.dashboard', 'Dashboard'), path: '/dashboard' },
+          { label: t('nav.employees', 'Employees') },
         ]}
       />
 
@@ -692,32 +812,32 @@ const EmployeesPage: React.FC = () => {
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground dark:text-slate-100 flex items-center gap-2">
             <Briefcase className="text-primary" size={26} />
-            <span>{t('employees.employee_management', 'ការគ្រប់គ្រងបុគ្គលិក')}</span>
+            <span>{t('employees.employee_management', 'Employee Management')}</span>
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground dark:text-slate-400">
-            {t('employees.subtitle_desc', 'គ្រប់គ្រងបុគ្គលិក ដេប៉ាតឺម៉ង់ តួនាទី វត្តមាន ប្រាក់បៀវត្សរ៍ និងការវាស់វែងសមត្ថភាពការងារនៅទូទាំងប្រព័ន្ធ ERP')}
+            {t('employees.subtitle_desc', 'Manage employees, departments, positions, attendance, payrolls, and work performance across the ERP system.')}
           </p>
         </div>
 
         <HeaderActionsGroup>
           <QrKioskButton
             onClick={() => setKioskModalOpen(true)}
-            label={t('employees.launch_qr_kiosk', 'បើក QR Kiosk')}
+            label={t('employees.launch_qr_kiosk', 'Launch QR Kiosk')}
           />
 
           <ImportButton
             onClick={() => setImportOpen(true)}
-            label={t('employees.import_csv', 'នាំចូល CSV')}
+            label={t('employees.import_csv', 'Import CSV')}
           />
 
           <ExportButton
             onClick={handleExport}
-            label={t('employees.export_csv', 'នាំចេញ CSV')}
+            label={t('employees.export_csv', 'Export CSV')}
           />
 
           <AddButton
             onClick={() => openCreateModal()}
-            label={activeTab === 'attendance' ? t('employees.add_attendance', 'កត់ត្រាវត្តមានថ្មី') : t('employees.add_employee', 'បន្ថែមបុគ្គលិក')}
+            label={activeTab === 'attendance' ? t('employees.add_attendance', 'Record Attendance') : t('employees.add_employee', 'Add Employee')}
           />
         </HeaderActionsGroup>
       </div>

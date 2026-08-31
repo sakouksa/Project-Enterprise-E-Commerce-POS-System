@@ -1,9 +1,0 @@
-{
-  "deleteTitle": "Xác nhận xóa",
-  "deleteMessage": "Bạn có chắc chắn muốn xóa mục này không? Hành động này không thể hoàn tác.",
-  "confirmDelete": "Xóa",
-  "cancel": "Hủy",
-  "bulkDeleteTitle": "Xóa các mục đã chọn",
-  "bulkDeleteMessage": "Bạn có chắc chắn muốn xóa {{count}} mục đã chọn không? Hành động này không thể hoàn tác.",
-  "warningText": "Mục này sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác."
-}

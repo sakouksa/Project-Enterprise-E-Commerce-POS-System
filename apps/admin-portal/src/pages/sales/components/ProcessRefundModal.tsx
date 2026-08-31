@@ -31,16 +31,16 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
     let finalReason = ''
     switch (reasonPreset) {
       case 'defective':
-        finalReason = t('reasonDefective', 'ទំនិញមានខូចខាត / Defective Product')
+        finalReason = t('reasonDefective', 'Defective Product')
         break
       case 'wrong_item':
-        finalReason = t('reasonWrongItem', 'ទំនិញមិនត្រូវតាមការបញ្ជាទិញ / Wrong Item Delivered')
+        finalReason = t('reasonWrongItem', 'Wrong Item Delivered')
         break
       case 'changed_mind':
-        finalReason = t('reasonChangedMind', 'អតិថិជនផ្លាស់ប្តូរចិត្ត / Customer Changed Mind')
+        finalReason = t('reasonChangedMind', 'Customer Changed Mind')
         break
       default:
-        finalReason = customReason || t('reasonOther', 'សងប្រាក់ / General Refund')
+        finalReason = customReason || t('reasonOther', 'General Refund')
     }
 
     if (reasonPreset === 'other' && customReason) {
@@ -81,7 +81,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-base text-foreground">
-                  {t('processReturnRefund', 'ដំណើរការការសងប្រាក់')}
+                  {t('processReturnRefund', 'Process Return & Refund')}
                 </h3>
                 <p className="text-xs text-muted-foreground font-mono">
                   #{sale.invoice_number}
@@ -102,10 +102,10 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
               <AlertCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="text-xs space-y-1">
                 <span className="font-bold text-amber-700 dark:text-amber-300 block">
-                  {t('refundWarningTitle', 'ការសងប្រាក់ និងការបញ្ចូលស្តុកឡើងវិញ')}
+                  {t('refundWarningTitle', 'Refund & Inventory Restock Warning')}
                 </span>
                 <p className="text-amber-600/90 dark:text-amber-400/90 leading-relaxed">
-                  {t('refundWarningDesc', 'ទំនិញក្នុងវិក្កយបត្រនេះនឹងត្រូវបង្វិលចូលស្តុក (Inventory Stock) វិញដោយស្វ័យប្រវត្តិ ហើយស្ថានភាពវិក្កយបត្រនឹងត្រូវផ្លាស់ប្តូរទៅជា បានសងប្រាក់ (Refunded)។')}
+                  {t('refundWarningDesc', 'Items in this invoice will be returned to inventory stock automatically and order status will be updated to Refunded.')}
                 </p>
               </div>
             </div>
@@ -113,11 +113,11 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
             {/* Invoice Financial Summary */}
             <div className="p-4 rounded-2xl bg-muted/30 border border-border/70 grid grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-0.5">{t('grandTotal', 'សរុបចុងក្រោយ')}</span>
+                <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-0.5">{t('grandTotal', 'Grand Total')}</span>
                 <span className="text-sm font-black font-mono text-primary">${Number(sale.grand_total || 0).toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-0.5">{t('paid', 'បានទូទាត់')}</span>
+                <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-0.5">{t('paid', 'Paid')}</span>
                 <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">${Number(sale.paid_amount || sale.grand_total || 0).toFixed(2)}</span>
               </div>
             </div>
@@ -125,7 +125,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
             {/* Reason Selection */}
             <div className="space-y-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
-                {t('refundReason', 'មូលហេតុនៃការសងប្រាក់')} <span className="text-rose-500">*</span>
+                {t('refundReason', 'Refund Reason')} <span className="text-rose-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <button
@@ -138,7 +138,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <Wrench size={16} className="shrink-0 text-rose-500" />
-                  <span>{t('reasonDefective', 'ទំនិញមានខូចខាត')}</span>
+                  <span>{t('reasonDefective', 'Defective Product')}</span>
                 </button>
                 <button
                   type="button"
@@ -150,7 +150,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <Package size={16} className="shrink-0 text-amber-500" />
-                  <span>{t('reasonWrongItem', 'ខុសទំនិញ/ខុសទំហំ')}</span>
+                  <span>{t('reasonWrongItem', 'Wrong Item Delivered')}</span>
                 </button>
                 <button
                   type="button"
@@ -162,7 +162,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <RotateCcw size={16} className="shrink-0 text-blue-500" />
-                  <span>{t('reasonChangedMind', 'អតិថិជនផ្លាស់ប្តូរចិត្ត')}</span>
+                  <span>{t('reasonChangedMind', 'Customer Changed Mind')}</span>
                 </button>
                 <button
                   type="button"
@@ -174,7 +174,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <FileText size={16} className="shrink-0 text-purple-500" />
-                  <span>{t('reasonOther', 'មូលហេតុផ្សេងៗ')}</span>
+                  <span>{t('reasonOther', 'Other Reasons')}</span>
                 </button>
               </div>
 
@@ -185,7 +185,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                     required
                     value={customReason}
                     onChange={(e) => setCustomReason(e.target.value)}
-                    placeholder={t('enterCustomReason', 'បញ្ចូលមូលហេតុជាក់ស្តែង...')}
+                    placeholder={t('enterCustomReason', 'Enter specific refund reason...')}
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/20 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
                 </div>
@@ -195,7 +195,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
             {/* Refund Payment Method */}
             <div className="space-y-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
-                {t('refundMethod', 'វិធីទូទាត់ប្រាក់សង')}
+                {t('refundMethod', 'Refund Payment Method')}
               </label>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <button
@@ -208,7 +208,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <Banknote size={16} className="shrink-0" />
-                  <span>{t('cash', 'ប្រាក់សុទ្ធ')}</span>
+                  <span>{t('cash', 'Cash')}</span>
                 </button>
                 <button
                   type="button"
@@ -220,7 +220,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <CreditCard size={16} className="shrink-0" />
-                  <span>{t('originalPayment', 'ទូទាត់ដើម')}</span>
+                  <span>{t('originalPayment', 'Original Payment')}</span>
                 </button>
                 <button
                   type="button"
@@ -232,7 +232,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                   }`}
                 >
                   <Wallet size={16} className="shrink-0" />
-                  <span>{t('storeCredit', 'ឥណទានហាង')}</span>
+                  <span>{t('storeCredit', 'Store Credit')}</span>
                 </button>
               </div>
             </div>
@@ -245,7 +245,7 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                 disabled={isPending}
                 className="px-5 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                {t('cancel', 'បោះបង់')}
+                {t('cancel', 'Cancel')}
               </button>
               <button
                 type="submit"
@@ -255,12 +255,12 @@ export const ProcessRefundModal: React.FC<ProcessRefundModalProps> = ({
                 {isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{t('processingRefund', 'កំពុងដំណើរការសងប្រាក់...')}</span>
+                    <span>{t('processingRefund', 'Processing Refund...')}</span>
                   </>
                 ) : (
                   <>
                     <CornerUpLeft className="w-4 h-4" />
-                    <span>{t('confirmRefund', 'អះអាងសងប្រាក់')}</span>
+                    <span>{t('confirmRefund', 'Confirm Refund')}</span>
                   </>
                 )}
               </button>

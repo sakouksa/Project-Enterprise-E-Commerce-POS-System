@@ -54,9 +54,6 @@ interface MobileDrawerProps {
 const LANGUAGES = [
   { code: 'km', name: 'ខ្មែរ', flag: 'https://flagcdn.com/w40/kh.png' },
   { code: 'en', name: 'English', flag: 'https://flagcdn.com/w40/us.png' },
-  { code: 'zh', name: '中文', flag: 'https://flagcdn.com/w40/cn.png' },
-  { code: 'th', name: 'ไทย', flag: 'https://flagcdn.com/w40/th.png' },
-  { code: 'vi', name: 'Tiếng Việt', flag: 'https://flagcdn.com/w40/vn.png' },
 ] as const
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({

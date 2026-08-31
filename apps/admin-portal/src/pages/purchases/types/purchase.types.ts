@@ -13,6 +13,12 @@ export interface PurchaseItem {
   tax_amount: number
   subtotal: number
   total: number
+  currency_code?: string
+  exchange_rate?: number
+  unit_cost_base?: number
+  subtotal_base?: number
+  total_base?: number
+  already_returned?: number
   notes?: string | null
   product?: { id: number; name: string; sku: string | null } | null
   variant?: { id: number; name: string; sku: string | null } | null
@@ -36,6 +42,13 @@ export interface Purchase {
   grand_total: number
   paid_amount: number
   due_amount: number
+  subtotal_base?: number
+  tax_amount_base?: number
+  discount_amount_base?: number
+  shipping_cost_base?: number
+  grand_total_base?: number
+  paid_amount_base?: number
+  due_amount_base?: number
   currency_code: string
   exchange_rate: number
   notes?: string
@@ -45,17 +58,18 @@ export interface Purchase {
 }
 
 export const STATUS_BADGE: Record<string, string> = {
-  draft: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-  ordered: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  partial: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  received: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  cancelled: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  draft: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20',
+  ordered: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
+  partial: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
+  received: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
+  completed: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
+  cancelled: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20',
 }
 
 export const PAYMENT_BADGE: Record<string, string> = {
-  unpaid: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  partial: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  paid: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  unpaid: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20',
+  partial: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20',
+  paid: 'inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
 }
 
 export const getDeliveryStatusLabel = (status: string, t: any): string => {
@@ -64,6 +78,7 @@ export const getDeliveryStatusLabel = (status: string, t: any): string => {
     ordered: { key: 'delivery_status.ordered', fallback: 'Ordered' },
     partial: { key: 'delivery_status.partial', fallback: 'Partially Received' },
     received: { key: 'delivery_status.received', fallback: 'Received' },
+    completed: { key: 'delivery_status.completed', fallback: 'Completed' },
     cancelled: { key: 'delivery_status.cancelled', fallback: 'Cancelled' },
   }
   const item = map[status]

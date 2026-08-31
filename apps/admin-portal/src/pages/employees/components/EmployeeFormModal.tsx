@@ -1,17 +1,15 @@
 import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
-  X,
-  Loader2,
   User,
   Briefcase,
   DollarSign,
   Building2,
   Calendar,
-  Check,
-  Sparkles
+  Sparkles,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { EnterpriseModal, ModalFooter, type ModalHeaderIconVariant } from '@/components/common'
 import type { Tab } from '../types'
 import { EmployeeAvatar } from './EmployeeAvatar'
 
@@ -105,6 +103,14 @@ interface EmployeeFormModalProps {
   setPayNotes: (val: string) => void
 }
 
+const labelCls = 'block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5'
+const inputCls =
+  'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
+const textareaCls =
+  'w-full px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none'
+const selectCls =
+  'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium cursor-pointer'
+
 export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   isOpen,
   onClose,
@@ -182,56 +188,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 }) => {
   const { t } = useTranslation(['employees', 'common'])
   const [formSection, setFormSection] = useState<'personal' | 'job' | 'salary'>('personal')
-
-  if (!isOpen) return null
-
-  // Unified h-10 Input and Select style matching Enterprise standard
-  const inputCls =
-    'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
-  const labelCls =
-    'block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5'
-
-  const getModalTitle = () => {
-    if (activeTab === 'departments') {
-      return selectedItem
-        ? t('employees.edit_department_title', 'កែសម្រួលដេប៉ាតឺម៉ង់')
-        : t('employees.add_department_title', 'បន្ថែមដេប៉ាតឺម៉ង់ថ្មី')
-    }
-    if (activeTab === 'positions') {
-      return selectedItem
-        ? t('employees.edit_position_title', 'កែសម្រួលមុខតំណែង')
-        : t('employees.add_position_title', 'បន្ថែមមុខតំណែងថ្មី')
-    }
-    if (activeTab === 'attendance') {
-      return selectedItem
-        ? t('employees.edit_attendance_title', 'កែសម្រួលកំណត់ត្រាវត្តមាន')
-        : t('employees.add_attendance_title', 'កត់ត្រាវត្តមានថ្មី')
-    }
-    if (activeTab === 'payrolls') {
-      return selectedItem
-        ? t('employees.edit_payroll_title', 'កែសម្រួលប័ណ្ណបើកប្រាក់ខែ')
-        : t('employees.add_payroll_title', 'បង្កើតប័ណ្ណបើកប្រាក់ខែ')
-    }
-    return selectedItem
-      ? t('employees.editEmployee', 'កែសម្រួលបុគ្គលិក')
-      : t('employees.createEmployeeTitle', 'បង្កើតបុគ្គលិកថ្មី')
-  }
-
-  const getModalSubtitle = () => {
-    if (activeTab === 'departments') {
-      return t('employees.dept_subtitle', 'គ្រប់គ្រង និងកំណត់រចនាសម្ព័ន្ធដេប៉ាតឺម៉ង់របស់ក្រុមហ៊ុន')
-    }
-    if (activeTab === 'positions') {
-      return t('employees.pos_subtitle', 'គ្រប់គ្រង និងកំណត់តួនាទី និងមុខតំណែងការងារក្នុងអង្គភាព')
-    }
-    if (activeTab === 'attendance') {
-      return t('employees.att_subtitle', 'កត់ត្រា ឬកែសម្រួលម៉ោងចូលធ្វើការ និងម៉ោងចេញរបស់បុគ្គលិក')
-    }
-    if (activeTab === 'payrolls') {
-      return t('employees.pay_subtitle', 'គណនា និងកែសម្រួលប្រាក់បៀវត្សរ៍ ប្រាក់ឧបត្ថម្ភ និងការកាត់កងប្រចាំខែ')
-    }
-    return t('employees.createSubtitle', 'បំពេញព័ត៌មានបុគ្គលិក ដេប៉ាតឺម៉ង់ តួនាទី ប្រាក់បៀវត្សរ៍ និងព័ត៌មានទំនាក់ទំនង')
-  }
+  const isEdit = Boolean(selectedItem)
 
   const generateDeptCode = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000)
@@ -243,790 +200,829 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
     setFormEmployeeNumber(`POS-${randomNum}`)
   }
 
+  const getModalConfig = () => {
+    switch (activeTab) {
+      case 'departments':
+        return {
+          title: isEdit
+            ? t('employees.edit_department_title', 'Edit Department')
+            : t('employees.add_department_title', 'Add New Department'),
+          subtitle: t('employees.dept_subtitle', 'Manage and configure organizational departments.'),
+          icon: <Building2 size={20} />,
+          variant: 'amber' as ModalHeaderIconVariant,
+          size: 'lg' as const,
+        }
+      case 'positions':
+        return {
+          title: isEdit
+            ? t('employees.edit_position_title', 'Edit Position')
+            : t('employees.add_position_title', 'Add New Position'),
+          subtitle: t('employees.pos_subtitle', 'Manage job roles and positions within the organization.'),
+          icon: <Briefcase size={20} />,
+          variant: 'purple' as ModalHeaderIconVariant,
+          size: 'lg' as const,
+        }
+      case 'attendance':
+        return {
+          title: isEdit
+            ? t('employees.edit_attendance_title', 'Edit Attendance Record')
+            : t('employees.add_attendance_title', 'Record Attendance'),
+          subtitle: t('employees.att_subtitle', 'Log or update employee check-in and check-out times.'),
+          icon: <Calendar size={20} />,
+          variant: 'sky' as ModalHeaderIconVariant,
+          size: 'lg' as const,
+        }
+      case 'payrolls':
+        return {
+          title: isEdit
+            ? t('employees.edit_payroll_title', 'Edit Payroll Slip')
+            : t('employees.add_payroll_title', 'Create Payroll Slip'),
+          subtitle: t('employees.pay_subtitle', 'Calculate and adjust monthly salary, allowances, and deductions.'),
+          icon: <DollarSign size={20} />,
+          variant: 'emerald' as ModalHeaderIconVariant,
+          size: 'xl' as const,
+        }
+      default:
+        return {
+          title: isEdit
+            ? t('employees.editEmployee', 'Edit Employee')
+            : t('employees.createEmployeeTitle', 'Create New Employee'),
+          subtitle: t('employees.createSubtitle', 'Complete employee profile, department, position, salary, and contact info.'),
+          icon: <User size={20} />,
+          variant: 'blue' as ModalHeaderIconVariant,
+          size: '2xl' as const,
+        }
+    }
+  }
+
+  const config = getModalConfig()
+
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <motion.div
-          initial={{ scale: 0.96, opacity: 0, y: 12 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.96, opacity: 0, y: 12 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="bg-card dark:bg-slate-900 w-full max-w-3xl border border-border/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-900/50 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
-                {activeTab === 'employees' && <User size={20} />}
-                {activeTab === 'departments' && <Building2 size={20} />}
-                {activeTab === 'positions' && <Briefcase size={20} />}
-                {activeTab === 'attendance' && <Calendar size={20} />}
-                {activeTab === 'payrolls' && <DollarSign size={20} />}
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-slate-100 leading-tight">
-                  {getModalTitle()}
-                </h3>
-                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5 max-w-xl line-clamp-1">
-                  {getModalSubtitle()}
-                </p>
-              </div>
+    <EnterpriseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={config.title}
+      subtitle={config.subtitle}
+      icon={config.icon}
+      iconVariant={config.variant}
+      size={config.size}
+      badge={
+        isEdit && selectedItem?.id ? (
+          <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
+            #{selectedItem.id}
+          </span>
+        ) : undefined
+      }
+      footer={
+        <ModalFooter
+          onCancel={onClose}
+          cancelLabel={t('employees.cancel', 'Cancel')}
+          onSubmit={(e) => onSubmit(e || ({ preventDefault: () => {} } as any))}
+          isSubmitting={isPending || uploadingPhoto}
+          isEdit={isEdit}
+          submitLabel={
+            isEdit
+              ? t('employees.saveChanges', 'Save Changes')
+              : t('common.save', 'Save')
+          }
+        />
+      }
+    >
+      <form onSubmit={onSubmit} className="p-5 sm:p-6 space-y-4">
+        {/* ─── 1. EMPLOYEES TAB (Multi-Section Form) ─────────── */}
+        {activeTab === 'employees' && (
+          <div className="space-y-4">
+            {/* Segmented Section Navigator */}
+            <div className="grid grid-cols-3 gap-2 p-1 bg-muted/40 dark:bg-slate-800/60 rounded-xl border border-border/80 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setFormSection('personal')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  formSection === 'personal'
+                    ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
+                    : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
+                }`}
+              >
+                <User size={14} />
+                <span className="truncate">{t('employees.tab_personal', 'Personal Information')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormSection('job')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  formSection === 'job'
+                    ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
+                    : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
+                }`}
+              >
+                <Briefcase size={14} />
+                <span className="truncate">{t('employees.tab_job', 'Job & Position')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormSection('salary')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  formSection === 'salary'
+                    ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
+                    : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
+                }`}
+              >
+                <DollarSign size={14} />
+                <span className="truncate">{t('employees.tab_salary', 'Salary & Photo')}</span>
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              type="button"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-          </div>
 
-          {/* Form Content */}
-          <form onSubmit={onSubmit} className="flex-1 overflow-y-auto flex flex-col justify-between">
-            <div className="p-5 sm:p-6 space-y-5">
-              {/* ─── EMPLOYEES TAB (Segmented Multi-Section Form) ─────────── */}
-              {activeTab === 'employees' && (
-                <div className="space-y-5">
-                  {/* Segmented Section Navigator */}
-                  <div className="grid grid-cols-3 gap-2 p-1 bg-muted/40 dark:bg-slate-800/60 rounded-xl border border-border/80 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => setFormSection('personal')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        formSection === 'personal'
-                          ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
-                          : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
-                      }`}
-                    >
-                      <User size={14} />
-                      <span className="truncate">{t('employees.tab_personal', 'ព័ត៌មានផ្ទាល់ខ្លួន')}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormSection('job')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        formSection === 'job'
-                          ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
-                          : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
-                      }`}
-                    >
-                      <Briefcase size={14} />
-                      <span className="truncate">{t('employees.tab_job', 'ការងារ & តួនាទី')}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormSection('salary')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        formSection === 'salary'
-                          ? 'bg-card dark:bg-slate-900 text-primary shadow-xs border border-border/60 dark:border-slate-700'
-                          : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/60'
-                      }`}
-                    >
-                      <DollarSign size={14} />
-                      <span className="truncate">{t('employees.tab_salary', 'ប្រាក់បៀវត្សរ៍ & រូបថត')}</span>
-                    </button>
-                  </div>
-
-                  {/* Section 1: Personal Info */}
-                  {formSection === 'personal' && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-4"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>
-                            {t('employees.full_name', 'ឈ្មោះពេញ')} <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={formName}
-                            onChange={(e) => setFormName(e.target.value)}
-                            placeholder={t('employees.namePlaceholder', 'ឧ. សុខ ចិន្តា / Sok Chenda')}
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>
-                            {t('employees.employee_number', 'លេខសម្គាល់បុគ្គលិក')}{' '}
-                            <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={formEmployeeNumber}
-                            onChange={(e) => setFormEmployeeNumber(e.target.value)}
-                            className={`${inputCls} font-mono`}
-                            placeholder="e.g. EMP12345"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>{t('employees.gender', 'ភេទ')}</label>
-                          <select
-                            value={formGender}
-                            onChange={(e) => setFormGender(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="male">{t('employees.male', 'ប្រុស')}</option>
-                            <option value="female">{t('employees.female', 'ស្រី')}</option>
-                            <option value="other">{t('employees.other', 'ផ្សេងទៀត')}</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.birth_date', 'ថ្ងៃខែឆ្នាំកំណើត')}</label>
-                          <input
-                            type="date"
-                            value={formBirthDate}
-                            onChange={(e) => setFormBirthDate(e.target.value)}
-                            className={inputCls}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>{t('employees.nik', 'លេខអត្តសញ្ញាណប័ណ្ណ (NIK)')}</label>
-                          <input
-                            type="text"
-                            value={formNik}
-                            onChange={(e) => setFormNik(e.target.value)}
-                            placeholder={t('employees.nikPlaceholder', 'ឧ. 32010203040001')}
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.phone', 'ទូរស័ព្ទ')}</label>
-                          <input
-                            type="tel"
-                            value={formPhone}
-                            onChange={(e) => setFormPhone(e.target.value)}
-                            placeholder="012 345 678"
-                            className={inputCls}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className={labelCls}>{t('employees.email', 'អ៊ីមែល')}</label>
-                        <input
-                          type="email"
-                          value={formEmail}
-                          onChange={(e) => setFormEmail(e.target.value)}
-                          placeholder="employee@example.com"
-                          className={inputCls}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Section 2: Job */}
-                  {formSection === 'job' && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-4"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>
-                            {t('employees.company', 'ក្រុមហ៊ុន')} <span className="text-rose-500">*</span>
-                          </label>
-                          <select
-                            required
-                            value={formCompanyId}
-                            onChange={(e) => setFormCompanyId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">{t('employees.select_company', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
-                            {companiesList.map((c: any) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={labelCls}>
-                            {t('employees.branch', 'សាខា')} <span className="text-rose-500">*</span>
-                          </label>
-                          <select
-                            required
-                            value={formBranchId}
-                            onChange={(e) => setFormBranchId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">{t('employees.select_branch', '-- ជ្រើសរើសសាខា --')}</option>
-                            {branchesList.map((b: any) => (
-                              <option key={b.id} value={b.id}>
-                                {b.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>
-                            {t('employees.department', 'ដេប៉ាតឺម៉ង់')} <span className="text-rose-500">*</span>
-                          </label>
-                          <select
-                            required
-                            value={formDeptId}
-                            onChange={(e) => setFormDeptId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">{t('employees.select_department', '-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --')}</option>
-                            {deptList.map((d: any) => (
-                              <option key={d.id} value={d.id}>
-                                {d.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={labelCls}>
-                            {t('employees.position', 'តួនាទី')} <span className="text-rose-500">*</span>
-                          </label>
-                          <select
-                            required
-                            value={formPosId}
-                            onChange={(e) => setFormPosId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">{t('employees.select_position', '-- ជ្រើសរើសតួនាទី --')}</option>
-                            {posList.map((p: any) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>{t('employees.join_date', 'ថ្ងៃចូលការងារ')}</label>
-                          <input
-                            type="date"
-                            value={formJoinDate}
-                            onChange={(e) => setFormJoinDate(e.target.value)}
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
-                          <select
-                            value={formStatus}
-                            onChange={(e) => setFormStatus(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="active">{t('employees.active', 'សកម្ម')}</option>
-                            <option value="inactive">{t('employees.inactive', 'អសកម្ម')}</option>
-                            <option value="resigned">{t('employees.resigned', 'លាឈប់')}</option>
-                          </select>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Section 3: Salary & Photo */}
-                  {formSection === 'salary' && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-4"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelCls}>{t('employees.basic_salary', 'ប្រាក់ខែគោល ($)')}</label>
-                          <input
-                            type="number"
-                            value={formBasicSalary}
-                            onChange={(e) => setFormBasicSalary(e.target.value)}
-                            placeholder="850.00"
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>{t('employees.address', 'អាសយដ្ឋានបច្ចុប្បន្ន')}</label>
-                          <input
-                            type="text"
-                            value={formAddress}
-                            onChange={(e) => setFormAddress(e.target.value)}
-                            placeholder={t('employees.addressPlaceholder', 'ផ្ទះលេខ..., ផ្លូវ..., សង្កាត់...')}
-                            className={inputCls}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Photo Upload Box */}
-                      <div className="p-4 rounded-2xl border border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-800/40">
-                        <label className={labelCls}>{t('employees.profilePhoto', 'រូបថតបុគ្គលិក')}</label>
-                        <div className="flex items-center gap-4 mt-2">
-                          <EmployeeAvatar
-                            name={formName}
-                            photo={formPhoto}
-                            getPhotoUrl={getPhotoUrl}
-                            size="lg"
-                          />
-                          <div className="space-y-1.5 flex-1">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handlePhotoFileChange}
-                              disabled={uploadingPhoto}
-                              className="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-                            />
-                            <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                              {t('employees.photoNote', 'PNG, JPG, WEBP (អតិបរមា 5MB)')}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              )}
-
-              {/* ─── DEPARTMENTS TAB ────────────────────────────────────────── */}
-              {activeTab === 'departments' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.company', 'ក្រុមហ៊ុន')} <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        required
-                        value={formCompanyId}
-                        onChange={(e) => setFormCompanyId(e.target.value)}
-                        className={inputCls}
-                      >
-                        <option value="">{t('employees.select_company', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
-                        {companiesList.map((c: any) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.branch', 'សាខា')} <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        required
-                        value={formBranchId}
-                        onChange={(e) => setFormBranchId(e.target.value)}
-                        className={inputCls}
-                      >
-                        <option value="">{t('employees.select_branch', '-- ជ្រើសរើសសាខា --')}</option>
-                        {branchesList.map((b: any) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.department_name', 'ឈ្មោះដេប៉ាតឺម៉ង់')} <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder={t('employees.dept_placeholder', 'ឧ. បច្ចេកវិទ្យាព័ត៌មានវិទ្យា (IT)')}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-foreground/90 dark:text-slate-200">
-                          {t('employees.department_code', 'លេខកូដដេប៉ាតឺម៉ង់')}
-                        </label>
-                        {!selectedItem && (
-                          <button
-                            type="button"
-                            onClick={generateDeptCode}
-                            className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <Sparkles size={12} />
-                            <span>{t('employees.autoGenerate', 'ស្វ័យប្រវត្តិ')}</span>
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={formEmployeeNumber}
-                        onChange={(e) => setFormEmployeeNumber(e.target.value)}
-                        className={`${inputCls} font-mono`}
-                        placeholder={t('employees.dept_code_placeholder', 'ឧ. DEPT-IT')}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
-                    <select
-                      value={formStatus}
-                      onChange={(e) => setFormStatus(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="active">{t('employees.active', 'សកម្ម')}</option>
-                      <option value="inactive">{t('employees.inactive', 'អសកម្ម')}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>{t('employees.description', 'ការពិពណ៌នា / ចំណាំ')}</label>
-                    <textarea
-                      rows={2}
-                      value={formAddress}
-                      onChange={(e) => setFormAddress(e.target.value)}
-                      placeholder={t('employees.description_placeholder', 'បញ្ចូលព័ត៌មានលម្អិតបន្ថែម ឬចំណាំ...')}
-                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* ─── POSITIONS TAB ──────────────────────────────────────────── */}
-              {activeTab === 'positions' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.company', 'ក្រុមហ៊ុន')} <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        required
-                        value={formCompanyId}
-                        onChange={(e) => setFormCompanyId(e.target.value)}
-                        className={inputCls}
-                      >
-                        <option value="">{t('employees.select_company', '-- ជ្រើសរើសក្រុមហ៊ុន --')}</option>
-                        {companiesList.map((c: any) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.department', 'ដេប៉ាតឺម៉ង់')} <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        required
-                        value={formDeptId}
-                        onChange={(e) => setFormDeptId(e.target.value)}
-                        className={inputCls}
-                      >
-                        <option value="">{t('employees.select_department', '-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --')}</option>
-                        {deptList.map((d: any) => (
-                          <option key={d.id} value={d.id}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.position_name', 'ឈ្មោះមុខតំណែង')} <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder={t('employees.pos_placeholder', 'ឧ. ប្រធានផ្នែកអភិវឌ្ឍន៍ (Senior Dev)')}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-foreground/90 dark:text-slate-200">
-                          {t('employees.position_code', 'លេខកូដមុខតំណែង')}
-                        </label>
-                        {!selectedItem && (
-                          <button
-                            type="button"
-                            onClick={generatePosCode}
-                            className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <Sparkles size={12} />
-                            <span>{t('employees.autoGenerate', 'ស្វ័យប្រវត្តិ')}</span>
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={formEmployeeNumber}
-                        onChange={(e) => setFormEmployeeNumber(e.target.value)}
-                        className={`${inputCls} font-mono`}
-                        placeholder={t('employees.pos_code_placeholder', 'ឧ. POS-ENG')}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
-                    <select
-                      value={formStatus}
-                      onChange={(e) => setFormStatus(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="active">{t('employees.active', 'សកម្ម')}</option>
-                      <option value="inactive">{t('employees.inactive', 'អសកម្ម')}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>{t('employees.description', 'ការពិពណ៌នា / ចំណាំ')}</label>
-                    <textarea
-                      rows={2}
-                      value={formAddress}
-                      onChange={(e) => setFormAddress(e.target.value)}
-                      placeholder={t('employees.description_placeholder', 'បញ្ចូលព័ត៌មានលម្អិតបន្ថែម ឬចំណាំ...')}
-                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* ─── ATTENDANCE TAB ─────────────────────────────────────────── */}
-              {activeTab === 'attendance' && (
-                <div className="space-y-4">
+            {/* Section 1: Personal Info */}
+            {formSection === 'personal' && (
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-3.5"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className={labelCls}>
-                      {t('employees.employee', 'បុគ្គលិក')} <span className="text-rose-500">*</span>
+                      {t('employees.full_name', 'Full Name')} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      placeholder={t('employees.namePlaceholder', 'e.g. Sok Chenda')}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>
+                      {t('employees.employee_number', 'Employee ID')}{' '}
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formEmployeeNumber}
+                      onChange={(e) => setFormEmployeeNumber(e.target.value)}
+                      className={`${inputCls} font-mono`}
+                      placeholder="e.g. EMP12345"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelCls}>{t('employees.gender', 'Gender')}</label>
+                    <select
+                      value={formGender}
+                      onChange={(e) => setFormGender(e.target.value)}
+                      className={selectCls}
+                    >
+                      <option value="male">{t('employees.male', 'Male')}</option>
+                      <option value="female">{t('employees.female', 'Female')}</option>
+                      <option value="other">{t('employees.other', 'Other')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>{t('employees.birth_date', 'Birth Date')}</label>
+                    <input
+                      type="date"
+                      value={formBirthDate}
+                      onChange={(e) => setFormBirthDate(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelCls}>{t('employees.nik', 'National ID (NIK)')}</label>
+                    <input
+                      type="text"
+                      value={formNik}
+                      onChange={(e) => setFormNik(e.target.value)}
+                      placeholder={t('employees.nikPlaceholder', 'e.g. 32010203040001')}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>{t('employees.phone', 'Phone')}</label>
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      value={formPhone}
+                      onChange={(e) => setFormPhone(e.target.value.replace(/[^\d+ -]/g, ''))}
+                      placeholder="012 345 678"
+                      className={`${inputCls} font-mono`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>{t('employees.email', 'Email')}</label>
+                  <input
+                    type="email"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    placeholder="employee@example.com"
+                    className={inputCls}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Section 2: Job */}
+            {formSection === 'job' && (
+              <motion.div
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-3.5"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelCls}>
+                      {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
                     </label>
                     <select
                       required
-                      value={attEmployeeId}
-                      onChange={(e) => setAttEmployeeId(e.target.value)}
-                      className={inputCls}
+                      value={formCompanyId}
+                      onChange={(e) => setFormCompanyId(e.target.value)}
+                      className={selectCls}
                     >
-                      <option value="">{t('employees.select_employee', '-- ជ្រើសរើសបុគ្គលិក --')}</option>
-                      {empList.map((emp: any) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.name} ({emp.employee_number})
+                      <option value="">{t('employees.select_company', '-- Select Company --')}</option>
+                      {companiesList.map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.date', 'កាលបរិច្ឆេទ')} <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={attDate}
-                        onChange={(e) => setAttDate(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('employees.check_in_time', 'ម៉ោងចូលធ្វើការ')}</label>
-                      <input
-                        type="time"
-                        value={attCheckIn}
-                        onChange={(e) => setAttCheckIn(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('employees.check_out_time', 'ម៉ោងចេញពីធ្វើការ')}</label>
-                      <input
-                        type="time"
-                        value={attCheckOut}
-                        onChange={(e) => setAttCheckOut(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
                   <div>
-                    <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
+                    <label className={labelCls}>
+                      {t('employees.branch', 'Branch')} <span className="text-rose-500">*</span>
+                    </label>
                     <select
-                      value={attStatus}
-                      onChange={(e) => setAttStatus(e.target.value)}
-                      className={inputCls}
+                      required
+                      value={formBranchId}
+                      onChange={(e) => setFormBranchId(e.target.value)}
+                      className={selectCls}
                     >
-                      <option value="present">{t('employees.present', 'វត្តមាន')}</option>
-                      <option value="late">{t('employees.late', 'មកយឺត')}</option>
-                      <option value="absent">{t('employees.absent', 'អវត្តមាន')}</option>
-                      <option value="leave">{t('employees.leave', 'ច្បាប់សម្រាក')}</option>
+                      <option value="">{t('employees.select_branch', '-- Select Branch --')}</option>
+                      {branchesList.map((b: any) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelCls}>{t('employees.department', 'Department')}</label>
+                    <select
+                      value={formDeptId}
+                      onChange={(e) => setFormDeptId(e.target.value)}
+                      className={selectCls}
+                    >
+                      <option value="">{t('employees.select_department', '-- Select Department --')}</option>
+                      {deptList.map((d: any) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>{t('employees.notes', 'កំណត់ចំណាំ')}</label>
-                    <textarea
-                      rows={2}
-                      value={attNotes}
-                      onChange={(e) => setAttNotes(e.target.value)}
-                      placeholder={t('employees.notes_placeholder', 'បញ្ចូលមូលហេតុ ឬកំណត់ចំណាំ...')}
-                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
-                    />
+                    <label className={labelCls}>{t('employees.position', 'Position')}</label>
+                    <select
+                      value={formPosId}
+                      onChange={(e) => setFormPosId(e.target.value)}
+                      className={selectCls}
+                    >
+                      <option value="">{t('employees.select_position', '-- Select Position --')}</option>
+                      {posList.map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              )}
 
-              {/* ─── PAYROLL TAB ────────────────────────────────────────────── */}
-              {activeTab === 'payrolls' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.employee', 'បុគ្គលិក')} <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        required
-                        value={payEmployeeId}
-                        onChange={(e) => setPayEmployeeId(e.target.value)}
-                        className={inputCls}
-                      >
-                        <option value="">{t('employees.select_employee', '-- ជ្រើសរើសបុគ្គលិក --')}</option>
-                        {empList.map((emp: any) => (
-                          <option key={emp.id} value={emp.id}>
-                            {emp.name} ({emp.employee_number})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>
-                        {t('employees.period_month', 'រយៈពេលខែ')} <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="month"
-                        required
-                        value={payPeriodMonth}
-                        onChange={(e) => setPayPeriodMonth(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>{t('employees.basic_salary', 'ប្រាក់ខែគោល ($)')}</label>
-                      <input
-                        type="number"
-                        value={formBasicSalary}
-                        onChange={(e) => setFormBasicSalary(e.target.value)}
-                        placeholder="850.00"
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('employees.allowances', 'ប្រាក់ឧបត្ថម្ភ ($)')}</label>
-                      <input
-                        type="number"
-                        value={payAllowances}
-                        onChange={(e) => setPayAllowances(e.target.value)}
-                        placeholder="50.00"
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>{t('employees.deductions', 'ការកាត់កង ($)')}</label>
-                      <input
-                        type="number"
-                        value={payDeductions}
-                        onChange={(e) => setPayDeductions(e.target.value)}
-                        placeholder="0.00"
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('employees.overtime_pay', 'ប្រាក់ម៉ោងបន្ថែម ($)')}</label>
-                      <input
-                        type="number"
-                        value={payOvertimePay}
-                        onChange={(e) => setPayOvertimePay(e.target.value)}
-                        placeholder="0.00"
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>{t('employees.status', 'ស្ថានភាព')}</label>
-                      <select
-                        value={payStatus}
-                        onChange={(e) => setPayStatus(e.target.value)}
-                        className={inputCls}
-                      >
-                        <option value="pending">{t('employees.pending', 'រង់ចាំ')}</option>
-                        <option value="paid">{t('employees.paid', 'បានបើកប្រាក់')}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('employees.paid_date', 'កាលបរិច្ឆេទបើកប្រាក់')}</label>
-                      <input
-                        type="date"
-                        value={payPaidAt}
-                        onChange={(e) => setPayPaidAt(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelCls}>
+                      {t('employees.join_date', 'Join Date')}{' '}
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formJoinDate}
+                      onChange={(e) => setFormJoinDate(e.target.value)}
+                      className={inputCls}
+                    />
                   </div>
                   <div>
-                    <label className={labelCls}>{t('employees.notes', 'កំណត់ចំណាំ')}</label>
-                    <textarea
-                      rows={2}
-                      value={payNotes}
-                      onChange={(e) => setPayNotes(e.target.value)}
-                      placeholder={t('employees.notes_placeholder', 'បញ្ចូលមូលហេតុ ឬកំណត់ចំណាំ...')}
-                      className="w-full min-h-[70px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
+                    <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                    <select
+                      value={formStatus}
+                      onChange={(e) => setFormStatus(e.target.value)}
+                      className={selectCls}
+                    >
+                      <option value="active">{t('employees.active', 'Active')}</option>
+                      <option value="inactive">{t('employees.inactive', 'Inactive')}</option>
+                    </select>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Section 3: Salary & Photo */}
+            {formSection === 'salary' && (
+              <motion.div
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-3.5"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelCls}>{t('employees.basic_salary', 'Basic Salary ($)')}</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formBasicSalary}
+                      onChange={(e) => setFormBasicSalary(e.target.value)}
+                      placeholder="850.00"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>{t('employees.address', 'Current Address')}</label>
+                    <input
+                      type="text"
+                      value={formAddress}
+                      onChange={(e) => setFormAddress(e.target.value)}
+                      placeholder={t('employees.addressPlaceholder', 'House No, Street, Sangkat...')}
+                      className={inputCls}
                     />
                   </div>
                 </div>
-              )}
+
+                {/* Photo Upload Box */}
+                <div className="p-3.5 rounded-lg border border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-800/40">
+                  <label className={labelCls}>{t('employees.profilePhoto', 'Profile Photo')}</label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <EmployeeAvatar
+                      name={formName}
+                      photo={formPhoto}
+                      getPhotoUrl={getPhotoUrl}
+                      size="lg"
+                    />
+                    <div className="space-y-1.5 flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoFileChange}
+                        disabled={uploadingPhoto}
+                        className="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                      />
+                      <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                        {t('employees.photoNote', 'PNG, JPG, WEBP (Max 5MB)')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+
+        {/* ─── 2. DEPARTMENTS TAB ───────────────────────────── */}
+        {activeTab === 'departments' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>
+                  {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formCompanyId}
+                  onChange={(e) => setFormCompanyId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">{t('employees.select_company', '-- Select Company --')}</option>
+                  {companiesList.map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>
+                  {t('employees.branch', 'Branch')} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formBranchId}
+                  onChange={(e) => setFormBranchId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">{t('employees.select_branch', '-- Select Branch --')}</option>
+                  {branchesList.map((b: any) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Footer Buttons */}
-            <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-900/50 shrink-0">
-              <button
-                type="button"
-                onClick={onClose}
-                className="h-10 px-5 rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-800/80 text-xs sm:text-[13px] font-bold text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-700 transition-colors cursor-pointer"
-              >
-                {t('employees.cancel', 'បោះបង់')}
-              </button>
-              <button
-                type="submit"
-                disabled={isPending || uploadingPhoto}
-                className="h-10 inline-flex items-center gap-2 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs sm:text-[13px] font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer active:scale-95"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>{t('common.saving', 'កំពុងរក្សាទុក...')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Check size={14} strokeWidth={2.5} />
-                    <span>{selectedItem ? t('employees.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ') : t('common.save', 'រក្សាទុក')}</span>
-                  </>
-                )}
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>
+                  {t('employees.department_name', 'Department Name')} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder={t('employees.dept_placeholder', 'e.g. Information Technology (IT)')}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-foreground/90 dark:text-slate-200">
+                    {t('employees.department_code', 'Department Code')}
+                  </label>
+                  {!isEdit && (
+                    <button
+                      type="button"
+                      onClick={generateDeptCode}
+                      className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Sparkles size={12} />
+                      <span>{t('employees.autoGenerate', 'Auto Generate')}</span>
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={formEmployeeNumber}
+                  onChange={(e) => setFormEmployeeNumber(e.target.value)}
+                  className={`${inputCls} font-mono`}
+                  placeholder={t('employees.dept_code_placeholder', 'e.g. DEPT-IT')}
+                />
+              </div>
             </div>
-          </form>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+
+            <div>
+              <label className={labelCls}>{t('employees.description', 'Description / Notes')}</label>
+              <textarea
+                rows={2}
+                value={formAddress}
+                onChange={(e) => setFormAddress(e.target.value)}
+                placeholder={t('employees.description_placeholder', 'Enter additional details or notes...')}
+                className={textareaCls}
+              />
+            </div>
+
+            {/* Clean CMS Style Status Checkbox Card */}
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-muted/40 dark:bg-slate-800/40 border border-border/70 dark:border-slate-700/70">
+              <div>
+                <p className="text-xs font-semibold text-foreground">{t('employees.status', 'Status')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('employees.status_help', 'Enable or disable this department')}</p>
+              </div>
+              <input
+                type="checkbox"
+                id="deptStatus"
+                checked={formStatus === 'active'}
+                onChange={(e) => setFormStatus(e.target.checked ? 'active' : 'inactive')}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ─── 3. POSITIONS TAB ─────────────────────────────── */}
+        {activeTab === 'positions' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>
+                  {t('employees.company', 'Company')} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formCompanyId}
+                  onChange={(e) => setFormCompanyId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">{t('employees.select_company', '-- Select Company --')}</option>
+                  {companiesList.map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>
+                  {t('employees.department', 'Department')} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formDeptId}
+                  onChange={(e) => setFormDeptId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">{t('employees.select_department', '-- Select Department --')}</option>
+                  {deptList.map((d: any) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>
+                  {t('employees.position_name', 'Position Name')} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder={t('employees.pos_placeholder', 'e.g. Senior Software Engineer')}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-foreground/90 dark:text-slate-200">
+                    {t('employees.position_code', 'Position Code')}
+                  </label>
+                  {!isEdit && (
+                    <button
+                      type="button"
+                      onClick={generatePosCode}
+                      className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Sparkles size={12} />
+                      <span>{t('employees.autoGenerate', 'Auto Generate')}</span>
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={formEmployeeNumber}
+                  onChange={(e) => setFormEmployeeNumber(e.target.value)}
+                  className={`${inputCls} font-mono`}
+                  placeholder={t('employees.pos_code_placeholder', 'e.g. POS-ENG')}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>{t('employees.description', 'Description / Notes')}</label>
+              <textarea
+                rows={2}
+                value={formAddress}
+                onChange={(e) => setFormAddress(e.target.value)}
+                placeholder={t('employees.description_placeholder', 'Enter additional details or notes...')}
+                className={textareaCls}
+              />
+            </div>
+
+            {/* Clean CMS Style Status Checkbox Card */}
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-muted/40 dark:bg-slate-800/40 border border-border/70 dark:border-slate-700/70">
+              <div>
+                <p className="text-xs font-semibold text-foreground">{t('employees.status', 'Status')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('employees.status_help', 'Enable or disable this position')}</p>
+              </div>
+              <input
+                type="checkbox"
+                id="posStatus"
+                checked={formStatus === 'active'}
+                onChange={(e) => setFormStatus(e.target.checked ? 'active' : 'inactive')}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ─── 4. ATTENDANCE TAB ────────────────────────────── */}
+        {activeTab === 'attendance' && (
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>
+                {t('employees.employee', 'Employee')} <span className="text-rose-500">*</span>
+              </label>
+              <select
+                required
+                value={attEmployeeId}
+                onChange={(e) => setAttEmployeeId(e.target.value)}
+                className={selectCls}
+              >
+                <option value="">{t('employees.select_employee', '-- Select Employee --')}</option>
+                {empList.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.name} ({emp.employee_number})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div>
+                <label className={labelCls}>
+                  {t('employees.date', 'Date')} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={attDate}
+                  onChange={(e) => setAttDate(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>{t('employees.check_in_time', 'Check-in Time')}</label>
+                <input
+                  type="time"
+                  value={attCheckIn}
+                  onChange={(e) => setAttCheckIn(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>{t('employees.check_out_time', 'Check-out Time')}</label>
+                <input
+                  type="time"
+                  value={attCheckOut}
+                  onChange={(e) => setAttCheckOut(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>{t('employees.status', 'Status')}</label>
+              <select
+                value={attStatus}
+                onChange={(e) => setAttStatus(e.target.value)}
+                className={selectCls}
+              >
+                <option value="present">{t('employees.present', 'Present')}</option>
+                <option value="late">{t('employees.late', 'Late')}</option>
+                <option value="absent">{t('employees.absent', 'Absent')}</option>
+                <option value="leave">{t('employees.leave', 'Leave')}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={labelCls}>{t('employees.notes', 'Notes')}</label>
+              <textarea
+                rows={2}
+                value={attNotes}
+                onChange={(e) => setAttNotes(e.target.value)}
+                placeholder={t('employees.notes_placeholder', 'Enter reason or notes...')}
+                className={textareaCls}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ─── 5. PAYROLL TAB ──────────────────────────────── */}
+        {activeTab === 'payrolls' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>
+                  {t('employees.employee', 'Employee')} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={payEmployeeId}
+                  onChange={(e) => setPayEmployeeId(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">{t('employees.select_employee', '-- Select Employee --')}</option>
+                  {empList.map((emp: any) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.employee_number})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>
+                  {t('employees.period_month', 'Payroll Period Month')} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="month"
+                  required
+                  value={payPeriodMonth}
+                  onChange={(e) => setPayPeriodMonth(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>{t('employees.basic_salary', 'Basic Salary ($)')}</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formBasicSalary}
+                  onChange={(e) => setFormBasicSalary(e.target.value)}
+                  placeholder="850.00"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>{t('employees.allowances', 'Allowances ($)')}</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={payAllowances}
+                  onChange={(e) => setPayAllowances(e.target.value)}
+                  placeholder="50.00"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>{t('employees.deductions', 'Deductions ($)')}</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={payDeductions}
+                  onChange={(e) => setPayDeductions(e.target.value)}
+                  placeholder="0.00"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>{t('employees.overtime_pay', 'Overtime Pay ($)')}</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={payOvertimePay}
+                  onChange={(e) => setPayOvertimePay(e.target.value)}
+                  placeholder="0.00"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelCls}>{t('employees.status', 'Status')}</label>
+                <select
+                  value={payStatus}
+                  onChange={(e) => setPayStatus(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="pending">{t('employees.pending', 'Pending')}</option>
+                  <option value="paid">{t('employees.paid', 'Paid')}</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>{t('employees.paid_date', 'Paid Date')}</label>
+                <input
+                  type="date"
+                  value={payPaidAt}
+                  onChange={(e) => setPayPaidAt(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>{t('employees.notes', 'Notes')}</label>
+              <textarea
+                rows={2}
+                value={payNotes}
+                onChange={(e) => setPayNotes(e.target.value)}
+                placeholder={t('employees.notes_placeholder', 'Enter reason or notes...')}
+                className={textareaCls}
+              />
+            </div>
+          </div>
+        )}
+      </form>
+    </EnterpriseModal>
   )
 }
 

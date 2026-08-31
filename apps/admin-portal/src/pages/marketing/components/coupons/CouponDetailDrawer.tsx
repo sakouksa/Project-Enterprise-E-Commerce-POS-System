@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Ticket, Copy, CheckCircle2, Clock } from 'lucide-react'
-import StatusBadge from '@/components/common/StatusBadge'
+import { StatusBadge, CloseButton, CancelButton } from '@/components/common'
 import type { Coupon } from '../../types/coupon'
 
 interface CouponDetailDrawerProps {
@@ -35,9 +35,7 @@ export const CouponDetailDrawer: React.FC<CouponDetailDrawerProps> = ({
                   <Ticket size={18} className="text-primary" />
                   <span>Discount Voucher Details</span>
                 </h3>
-                <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-                  <X size={20} />
-                </button>
+                <CloseButton onClose={onClose} size="md" color="rose" />
               </div>
 
               {/* Coupon Ticket Header */}
@@ -94,9 +92,7 @@ export const CouponDetailDrawer: React.FC<CouponDetailDrawerProps> = ({
             </div>
 
             <div className="border-t pt-4 flex justify-end print:hidden">
-              <button onClick={onClose} className="px-4 py-2 text-sm font-semibold bg-muted hover:bg-muted/80 text-foreground rounded-xl border border-border">
-                Close Drawer
-              </button>
+              <CancelButton onClick={onClose} label="Close Drawer" />
             </div>
           </motion.div>
         </div>

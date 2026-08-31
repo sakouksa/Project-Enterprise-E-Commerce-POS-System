@@ -20,14 +20,11 @@ import {
   UserCheck,
 } from 'lucide-react'
 
-export type SupportedLang = 'km' | 'en' | 'zh' | 'th' | 'vi'
+export type SupportedLang = 'km' | 'en'
 
 export interface MultiLangString {
   km: string
   en: string
-  zh: string
-  th: string
-  vi: string
 }
 
 export interface WidgetDefinition {
@@ -49,24 +46,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ដំណឹង និងការជូនដំណឹងអាជីវកម្ម',
       en: 'Business Alerts & Feeds',
-      zh: '商业警报与通知',
-      th: 'การแจ้งเตือนธุรกิจ',
-      vi: 'Cảnh báo & Thông báo doanh nghiệp',
     },
     description: {
       km: 'បង្ហាញការជូនដំណឹងសំខាន់ៗ ដំណឹងស្តុក និងសកម្មភាពមិនប្រក្រតី',
       en: 'Displays high-priority business alerts, low stock warnings, and unusual transactions',
-      zh: '显示高优先级商业警报、低库存警告和异常交易',
-      th: 'แสดงการแจ้งเตือนธุรกิจที่มีความสำคัญสูง คำเตือนสต็อกต่ำ และรายการผิดปกติ',
-      vi: 'Hiển thị cảnh báo doanh nghiệp ưu tiên cao, cảnh báo kho thấp và giao dịch bất thường',
     },
     category: 'system',
     categoryLabel: {
       km: 'ប្រព័ន្ធ & ការជូនដំណឹង',
       en: 'System & Alerts',
-      zh: '系统与警报',
-      th: 'ระบบและการแจ้งเตือน',
-      vi: 'Hệ thống & Cảnh báo',
     },
     icon: Bell,
     gradient: 'from-amber-500 to-rose-500',
@@ -77,26 +65,17 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   today_sales: {
     id: 'today_sales',
     name: {
-      km: 'ការលក់ប្រចាំថ្ងៃ (Today Sales)',
+      km: 'ការលក់ប្រចាំថ្ងៃ',
       en: 'Today Sales Revenue',
-      zh: '今日销售额',
-      th: 'ยอดขายวันนี้',
-      vi: 'Doanh số bán hàng hôm nay',
     },
     description: {
       km: 'បង្ហាញចំណូលសរុបបានមកពីការលក់ប្រចាំថ្ងៃ',
       en: 'Displays today total sales revenue and trend',
-      zh: '显示今日销售总收入及趋势',
-      th: 'แสดงรายได้รวมจากการขายและแนวโน้มในวันนี้',
-      vi: 'Hiển thị tổng doanh thu bán hàng và xu hướng hôm nay',
     },
     category: 'kpi',
     categoryLabel: {
       km: 'ពាណិជ្ជកម្ម & KPI',
       en: 'Commerce & KPI',
-      zh: '商业与KPI',
-      th: 'การค้า & KPI',
-      vi: 'Thương mại & KPI',
     },
     icon: TrendingUp,
     gradient: 'from-blue-500 to-indigo-600',
@@ -107,26 +86,17 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   today_orders: {
     id: 'today_orders',
     name: {
-      km: 'ការកុម្ម៉ង់ប្រចាំថ្ងៃ (Today Orders)',
+      km: 'ការកុម្ម៉ង់ប្រចាំថ្ងៃ',
       en: 'Today Orders Count',
-      zh: '今日订单数',
-      th: 'จำนวนคำสั่งซื้อวันนี้',
-      vi: 'Số lượng đơn hàng hôm nay',
     },
     description: {
       km: 'ចំនួនប្រតិបត្តិការវិក្កយបត្រលក់ដែលបានចេញថ្ងៃនេះ',
       en: 'Total count of sales invoices processed today',
-      zh: '今日处理的销售发票总数',
-      th: 'จำนวนใบแจ้งหนี้การขายทั้งหมดที่ดำเนินการในวันนี้',
-      vi: 'Tổng số hóa đơn bán hàng được xử lý hôm nay',
     },
     category: 'kpi',
     categoryLabel: {
       km: 'ពាណិជ្ជកម្ម & KPI',
       en: 'Commerce & KPI',
-      zh: '商业与KPI',
-      th: 'การค้า & KPI',
-      vi: 'Thương mại & KPI',
     },
     icon: ShoppingCart,
     gradient: 'from-purple-500 to-violet-600',
@@ -137,26 +107,17 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   total_customers: {
     id: 'total_customers',
     name: {
-      km: 'អតិថិជនសរុប (Total Customers)',
+      km: 'អតិថិជនសរុប',
       en: 'Total Customers',
-      zh: '客户总数',
-      th: 'จำนวนลูกค้าทั้งหมด',
-      vi: 'Tổng số khách hàng',
     },
     description: {
       km: 'ចំនួនអតិថិជនដែលបានចុះឈ្មោះ និងកំណើនអតិថិជន',
       en: 'Registered customer count and growth metrics',
-      zh: '已注册客户数量及增长指标',
-      th: 'จำนวนลูกค้าที่ลงทะเบียนและตัวเลขการเติบโต',
-      vi: 'Số lượng khách hàng đã đăng ký và chỉ số phát triển',
     },
     category: 'kpi',
     categoryLabel: {
       km: 'ពាណិជ្ជកម្ម & KPI',
       en: 'Commerce & KPI',
-      zh: '商业与KPI',
-      th: 'การค้า & KPI',
-      vi: 'Thương mại & KPI',
     },
     icon: Users,
     gradient: 'from-sky-500 to-cyan-600',
@@ -167,26 +128,17 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   total_products: {
     id: 'total_products',
     name: {
-      km: 'ទំនិញសរុប (Total Products)',
+      km: 'ទំនិញសរុប',
       en: 'Total Products in Catalog',
-      zh: '产品总数',
-      th: 'จำนวนสินค้าทั้งหมด',
-      vi: 'Tổng số sản phẩm',
     },
     description: {
       km: 'ចំនួនមុខទំនិញសរុបក្នុងកាតាឡុកប្រព័ន្ធ',
       en: 'Total number of catalog items in system database',
-      zh: '系统数据库中的产品目录总数',
-      th: 'จำนวนรายการสินค้าทั้งหมดในฐานข้อมูลระบบ',
-      vi: 'Tổng số mặt hàng trong danh mục hệ thống',
     },
     category: 'inventory',
     categoryLabel: {
       km: 'ស្តុក & ទំនិញ',
       en: 'Inventory & Catalog',
-      zh: '库存与目录',
-      th: 'คลังสินค้า & รายการ',
-      vi: 'Hàng tồn kho & Danh mục',
     },
     icon: Package,
     gradient: 'from-emerald-500 to-teal-600',
@@ -199,24 +151,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ក្រាហ្វិកវិភាគការលក់',
       en: 'Sales Analytics Charts',
-      zh: '销售分析图表',
-      th: 'กราฟวิเคราะห์ยอดขาย',
-      vi: 'Biểu đồ phân tích doanh số',
     },
     description: {
       km: 'ក្រាហ្វិកប្រៀបធៀបចំណូលប្រចាំសប្តាហ៍ ខែ និងប្រចាំឆ្នាំ',
       en: 'Weekly, monthly, and annual revenue analytics visual charts',
-      zh: '周、月、年度收入分析可视化图表',
-      th: 'กราฟแสดงการวิเคราะห์รายได้รายสัปดาห์ รายเดือน และรายปี',
-      vi: 'Biểu đồ trực quan phân tích doanh thu hàng tuần, hàng tháng và hàng năm',
     },
     category: 'analytics',
     categoryLabel: {
       km: 'វិភាគ & ក្រាហ្វិក',
       en: 'Analytics & Visuals',
-      zh: '分析与图表',
-      th: 'วิเคราะห์ & กราฟ',
-      vi: 'Phân tích & Biểu đồ',
     },
     icon: BarChart3,
     gradient: 'from-indigo-500 to-blue-600',
@@ -229,24 +172,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ការលក់តាមប្រភេទទំនិញ',
       en: 'Category Sales Breakdown',
-      zh: '品类销售分布',
-      th: 'สัดส่วนยอดขายตามหมวดหมู่',
-      vi: 'Phân loại doanh số theo danh mục',
     },
     description: {
       km: 'ក្រាហ្វិកបង្ហាញភាគរយចំណូលតាមប្រភេទក្រុមទំនិញ',
       en: 'Breakdown pie/donut chart of revenue by product category',
-      zh: '按产品类别划分的收入饼图/环形图',
-      th: 'แผนภูมิวงกลมแสดงสัดส่วนรายได้ตามหมวดหมู่สินค้า',
-      vi: 'Biểu đồ tròn phân tích doanh thu theo danh mục sản phẩm',
     },
     category: 'analytics',
     categoryLabel: {
       km: 'វិភាគ & ក្រាហ្វិក',
       en: 'Analytics & Visuals',
-      zh: '分析与图表',
-      th: 'วิเคราะห์ & กราฟ',
-      vi: 'Phân tích & Biểu đồ',
     },
     icon: PieChart,
     gradient: 'from-fuchsia-500 to-pink-600',
@@ -259,24 +193,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ការកុម្ម៉ង់ថ្មីៗ & ទំនិញលក់ដាច់',
       en: 'Recent Orders & Top Products',
-      zh: '最新订单与热销商品',
-      th: 'คำสั่งซื้อล่าสุด & สินค้าขายดี',
-      vi: 'Đơn hàng mới & Sản phẩm bán chạy',
     },
     description: {
       km: 'បញ្ជីវិក្កយបត្រចុងក្រោយ ទំនិញលក់ដាច់បំផុត និងអតិថិជនថ្មីៗ',
       en: 'Live view of recent orders, top revenue products, and new customers',
-      zh: '实时显示最新订单、高收入产品和新客户',
-      th: 'มุมมองเรียลไทม์ของคำสั่งซื้อล่าสุด สินค้าทำรายได้สูงสุด และลูกค้าใหม่',
-      vi: 'Xem thời gian thực đơn hàng gần đây, sản phẩm doanh thu cao và khách hàng mới',
     },
     category: 'kpi',
     categoryLabel: {
       km: 'ពាណិជ្ជកម្ម & KPI',
       en: 'Commerce & KPI',
-      zh: '商业与KPI',
-      th: 'การค้า & KPI',
-      vi: 'Thương mại & KPI',
     },
     icon: ShoppingBag,
     gradient: 'from-blue-600 to-indigo-700',
@@ -289,24 +214,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ទំនិញជិតអស់ស្តុក & ឃ្លាំង',
       en: 'Low Stock & Warehouse Alerts',
-      zh: '低库存与仓库警报',
-      th: 'เตือนสินค้าใกล้หมด & คลังสินค้า',
-      vi: 'Cảnh báo sắp hết hàng & Kho',
     },
     description: {
       km: 'បញ្ជីទំនិញដែលជិតអស់ពីស្តុក និងការបែងចែកស្តុកតាមឃ្លាំង',
       en: 'Critical inventory stock level warnings and warehouse breakdown',
-      zh: '关键库存水平警告及各仓库库存明细',
-      th: 'คำเตือนระดับสต็อกสินค้าที่วิกฤตและการแบ่งตามคลังสินค้า',
-      vi: 'Cảnh báo mức tồn kho quan trọng và phân bổ theo kho hàng',
     },
     category: 'inventory',
     categoryLabel: {
       km: 'ស្តុក & ទំនិញ',
       en: 'Inventory & Catalog',
-      zh: '库存与目录',
-      th: 'คลังสินค้า & รายการ',
-      vi: 'Hàng tồn kho & Danh mục',
     },
     icon: AlertTriangle,
     gradient: 'from-rose-500 to-amber-600',
@@ -319,24 +235,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ព័ត៌មានហិរញ្ញវត្ថុ & ចំណេញ',
       en: 'Financial Metrics & Margins',
-      zh: '财务指标与利润率',
-      th: 'ตัวเลขทางการเงิน & กำไร',
-      vi: 'Chỉ số tài chính & Lợi nhuận',
     },
     description: {
       km: 'សូចនាករប្រាក់ចំណេញដុល ចំណេញសុទ្ធ និងចំណាយប្រតិបត្តិការ',
       en: 'Gross profit, net profit margins, and operating expense breakdown',
-      zh: '毛利、净利润率及运营费用明细',
-      th: 'กำไรขั้นต้น อัตรากำไรสุทธิ และรายละเอียดค่าใช้จ่ายในการดำเนินงาน',
-      vi: 'Lợi nhuận gộp, tỷ số lợi nhuận ròng và chi phí vận hành',
     },
     category: 'finance',
     categoryLabel: {
       km: 'ហិរញ្ញវត្ថុ & គណនេយ្យ',
       en: 'Finance & Accounting',
-      zh: '财务与会计',
-      th: 'การเงิน & บัญชี',
-      vi: 'Tài chính & Kế toán',
     },
     icon: DollarSign,
     gradient: 'from-emerald-600 to-teal-700',
@@ -349,24 +256,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'យុទ្ធនាការ និងប័ណ្ណបញ្ចុះតម្លៃ',
       en: 'Active Campaigns & Coupons',
-      zh: '营销活动与优惠券',
-      th: 'แคมเปญ & คูปองส่วนลด',
-      vi: 'Chiến dịch & Mã giảm giá',
     },
     description: {
       km: 'បញ្ជីយុទ្ធនាការទីផ្សារ ប័ណ្ណបញ្ចុះតម្លៃ និងកម្មវិធីណែនាំ',
       en: 'Active marketing campaigns, coupon usages, and affiliate referrals',
-      zh: '活跃的营销活动、优惠券使用情况及推荐返利',
-      th: 'แคมเปญการตลาดที่เปิดอยู่ การใช้คูปอง และการแนะนำเพื่อน',
-      vi: 'Các chiến dịch tiếp thị đang hoạt động, mã giảm giá và giới thiệu',
     },
     category: 'analytics',
     categoryLabel: {
       km: 'វិភាគ & ក្រាហ្វិក',
       en: 'Analytics & Visuals',
-      zh: '分析与图表',
-      th: 'วิเคราะห์ & กราฟ',
-      vi: 'Phân tích & Biểu đồ',
     },
     icon: Megaphone,
     gradient: 'from-purple-600 to-pink-600',
@@ -379,24 +277,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ការវិភាគអតិថិជន & ទីតាំង',
       en: 'Customer Insights & Locations',
-      zh: '客户洞察与地区分布',
-      th: 'ข้อมูลลูกค้า & พื้นที่หลัก',
-      vi: 'Phân tích khách hàng & Khu vực',
     },
     description: {
       km: 'កំណើនអតិថិជន ប្រភេទអតិថិជន និងតំបន់អតិថិជនសកម្មបំផុត',
       en: 'Customer growth, retention rates, and top active locations',
-      zh: '客户增长、留存率及主要活跃地区',
-      th: 'การเติบโตของลูกค้า อัตราการซื้อซ้ำ และพื้นที่ที่มีลูกค้ามากที่สุด',
-      vi: 'Tăng trưởng khách hàng, tỷ lệ giữ chân và các khu vực hoạt động hàng đầu',
     },
     category: 'analytics',
     categoryLabel: {
       km: 'វិភាគ & ក្រាហ្វិក',
       en: 'Analytics & Visuals',
-      zh: '分析与图表',
-      th: 'วิเคราะห์ & กราฟ',
-      vi: 'Phân tích & Biểu đồ',
     },
     icon: Smile,
     gradient: 'from-sky-500 to-indigo-600',
@@ -409,24 +298,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'វិភាគទស្សនកិច្ចវេបសាយ',
       en: 'Web Traffic & Conversion',
-      zh: '网站流量与转化率',
-      th: 'ทราฟฟิก & อัตราแปลงเว็บ',
-      vi: 'Lưu lượng truy cập & Chuyển đổi Web',
     },
     description: {
       km: 'អត្រាបំប្លែងការទស្សនា បញ្ជីទំព័រមើលច្រើន និងឧបករណ៍ប្រើប្រាស់',
       en: 'Web conversion rates, top visited pages, and visitor device breakdown',
-      zh: '网站转化率、热门访问页面及访客设备分布',
-      th: 'อัตราการแปลงยอด การเยี่ยมชมหน้าเว็บยอดนิยม และอุปกรณ์ของผู้เข้าชม',
-      vi: 'Tỷ lệ chuyển đổi trang web, các trang được xem nhiều nhất và thiết bị truy cập',
     },
     category: 'analytics',
     categoryLabel: {
       km: 'វិភាគ & ក្រាហ្វិក',
       en: 'Analytics & Visuals',
-      zh: '分析与图表',
-      th: 'วิเคราะห์ & กราฟ',
-      vi: 'Phân tích & Biểu đồ',
     },
     icon: Globe2,
     gradient: 'from-blue-500 to-cyan-600',
@@ -439,24 +319,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'កម្មវិធីទូរស័ព្ទ & អ្នកប្រើប្រាស់',
       en: 'Mobile App Analytics',
-      zh: '移动应用分析',
-      th: 'แอปมือถือ & ผู้ใช้งาน',
-      vi: 'Ứng dụng di động & Người dùng',
     },
     description: {
       km: 'ចំនួនទាញយកកម្មវិធី អ្នកប្រើប្រាស់សកម្មប្រចាំថ្ងៃ និង Push Notifications',
       en: 'App downloads, daily active users (DAU), and push notification delivery',
-      zh: '应用下载量、每日活跃用户(DAU)及推送通知发送',
-      th: 'ยอดดาวน์โหลดแอป ผู้ใช้งานประจำวัน (DAU) และการส่งแจ้งเตือน',
-      vi: 'Lượt tải ứng dụng, người dùng hàng ngày (DAU) và thông báo đẩy',
     },
     category: 'analytics',
     categoryLabel: {
       km: 'វិភាគ & ក្រាហ្វិក',
       en: 'Analytics & Visuals',
-      zh: '分析与图表',
-      th: 'วิเคราะห์ & กราฟ',
-      vi: 'Phân tích & Biểu đồ',
     },
     icon: Smartphone,
     gradient: 'from-indigo-500 to-purple-600',
@@ -469,24 +340,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'វត្តមានបុគ្គលិក & បើកប្រាក់បៀវត្សរ៍',
       en: 'Staff Attendance & Performance',
-      zh: '员工考勤与绩效',
-      th: 'การเข้างาน & ผลงานพนักงาน',
-      vi: 'Chấm công & Hiệu suất nhân viên',
     },
     description: {
       km: 'អត្រាវត្តមានបុគ្គលិក បុគ្គលិកឆ្នើមលក់ដាច់បំផុត និងកញ្ចប់បៀវត្សរ៍',
       en: 'Staff attendance rate, top POS sales champions, and active department stats',
-      zh: '员工出勤率、POS销售冠军及部门统计',
-      th: 'อัตราการเข้างานพนักงาน พนักงานขายยอดเยี่ยม และสถิติแผนก',
-      vi: 'Tỷ lệ chấm công nhân viên, nhân viên bán hàng xuất sắc và các bộ phận',
     },
     category: 'system',
     categoryLabel: {
       km: 'ប្រព័ន្ធ & ការជូនដំណឹង',
       en: 'System & Alerts',
-      zh: '系统与警报',
-      th: 'ระบบและการแจ้งเตือน',
-      vi: 'Hệ thống & Cảnh báo',
     },
     icon: UserCheck,
     gradient: 'from-blue-600 to-teal-600',
@@ -499,24 +361,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'ស្ថានភាពប្រព័ន្ធ & សុខភាព',
       en: 'System Health Diagnostics',
-      zh: '系统健康诊断',
-      th: 'สถานะและสุขภาพระบบ',
-      vi: 'Chẩn đoán sức khỏe hệ thống',
     },
     description: {
       km: 'ត្រួតពិនិត្យល្បឿន Server, Database Connection, និងសេវាកម្ម',
       en: 'Server performance monitor, database status, and API health response times',
-      zh: '服务器性能监控、数据库状态及API响应时间',
-      th: 'ตรวจสอบประสิทธิภาพเซิร์ฟเวอร์ สถานะฐานข้อมูล และความเร็ว API',
-      vi: 'Giám sát hiệu suất máy chủ, trạng thái cơ sở dữ liệu và thời gian phản hồi API',
     },
     category: 'system',
     categoryLabel: {
       km: 'ប្រព័ន្ធ & ការជូនដំណឹង',
       en: 'System & Alerts',
-      zh: '系统与警报',
-      th: 'ระบบและการแจ้งเตือน',
-      vi: 'Hệ thống & Cảnh báo',
     },
     icon: Activity,
     gradient: 'from-teal-500 to-cyan-600',
@@ -529,24 +382,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'សកម្មភាពរហ័ស',
       en: 'Quick Actions Bar',
-      zh: '快捷操作栏',
-      th: 'แถบดำเนินการด่วน',
-      vi: 'Thao tác nhanh',
     },
     description: {
       km: 'ប៊ូតុងផ្លូវកាត់សម្រាប់បង្កើតការលក់ថ្មី បន្ថែមទំនិញ ឬមើលរបាយការណ៍',
       en: 'Shortcut launchpad to quickly initiate sales, add products, or check reports',
-      zh: '快速发起销售、添加产品或查看报告的快捷面板',
-      th: 'ปุ่มลัดสำหรับเริ่มการขาย เพิ่มสินค้า หรือดูรายงานได้อย่างรวดเร็ว',
-      vi: 'Bảng lối tắt để khởi tạo bán hàng, thêm sản phẩm hoặc xem báo cáo nhanh chóng',
     },
     category: 'kpi',
     categoryLabel: {
       km: 'ពាណិជ្ជកម្ម & KPI',
       en: 'Commerce & KPI',
-      zh: '商业与KPI',
-      th: 'การค้า & KPI',
-      vi: 'Thương mại & KPI',
     },
     icon: Zap,
     gradient: 'from-amber-500 to-yellow-600',
@@ -559,24 +403,15 @@ export const DASHBOARD_WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: {
       km: 'កំណត់ហេតុសកម្មភាពថ្មីៗ',
       en: 'Recent Activity Timeline',
-      zh: '最新活动日志',
-      th: 'ประวัติกิจกรรมล่าสุด',
-      vi: 'Nhật ký hoạt động gần đây',
     },
     description: {
       km: 'បន្ទាត់ពេលវេលានៃសកម្មភាពអ្នកប្រើប្រាស់ និងប្រតិបត្តិការចុងក្រោយ',
       en: 'Chronological timeline of real-time user updates and audit logs',
-      zh: '按时间顺序排列的实时用户更新和审计日志',
-      th: 'ลำดับเวลาของกิจกรรมผู้ใช้และบันทึกการตรวจสอบแบบเรียลไทม์',
-      vi: 'Nhật ký thời gian thực về hoạt động người dùng và kiểm toán',
     },
     category: 'system',
     categoryLabel: {
       km: 'ប្រព័ន្ធ & ការជូនដំណឹង',
       en: 'System & Alerts',
-      zh: '系统与警报',
-      th: 'ระบบและการแจ้งเตือน',
-      vi: 'Hệ thống & Cảnh báo',
     },
     icon: Clock,
     gradient: 'from-slate-600 to-slate-800',
@@ -599,16 +434,10 @@ export const PRESET_LAYOUTS = [
     name: {
       km: 'ទម្រង់ដើមប្រព័ន្ធ',
       en: 'Standard Default',
-      zh: '标准默认',
-      th: 'ค่าเริ่มต้นมาตรฐาน',
-      vi: 'Mặc định chuẩn',
     },
     desc: {
       km: 'បង្ហាញ widgets ទាំងអស់តាមលំដាប់លំដោយស្តង់ដារ',
       en: 'Shows all widgets in balanced standard order',
-      zh: '按标准平衡顺序显示所有组件',
-      th: 'แสดงส่วนประกอบทั้งหมดในลำดับมาตรฐาน',
-      vi: 'Hiển thị tất cả các tiện ích theo thứ tự chuẩn',
     },
   },
   {
@@ -616,16 +445,10 @@ export const PRESET_LAYOUTS = [
     name: {
       km: 'ផ្តោតលើការលក់ & KPI',
       en: 'Sales & KPI Focus',
-      zh: '侧重销售与KPI',
-      th: 'เน้นการขาย & KPI',
-      vi: 'Tập trung Doanh số & KPI',
     },
     desc: {
       km: 'បង្ហាញតែ widgets ការលក់ ចំណូល វិក្កយបត្រ និងក្រាហ្វិកវិភាគ',
       en: 'Prioritizes sales metrics, orders, revenue charts, and top items',
-      zh: '优先显示销售指标、订单、收入图表及热门商品',
-      th: 'ให้ความสำคัญกับยอดขาย คำสั่งซื้อ กราฟรายได้ และสินค้าขายดี',
-      vi: 'Ưu tiên chỉ số doanh số, đơn hàng, biểu đồ doanh thu và mặt hàng nổi bật',
     },
   },
   {
@@ -633,16 +456,10 @@ export const PRESET_LAYOUTS = [
     name: {
       km: 'ផ្តោតលើស្តុក & ឃ្លាំង',
       en: 'Inventory Focus',
-      zh: '侧重库存与仓库',
-      th: 'เน้นคลังสินค้า',
-      vi: 'Tập trung Hàng tồn kho',
     },
     desc: {
       km: 'បង្ហាញ widgets ទំនិញ ស្តុកជិតអស់ ឃ្លាំង និងដំណឹងអាជីវកម្ម',
       en: 'Prioritizes product catalog, low stock alerts, and warehouse analytics',
-      zh: '优先显示产品目录、低库存警报及仓库分析',
-      th: 'เน้นรายการสินค้า เตือนสต็อกต่ำ และการวิเคราะห์คลังสินค้า',
-      vi: 'Ưu tiên danh mục sản phẩm, cảnh báo kho thấp và phân tích kho',
     },
   },
   {
@@ -650,16 +467,10 @@ export const PRESET_LAYOUTS = [
     name: {
       km: 'ទម្រង់បង្រួមតូច',
       en: 'Compact Minimal',
-      zh: '精简紧凑模式',
-      th: 'โหมดกะทัดรัด',
-      vi: 'Giao diện thu nhỏ',
     },
     desc: {
       km: 'លាក់ widgets មិនចាំបាច់ ដើម្បីមើលតែ metrics សំខាន់ៗបំផុត',
       en: 'Hides low priority widgets for a clutter-free executive view',
-      zh: '隐藏次要组件，提供清晰的高管视图',
-      th: 'ซ่อนส่วนประกอบที่ไม่จำเป็นเพื่อมุมมองที่สะอาดตา',
-      vi: 'Ẩn các tiện ích phụ để có góc nhìn tổng quan gọn gàng',
     },
   },
 ]
@@ -669,6 +480,6 @@ export function getWidgetLocalizedString(
   lang: string
 ): string {
   if (!strObj) return ''
-  const validLang = (['km', 'en', 'zh', 'th', 'vi'].includes(lang) ? lang : 'km') as SupportedLang
+  const validLang: SupportedLang = lang.startsWith('en') ? 'en' : 'km'
   return strObj[validLang] || strObj.km || strObj.en || ''
 }

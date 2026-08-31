@@ -33,6 +33,9 @@ export const salesService = {
 
   processRefund: (id: number | string, payload: Record<string, any>) =>
     api.post(`/sales/${id}/refund`, payload).then((r) => r.data.data),
+
+  returnSale: (id: number | string, payload: Record<string, any>) =>
+    api.post(`/pos/sales/${id}/return`, payload).then((r) => r.data),
 }
 
 export default salesService

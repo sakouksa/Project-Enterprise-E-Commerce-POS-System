@@ -6,7 +6,8 @@ import {
   DollarSign, ArrowUpRight, ArrowDownRight, RefreshCw as RefundIcon,
   Filter, Download, Landmark
 } from 'lucide-react'
-import api from '@/api/client'
+import { financeService } from '@/services/financeService'
+import { companyService } from '@/services/companyService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -16,7 +17,8 @@ import ResetButton from '@/components/shared/ResetButton'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
-import FormDrawer from '@/components/common/FormDrawer'
+import { EnterpriseModal } from '@/components/common/EnterpriseModal'
+import { ModalFooter } from '@/components/common/ModalFooter'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
@@ -25,29 +27,34 @@ import { useTranslation } from 'react-i18next'
 interface Transaction {
   id: number
   company_id: number
+  company?: { id: number; name: string }
+  payment_method_id?: number
   payment_id?: number
+  payment_method?: { id: number; name: string; type: string }
   type: string
   amount: number
   description?: string
   reference_type?: string
   reference_id?: number
   created_at: string
-  company?: { id: number; name: string }
-  payment_method?: { id: number; name: string }
+  [key: string]: any
 }
 
 interface TransactionForm {
   company_id: string
-  payment_id: string
+  payment_method_id: string
+  payment_id?: string
   type: string
   amount: string
   description: string
   reference_type: string
   reference_id: string
+  [key: string]: any
 }
 
 const BLANK_FORM: TransactionForm = {
   company_id: '',
+  payment_method_id: '',
   payment_id: '',
   type: 'debit',
   amount: '',
@@ -89,25 +96,25 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
   // ─── Queries ──────────────────────────────────────────────────────────────
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['transactions', page, debouncedSearch, perPage, typeFilter],
-    queryFn: () => api.get('/transactions', { 
-      params: { page, search: debouncedSearch, type: typeFilter, per_page: perPage } 
-    }).then(r => r.data),
+    queryFn: () => financeService.getTransactions({ 
+      page, search: debouncedSearch, type: typeFilter, per_page: perPage 
+    }),
     placeholderData: (prev) => prev,
   })
 
   const { data: companies } = useQuery({
     queryKey: ['companies-select'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getCompanies({ per_page: 100 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: paymentMethods } = useQuery({
     queryKey: ['payment-methods-select'],
-    queryFn: () => api.get('/payment-methods', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => financeService.getPaymentMethods({ per_page: 100 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   // ─── Mutations ────────────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/transactions', payload),
+    mutationFn: (payload: any) => financeService.createTransaction(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       toast.success('Transaction logged successfully')
@@ -119,7 +126,7 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.put(`/transactions/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: any }) => financeService.updateTransaction(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       toast.success('Transaction updated successfully')
@@ -131,7 +138,7 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/transactions/${id}`),
+    mutationFn: (id: number) => financeService.deleteTransaction(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       toast.success('Transaction deleted successfully')
@@ -162,7 +169,8 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
     setEditingTransaction(tx)
     setForm({
       company_id: String(tx.company_id),
-      payment_id: tx.payment_id ? String(tx.payment_id) : '',
+      payment_method_id: tx.payment_method_id ? String(tx.payment_method_id) : '',
+      payment_id: tx.payment_id ? String(tx.payment_id) : (tx.payment_method_id ? String(tx.payment_method_id) : ''),
       type: tx.type,
       amount: String(tx.amount),
       description: tx.description ?? '',
@@ -296,7 +304,7 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
           <input
             type="text"
-            placeholder="Search by description or reference..."
+            placeholder={t('finance.search_transactions', 'Search transactions (description, reference)...')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="form-input pl-10 w-full"
@@ -309,10 +317,9 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
             className="form-select w-full sm:w-44 bg-background border border-input rounded-lg text-sm px-3 py-2"
           >
-            <option value="">All Types</option>
-            <option value="sale">Sale</option>
-            <option value="purchase">Purchase</option>
-            <option value="refund">Refund</option>
+            <option value="">{t('finance.all_types', 'All Types')}</option>
+            <option value="debit">{t('finance.type_debit', 'Debit')}</option>
+            <option value="credit">{t('finance.type_credit', 'Credit')}</option>
           </select>
 
           <button onClick={() => refetch()} className="btn btn-secondary flex items-center gap-2">
@@ -334,13 +341,13 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
             <thead>
               <tr>
                 <th className="w-[8%] text-left py-4 px-5">ID</th>
-                <th className="w-[15%] text-left py-4 px-5">Type</th>
-                <th className="w-[15%] text-left py-4 px-5">Amount</th>
-                <th className="w-[20%] text-left py-4 px-5">Company</th>
-                <th className="w-[20%] text-left py-4 px-5">Payment Method</th>
-                <th className="w-[20%] text-left py-4 px-5">Reference</th>
-                <th className="w-[18%] text-left py-4 px-5">Created At</th>
-                <th className="w-[100px] text-right py-4 px-5">{t('common.actions')}</th>
+                <th className="w-[15%] text-left py-4 px-5">{t('finance.type_col', 'Type')}</th>
+                <th className="w-[15%] text-left py-4 px-5">{t('finance.amount_col', 'Amount')}</th>
+                <th className="w-[20%] text-left py-4 px-5">{t('finance.company_col', 'Company')}</th>
+                <th className="w-[20%] text-left py-4 px-5">{t('finance.payment_method', 'Payment Method')}</th>
+                <th className="w-[20%] text-left py-4 px-5">{t('finance.ref_col', 'Reference')}</th>
+                <th className="w-[18%] text-left py-4 px-5">{t('finance.date_col', 'Created At')}</th>
+                <th className="w-[100px] text-right py-4 px-5">{t('finance.actions_col', t('common.actions'))}</th>
               </tr>
             </thead>
             <tbody>
@@ -362,39 +369,39 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
                   <td colSpan={8} className="text-center text-muted-foreground py-12">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Landmark className="text-muted-foreground/40" size={40} />
-                      <span>No transactions logged in this period.</span>
+                      <span>{t('finance.no_data_transactions', 'No transactions logged in this period.')}</span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                transactions.map((t) => (
-                  <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="py-4 px-5 font-mono text-xs">{t.id}</td>
+                transactions.map((item) => (
+                  <tr key={item.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="py-4 px-5 font-mono text-xs">{item.id}</td>
                     <td className="py-4 px-5">
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        (t.type === 'sale' || t.type === 'debit') ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400' :
-                        (t.type === 'purchase' || t.type === 'credit') ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' :
+                        (item.type === 'sale' || item.type === 'debit') ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400' :
+                        (item.type === 'purchase' || item.type === 'credit') ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' :
                         'bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400'
                       }`}>
-                        {(t.type === 'sale' || t.type === 'debit') && <ArrowUpRight size={12} />}
-                        {(t.type === 'purchase' || t.type === 'credit') && <ArrowDownRight size={12} />}
-                        {t.type !== 'sale' && t.type !== 'debit' && t.type !== 'purchase' && t.type !== 'credit' && <ArrowUpRight size={12} />}
-                        {t.type.toUpperCase()}
+                        {(item.type === 'sale' || item.type === 'debit') && <ArrowUpRight size={12} />}
+                        {(item.type === 'purchase' || item.type === 'credit') && <ArrowDownRight size={12} />}
+                        {item.type !== 'sale' && item.type !== 'debit' && item.type !== 'purchase' && item.type !== 'credit' && <ArrowUpRight size={12} />}
+                        {item.type === 'debit' || item.type === 'sale' ? t('finance.type_debit', 'Debit') : t('finance.type_credit', 'Credit')}
                       </span>
                     </td>
                     <td className="py-4 px-5 font-semibold text-foreground">
-                      ${Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-4 px-5 text-sm">{t.company?.name ?? `Company #${t.company_id}`}</td>
-                    <td className="py-4 px-5 text-sm">{t.payment_method?.name ?? '-'}</td>
+                    <td className="py-4 px-5 text-sm">{item.company?.name ?? `Company #${item.company_id}`}</td>
+                    <td className="py-4 px-5 text-sm">{item.payment_method?.name ?? '-'}</td>
                     <td className="py-4 px-5 text-xs text-muted-foreground font-medium">
-                      {t.reference_type ? `${t.reference_type} #${t.reference_id}` : '-'}
+                      {item.reference_type ? `${item.reference_type.split('\\').pop()} #${item.reference_id}` : '-'}
                     </td>
-                    <td className="py-4 px-5 text-xs text-muted-foreground whitespace-nowrap">{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>
+                    <td className="py-4 px-5 text-xs text-muted-foreground whitespace-nowrap">{item.created_at ? new Date(item.created_at).toLocaleDateString() : '-'}</td>
                     <td className="py-4 px-5 text-right" onClick={(e) => e.stopPropagation()}>
                       <TableActionMenu
-                        onEdit={() => openEditDrawer(t)}
-                        onDelete={() => setDeleteTarget(t)}
+                        onEdit={() => openEditDrawer(item)}
+                        onDelete={() => setDeleteTarget(item)}
                       />
                     </td>
                   </tr>
@@ -406,115 +413,123 @@ const TransactionsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ 
         <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
       </div>
 
-      {/* Add / Edit Drawer */}
-      <FormDrawer
-        open={drawerOpen}
-        title={editingTransaction ? `Edit Transaction Details #${editingTransaction.id}` : 'Log New Transaction'}
-        subtitle="Log debit or credit transactions into ledger accounts."
+      {/* Add / Edit Center Modal */}
+      <EnterpriseModal
+        isOpen={drawerOpen}
+        title={editingTransaction ? t('finance.edit_transaction', 'Edit Transaction') : t('finance.add_transaction', 'Record Transaction')}
+        subtitle={t('finance.transaction_subtitle', 'Record debit or credit transaction entry in ledger')}
+        icon={<Landmark size={20} />}
+        iconVariant="emerald"
+        size="lg"
         onClose={closeDrawer}
-        onSubmit={handleSubmit}
-        loading={createMutation.isPending || updateMutation.isPending}
-        submitLabel={editingTransaction ? 'Save Changes' : 'Confirm Transaction'}
+        footer={
+          <ModalFooter
+            onCancel={closeDrawer}
+            cancelLabel={t('common.cancel', 'Cancel')}
+            onSubmit={(e) => { if (e?.preventDefault) e.preventDefault(); handleSubmit(e as any); }}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            isEdit={!!editingTransaction}
+            submitLabel={editingTransaction ? t('common.saveChanges', 'Save Changes') : t('finance.confirm_transaction', 'Confirm Transaction')}
+          />
+        }
       >
-        <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-muted/40 border border-border/60 space-y-4">
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Select Company *</label>
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.select_company', 'Select Company')} <span className="text-rose-500">*</span></label>
+            <select
+              value={form.company_id}
+              onChange={e => setForm({ ...form, company_id: e.target.value })}
+              className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium cursor-pointer"
+              required
+            >
+              <option value="">-- {t('finance.select_company', 'Select Company')} --</option>
+              {companies?.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.payment_method', 'Payment Method')}</label>
               <select
-                value={form.company_id}
-                onChange={e => setForm({ ...form, company_id: e.target.value })}
-                className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
-                required
+                value={form.payment_id}
+                onChange={e => setForm({ ...form, payment_id: e.target.value })}
+                className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium cursor-pointer"
               >
-                <option value="">-- Choose Company --</option>
-                {companies?.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                <option value="">-- Cash / Direct --</option>
+                {paymentMethods?.map((pm: any) => (
+                  <option key={pm.id} value={pm.id}>{pm.name} ({pm.code})</option>
                 ))}
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Payment Method</label>
-                <select
-                  value={form.payment_id}
-                  onChange={e => setForm({ ...form, payment_id: e.target.value })}
-                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer"
-                >
-                  <option value="">-- Cash / Direct --</option>
-                  {paymentMethods?.map((pm: any) => (
-                    <option key={pm.id} value={pm.id}>{pm.name} ({pm.code})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Type *</label>
-                <select
-                  value={form.type}
-                  onChange={e => setForm({ ...form, type: e.target.value })}
-                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5 cursor-pointer capitalize"
-                  required
-                >
-                  <option value="debit">Debit (Inflow)</option>
-                  <option value="credit">Credit (Outflow)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ($) *</label>
-              <div className="relative">
-                <DollarSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={form.amount}
-                  onChange={e => setForm({ ...form, amount: e.target.value })}
-                  placeholder="e.g. 250.00"
-                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref Type</label>
-                <input
-                  type="text"
-                  placeholder="e.g. order, invoice"
-                  value={form.reference_type}
-                  onChange={e => setForm({ ...form, reference_type: e.target.value })}
-                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Ref ID</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 104"
-                  value={form.reference_id}
-                  onChange={e => setForm({ ...form, reference_id: e.target.value })}
-                  className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all py-2.5"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.transaction_type', 'Transaction Type')} <span className="text-rose-500">*</span></label>
+              <select
+                value={form.type}
+                onChange={e => setForm({ ...form, type: e.target.value })}
+                className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium cursor-pointer capitalize"
+                required
+              >
+                <option value="debit">{t('finance.type_debit', 'Debit (Inflow)')}</option>
+                <option value="credit">{t('finance.type_credit', 'Credit (Outflow)')}</option>
+              </select>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Description / Remarks</label>
+          <div>
+            <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.amount_col', 'Amount ($)')} <span className="text-rose-500">*</span></label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground pointer-events-none">$</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={form.amount}
+                onChange={e => setForm({ ...form, amount: e.target.value })}
+                placeholder="e.g. 250.00"
+                className="w-full h-10 min-h-[40px] pl-8 pr-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground font-mono font-bold placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.ref_type', 'Reference Type')}</label>
+              <input
+                type="text"
+                placeholder="e.g. order, invoice"
+                value={form.reference_type}
+                onChange={e => setForm({ ...form, reference_type: e.target.value })}
+                className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.ref_id', 'Reference ID')}</label>
+              <input
+                type="number"
+                placeholder="e.g. 104"
+                value={form.reference_id}
+                onChange={e => setForm({ ...form, reference_id: e.target.value })}
+                className="w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-foreground/90 mb-1.5">{t('finance.description_col', 'Description / Note')}</label>
             <textarea
               rows={3}
-              placeholder="Provide additional transaction notes or audit remarks..."
+              placeholder={t('finance.placeholder_desc', 'Provide additional transaction notes...')}
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
-              className="form-input w-full text-xs rounded-xl border border-border bg-card text-foreground hover:border-muted-foreground/30 focus:ring-primary/20 focus:border-primary transition-all p-3 resize-none"
+              className="w-full px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
             />
           </div>
-        </div>
-      </FormDrawer>
+        </form>
+      </EnterpriseModal>
 
       {/* Delete Confirm */}
       <ConfirmDialog

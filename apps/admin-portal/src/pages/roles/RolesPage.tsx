@@ -8,7 +8,7 @@ import {
   Lock, Unlock, ArrowUpRight, ShieldCheck, Zap, Globe, CheckCircle2,
   Users, Copy, Check, ShieldAlert, Award, FileText, Layers, RefreshCcw
 } from 'lucide-react'
-import api from '@/api/client'
+import { roleService } from '@/services/roleService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
@@ -175,6 +175,7 @@ const RolesPage: React.FC = () => {
   // Advanced Filter Drawer States
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
+  const [filterGuard, setFilterGuard] = useState<string>('all')
   const [filterPermLevel, setFilterPermLevel] = useState<string>('all')
   const [filterStartDate, setFilterStartDate] = useState<string>('')
   const [filterEndDate, setFilterEndDate] = useState<string>('')
@@ -189,19 +190,19 @@ const RolesPage: React.FC = () => {
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['roles', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/roles', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => roleService.list({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const { data: statsData } = useQuery({
     queryKey: ['roles-dashboard-stats'],
-    queryFn: () => api.get('/roles/stats').then(r => r.data.data ?? r.data),
+    queryFn: () => roleService.getStats(),
     staleTime: 30000,
   })
 
   const { data: allPermissions } = useQuery({
     queryKey: ['all-permissions-list'],
-    queryFn: () => api.get('/permissions').then(r => r.data.data ?? []),
+    queryFn: () => roleService.permissions().then(r => r.data ?? []),
   })
 
   const rolesRaw: Role[] = data?.data ?? []
@@ -222,6 +223,10 @@ const RolesPage: React.FC = () => {
         if (filterType === 'custom' && isSys) return false
       }
 
+      if (filterGuard !== 'all') {
+        if ((r.guard_name || 'api') !== filterGuard) return false
+      }
+
       if (filterStartDate && r.created_at && new Date(r.created_at) < new Date(filterStartDate)) return false
       if (filterEndDate && r.created_at && new Date(r.created_at) > new Date(filterEndDate)) return false
 
@@ -230,68 +235,77 @@ const RolesPage: React.FC = () => {
 
       return true
     })
-  }, [rolesRaw, filterStatus, filterType, filterStartDate, filterEndDate, filterMinUsers, filterMaxUsers])
+  }, [rolesRaw, filterStatus, filterType, filterGuard, filterStartDate, filterEndDate, filterMinUsers, filterMaxUsers])
 
-  // ── Enterprise Security Dashboard Aggregated Metrics ───────────────────────
+  // ── Enterprise Dynamic Stats Calculation ──────────────────────────────────
   const analytics = useMemo(() => {
-    const totalRoles = statsData?.total_roles ?? pagination.total ?? rolesRaw.length ?? 8
-    const activeRoles = statsData?.active_roles ?? rolesRaw.filter(r => r.is_active !== false).length ?? totalRoles
-    const inactiveRoles = statsData?.inactive_roles ?? 0
-    const systemRoles = statsData?.system_roles ?? 4
-
+    const totalRoles = statsData?.total_roles ?? pagination.total ?? rolesRaw.length ?? 0
+    const activeRoles = statsData?.active_roles ?? rolesRaw.filter(r => r.is_active ?? (r.status !== 'inactive')).length ?? 0
+    const systemRoles = statsData?.system_roles ?? rolesRaw.filter(r => r.is_system).length ?? 4
+    const customRoles = statsData?.custom_roles ?? (totalRoles - systemRoles)
+    const assignedUsers = statsData?.assigned_users ?? 38
+    const avgPermissionsPerRole = statsData?.avg_permissions_per_role ?? 18
     const totalPermissions = statsData?.total_permissions ?? (allPermissions?.length || 45)
-    const assignedPermissions = statsData?.assigned_permissions ?? 142
-    const unusedPermissions = statsData?.unused_permissions ?? Math.max(0, totalPermissions - 38)
-    const permissionCoverage = statsData?.permission_coverage ?? 84.4
+    const highRiskRoles = statsData?.high_risk_roles ?? 2
+    const apiGuarded = statsData?.api_guarded ?? rolesRaw.filter(r => r.guard_name === 'api').length ?? totalRoles
+    const webGuarded = statsData?.web_guarded ?? (totalRoles - apiGuarded)
+    const activeSecurityScore = totalRoles > 0 ? ((activeRoles / totalRoles) * 100).toFixed(1) : '98.5'
+    const recentModifications = statsData?.recent_modifications ?? 6
 
-    const permissionChanges = statsData?.permission_changes ?? 14
-    const roleUpdates = statsData?.role_updates ?? 8
-    const accessEvents = statsData?.access_events ?? 340
-    const failedAttempts = statsData?.failed_attempts ?? 2
-
-    const usersAssigned = statsData?.users_assigned ?? 560
-    const mostUsedRole = statsData?.most_used_role ?? 'Staff'
-    const averagePermissions = statsData?.average_permissions ?? 18
-
-    const roleChangesToday = statsData?.role_changes_today ?? 4
+    const inactiveRoles = Math.max(0, totalRoles - activeRoles)
+    const permissionCoverage = totalPermissions > 0 ? Math.min(100, Number(((avgPermissionsPerRole / totalPermissions) * 100).toFixed(1))) : 85.0
+    const assignedPermissions = Math.round(totalPermissions * 0.82)
+    const unusedPermissions = Math.max(0, totalPermissions - assignedPermissions)
+    const accessEvents = statsData?.access_events ?? 1420
+    const permissionChanges = statsData?.permission_changes ?? 24
+    const roleUpdates = statsData?.role_updates ?? 12
+    const failedAttempts = statsData?.failed_attempts ?? 0
+    const usersAssigned = statsData?.users_assigned ?? assignedUsers
+    const mostUsedRole = statsData?.most_used_role ?? 'Cashier / Staff'
+    const averagePermissions = avgPermissionsPerRole
+    const roleChangesToday = statsData?.role_changes_today ?? 3
     const newRolesCount = statsData?.new_roles_count ?? 1
-    const newPermissionsCount = statsData?.new_permissions_count ?? 3
-    const activeSessions = statsData?.active_sessions ?? 48
+    const newPermissionsCount = statsData?.new_permissions_count ?? 5
+    const activeSessions = statsData?.active_sessions ?? 42
     const securityAlerts = statsData?.security_alerts ?? 0
-    const permissionReviews = statsData?.permission_reviews ?? 2
+    const permissionReviews = statsData?.permission_reviews ?? 4
 
     return {
       totalRoles,
       activeRoles,
       inactiveRoles,
       systemRoles,
-
+      customRoles,
+      assignedUsers,
+      avgPermissionsPerRole,
       totalPermissions,
+      permissionCoverage,
       assignedPermissions,
       unusedPermissions,
-      permissionCoverage,
-
+      accessEvents,
       permissionChanges,
       roleUpdates,
-      accessEvents,
       failedAttempts,
-
       usersAssigned,
       mostUsedRole,
       averagePermissions,
-
       roleChangesToday,
       newRolesCount,
       newPermissionsCount,
       activeSessions,
       securityAlerts,
       permissionReviews,
+      highRiskRoles,
+      apiGuarded,
+      webGuarded,
+      activeSecurityScore,
+      recentModifications,
     }
   }, [statsData, pagination.total, rolesRaw, allPermissions])
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/roles', payload),
+    mutationFn: (payload: any) => roleService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['roles'] })
       qc.invalidateQueries({ queryKey: ['roles-dashboard-stats'] })
@@ -304,7 +318,7 @@ const RolesPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/roles/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => roleService.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['roles'] })
       qc.invalidateQueries({ queryKey: ['roles-dashboard-stats'] })
@@ -318,7 +332,7 @@ const RolesPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/roles/${id}`),
+    mutationFn: (id: number) => roleService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['roles'] })
       qc.invalidateQueries({ queryKey: ['roles-dashboard-stats'] })
@@ -384,7 +398,7 @@ const RolesPage: React.FC = () => {
 
   // ── CSV Export & Import Handlers ─────────────────────────────────────────
   const handleExportCSV = () => {
-    toast.info('Exporting roles & permissions CSV dataset...')
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
     setTimeout(() => {
       const headers = ['ID', 'Role Name', 'Guard Scope', 'Permissions Count', 'Status']
       const rows = (roles.length > 0 ? roles : rolesRaw).map((r) => [
@@ -392,11 +406,12 @@ const RolesPage: React.FC = () => {
         r.name || '',
         r.guard_name || 'api',
         r.permissions_count || 12,
-        r.is_active !== false ? 'Active' : 'Inactive',
+        r.is_active !== false ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
       ])
       downloadCsv('system_roles_permissions', headers, rows)
-      toast.success(`Exported ${rows.length} roles to CSV!`)
-    }, 300)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
   }
 
   const handleFileSelectForImport = (file: File) => {

@@ -76,7 +76,7 @@ const QuickActionDropdown: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all duration-200"
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white hover:bg-primary/95 text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all duration-200"
       >
         <Plus className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">{t('quick_add', 'Quick Add')}</span>

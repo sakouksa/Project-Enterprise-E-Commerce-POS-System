@@ -2,7 +2,15 @@ import React from 'react'
 import { X, ShoppingBag, User, Phone, MapPin, Loader2, CheckCircle2, Truck, Clock, PackageCheck, DollarSign, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import StatusBadge from '@/components/common/StatusBadge'
+import { 
+  StatusBadge, 
+  DetailDrawer, 
+  DetailDrawerHeader, 
+  DetailDrawerBody, 
+  DetailDrawerFooter, 
+  CloseButton,
+  CancelButton
+} from '@/components/common'
 
 interface OrderItem {
   id:              number
@@ -16,18 +24,18 @@ interface OrderItem {
   product?:        { name: string }
 }
 
-interface Order {
+export interface Order {
   id:                 number
   order_number:       string
   customer?:          { name: string; phone?: string; email?: string }
-  grand_total:        number
-  subtotal:           number
-  tax_amount:         number
-  discount_amount:    number
-  shipping_cost:      number
-  status:             'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled' | 'refunded'
-  payment_status:     'unpaid' | 'partial' | 'paid' | 'refunded'
-  fulfillment_status: 'unfulfilled' | 'partial' | 'fulfilled'
+  grand_total?:       number
+  subtotal?:          number
+  tax_amount?:        number
+  discount_amount?:   number
+  shipping_cost?:     number
+  status?:            'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled' | 'refunded' | string
+  payment_status?:    'unpaid' | 'partial' | 'paid' | 'refunded' | string
+  fulfillment_status?: 'unfulfilled' | 'partial' | 'fulfilled' | string
   shipping_name?:     string
   shipping_phone?:    string
   shipping_address?:  string
@@ -39,6 +47,8 @@ interface Order {
   notes?:             string
   created_at:         string
   items?:             OrderItem[]
+  order_items?:       OrderItem[]
+  [key: string]:      any
 }
 
 interface OrdersDetailDrawerProps {
@@ -90,12 +100,7 @@ export const OrdersDetailDrawer: React.FC<OrdersDetailDrawerProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+          <CloseButton onClose={onClose} size="md" color="rose" />
         </div>
 
         {/* Body */}
@@ -218,7 +223,7 @@ export const OrdersDetailDrawer: React.FC<OrdersDetailDrawerProps> = ({
                       {(!order?.items || order.items.length === 0) && (
                         <tr>
                           <td colSpan={4} className="p-6 text-center text-muted-foreground text-xs">
-                            {t('noItemsFound', 'គ្មានមុខទំនិញក្នុងកញ្ចប់បញ្ជាទិញទេ')}
+                            {t('noItemsFound', 'No items found in this order package')}
                           </td>
                         </tr>
                       )}
@@ -230,23 +235,23 @@ export const OrdersDetailDrawer: React.FC<OrdersDetailDrawerProps> = ({
               {/* Payment Summary */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  {t('grandTotal')}
+                  {t('grandTotal', 'Grand Total')}
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('subtotal')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('subtotal', 'Subtotal')}</span>
                     <span className="font-extrabold text-foreground">${Number(order?.subtotal || 0).toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('shipping')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('shipping', 'Shipping')}</span>
                     <span className="font-extrabold text-foreground">${Number(order?.shipping_cost || 0).toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('discounts')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('discounts', 'Discounts')}</span>
                     <span className="font-extrabold text-rose-500">-${Number(order?.discount_amount || 0).toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <span className="text-[10px] text-primary block font-bold uppercase tracking-wider mb-1">{t('grandTotal')}</span>
+                    <span className="text-[10px] text-primary block font-bold uppercase tracking-wider mb-1">{t('grandTotal', 'Grand Total')}</span>
                     <span className="font-extrabold text-primary text-base">${Number(order?.grand_total || 0).toFixed(2)}</span>
                   </div>
                 </div>
@@ -256,7 +261,7 @@ export const OrdersDetailDrawer: React.FC<OrdersDetailDrawerProps> = ({
               {order?.notes && (
                 <div className="space-y-2">
                   <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                    {t('orderDetails')}
+                    {t('orderDetails', 'Order Details')}
                   </h4>
                   <div className="p-3 rounded-xl bg-muted/30 border border-border/60 flex items-start gap-2">
                     <FileText size={14} className="text-muted-foreground mt-0.5 shrink-0" />
@@ -268,12 +273,7 @@ export const OrdersDetailDrawer: React.FC<OrdersDetailDrawerProps> = ({
 
             {/* Footer */}
             <div className="p-4 border-t border-border bg-muted/10 flex items-center justify-end">
-              <button
-                onClick={onClose}
-                className="py-2 px-5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              >
-                {t('close')}
-              </button>
+              <CancelButton onClick={onClose} label={t('close', 'Close')} />
             </div>
           </>
         )}

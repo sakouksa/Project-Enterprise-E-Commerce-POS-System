@@ -5,7 +5,7 @@ import {
   Plus, Search, Edit2, Trash2, RefreshCw, X,
   DollarSign, Loader2,
 } from 'lucide-react'
-import api from '@/api/client'
+import { expenseService } from '@/services/expenseService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -65,18 +65,18 @@ const ExpensesPage: React.FC = () => {
 
   const { data: categoriesData } = useQuery({
     queryKey: ['expense-categories'],
-    queryFn: () => api.get('/expense-categories').then(r => r.data.data ?? []).catch(() => DEFAULT_CATEGORIES),
+    queryFn: () => expenseService.getCategories().then(r => r.data ?? []).catch(() => DEFAULT_CATEGORIES),
   })
   const categories = (categoriesData ?? DEFAULT_CATEGORIES)
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['expenses', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/expenses', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => expenseService.getExpenses({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/expenses', payload),
+    mutationFn: (payload: any) => expenseService.createExpense(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] })
       toast.success('Expense recorded successfully.')
@@ -88,7 +88,7 @@ const ExpensesPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/expenses/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => expenseService.updateExpense(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] })
       toast.success('Expense updated successfully.')
@@ -100,7 +100,7 @@ const ExpensesPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/expenses/${id}`),
+    mutationFn: (id: number) => expenseService.deleteExpense(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] })
       toast.success('Expense deleted successfully.')

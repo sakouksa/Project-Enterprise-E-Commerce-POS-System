@@ -2,7 +2,7 @@ import React from 'react'
 import { X, Activity, AlertCircle, RefreshCw, Package } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import api from '@/api/client'
+import { inventoryService } from '@/services/inventoryService'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { formatShortDate } from '@/utils/formatters'
@@ -22,7 +22,7 @@ export const StockMovementDetailPage: React.FC<StockMovementDetailPageProps> = (
 
   const { data: detail, isLoading, isError, refetch } = useQuery({
     queryKey: ['stock-movement-detail', movementId],
-    queryFn: () => api.get(`/inventory-movements/${movementId}`).then(r => r.data.data),
+    queryFn: () => inventoryService.getMovement(movementId),
     enabled: !!movementId
   })
 

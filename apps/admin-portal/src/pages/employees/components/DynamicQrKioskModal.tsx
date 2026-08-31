@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QrCode, RefreshCw, X, ShieldCheck, Clock, Building2, CheckCircle2, Download, AlertTriangle, ChevronDown, Calendar, Plus, Save } from 'lucide-react'
-import api from '@/api/client'
+import { employeeService } from '@/services/employeeService'
 import { useToast } from '@/hooks/useToast'
 
 interface Shift {
@@ -39,9 +39,9 @@ const DynamicQrKioskModal: React.FC<DynamicQrKioskModalProps> = ({ open, onClose
 
   // Fetch available shifts
   const fetchShifts = () => {
-    api.get('/shifts')
+    employeeService.shifts()
       .then(res => {
-        const list = res.data?.data ?? []
+        const list = res.data?.data ?? res.data ?? []
         setShifts(list)
         if (list.length > 0 && !selectedShiftId) {
           setSelectedShiftId(list[0].id)
@@ -61,13 +61,13 @@ const DynamicQrKioskModal: React.FC<DynamicQrKioskModalProps> = ({ open, onClose
   const fetchNewQr = async (shiftId: number | null = selectedShiftId, secs: number = intervalSecs) => {
     setLoading(true)
     try {
-      const res = await api.post('/attendances/generate-qr', {
+      const res = await employeeService.generateQr({
         company_id: 1,
         branch_id: 1,
         shift_id: shiftId,
         interval_seconds: secs,
       })
-      setQrToken(res.data?.data?.qr_token ?? null)
+      setQrToken(res.data?.data?.qr_token ?? res.data?.qr_token ?? res.qr_token ?? null)
       setCountdown(secs)
     } catch (err: any) {
       toast.error('Failed to generate dynamic attendance QR token')
@@ -119,8 +119,8 @@ const DynamicQrKioskModal: React.FC<DynamicQrKioskModalProps> = ({ open, onClose
         working_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         is_active: true,
       }
-      const res = await api.post('/shifts', payload)
-      const newShift = res.data?.data
+      const res = await employeeService.createShift(payload)
+      const newShift = res.data?.data ?? res.data ?? res
       toast.success(`Shift "${customName}" created & applied!`)
       setShowConfig(false)
       fetchShifts()

@@ -3,12 +3,20 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, DollarSign, Receipt, Landmark, CreditCard, Search, Filter, RefreshCw,
-  ChevronUp, ChevronDown, Upload, X, Percent, Globe, Download,
-  FolderTree
+  FolderTree, FileBarChart, ChevronUp, ChevronDown, Globe, Percent, X
 } from 'lucide-react'
-import api from '@/api/client'
+import { financeService } from '@/services/financeService'
+import { expenseService } from '@/services/expenseService'
+import { salesService } from '@/services/salesService'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import {
+  HeaderActionsGroup,
+  ActionButton,
+  AddButton,
+  ExportButton,
+  ImportButton,
+} from '@/components/common'
 import ResetButton from '@/components/shared/ResetButton'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
@@ -19,18 +27,24 @@ import { useServerPagination } from '@/hooks/useServerPagination'
 import { useTranslation } from 'react-i18next'
 import { downloadCsv } from '@/utils/export'
 
-import TransactionsPage from '../payments/TransactionsPage'
-import PaymentMethodsPage from '../payments/PaymentMethodsPage'
+import TransactionsTab from './components/tabs/TransactionsTab'
+import PaymentMethodsTab from './components/tabs/PaymentMethodsTab'
 import { FinanceStatsCards } from './components/FinanceStatsCards'
+import { FinanceTrendsChart } from './components/FinanceTrendsChart'
 import { FinanceFilterDrawer } from './components/FinanceFilterDrawer'
 import { FinanceFormDrawer } from './components/FinanceFormDrawer'
 import { FinanceImportModal } from './components/FinanceImportModal'
+import { ExpenseVoucherPrintModal } from './components/ExpenseVoucherPrintModal'
+import { RegisterCloseModal } from './components/RegisterCloseModal'
 import { ExpensesTab } from './components/tabs/ExpensesTab'
 import { CategoriesTab } from './components/tabs/CategoriesTab'
 import { RegistersTab } from './components/tabs/RegistersTab'
 import { CurrenciesTab } from './components/tabs/CurrenciesTab'
 import { TaxesTab } from './components/tabs/TaxesTab'
-import type { TabType, ExpenseForm, CategoryForm, RegisterForm, CurrencyForm, TaxForm } from './types'
+import type {
+  TabType, ExpenseForm, CategoryForm, RegisterForm, CurrencyForm, TaxForm,
+  PaymentMethodForm, TransactionForm
+} from './types'
 
 const FinancePage: React.FC = () => {
   const { t } = useTranslation(['finance', 'common', 'nav'])
@@ -58,10 +72,6 @@ const FinancePage: React.FC = () => {
     setSelectedCategoryIds([])
     reset()
   }
-
-  // Triggers for subcomponents
-  const [txnAddTrigger, setTxnAddTrigger] = useState(0)
-  const [pmAddTrigger, setPmAddTrigger] = useState(0)
 
   // Drawers & Modals
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -119,6 +129,24 @@ const FinancePage: React.FC = () => {
     type: 'percentage',
     is_active: true
   })
+  const [paymentMethodForm, setPaymentMethodForm] = useState<PaymentMethodForm>({
+    name: '',
+    code: '',
+    type: 'cash',
+    fee_percent: '0.00',
+    fee_fixed: '0.00',
+    available_pos: true,
+    available_online: true,
+    is_active: true
+  })
+  const [transactionForm, setTransactionForm] = useState<TransactionForm>({
+    type: 'debit',
+    amount: '',
+    description: '',
+    reference_type: '',
+    reference_id: '',
+    payment_method_id: '',
+  })
 
   // Sorting State
   const [sortBy, setSortBy] = useState('id')
@@ -131,6 +159,7 @@ const FinancePage: React.FC = () => {
     expense_amount: true,
     expense_date: true,
     expense_description: true,
+    expense_receipt: true,
     category_name: true,
     category_code: true,
     category_transactions: true,
@@ -148,6 +177,20 @@ const FinancePage: React.FC = () => {
     tax_rate: true,
     tax_type: true,
     tax_status: true,
+    pm_name: true,
+    pm_code: true,
+    pm_type: true,
+    pm_fee: true,
+    pm_channels: true,
+    pm_status: true,
+    txn_id: true,
+    txn_type: true,
+    txn_amount: true,
+    txn_company: true,
+    txn_method: true,
+    txn_ref: true,
+    txn_description: true,
+    txn_date: true,
   })
 
   // Advanced Filters
@@ -196,61 +239,82 @@ const FinancePage: React.FC = () => {
       filterAmountMax,
       filterCreatedBy,
     ],
-    queryFn: () => api.get('/expenses', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-        category_id: effectiveCategory || undefined,
-        status: filterStatus || undefined,
-        start_date: filterDateStart || undefined,
-        end_date: filterDateEnd || undefined,
-        min_amount: filterAmountMin || undefined,
-        max_amount: filterAmountMax || undefined,
-        user_id: filterCreatedBy || undefined,
-      }
-    }).then(r => r.data),
+    queryFn: () => expenseService.getExpenses({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      category_id: effectiveCategory || undefined,
+      status: filterStatus || undefined,
+      start_date: filterDateStart || undefined,
+      end_date: filterDateEnd || undefined,
+      min_amount: filterAmountMin || undefined,
+      max_amount: filterAmountMax || undefined,
+      user_id: filterCreatedBy || undefined,
+    }),
     placeholderData: (prev) => prev,
     enabled: activeTab === 'expenses',
   })
 
   const { data: categoriesData, isLoading: loadingCategories, isFetching: fetchingCategories } = useQuery({
     queryKey: ['expense-categories-tab', page, debouncedSearch, perPage, filterStatus, sortBy, sortOrder],
-    queryFn: () => api.get('/expense-categories', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        status: filterStatus || undefined,
-        sort_by: sortBy,
-        sort_order: sortOrder
-      }
-    }).then(r => r.data),
+    queryFn: () => expenseService.getCategories({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      status: filterStatus || undefined,
+      sort_by: sortBy,
+      sort_order: sortOrder
+    }),
     placeholderData: (prev) => prev,
     enabled: activeTab === 'categories' || activeTab === 'expenses',
   })
 
   const { data: registersData, isLoading: loadingRegisters, isFetching: fetchingRegisters } = useQuery({
-    queryKey: ['cash-registers-tab', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/pos/cash-registers', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryKey: ['cash-registers-tab', page, debouncedSearch, perPage, filterStatus],
+    queryFn: () => financeService.getCashRegisters({ page, search: debouncedSearch, per_page: perPage, status: filterStatus || undefined }),
     placeholderData: (prev) => prev,
     enabled: activeTab === 'registers',
   })
 
   const { data: currenciesData, isLoading: loadingCurrencies, isFetching: fetchingCurrencies } = useQuery({
-    queryKey: ['currencies-tab', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/currencies', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryKey: ['currencies-tab', page, debouncedSearch, perPage, filterStatus],
+    queryFn: () => financeService.getCurrencies({ page, search: debouncedSearch, per_page: perPage, status: filterStatus || undefined }),
     placeholderData: (prev) => prev,
     enabled: activeTab === 'currencies',
   })
 
   const { data: taxesData, isLoading: loadingTaxes, isFetching: fetchingTaxes } = useQuery({
-    queryKey: ['taxes-tab', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/taxes', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryKey: ['taxes-tab', page, debouncedSearch, perPage, filterStatus, filterType],
+    queryFn: () => financeService.getTaxes({ page, search: debouncedSearch, per_page: perPage, status: filterStatus || undefined, type: filterType || undefined }),
     placeholderData: (prev) => prev,
     enabled: activeTab === 'taxes',
+  })
+
+  const { data: paymentMethodsData, isLoading: loadingPaymentMethods, isFetching: fetchingPaymentMethods } = useQuery({
+    queryKey: ['payment-methods-tab', page, debouncedSearch, perPage, filterStatus, filterType],
+    queryFn: () => financeService.getPaymentMethods({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      status: filterStatus || undefined,
+      type: filterType || undefined,
+    }),
+    placeholderData: (prev) => prev,
+    enabled: activeTab === 'payment_methods',
+  })
+
+  const { data: transactionsData, isLoading: loadingTransactions, isFetching: fetchingTransactions } = useQuery({
+    queryKey: ['transactions-tab', page, debouncedSearch, perPage, filterType],
+    queryFn: () => financeService.getTransactions({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      type: filterType || undefined,
+    }),
+    placeholderData: (prev) => prev,
+    enabled: activeTab === 'transactions',
   })
 
   const expenses = expensesData?.data ?? []
@@ -258,41 +322,37 @@ const FinancePage: React.FC = () => {
   const registers = registersData?.data ?? []
   const currencies = currenciesData?.data ?? []
   const taxes = taxesData?.data ?? []
+  const paymentMethods = paymentMethodsData?.data ?? []
+  const transactions = transactionsData?.data ?? []
 
   // Stats & Analytics Queries
   const { data: financeAnalytics } = useQuery({
     queryKey: ['finance-analytics'],
-    queryFn: () => api.get('/finance/analytics').then(r => r.data.data),
+    queryFn: () => financeService.getAnalytics(),
   })
 
   const { data: allExpenses } = useQuery({
     queryKey: ['all-expenses-stats'],
-    queryFn: () => api.get('/expenses', { params: { per_page: 1000 } }).then(r => r.data.data ?? []),
+    queryFn: () => expenseService.getExpenses({ per_page: 1000 }).then(r => r.data ?? []),
   })
 
   const { data: allRegisters } = useQuery({
     queryKey: ['all-registers-stats'],
-    queryFn: () => api.get('/pos/cash-registers', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => financeService.getCashRegisters({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: allSales } = useQuery({
     queryKey: ['all-sales-stats-finance'],
-    queryFn: () => api.get('/sales', { params: { per_page: 1000 } }).then(r => r.data.data ?? []),
+    queryFn: () => salesService.list({ per_page: 1000 }).then(r => r.data ?? []),
   })
 
   // Mutations
   const saveMutation = useMutation({
     mutationFn: (payload: any) => {
-      const endpoint =
-        activeTab === 'expenses' ? '/expenses' :
-        activeTab === 'categories' ? '/expense-categories' :
-        activeTab === 'registers' ? '/pos/cash-registers' :
-        activeTab === 'currencies' ? '/currencies' : '/taxes'
-
       if (editingItem) {
-        return api.put(`${endpoint}/${editingItem.id}`, payload)
+        return financeService.updateItemByTab(activeTab, editingItem.id, payload)
       } else {
-        return api.post(endpoint, { ...payload, company_id: 1 })
+        return financeService.createItemByTab(activeTab, { ...payload, company_id: 1 })
       }
     },
     onSuccess: () => {
@@ -308,14 +368,7 @@ const FinancePage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => {
-      const endpoint =
-        activeTab === 'expenses' ? '/expenses' :
-        activeTab === 'categories' ? '/expense-categories' :
-        activeTab === 'registers' ? '/pos/cash-registers' :
-        activeTab === 'currencies' ? '/currencies' : '/taxes'
-      return api.delete(`${endpoint}/${id}`)
-    },
+    mutationFn: (id: number) => financeService.deleteItemByTab(activeTab, id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [`${activeTab}-tab`] })
       qc.invalidateQueries({ queryKey: ['all-expenses-stats'] })
@@ -326,6 +379,55 @@ const FinancePage: React.FC = () => {
       adjustAfterDelete(1)
     },
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('finance.delete_error', 'Failed to delete record.'))
+  })
+
+  const togglePaymentMethodStatusMutation = useMutation({
+    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
+      financeService.updatePaymentMethod(id, { is_active: active }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-methods-tab'] })
+      toast.success(t('common.saveSuccess', 'Status updated.'))
+    },
+    onError: () => toast.error(t('finance.save_error', 'Failed to update status.'))
+  })
+
+  // Modal states for Official Voucher Printing & Register Shift Close
+  const [printExpenseModalItem, setPrintExpenseModalItem] = useState<any | null>(null)
+  const [closeRegisterModalItem, setCloseRegisterModalItem] = useState<any | null>(null)
+
+  // Expense Approval / Rejection Mutation
+  const updateExpenseStatusMutation = useMutation({
+    mutationFn: ({ id, status, reason }: { id: number; status: 'approved' | 'rejected'; reason?: string }) =>
+      expenseService.updateStatus(id, status, reason),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['expenses-tab'] })
+      qc.invalidateQueries({ queryKey: ['all-expenses-stats'] })
+      qc.invalidateQueries({ queryKey: ['finance-analytics'] })
+      toast.success(
+        vars.status === 'approved'
+          ? t('finance.approve_success', 'Expense approved successfully.')
+          : t('finance.reject_success', 'Expense rejected.')
+      )
+    },
+    onError: () => toast.error(t('finance.save_error', 'Failed to update expense status.'))
+  })
+
+  // Cash Register Shift Close & Reconciliation Mutation
+  const closeRegisterMutation = useMutation({
+    mutationFn: ({ id, closingBalance, note, actualCash }: { id: number; closingBalance: number; note: string; actualCash: number }) =>
+      financeService.updateCashRegister(id, {
+        status: 'closed',
+        closing_balance: actualCash,
+        closing_note: note,
+        closed_at: new Date().toISOString(),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['registers-tab'] })
+      qc.invalidateQueries({ queryKey: ['all-registers-stats'] })
+      toast.success(t('finance.close_register_success', 'Cash register shift closed successfully.'))
+      setCloseRegisterModalItem(null)
+    },
+    onError: () => toast.error(t('finance.save_error', 'Failed to close register shift.'))
   })
 
   // Bulk Selection & Quick Category Filters for Expenses
@@ -348,7 +450,7 @@ const FinancePage: React.FC = () => {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      return api.post('/expenses/bulk-delete', { ids })
+      return expenseService.bulkDelete(ids)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses-tab'] })
@@ -380,7 +482,7 @@ const FinancePage: React.FC = () => {
 
   const bulkDeleteCategoriesMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      return api.post('/expense-categories/bulk-delete', { ids })
+      return expenseService.bulkDeleteCategories(ids)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expense-categories-tab'] })
@@ -392,46 +494,139 @@ const FinancePage: React.FC = () => {
     onError: () => toast.error(t('finance.delete_error', 'Failed to delete selected categories.'))
   })
 
-  const handleExportExpenses = () => {
-    const toastId = toast.info(t('common.exporting', 'Exporting expenses dataset...'))
+  const handleExportCsv = () => {
+    const toastId = toast.info(t('finance.export_generating', 'Generating export... download will begin shortly.'))
     setTimeout(() => {
       try {
-        const headers = [
-          t('finance.title_col', 'Title'),
-          t('finance.category_col', 'Category'),
-          t('finance.amount_col', 'Amount ($)'),
-          t('finance.date_col', 'Date'),
-          t('finance.status_col', 'Status'),
-          t('finance.reference_number', 'Reference #'),
-          t('finance.description_col', 'Description'),
-        ]
-        const rows = (expenses || []).map((exp: any) => [
-          exp.title || `Expense #${exp.id}`,
-          exp.category?.name || 'General',
-          exp.amount || 0,
-          exp.date || '',
-          exp.status || 'approved',
-          exp.reference_number || `EXP-${String(exp.id).padStart(5, '0')}`,
-          exp.description || '',
-        ])
-        downloadCsv('expenses', headers, rows)
+        let headers: string[] = []
+        let rows: (string | number | boolean | null | undefined)[][] = []
+
+        if (activeTab === 'categories') {
+          headers = [
+            t('finance.code_col', 'Code'),
+            t('finance.name_col', 'Name'),
+            t('finance.description_col', 'Description'),
+            t('finance.status_col', 'Status'),
+          ]
+          rows = (categories || []).map((cat: any) => [
+            cat.code || '',
+            cat.name || '',
+            cat.description || '',
+            cat.is_active ? t('finance.status_active', 'Active') : t('finance.status_inactive', 'Inactive'),
+          ])
+        } else if (activeTab === 'registers') {
+          headers = [
+            t('finance.register_name', 'Register Name'),
+            t('finance.opening_balance', 'Opening Balance'),
+            t('finance.closing_balance', 'Closing Balance'),
+            t('finance.cash_sales', 'Cash Sales'),
+            t('finance.status_col', 'Status'),
+          ]
+          rows = (registers || []).map((reg: any) => [
+            reg.title || reg.name || `Register #${reg.id}`,
+            Number(reg.opening_balance || 0).toFixed(2),
+            Number(reg.closing_balance || 0).toFixed(2),
+            Number(reg.cash_sales_amount || 0).toFixed(2),
+            reg.status === 'open' ? t('finance.status_open', 'Open') : t('finance.status_closed', 'Closed'),
+          ])
+        } else if (activeTab === 'transactions') {
+          headers = [
+            t('finance.txn_id', 'Transaction ID'),
+            t('finance.type_col', 'Type'),
+            t('finance.amount_col', 'Amount'),
+            t('finance.company_col', 'Company'),
+            t('finance.payment_method', 'Payment Method'),
+            t('finance.ref_col', 'Reference'),
+            t('finance.date_col', 'Date'),
+          ]
+          rows = (transactions || []).map((txn: any) => [
+            txn.id,
+            txn.type === 'debit' || txn.type === 'sale' ? t('finance.type_debit', 'Debit') : t('finance.type_credit', 'Credit'),
+            Number(txn.amount || 0).toFixed(2),
+            txn.company?.name || `Company #${txn.company_id}`,
+            txn.payment_method?.name || '-',
+            txn.reference_type ? `${txn.reference_type.split('\\').pop()} #${txn.reference_id}` : '-',
+            txn.created_at ? new Date(txn.created_at).toLocaleDateString() : '',
+          ])
+        } else if (activeTab === 'payment_methods') {
+          headers = [
+            t('finance.method_name', 'Method Name'),
+            t('finance.code_col', 'Code'),
+            t('finance.type_col', 'Type'),
+            t('finance.fee_col', 'Fees'),
+            t('finance.status_col', 'Status'),
+          ]
+          rows = (paymentMethods || []).map((pm: any) => [
+            pm.name || '',
+            pm.code || '',
+            t(`finance.pm_type_${pm.type || 'cash'}`, pm.type || 'Cash'),
+            Number(pm.fee_percent) === 0 && Number(pm.fee_fixed) === 0
+              ? t('finance.fee_free', 'Free')
+              : `${Number(pm.fee_percent) || 0}% + $${Number(pm.fee_fixed || 0).toFixed(2)}`,
+            pm.is_active ? t('finance.status_active', 'Active') : t('finance.status_inactive', 'Inactive'),
+          ])
+        } else if (activeTab === 'currencies') {
+          headers = [
+            t('finance.code_col', 'Code'),
+            t('finance.currency_name', 'Currency Name'),
+            t('finance.symbol', 'Symbol'),
+            t('finance.exchange_rate', 'Exchange Rate'),
+            t('finance.status_col', 'Status'),
+          ]
+          rows = (currencies || []).map((cur: any) => [
+            cur.code || '',
+            cur.name || '',
+            cur.symbol || '',
+            cur.exchange_rate || 1,
+            cur.is_active ? t('finance.status_active', 'Active') : t('finance.status_inactive', 'Inactive'),
+          ])
+        } else if (activeTab === 'taxes') {
+          headers = [
+            t('finance.tax_rule_name', 'Tax Rule Name'),
+            t('finance.tax_rate', 'Tax Rate (%)'),
+            t('finance.type_col', 'Type'),
+            t('finance.status_col', 'Status'),
+          ]
+          rows = (taxes || []).map((tax: any) => [
+            tax.name || '',
+            tax.rate || 0,
+            tax.type === 'percentage' ? t('finance.tax_type_percentage', 'Percentage') : t('finance.tax_type_fixed', 'Fixed'),
+            tax.is_active ? t('finance.status_active', 'Active') : t('finance.status_inactive', 'Inactive'),
+          ])
+        } else {
+          // default expenses tab
+          headers = [
+            t('finance.title_col', 'Title'),
+            t('finance.category_col', 'Category'),
+            t('finance.amount_col', 'Amount ($)'),
+            t('finance.date_col', 'Date'),
+            t('finance.status_col', 'Status'),
+            t('finance.reference_number', 'Reference #'),
+            t('finance.description_col', 'Description'),
+          ]
+          rows = (expenses || []).map((exp: any) => [
+            exp.title || `Expense #${exp.id}`,
+            exp.category?.name || 'General',
+            exp.amount || 0,
+            exp.date || '',
+            exp.status === 'approved' ? t('finance.status_approved', 'Approved') : exp.status === 'pending' ? t('finance.status_pending', 'Pending') : exp.status || 'approved',
+            exp.reference_number || `EXP-${String(exp.id).padStart(5, '0')}`,
+            exp.description || '',
+          ])
+        }
+
+        downloadCsv(`finance_${activeTab}`, headers, rows)
         toast.dismiss(toastId)
-        toast.success(t('finance.export_success', 'Expenses exported successfully.'))
+        toast.success(t('finance.export_success', 'Dataset exported successfully.'))
       } catch {
         toast.dismiss(toastId)
-        toast.error(t('finance.export_error', 'Failed to export expenses.'))
+        toast.error(t('finance.export_error', 'Failed to export dataset.'))
       }
     }, 300)
   }
 
   const handleAddActionClick = () => {
-    if (activeTab === 'transactions') {
-      setTxnAddTrigger(prev => prev + 1)
-    } else if (activeTab === 'payment_methods') {
-      setPmAddTrigger(prev => prev + 1)
-    } else {
-      openCreateDrawer()
-    }
+    openCreateDrawer()
   }
 
   const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -459,6 +654,24 @@ const FinancePage: React.FC = () => {
     })
     setCurrencyForm({ name: '', code: '', symbol: '', exchange_rate: '1.00', is_active: true, is_default: false })
     setTaxForm({ name: '', rate: '', type: 'percentage', is_active: true })
+    setPaymentMethodForm({
+      name: '',
+      code: '',
+      type: 'cash',
+      fee_percent: '0.00',
+      fee_fixed: '0.00',
+      available_pos: true,
+      available_online: true,
+      is_active: true
+    })
+    setTransactionForm({
+      type: 'debit',
+      amount: '',
+      description: '',
+      reference_type: '',
+      reference_id: '',
+      payment_method_id: '',
+    })
     setDrawerOpen(true)
   }
 
@@ -503,6 +716,26 @@ const FinancePage: React.FC = () => {
         type: row.type || 'percentage',
         is_active: !!row.is_active,
       })
+    } else if (activeTab === 'payment_methods') {
+      setPaymentMethodForm({
+        name: row.name || '',
+        code: row.code || '',
+        type: row.type || 'cash',
+        fee_percent: String(row.fee_percent ?? '0.00'),
+        fee_fixed: String(row.fee_fixed ?? '0.00'),
+        available_pos: !!row.available_pos,
+        available_online: !!row.available_online,
+        is_active: !!row.is_active,
+      })
+    } else if (activeTab === 'transactions') {
+      setTransactionForm({
+        type: row.type || 'debit',
+        amount: String(row.amount ?? ''),
+        description: row.description || '',
+        reference_type: row.reference_type || '',
+        reference_id: String(row.reference_id ?? ''),
+        payment_method_id: String(row.payment_method_id ?? ''),
+      })
     }
     setDrawerOpen(true)
   }
@@ -539,8 +772,7 @@ const FinancePage: React.FC = () => {
         description: categoryForm.description || null,
         is_active: categoryForm.is_active,
       }
-    }
- else if (activeTab === 'registers') {
+    } else if (activeTab === 'registers') {
       payload = {
         title: registerForm.title,
         status: registerForm.status,
@@ -565,6 +797,26 @@ const FinancePage: React.FC = () => {
         rate: Number(taxForm.rate),
         type: taxForm.type,
         is_active: taxForm.is_active,
+      }
+    } else if (activeTab === 'payment_methods') {
+      payload = {
+        name: paymentMethodForm.name,
+        code: paymentMethodForm.code,
+        type: paymentMethodForm.type,
+        fee_percent: Number(paymentMethodForm.fee_percent || 0),
+        fee_fixed: Number(paymentMethodForm.fee_fixed || 0),
+        available_pos: paymentMethodForm.available_pos,
+        available_online: paymentMethodForm.available_online,
+        is_active: paymentMethodForm.is_active,
+      }
+    } else if (activeTab === 'transactions') {
+      payload = {
+        type: transactionForm.type,
+        amount: Number(transactionForm.amount),
+        description: transactionForm.description || null,
+        reference_type: transactionForm.reference_type || null,
+        reference_id: transactionForm.reference_id ? Number(transactionForm.reference_id) : null,
+        payment_method_id: transactionForm.payment_method_id ? Number(transactionForm.payment_method_id) : null,
       }
     }
     saveMutation.mutate(payload)
@@ -622,6 +874,7 @@ const FinancePage: React.FC = () => {
           { key: 'expense_amount', label: t('finance.amount_col', 'Amount') },
           { key: 'expense_date', label: t('finance.date_col', 'Date') },
           { key: 'expense_description', label: t('finance.description_col', 'Description') },
+          { key: 'expense_receipt', label: t('finance.receipt', 'Receipt') },
         ]
       case 'categories':
         return [
@@ -636,6 +889,26 @@ const FinancePage: React.FC = () => {
           { key: 'register_title', label: t('finance.register_title', 'Register Title') },
           { key: 'register_balance', label: t('finance.current_balance', 'Current Balance') },
           { key: 'register_status', label: t('finance.status_col', 'Status') },
+        ]
+      case 'payment_methods':
+        return [
+          { key: 'pm_name', label: t('finance.method_name', 'Method Name') },
+          { key: 'pm_code', label: t('finance.code_col', 'Code') },
+          { key: 'pm_type', label: t('finance.type_col', 'Type') },
+          { key: 'pm_fee', label: t('finance.fee_col', 'Fee') },
+          { key: 'pm_channels', label: t('finance.channels_col', 'Channels') },
+          { key: 'pm_status', label: t('finance.status_col', 'Status') },
+        ]
+      case 'transactions':
+        return [
+          { key: 'txn_id', label: 'ID' },
+          { key: 'txn_type', label: t('finance.type_col', 'Type') },
+          { key: 'txn_amount', label: t('finance.amount_col', 'Amount') },
+          { key: 'txn_company', label: t('finance.company_col', 'Company') },
+          { key: 'txn_method', label: t('finance.payment_method', 'Payment Method') },
+          { key: 'txn_ref', label: t('finance.ref_col', 'Reference') },
+          { key: 'txn_description', label: t('finance.description_col', 'Description') },
+          { key: 'txn_date', label: t('finance.date_col', 'Date') },
         ]
       case 'currencies':
         return [
@@ -661,18 +934,24 @@ const FinancePage: React.FC = () => {
     activeTab === 'expenses' ? loadingExpenses :
     activeTab === 'categories' ? loadingCategories :
     activeTab === 'registers' ? loadingRegisters :
+    activeTab === 'payment_methods' ? loadingPaymentMethods :
+    activeTab === 'transactions' ? loadingTransactions :
     activeTab === 'currencies' ? loadingCurrencies : loadingTaxes
 
   const isFetching =
     activeTab === 'expenses' ? fetchingExpenses :
     activeTab === 'categories' ? fetchingCategories :
     activeTab === 'registers' ? fetchingRegisters :
+    activeTab === 'payment_methods' ? fetchingPaymentMethods :
+    activeTab === 'transactions' ? fetchingTransactions :
     activeTab === 'currencies' ? fetchingCurrencies : fetchingTaxes
 
   const paginationData =
     activeTab === 'expenses' ? expensesData?.pagination :
     activeTab === 'categories' ? categoriesData?.pagination :
     activeTab === 'registers' ? registersData?.pagination :
+    activeTab === 'payment_methods' ? paymentMethodsData?.pagination :
+    activeTab === 'transactions' ? transactionsData?.pagination :
     activeTab === 'currencies' ? currenciesData?.pagination : taxesData?.pagination
 
   const pagination = paginationData ?? { total: 0, current_page: 1, last_page: 1 }
@@ -695,31 +974,26 @@ const FinancePage: React.FC = () => {
             {t('finance.subtitle_desc', 'Track sales revenue, operating expenses, cash registers, multi-currency rates, and taxes across the Enterprise POS system.')}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {activeTab === 'expenses' && (
-            <button
-              onClick={handleExportExpenses}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
-            >
-              <Download size={15} />
-              <span>{t('finance.export_csv', 'Export CSV')}</span>
-            </button>
-          )}
-          <button
+        <HeaderActionsGroup>
+          <ActionButton
+            onClick={() => navigate('/reports/sales')}
+            label={t('finance.financial_reports', 'Financial Reports')}
+            icon={<FileBarChart size={15} className="text-primary" />}
+            variant="outline"
+          />
+          <ImportButton
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs cursor-pointer"
-          >
-            <Upload size={15} />
-            <span>{t('finance.import_csv', 'Import CSV')}</span>
-          </button>
-          <button
+            label={t('finance.import_csv', 'Import CSV')}
+          />
+          <ExportButton
+            onClick={handleExportCsv}
+            label={t('finance.export_csv', 'Export CSV')}
+          />
+          <AddButton
             onClick={handleAddActionClick}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
-          >
-            <Plus size={16} />
-            <span>{getAddButtonLabel()}</span>
-          </button>
-        </div>
+            label={getAddButtonLabel()}
+          />
+        </HeaderActionsGroup>
       </div>
 
       {/* Clean Analytics Display Cards */}
@@ -728,6 +1002,12 @@ const FinancePage: React.FC = () => {
         allSales={allSales}
         allExpenses={allExpenses}
         allRegisters={allRegisters}
+      />
+
+      {/* Interactive Revenue vs Expense Trends Chart */}
+      <FinanceTrendsChart
+        allSales={allSales}
+        allExpenses={allExpenses}
       />
 
       {/* Workspace Tabs Navigation (Matching Product & Customer Catalog Design) */}
@@ -755,11 +1035,13 @@ const FinancePage: React.FC = () => {
             id: 'transactions',
             label: t('finance.tab_transactions', t('finance.transactions', 'Transactions')),
             icon: DollarSign,
+            count: transactionsData?.pagination?.total ?? (transactions?.length || 0),
           },
           {
             id: 'payment_methods',
             label: t('finance.tab_payment_methods', t('finance.payment_methods', 'Payment Methods')),
             icon: CreditCard,
+            count: paymentMethodsData?.pagination?.total ?? (paymentMethods?.length || 0),
           },
           {
             id: 'currencies',
@@ -775,40 +1057,52 @@ const FinancePage: React.FC = () => {
           },
         ]}
         activeTab={activeTab}
-        onChange={(tabId) => setActiveTab(tabId as TabType)}
+        onChange={(tabId) => {
+          setActiveTab(tabId as TabType)
+          handleResetFilters()
+        }}
       />
 
-      {/* Content Tabs */}
-      {activeTab === 'transactions' ? (
-        <TransactionsPage isTab triggerAdd={txnAddTrigger} />
-      ) : activeTab === 'payment_methods' ? (
-        <PaymentMethodsPage isTab triggerAdd={pmAddTrigger} />
-      ) : (
-        <>
-          {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder={t('finance.search_placeholder', 'Search ledger records...')}
-                  className="w-full h-10 pl-9 pr-8 text-xs sm:text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground shadow-xs"
-                />
-                {search && (
-                  <button
-                    onClick={() => { setSearch(''); setPage(1); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
-                    type="button"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
+      {/* Unified Toolbar */}
+      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          <div className="relative flex-1 min-w-[240px] sm:max-w-xs">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder={
+                activeTab === 'taxes'
+                  ? t('finance.search_taxes', 'Search tax rules...')
+                  : activeTab === 'currencies'
+                  ? t('finance.search_currencies', 'Search currencies...')
+                  : activeTab === 'registers'
+                  ? t('finance.search_registers', 'Search registers...')
+                  : activeTab === 'categories'
+                  ? t('finance.search_categories', 'Search categories...')
+                  : activeTab === 'payment_methods'
+                  ? t('finance.search_payment_methods', 'Search payment methods...')
+                  : activeTab === 'transactions'
+                  ? t('finance.search_transactions', 'Search transactions (description, reference)...')
+                  : t('finance.search_placeholder', 'Search ledger records...')
+              }
+              className="w-full h-10 pl-9 pr-8 text-xs sm:text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground shadow-xs"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); setPage(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                type="button"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
 
-              {/* Standard Filter Button with equal h-10 height */}
+          {/* FOR EXPENSES TAB: Rich Drawer Filter Button */}
+          {activeTab === 'expenses' && (
+            <>
               <button
                 type="button"
                 onClick={() => setFilterDrawerOpen(true)}
@@ -827,129 +1121,275 @@ const FinancePage: React.FC = () => {
                   <span className="w-2 h-2 rounded-full bg-primary" />
                 )}
               </button>
-
               <ResetButton onClick={handleResetFilters} />
-            </div>
+            </>
+          )}
 
-            <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-              {/* Standard Global Refresh Button */}
-              <button
-                type="button"
-                onClick={() => qc.invalidateQueries({ queryKey: [`${activeTab}-tab`] })}
-                className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
-                title={t('finance.refresh', t('common.refresh', 'Refresh'))}
+          {/* FOR CATEGORIES, CURRENCIES: Simple Inline Status Filter Dropdown */}
+          {(activeTab === 'categories' || activeTab === 'currencies') && (
+            <>
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[130px]"
               >
-                <RefreshCw size={15} />
-              </button>
+                <option value="">{t('finance.all_status', 'All Statuses')}</option>
+                <option value="active">{t('finance.status_active', 'Active')}</option>
+                <option value="inactive">{t('finance.status_inactive', 'Inactive')}</option>
+              </select>
 
-              {/* Standard Global Column Settings Popover */}
-              <ColumnSettingsPopover
-                columns={currentTabColumns}
-                visibleColumns={visibleColumns}
-                onChange={setVisibleColumns}
-              />
-            </div>
-          </div>
-
-          {activeTab === 'expenses' && (
-            <>
-              <BulkSelectionBanner
-                selectedCount={selectedExpenseIds.length}
-                onDelete={() => setBulkDeleteConfirmOpen(true)}
-                onClear={() => setSelectedExpenseIds([])}
-                deleteLoading={bulkDeleteMutation.isPending}
-                deleteLabel={t('finance.delete_selected', t('common.deleteSelected', 'Delete Selected'))}
-                clearLabel={t('common.cancel', 'Cancel')}
-              />
-              <ExpensesTab
-                expenses={expenses}
-                allExpenses={allExpenses}
-                categories={categories}
-                isLoading={isLoading}
-                isFetching={isFetching}
-                visibleColumns={visibleColumns}
-                openEditDrawer={openEditDrawer}
-                handleDelete={handleDelete}
-                renderSortIcon={renderSortIcon}
-                handleSort={handleSort}
-                selectedRows={selectedExpenseIds}
-                handleSelectRow={handleSelectExpenseRow}
-                handleSelectAll={handleSelectAllExpenses}
-                activeCategoryFilter={activeCategoryFilter}
-                setActiveCategoryFilter={setActiveCategoryFilter}
-              />
+              {(Boolean(filterStatus) || Boolean(search)) && (
+                <ResetButton onClick={handleResetFilters} />
+              )}
             </>
           )}
 
-          {activeTab === 'categories' && (
-            <>
-              <BulkSelectionBanner
-                selectedCount={selectedCategoryIds.length}
-                onDelete={() => setBulkDeleteCategoryConfirmOpen(true)}
-                onClear={() => setSelectedCategoryIds([])}
-                deleteLoading={bulkDeleteCategoriesMutation.isPending}
-                deleteLabel={t('finance.delete_selected_categories', t('common.deleteSelected', 'Delete Selected'))}
-                clearLabel={t('common.cancel', 'Cancel')}
-              />
-              <CategoriesTab
-                categories={categories}
-                isLoading={isLoading}
-                isFetching={isFetching}
-                visibleColumns={visibleColumns}
-                openEditDrawer={openEditDrawer}
-                handleDelete={handleDelete}
-                renderSortIcon={renderSortIcon}
-                handleSort={handleSort}
-                selectedRows={selectedCategoryIds}
-                handleSelectRow={handleSelectCategoryRow}
-                handleSelectAll={handleSelectAllCategories}
-              />
-            </>
-          )}
-
+          {/* FOR REGISTERS: Simple Inline Status Filter Dropdown (Open / Closed) */}
           {activeTab === 'registers' && (
-            <RegistersTab
-              registers={registers}
-              isLoading={isLoading}
-              isFetching={isFetching}
-              visibleColumns={visibleColumns}
-              openEditDrawer={openEditDrawer}
-              handleDelete={handleDelete}
-            />
+            <>
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[140px]"
+              >
+                <option value="">{t('finance.all_status', 'All Statuses')}</option>
+                <option value="open">{t('finance.status_open', 'Open')}</option>
+                <option value="closed">{t('finance.status_closed', 'Closed')}</option>
+              </select>
+
+              {(Boolean(filterStatus) || Boolean(search)) && (
+                <ResetButton onClick={handleResetFilters} />
+              )}
+            </>
           )}
 
-          {activeTab === 'currencies' && (
-            <CurrenciesTab
-              currencies={currencies}
-              isLoading={isLoading}
-              isFetching={isFetching}
-              visibleColumns={visibleColumns}
-              openEditDrawer={openEditDrawer}
-              handleDelete={handleDelete}
-            />
+          {/* FOR TRANSACTIONS: Simple Inline Type Filter Dropdown */}
+          {activeTab === 'transactions' && (
+            <>
+              <select
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[140px]"
+              >
+                <option value="">{t('finance.all_types', 'All Types')}</option>
+                <option value="debit">{t('finance.type_debit', 'Debit')}</option>
+                <option value="credit">{t('finance.type_credit', 'Credit')}</option>
+              </select>
+
+              {(Boolean(filterType) || Boolean(search)) && (
+                <ResetButton onClick={handleResetFilters} />
+              )}
+            </>
           )}
 
+          {/* FOR PAYMENT METHODS: Simple Inline Type & Status Filter Dropdowns */}
+          {activeTab === 'payment_methods' && (
+            <>
+              <select
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[150px]"
+              >
+                <option value="">{t('finance.all_pm_types', 'All Payment Methods')}</option>
+                <option value="cash">{t('finance.pm_type_cash', 'Cash')}</option>
+                <option value="bank_transfer">{t('finance.pm_type_bank_transfer', 'Bank Transfer')}</option>
+                <option value="credit_card">{t('finance.pm_type_credit_card', 'Credit Card')}</option>
+                <option value="debit_card">{t('finance.pm_type_debit_card', 'Debit Card')}</option>
+                <option value="ewallet">{t('finance.pm_type_ewallet', 'E-Wallet')}</option>
+                <option value="qr_code">{t('finance.pm_type_qr_code', 'QR Code (KHQR)')}</option>
+                <option value="qris">{t('finance.pm_type_qris', 'KHQR / Static QR')}</option>
+              </select>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[130px]"
+              >
+                <option value="">{t('finance.all_status', 'All Statuses')}</option>
+                <option value="active">{t('finance.status_active', 'Active')}</option>
+                <option value="inactive">{t('finance.status_inactive', 'Inactive')}</option>
+              </select>
+
+              {(Boolean(filterStatus) || Boolean(filterType) || Boolean(search)) && (
+                <ResetButton onClick={handleResetFilters} />
+              )}
+            </>
+          )}
+
+          {/* FOR TAXES: Simple Inline Status & Type Filter Dropdowns */}
           {activeTab === 'taxes' && (
-            <TaxesTab
-              taxes={taxes}
-              isLoading={isLoading}
-              isFetching={isFetching}
-              visibleColumns={visibleColumns}
-              openEditDrawer={openEditDrawer}
-              handleDelete={handleDelete}
-            />
-          )}
+            <>
+              <select
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[140px]"
+              >
+                <option value="">{t('finance.all_tax_types', 'All Tax Types')}</option>
+                <option value="fixed">{t('finance.tax_type_fixed', 'Fixed')}</option>
+                <option value="percentage">{t('finance.tax_type_percentage', 'Percentage')}</option>
+              </select>
 
-          <Pagination
-            currentPage={pagination.current_page}
-            lastPage={pagination.last_page}
-            total={pagination.total}
-            perPage={perPage}
-            onPageChange={setPage}
-            onPerPageChange={setPerPage}
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+                className="h-10 px-3 text-xs sm:text-sm font-medium rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-xs min-w-[130px]"
+              >
+                <option value="">{t('finance.all_status', 'All Statuses')}</option>
+                <option value="active">{t('finance.status_active', 'Active')}</option>
+                <option value="inactive">{t('finance.status_inactive', 'Inactive')}</option>
+              </select>
+
+              {(Boolean(filterStatus) || Boolean(filterType) || Boolean(search)) && (
+                <ResetButton onClick={handleResetFilters} />
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
+          {/* Standard Global Refresh Button */}
+          <button
+            type="button"
+            onClick={() => qc.invalidateQueries({ queryKey: [`${activeTab}-tab`] })}
+            className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+            title={t('finance.refresh', t('common.refresh', 'Refresh'))}
+          >
+            <RefreshCw size={15} />
+          </button>
+
+          {/* Standard Global Column Settings Popover */}
+          <ColumnSettingsPopover
+            columns={currentTabColumns}
+            visibleColumns={visibleColumns}
+            onChange={setVisibleColumns}
           />
-        </>
+        </div>
+      </div>
+
+      {activeTab === 'expenses' && (
+        <div className="space-y-4">
+          <BulkSelectionBanner
+            selectedCount={selectedExpenseIds.length}
+            onDelete={() => setBulkDeleteConfirmOpen(true)}
+            onClear={() => setSelectedExpenseIds([])}
+            deleteLoading={bulkDeleteMutation.isPending}
+            deleteLabel={t('finance.delete_selected', t('common.deleteSelected', 'Delete Selected'))}
+            clearLabel={t('common.cancel', 'Cancel')}
+          />
+          <ExpensesTab
+            expenses={expenses}
+            allExpenses={allExpenses}
+            categories={categories}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            visibleColumns={visibleColumns}
+            openEditDrawer={openEditDrawer}
+            handleDelete={handleDelete}
+            renderSortIcon={renderSortIcon}
+            handleSort={handleSort}
+            selectedRows={selectedExpenseIds}
+            handleSelectRow={handleSelectExpenseRow}
+            handleSelectAll={handleSelectAllExpenses}
+            activeCategoryFilter={activeCategoryFilter}
+            setActiveCategoryFilter={setActiveCategoryFilter}
+            onPrintVoucher={(exp) => setPrintExpenseModalItem(exp)}
+            onApprove={(id) => updateExpenseStatusMutation.mutate({ id, status: 'approved' })}
+            onReject={(id) => updateExpenseStatusMutation.mutate({ id, status: 'rejected' })}
+          />
+        </div>
       )}
+
+      {activeTab === 'categories' && (
+        <div className="space-y-4">
+          <BulkSelectionBanner
+            selectedCount={selectedCategoryIds.length}
+            onDelete={() => setBulkDeleteCategoryConfirmOpen(true)}
+            onClear={() => setSelectedCategoryIds([])}
+            deleteLoading={bulkDeleteCategoriesMutation.isPending}
+            deleteLabel={t('finance.delete_selected_categories', t('common.deleteSelected', 'Delete Selected'))}
+            clearLabel={t('common.cancel', 'Cancel')}
+          />
+          <CategoriesTab
+            categories={categories}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            visibleColumns={visibleColumns}
+            openEditDrawer={openEditDrawer}
+            handleDelete={handleDelete}
+            renderSortIcon={renderSortIcon}
+            handleSort={handleSort}
+            selectedRows={selectedCategoryIds}
+            handleSelectRow={handleSelectCategoryRow}
+            handleSelectAll={handleSelectAllCategories}
+          />
+        </div>
+      )}
+
+      {activeTab === 'registers' && (
+        <RegistersTab
+          registers={registers}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          visibleColumns={visibleColumns}
+          openEditDrawer={openEditDrawer}
+          handleDelete={handleDelete}
+          onCloseShift={(reg) => setCloseRegisterModalItem(reg)}
+        />
+      )}
+
+      {activeTab === 'payment_methods' && (
+        <PaymentMethodsTab
+          methods={paymentMethods}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          visibleColumns={visibleColumns}
+          openEditDrawer={openEditDrawer}
+          handleDelete={handleDelete}
+          toggleStatus={(method) => togglePaymentMethodStatusMutation.mutate({ id: method.id, active: !method.is_active })}
+        />
+      )}
+
+      {activeTab === 'transactions' && (
+        <TransactionsTab
+          transactions={transactions}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          visibleColumns={visibleColumns}
+          openEditDrawer={openEditDrawer}
+          handleDelete={handleDelete}
+        />
+      )}
+
+      {activeTab === 'currencies' && (
+        <CurrenciesTab
+          currencies={currencies}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          visibleColumns={visibleColumns}
+          openEditDrawer={openEditDrawer}
+          handleDelete={handleDelete}
+        />
+      )}
+
+      {activeTab === 'taxes' && (
+        <TaxesTab
+          taxes={taxes}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          visibleColumns={visibleColumns}
+          openEditDrawer={openEditDrawer}
+          handleDelete={handleDelete}
+        />
+      )}
+
+      <Pagination
+        currentPage={pagination.current_page}
+        lastPage={pagination.last_page}
+        total={pagination.total}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={setPerPage}
+      />
 
       {/* Filter Drawer */}
       <FinanceFilterDrawer
@@ -1000,6 +1440,10 @@ const FinancePage: React.FC = () => {
         setCurrencyForm={setCurrencyForm}
         taxForm={taxForm}
         setTaxForm={setTaxForm}
+        paymentMethodForm={paymentMethodForm}
+        setPaymentMethodForm={setPaymentMethodForm}
+        transactionForm={transactionForm}
+        setTransactionForm={setTransactionForm}
       />
 
       {/* Import Modal */}
@@ -1062,6 +1506,22 @@ const FinancePage: React.FC = () => {
           })
         }}
         onCancel={() => setBulkDeleteCategoryConfirmOpen(false)}
+      />
+
+      {/* Official Expense Voucher Print Modal */}
+      <ExpenseVoucherPrintModal
+        expense={printExpenseModalItem}
+        isOpen={Boolean(printExpenseModalItem)}
+        onClose={() => setPrintExpenseModalItem(null)}
+      />
+
+      {/* Cash Register Shift Close & Reconciliation Modal */}
+      <RegisterCloseModal
+        register={closeRegisterModalItem}
+        isOpen={Boolean(closeRegisterModalItem)}
+        onClose={() => setCloseRegisterModalItem(null)}
+        onConfirmClose={(data) => closeRegisterMutation.mutate(data)}
+        isSubmitting={closeRegisterMutation.isPending}
       />
     </div>
   )

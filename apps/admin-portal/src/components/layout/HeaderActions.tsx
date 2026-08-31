@@ -37,10 +37,10 @@ const HeaderActions: React.FC = () => {
       <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block" />
 
       {/* Language dropdown */}
-      <LanguageDropdown />
+      <LanguageDropdown isInNavbar={true} />
 
       {/* Dark/Light mode theme switcher */}
-      <ThemeSwitcher />
+      <ThemeSwitcher isInNavbar={true} />
 
       {/* Notifications trigger dropdown */}
       <NotificationDropdown />

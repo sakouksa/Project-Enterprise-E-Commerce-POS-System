@@ -24,7 +24,6 @@ import {
   setMonth,
   setYear
 } from 'date-fns'
-import { sound } from '@/utils/sound'
 
 export interface EnterpriseDatePickerProps {
   value?: string // format YYYY-MM-DD
@@ -139,7 +138,6 @@ export const EnterpriseDatePicker: React.FC<EnterpriseDatePickerProps> = ({
   }, [viewDate])
 
   const handleSelectDay = (day: Date) => {
-    sound.playSuccess()
     const formatted = format(day, 'yyyy-MM-dd')
     onChange?.(formatted)
     setIsOpen(false)
@@ -147,12 +145,10 @@ export const EnterpriseDatePicker: React.FC<EnterpriseDatePickerProps> = ({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation()
-    sound.playClick()
     onChange?.('')
   }
 
   const handleToday = () => {
-    sound.playSuccess()
     const today = new Date()
     setViewDate(today)
     onChange?.(format(today, 'yyyy-MM-dd'))
@@ -161,13 +157,11 @@ export const EnterpriseDatePicker: React.FC<EnterpriseDatePickerProps> = ({
 
   const handlePrevMonth = (e: React.MouseEvent) => {
     e.stopPropagation()
-    sound.playClick()
     setViewDate((prev) => subMonths(prev, 1))
   }
 
   const handleNextMonth = (e: React.MouseEvent) => {
     e.stopPropagation()
-    sound.playClick()
     setViewDate((prev) => addMonths(prev, 1))
   }
 
@@ -215,7 +209,6 @@ export const EnterpriseDatePicker: React.FC<EnterpriseDatePickerProps> = ({
         disabled={disabled}
         onClick={() => {
           if (disabled) return
-          sound.playClick()
           setIsOpen(!isOpen)
         }}
         className={`w-full h-[38px] flex items-center justify-between gap-2 px-3 py-1.5 bg-card border text-xs font-bold text-foreground rounded-xl transition-all cursor-pointer shadow-2xs ${

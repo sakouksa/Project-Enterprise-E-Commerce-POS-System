@@ -2,7 +2,6 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X,
   Truck,
   PackageCheck,
   Plus,
@@ -18,6 +17,7 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react'
+import { CloseButton } from '@/components/common'
 import type { Purchase } from '../types/purchase.types'
 
 interface ReceiveShipmentModalProps {
@@ -122,7 +122,7 @@ export const ReceiveShipmentModal: React.FC<ReceiveShipmentModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[80] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
         <motion.div
           initial={{ scale: 0.96, opacity: 0, y: 12 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -150,13 +150,7 @@ export const ReceiveShipmentModal: React.FC<ReceiveShipmentModalProps> = ({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-xl transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
+            <CloseButton onClose={onClose} size="md" color="rose" />
           </div>
 
           {/* PO Metadata & Progress Banner */}

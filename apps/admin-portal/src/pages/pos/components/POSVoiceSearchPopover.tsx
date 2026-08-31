@@ -315,10 +315,10 @@ export const POSVoiceSearchPopover: React.FC<POSVoiceSearchPopoverProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
                 <Sparkles size={13} className="text-primary" />
-                {t('aiFuzzyMatches', 'ទំនិញដែលត្រូវនឹងការស្វែងរក')}:
+                {t('aiFuzzyMatches', 'AI Matched Products')}:
               </span>
               <span className="text-[10px] font-semibold text-muted-foreground">
-                {aiMatches.length} {t('itemsFound', 'មុខ')}
+                {aiMatches.length} {t('itemsFound', 'found')}
               </span>
             </div>
 

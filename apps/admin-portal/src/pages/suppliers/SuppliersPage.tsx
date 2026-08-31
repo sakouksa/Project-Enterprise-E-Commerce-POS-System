@@ -2,23 +2,37 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Plus, Search, Edit2, Trash2, RefreshCw, X, Truck, ToggleLeft, ToggleRight,
-  Loader2, Eye, Mail, Phone, MapPin, DollarSign, BookOpen, Building,
-  ChevronUp, ChevronDown, TrendingUp, ShoppingCart, Wallet, Filter,
-  Settings, Download, Printer, ArrowLeft, Calendar, Award, AlertCircle
+  Plus, Search, Edit2, Trash2, RefreshCw, X, Truck,
+  Loader2, Eye, Mail, Phone, MapPin, DollarSign,
+  ChevronUp, ChevronDown, ShoppingCart, Filter,
+  Building2, AlertTriangle, CheckCircle2, ShieldCheck,
+  Award, Clock, CreditCard, Copy
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import api from '@/api/client'
+import { supplierService } from '@/services/supplierService'
+import { userService } from '@/services/userService'
+import { reportService } from '@/services/reportService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
-import ResetButton from '@/components/shared/ResetButton'
+import SearchInput from '@/components/shared/SearchInput'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TableActionMenu from '@/components/shared/TableActionMenu'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import StatusBadge from '@/components/common/StatusBadge'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
+import {
+  HeaderActionsGroup,
+  AddButton,
+  ExportButton,
+  FilterButton,
+  RefreshButton,
+  ResetButton,
+  EmptyState,
+} from '@/components/common'
+import { downloadCsv } from '@/utils/export'
 
 // Types & Sub-components
 import { type Supplier } from './types/supplier.types'
@@ -54,10 +68,11 @@ const SuppliersPage: React.FC = () => {
     code: true,
     contacts: true,
     location: true,
-    taxNumber: true,
+    totalPurchases: true,
+    dueBalance: true,
+    terms: true,
     status: true,
   })
-
 
   // Filters State
   const [statusFilter, setStatusFilter] = useState('')
@@ -93,14 +108,50 @@ const SuppliersPage: React.FC = () => {
     reset()
   }
 
+  const handleExportCSV = () => {
+    const infoId = toast.info(t('suppliers.toast.exportDownloading', 'Downloading supplier dataset...'))
+    setTimeout(() => {
+      try {
+        const headers = [
+          t('suppliers.tableSupplier', 'Supplier'),
+          t('suppliers.tableCode', 'Code'),
+          t('suppliers.phone', 'Phone'),
+          t('suppliers.email', 'Email'),
+          t('suppliers.tableLocation', 'Location'),
+          t('suppliers.tablePurchases', 'Total Purchases ($)'),
+          t('suppliers.tableDue', 'Outstanding AP ($)'),
+          t('suppliers.tableTerms', 'Terms'),
+          t('suppliers.status', 'Status'),
+        ]
+        const rows = (suppliers || []).map((s: Supplier) => [
+          s.name || '',
+          s.code || '',
+          s.phone || '',
+          s.email || '',
+          s.city ? `${s.city}, ${s.country || ''}` : s.address || '',
+          Number(s.total_purchases_sum ?? s.total_purchased ?? 0).toFixed(2),
+          Number(s.total_due_sum ?? s.total_due ?? s.outstanding_balance ?? 0).toFixed(2),
+          s.payment_terms || 'Net 30',
+          s.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
+        ])
+        downloadCsv('suppliers_directory', headers, rows)
+        toast.dismiss(infoId)
+        toast.success(t('suppliers.toast.exportSuccess', 'Supplier list exported successfully.'))
+      } catch (e) {
+        toast.dismiss(infoId)
+        toast.error(t('toast.error', 'Export failed'))
+      }
+    }, 300)
+  }
+
   const { data: users } = useQuery({
     queryKey: ['users-list'],
-    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: reportData } = useQuery({
     queryKey: ['purchase-dashboard-stats'],
-    queryFn: () => api.get('/purchase-report').then(r => r.data.data),
+    queryFn: () => reportService.purchaseSummary(),
   })
 
   // Suppliers Query
@@ -109,20 +160,18 @@ const SuppliersPage: React.FC = () => {
       'suppliers', page, debouncedSearch, perPage, sortBy, sortOrder,
       statusFilter, countryFilter, cityFilter, createdByFilter
     ],
-    queryFn: () => api.get('/suppliers', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-        status: statusFilter !== '' ? statusFilter : undefined,
-        is_active: statusFilter !== '' ? statusFilter : undefined,
-        country: countryFilter || undefined,
-        city: cityFilter || undefined,
-        created_by: createdByFilter || undefined
-      }
-    }).then(r => r.data),
+    queryFn: () => supplierService.list({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      status: statusFilter !== '' ? statusFilter : undefined,
+      is_active: statusFilter !== '' ? statusFilter : undefined,
+      country: countryFilter || undefined,
+      city: cityFilter || undefined,
+      created_by: createdByFilter || undefined
+    }),
     placeholderData: (prev) => prev,
   })
 
@@ -135,11 +184,9 @@ const SuppliersPage: React.FC = () => {
 
   const handleSelectAll = () => {
     if (isAllSelected) {
-      const pageIds = new Set(suppliers.map(s => s.id))
-      setSelectedRows(prev => prev.filter(id => !pageIds.has(id)))
+      setSelectedRows([])
     } else {
-      const pageIds = suppliers.map(s => s.id)
-      setSelectedRows(prev => Array.from(new Set([...prev, ...pageIds])))
+      setSelectedRows(suppliers.map(s => s.id))
     }
   }
 
@@ -151,28 +198,57 @@ const SuppliersPage: React.FC = () => {
 
   // Mutations
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/suppliers/${id}`),
+    mutationFn: (id: number) => supplierService.delete(id),
     onSuccess: () => {
+      toast.success(t('suppliers.deletedSuccess', 'Supplier deleted successfully.'))
       qc.invalidateQueries({ queryKey: ['suppliers'] })
-      qc.invalidateQueries({ queryKey: ['suppliers-list'] })
-      toast.success(t('suppliers.toast.deleteSuccess', 'Supplier deleted successfully.'))
+      qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
       setDeleteTarget(null)
-      setSelectedRows(prev => prev.filter(id => id !== deleteTarget?.id))
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('common.error', 'Failed to delete supplier.'))
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('suppliers.deletedFailed', 'Failed to delete supplier.'))
+    },
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/suppliers/bulk-delete', { ids }),
-    onSuccess: () => {
+    mutationFn: (ids: number[]) => supplierService.bulkDelete(ids),
+    onSuccess: (res) => {
+      toast.success(t('suppliers.bulkDeletedSuccess', { count: selectedRows.length, defaultValue: `Deleted ${selectedRows.length} suppliers successfully.` }))
       qc.invalidateQueries({ queryKey: ['suppliers'] })
-      qc.invalidateQueries({ queryKey: ['suppliers-list'] })
-      toast.success(t('suppliers.bulkDeleteSuccess', 'Selected suppliers deleted successfully.'))
+      qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
       setSelectedRows([])
       setBulkDeleteConfirmOpen(false)
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('suppliers.bulkDeleteError', 'Failed to delete selected suppliers.'))
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('suppliers.bulkDeletedFailed', 'Failed to delete selected suppliers.'))
+    },
   })
+
+  const getTierBadge = (tier?: string) => {
+    if (!tier) return null
+    const tierConfig: Record<string, { label: string; color: string }> = {
+      tier_1: { label: 'Tier 1 Strategic', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
+      tier_2: { label: 'Tier 2 Preferred', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+      tier_3: { label: 'Tier 3 Standard', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20' },
+      tier_4: { label: 'Tier 4 Backup', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+    }
+    const conf = tierConfig[tier] || { label: tier.replace('_', ' ').toUpperCase(), color: 'bg-muted text-muted-foreground border-border' }
+    return (
+      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${conf.color}`}>
+        {conf.label}
+      </span>
+    )
+  }
+
+  const getTypeBadge = (type?: string) => {
+    if (!type) return null
+    const typeLabel = t(`suppliers.${type}`, type.replace('_', ' '))
+    return (
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        • {typeLabel}
+      </span>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -184,114 +260,190 @@ const SuppliersPage: React.FC = () => {
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Truck className="h-6 w-6 text-primary" />
-              {t('suppliers.title', 'Supplier Directory')}
+              {t('suppliers.title', 'Supplier Directory & Vendor Management')}
             </h1>
             <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
               {t('suppliers.subtitle', 'Manage enterprise vendor relationships, logistics points of contact, credit terms, and banking information.')}
             </p>
           </div>
-          <button
-            onClick={() => navigate('/suppliers/create')}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 shadow-sm cursor-pointer"
-          >
-            <Plus size={16} />
-            {t('suppliers.addSupplier', 'Add Supplier')}
-          </button>
+          <HeaderActionsGroup>
+            <ExportButton
+              onClick={handleExportCSV}
+              label={t('common.exportCsv', 'Export CSV')}
+            />
+            <AddButton
+              onClick={() => navigate('/suppliers/create')}
+              label={t('suppliers.addSupplier', 'Add Supplier')}
+            />
+          </HeaderActionsGroup>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <SuppliersStatsCards suppliers={suppliers} reportData={reportData} />
+      <SuppliersStatsCards
+        suppliers={suppliers}
+        reportData={reportData}
+        totalSuppliersCount={pagination.total}
+      />
 
-      {/* Bulk Actions Panel (like Categories page) */}
-      {selectedRows.length > 0 && (
-        <div className="flex items-center justify-between p-3.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 rounded-2xl shadow-xs animate-in fade-in slide-in-from-top-2 duration-200 print:hidden">
-          <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-semibold">
-            <AlertCircle size={16} />
-            <span>{selectedRows.length} {t('suppliers.selectedCount', 'selected')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBulkDeleteConfirmOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 rounded-xl cursor-pointer transition-colors shadow-xs"
-            >
-              <Trash2 size={13} />
-              {t('suppliers.deleteSelected', 'Delete Selected')}
-            </button>
-            <button
-              onClick={() => setSelectedRows([])}
-              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 cursor-pointer font-medium"
-            >
-              {t('common.cancel', 'Cancel')}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Bulk Selection Action Banner */}
+      <BulkSelectionBanner
+        selectedCount={selectedRows.length}
+        onClear={() => setSelectedRows([])}
+        onDelete={() => setBulkDeleteConfirmOpen(true)}
+        deleteLabel={t('suppliers.deleteSelected', 'Delete Selected')}
+      />
 
-      {/* Search & Actions Bar */}
-      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
-        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
-          <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder={t('suppliers.searchPlaceholder', 'Search Supplier Name, Code, Phone, Email, Company...')}
-              className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
+      {/* Search & Action Toolbar */}
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm print:hidden">
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto flex-1">
+            <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                placeholder={t('suppliers.searchPlaceholder', 'Search Supplier Name, Code, Phone, Email, Company...')}
+                className="w-full h-10 min-h-[40px] pl-9 pr-8 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-xs font-medium"
+              />
+              {search && (
+                <button
+                  onClick={() => { setSearch(''); setPage(1); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                  type="button"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFilterDrawerOpen(true)}
+              className={`inline-flex items-center gap-1.5 h-10 min-h-[40px] px-3.5 text-xs sm:text-[13px] font-medium rounded-lg border transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
+                (statusFilter || countryFilter || cityFilter || createdByFilter)
+                  ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
+                  : 'border-border/80 bg-background hover:bg-muted text-foreground'
+              }`}
+            >
+              <Filter size={14} className={(statusFilter || countryFilter || cityFilter || createdByFilter) ? 'text-primary' : 'text-muted-foreground'} />
+              <span>{t('common.filter', 'Filter')}</span>
+              {(statusFilter || countryFilter || cityFilter || createdByFilter) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+            </button>
+
+            <ResetButton onClick={handleResetFilters} />
+          </div>
+
+          <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="h-10 w-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background hover:bg-muted transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+              title={t('common.refresh', 'Refresh')}
+            >
+              <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+            </button>
+
+            <ColumnSettingsPopover
+              columns={[
+                { key: 'name', label: t('suppliers.tableSupplier', 'Supplier') },
+                { key: 'code', label: t('suppliers.tableCode', 'Code') },
+                { key: 'contacts', label: t('suppliers.tableContacts', 'Contacts') },
+                { key: 'location', label: t('suppliers.tableLocation', 'Location') },
+                { key: 'totalPurchases', label: t('suppliers.tablePurchases', 'Total Purchases') },
+                { key: 'dueBalance', label: t('suppliers.tableDue', 'Outstanding AP') },
+                { key: 'terms', label: t('suppliers.tableTerms', 'Terms & Lead Time') },
+                { key: 'status', label: t('suppliers.tableStatus', 'Status') },
+              ]}
+              visibleColumns={visibleColumns}
+              onChange={(cols) => setVisibleColumns(cols as any)}
             />
-            {search && (
-              <button
-                onClick={() => { setSearch(''); setPage(1); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
-                type="button"
-              >
-                <X size={14} />
-              </button>
-            )}
           </div>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => setFilterDrawerOpen(true)}
-            className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
-              (statusFilter || countryFilter)
-                ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
-                : 'border-border bg-card hover:bg-muted/80 text-foreground'
-            }`}
-          >
-            <Filter size={15} className={(statusFilter || countryFilter) ? 'text-primary' : 'text-muted-foreground'} />
-            <span>{t('suppliers.filter', 'Filter')}</span>
-            {(statusFilter || countryFilter) && (
-              <span className="w-2 h-2 rounded-full bg-primary" />
+        {/* Active Filter Chips */}
+        {(Boolean(search) || Boolean(statusFilter) || Boolean(countryFilter) || Boolean(cityFilter) || Boolean(createdByFilter)) && (
+          <div className="flex items-center gap-2 flex-wrap text-xs print:hidden px-1 animate-in fade-in duration-200">
+            <span className="text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
+              {t('common.activeFilters', 'Active Filters')}:
+            </span>
+            {search && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-medium">
+                <span className="text-[11px] text-muted-foreground">{t('common.search', 'Search')}:</span>
+                <span className="font-semibold">{search}</span>
+                <button
+                  type="button"
+                  onClick={() => { setSearch(''); setPage(1); }}
+                  className="hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </span>
             )}
-          </button>
-
-          <ResetButton onClick={handleResetFilters} label={t('suppliers.reset', 'Reset')} />
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
-            title={t('common.refresh', 'Refresh')}
-          >
-            <RefreshCw size={15} />
-          </button>
-          <ColumnSettingsPopover
-            columns={[
-              { key: 'name', label: t('suppliers.tableSupplier', 'Supplier') },
-              { key: 'code', label: t('suppliers.tableCode', 'Code') },
-              { key: 'contacts', label: t('suppliers.tableContacts', 'Contacts') },
-              { key: 'location', label: t('suppliers.tableLocation', 'Location') },
-              { key: 'taxNumber', label: t('suppliers.tableTaxNumber', 'Tax Number') },
-              { key: 'status', label: t('suppliers.tableStatus', 'Status') },
-            ]}
-            visibleColumns={visibleColumns}
-            onChange={(cols) => setVisibleColumns(cols)}
-          />
-        </div>
+            {statusFilter && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-medium">
+                <span className="text-[11px] text-muted-foreground">{t('suppliers.status', 'Status')}:</span>
+                <span className="font-semibold">{statusFilter === '1' ? t('suppliers.active', 'Active') : t('suppliers.inactive', 'Inactive')}</span>
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter(''); setPage(1); }}
+                  className="hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {countryFilter && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-medium">
+                <span className="text-[11px] text-muted-foreground">{t('suppliers.country', 'Country')}:</span>
+                <span className="font-semibold">{countryFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => { setCountryFilter(''); setPage(1); }}
+                  className="hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {cityFilter && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-medium">
+                <span className="text-[11px] text-muted-foreground">{t('suppliers.city', 'City')}:</span>
+                <span className="font-semibold">{cityFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => { setCityFilter(''); setPage(1); }}
+                  className="hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {createdByFilter && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-medium">
+                <span className="text-[11px] text-muted-foreground">{t('suppliers.createdBy', 'Created By')}:</span>
+                <span className="font-semibold">{(users ?? []).find((u: any) => String(u.id) === createdByFilter)?.name || createdByFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => { setCreatedByFilter(''); setPage(1); }}
+                  className="hover:bg-primary/20 rounded p-0.5 transition-colors cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-[11px] font-bold text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1 cursor-pointer transition-colors"
+            >
+              {t('common.clearAll', 'Clear all')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -332,9 +484,19 @@ const SuppliersPage: React.FC = () => {
                     {t('suppliers.tableLocation', 'Location')} {renderSortIcon('city')}
                   </th>
                 )}
-                {visibleColumns.taxNumber !== false && (
+                {visibleColumns.totalPurchases !== false && (
+                  <th className="text-right py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                    {t('suppliers.tablePurchases', 'Total Purchases')}
+                  </th>
+                )}
+                {visibleColumns.dueBalance !== false && (
+                  <th className="text-right py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                    {t('suppliers.tableDue', 'Outstanding AP')}
+                  </th>
+                )}
+                {visibleColumns.terms !== false && (
                   <th className="text-left py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
-                    {t('suppliers.tableTaxNumber', 'Tax Number')}
+                    {t('suppliers.tableTerms', 'Terms & Lead Time')}
                   </th>
                 )}
                 {visibleColumns.status !== false && (
@@ -342,7 +504,7 @@ const SuppliersPage: React.FC = () => {
                     {t('suppliers.tableStatus', 'Status')} {renderSortIcon('is_active')}
                   </th>
                 )}
-                <th className="sticky right-0 z-10 bg-background border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[96px]">
+                <th className="sticky right-0 z-20 bg-card dark:bg-card border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[96px]">
                   {t('suppliers.tableActions', 'Actions')}
                 </th>
               </tr>
@@ -356,25 +518,50 @@ const SuppliersPage: React.FC = () => {
                     {visibleColumns.code !== false && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
                     {visibleColumns.contacts !== false && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
                     {visibleColumns.location !== false && <td className="p-4"><div className="skeleton h-4 w-36 rounded" /></td>}
-                    {visibleColumns.taxNumber !== false && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
+                    {visibleColumns.totalPurchases !== false && <td className="p-4"><div className="skeleton h-4 w-24 rounded ml-auto" /></td>}
+                    {visibleColumns.dueBalance !== false && <td className="p-4"><div className="skeleton h-4 w-24 rounded ml-auto" /></td>}
+                    {visibleColumns.terms !== false && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
                     {visibleColumns.status !== false && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
                     <td className="p-4"><div className="skeleton h-4 w-12 rounded ml-auto" /></td>
                   </tr>
                 ))
               ) : suppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={2 + Object.values(visibleColumns).filter(Boolean).length} className="py-16 text-center text-muted-foreground text-sm">
-                    {t('suppliers.noSuppliersFound', 'No suppliers found.')}
+                  <td colSpan={2 + Object.values(visibleColumns).filter(Boolean).length} className="p-0">
+                    <EmptyState
+                      icon={<Truck size={28} className="text-muted-foreground" />}
+                      title={t('suppliers.noSuppliersFound', 'No suppliers found')}
+                      description={
+                        Boolean(search || statusFilter || countryFilter || cityFilter || createdByFilter)
+                          ? t('suppliers.noMatchingFilters', 'No suppliers match your active search or filter criteria.')
+                          : t('suppliers.noSuppliersYet', 'Get started by creating your first enterprise supplier profile.')
+                      }
+                      action={
+                        Boolean(search || statusFilter || countryFilter || cityFilter || createdByFilter)
+                          ? {
+                              label: t('common.resetFilters', 'Reset Filters'),
+                              onClick: handleResetFilters,
+                            }
+                          : {
+                              label: t('suppliers.addSupplier', 'Add Supplier'),
+                              onClick: () => navigate('/suppliers/create'),
+                            }
+                      }
+                    />
                   </td>
                 </tr>
               ) : (
                 suppliers.map((supplier) => {
                   const isSelected = selectedRows.includes(supplier.id)
+                  const totalPurchased = Number(supplier.total_purchases_sum ?? supplier.total_purchased ?? 0)
+                  const dueBalance = Number(supplier.total_due_sum ?? supplier.total_due ?? supplier.outstanding_balance ?? 0)
+                  const poCount = Number(supplier.purchases_count ?? 0)
+
                   return (
                     <tr
                       key={supplier.id}
-                      className={`hover:bg-muted/30 transition-colors group cursor-pointer ${
-                        isSelected ? 'bg-primary/5 dark:bg-primary/10' : ''
+                      className={`hover:bg-muted/40 dark:hover:bg-muted/20 transition-colors group cursor-pointer ${
+                        isSelected ? 'bg-primary/10 dark:bg-primary/15' : ''
                       }`}
                       onClick={() => setViewSupplier(supplier)}
                     >
@@ -389,9 +576,17 @@ const SuppliersPage: React.FC = () => {
                       </td>
                       {visibleColumns.name !== false && (
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <Truck size={15} className="text-primary shrink-0" />
-                            <span className="font-bold text-foreground text-xs">{supplier.name}</span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Truck size={15} className="text-primary shrink-0" />
+                              <span className="font-bold text-foreground text-xs hover:text-primary transition-colors">
+                                {supplier.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {getTierBadge(supplier.tier)}
+                              {getTypeBadge(supplier.supplier_type)}
+                            </div>
                           </div>
                         </td>
                       )}
@@ -401,10 +596,57 @@ const SuppliersPage: React.FC = () => {
                         </td>
                       )}
                       {visibleColumns.contacts !== false && (
-                        <td className="py-3 px-4 text-xs text-muted-foreground">
-                          <div className="space-y-0.5">
-                            {supplier.email && <div className="flex items-center gap-1"><Mail size={11} /> {supplier.email}</div>}
-                            {supplier.phone && <div className="flex items-center gap-1"><Phone size={11} /> {supplier.phone}</div>}
+                        <td className="py-3 px-4 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                          <div className="space-y-1">
+                            {supplier.phone && (
+                              <div className="flex items-center gap-1.5 group/phone">
+                                <a
+                                  href={`tel:${supplier.phone}`}
+                                  className="inline-flex items-center gap-1 font-mono text-foreground/80 hover:text-primary transition-colors"
+                                  title={t('suppliers.callPhone', 'Call phone')}
+                                >
+                                  <Phone size={11} className="text-primary shrink-0" />
+                                  <span>{supplier.phone}</span>
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigator.clipboard.writeText(supplier.phone || '')
+                                    toast.success(t('common.copiedToClipboard', 'Phone number copied'))
+                                  }}
+                                  className="opacity-0 group-hover/phone:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer"
+                                  title={t('common.copy', 'Copy')}
+                                >
+                                  <Copy size={10} />
+                                </button>
+                              </div>
+                            )}
+                            {supplier.email && (
+                              <div className="flex items-center gap-1.5 group/email">
+                                <a
+                                  href={`mailto:${supplier.email}`}
+                                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors truncate max-w-[180px]"
+                                  title={t('suppliers.sendEmail', 'Send email')}
+                                >
+                                  <Mail size={11} className="text-muted-foreground shrink-0" />
+                                  <span className="truncate">{supplier.email}</span>
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigator.clipboard.writeText(supplier.email || '')
+                                    toast.success(t('common.copiedToClipboard', 'Email address copied'))
+                                  }}
+                                  className="opacity-0 group-hover/email:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer shrink-0"
+                                  title={t('common.copy', 'Copy')}
+                                >
+                                  <Copy size={10} />
+                                </button>
+                              </div>
+                            )}
+                            {!supplier.phone && !supplier.email && <span className="text-muted-foreground/60">—</span>}
                           </div>
                         </td>
                       )}
@@ -413,9 +655,42 @@ const SuppliersPage: React.FC = () => {
                           {supplier.city ? `${supplier.city}, ${supplier.country || ''}` : supplier.address || '—'}
                         </td>
                       )}
-                      {visibleColumns.taxNumber !== false && (
-                        <td className="py-3 px-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                          {supplier.tax_number || '—'}
+                      {visibleColumns.totalPurchases !== false && (
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="font-mono font-bold text-xs text-foreground">
+                            ${totalPurchased.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-semibold">
+                            {poCount} {t('suppliers.posCount', 'POs')}
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.dueBalance !== false && (
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          {dueBalance > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20">
+                              <AlertTriangle size={11} />
+                              ${dueBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                              <CheckCircle2 size={11} />
+                              $0.00
+                            </span>
+                          )}
+                        </td>
+                      )}
+                      {visibleColumns.terms !== false && (
+                        <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
+                          <div className="space-y-0.5">
+                            <span className="font-semibold text-foreground block">
+                              {supplier.payment_terms || 'Net 30'}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Clock size={11} />
+                              {supplier.lead_time_days ?? 3} {t('suppliers.daysLeadTime', 'days lead')}
+                            </span>
+                          </div>
                         </td>
                       )}
                       {visibleColumns.status !== false && (
@@ -423,8 +698,16 @@ const SuppliersPage: React.FC = () => {
                           <StatusBadge status={supplier.is_active} />
                         </td>
                       )}
-                      <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]" onClick={(e) => e.stopPropagation()}>
+                      <td className={`sticky right-0 z-10 ${isSelected ? 'bg-primary/10 dark:bg-primary/15' : 'bg-card group-hover:bg-muted/40 dark:group-hover:bg-muted/20'} transition-colors border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]`} onClick={(e) => e.stopPropagation()}>
                         <TableActionMenu
+                          items={[
+                            {
+                              label: t('suppliers.createPO', 'Create Purchase Order'),
+                              icon: ShoppingCart,
+                              onClick: () => navigate(`/purchases/create?supplier_id=${supplier.id}`),
+                              variant: 'success',
+                            },
+                          ]}
                           onView={() => setViewSupplier(supplier)}
                           onEdit={() => navigate(`/suppliers/${supplier.id}/edit`)}
                           onDelete={() => setDeleteTarget(supplier)}

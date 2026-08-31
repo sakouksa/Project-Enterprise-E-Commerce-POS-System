@@ -46,6 +46,8 @@ export type { PercentBadgeProps, PercentBadgeVariant } from './PercentBadge'
 export {
   HeaderActionsGroup,
   AddButton,
+  ActionButton,
+  SecondaryButton,
   ExportButton,
   ImportButton,
   QrKioskButton,
@@ -53,10 +55,12 @@ export {
   CancelButton,
   FilterButton,
   RefreshButton,
+  ResetButton,
 } from './GlobalActionButtons'
 export type {
   HeaderActionsGroupProps,
   AddButtonProps,
+  ActionButtonProps,
   ExportButtonProps,
   ImportButtonProps,
   QrKioskButtonProps,
@@ -64,6 +68,65 @@ export type {
   CancelButtonProps,
   FilterButtonProps,
   RefreshButtonProps,
+  ResetButtonProps,
 } from './GlobalActionButtons'
 
+export { default as RichTextEditor } from './RichTextEditor'
+export type { RichTextEditorProps } from './RichTextEditor'
+
+// Global Print & Official Document Standard Components
+export { 
+  GlobalPrintContainer, 
+  GlobalPrintHeader, 
+  GlobalPrintFooter,
+  GlobalPrintContainer as PrintContainer,
+  GlobalPrintHeader as PrintHeader,
+  GlobalPrintFooter as PrintFooter,
+} from '../shared/GlobalPrint'
+export type { 
+  GlobalPrintContainerProps,
+  GlobalPrintHeaderProps, 
+  CompanyPrintInfo,
+  GlobalPrintFooterProps, 
+  PrintSignatureRole 
+} from '../shared/GlobalPrint'
+
+// Global User Avatar Component
+export { default as UserAvatar } from './UserAvatar'
+export type { UserAvatarProps } from './UserAvatar'
+
+// Global Standard Close Button Component
+export { default as CloseButton } from './CloseButton'
+export type { CloseButtonProps, CloseButtonVariant, CloseButtonSize } from './CloseButton'
+
+// Global Standard Detail Drawer System
+export {
+  default as DetailDrawer,
+  DetailDrawerHeader,
+  DetailDrawerTabNav,
+  DetailDrawerBody,
+  DetailDrawerFooter,
+  DetailDrawerCard,
+  DetailDrawerRow,
+} from './DetailDrawer'
+export type {
+  DetailDrawerProps,
+  DetailDrawerSize,
+  DetailDrawerIconVariant,
+  DetailDrawerHeaderProps,
+  DetailDrawerTabItem,
+  DetailDrawerTabNavProps,
+  DetailDrawerBodyProps,
+  DetailDrawerFooterProps,
+  DetailDrawerCardProps,
+  DetailDrawerRowProps,
+} from './DetailDrawer'
+
+// Global Country Phone Input Component (5 supported countries)
+export { default as CountryPhoneInput, SUPPORTED_PHONE_COUNTRIES } from './CountryPhoneInput'
+export type { CountryPhoneInputProps, CountryPhoneConfig } from './CountryPhoneInput'
+
+// Global Form Field Validation Components & Helpers
+export { default as FormField, FieldError, FieldLabel, getFieldClass } from './FormField'
+export type { FormFieldProps, FieldErrorProps, FieldLabelProps } from './FormField'
 

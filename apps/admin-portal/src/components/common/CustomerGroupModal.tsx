@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Tag, Percent, Sparkles, Award, Building2 } from 'lucide-react'
+import { Award, Sparkles } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import EnterpriseModal from './EnterpriseModal'
@@ -157,8 +157,8 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
 
   const isSaving = isSubmitting || createMutation.isPending || updateMutation.isPending
 
-  const inputWithIconCls =
-    'w-full h-10 min-h-[40px] !pl-10 pr-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
+  const inputCls =
+    'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/60 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
   const labelCls =
     'block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5'
 
@@ -200,24 +200,19 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
             <label className={labelCls}>
               {t('customers.company', 'Company')} <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                <Building2 size={15} />
-              </div>
-              <select
-                {...register('company_id', {
-                  required: t('customers.validation.companyRequired', 'Company is required'),
-                })}
-                className={`${inputWithIconCls} cursor-pointer`}
-              >
-                <option value="">{t('customers.selectCompany', '-- Select Company --')}</option>
-                {(companies ?? []).map((c: any) => (
-                  <option key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              {...register('company_id', {
+                required: t('customers.validation.companyRequired', 'Company is required'),
+              })}
+              className={`${inputCls} cursor-pointer`}
+            >
+              <option value="">{t('customers.selectCompany', '-- Select Company --')}</option>
+              {(companies ?? []).map((c: any) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
             {errors.company_id && (
               <p className="text-rose-500 text-[11px] font-semibold mt-1">
                 {errors.company_id.message}
@@ -231,18 +226,13 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
           <label className={labelCls}>
             {t('customers.groupName', 'Group Name')} <span className="text-rose-500">*</span>
           </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-              <Tag size={15} />
-            </div>
-            <input
-              {...register('name', {
-                required: t('customers.validation.nameRequired', 'Group name is required'),
-              })}
-              placeholder={t('customers.groupNamePlaceholder', 'e.g. VIP Customers / Wholesale')}
-              className={inputWithIconCls}
-            />
-          </div>
+          <input
+            {...register('name', {
+              required: t('customers.validation.nameRequired', 'Group name is required'),
+            })}
+            placeholder={t('customers.groupNamePlaceholder', 'e.g. VIP Customers / Wholesale')}
+            className={inputCls}
+          />
           {errors.name && (
             <p className="text-rose-500 text-[11px] font-semibold mt-1">{errors.name.message}</p>
           )}
@@ -253,23 +243,18 @@ export const CustomerGroupModal: React.FC<CustomerGroupModalProps> = ({
           <label className={labelCls}>
             {t('customers.discountPercent', 'Discount Percent (%)')} <span className="text-rose-500">*</span>
           </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-              <Percent size={15} />
-            </div>
-            <input
-              type="number"
-              step="0.01"
-              {...register('discount_percent', {
-                required: t('customers.validation.discountNumeric', 'Discount percent must be numeric'),
-                valueAsNumber: true,
-                min: { value: 0, message: t('customers.validation.discountMin', 'Discount cannot be negative') },
-                max: { value: 100, message: t('customers.validation.discountMax', 'Discount cannot exceed 100%') },
-              })}
-              placeholder="0.00"
-              className={`${inputWithIconCls} font-mono`}
-            />
-          </div>
+          <input
+            type="number"
+            step="0.01"
+            {...register('discount_percent', {
+              required: t('customers.validation.discountNumeric', 'Discount percent must be numeric'),
+              valueAsNumber: true,
+              min: { value: 0, message: t('customers.validation.discountMin', 'Discount cannot be negative') },
+              max: { value: 100, message: t('customers.validation.discountMax', 'Discount cannot exceed 100%') },
+            })}
+            placeholder="0.00"
+            className={`${inputCls} font-mono`}
+          />
           {errors.discount_percent && (
             <p className="text-rose-500 text-[11px] font-semibold mt-1">
               {errors.discount_percent.message}

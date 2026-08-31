@@ -5,9 +5,15 @@ export interface SupplierListParams {
   per_page?: number
   search?: string
   status?: string
+  is_active?: any
   country?: string
+  city?: string
+  created_by?: string | number
   sort?: string
   order?: 'asc' | 'desc'
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
+  [key: string]: any
 }
 
 export const supplierService = {
@@ -25,6 +31,9 @@ export const supplierService = {
 
   delete: (id: number | string) =>
     api.delete(`/suppliers/${id}`).then((r) => r.data),
+
+  bulkDelete: (ids: number[]) =>
+    api.post('/suppliers/bulk-delete', { ids }).then((r) => r.data),
 }
 
 export default supplierService

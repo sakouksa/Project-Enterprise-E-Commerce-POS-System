@@ -11,25 +11,32 @@ import {
 import { STATUS_BADGE, PAYMENT_BADGE, getDeliveryStatusLabel, getPaymentStatusLabel, type Purchase } from '../types/purchase.types'
 import { getDetailDualValues } from '../utils/purchaseCurrency'
 import { PurchasePrintVoucher } from './PurchasePrintVoucher'
+import { CloseButton, CancelButton } from '@/components/common'
 
 interface PurchaseDetailDrawerProps {
+  isOpen?: boolean
   selectedPurchase: Purchase | null
   onClose: () => void
   onOpenReceive: (po: Purchase) => void
   onOpenPayment: () => void
   onOpenCancel: (po: Purchase) => void
+  onDuplicate?: (po: Purchase) => void
 }
 
 export const PurchaseDetailDrawer: React.FC<PurchaseDetailDrawerProps> = ({
+  isOpen,
   selectedPurchase,
   onClose,
   onOpenReceive,
   onOpenPayment,
   onOpenCancel,
+  onDuplicate,
 }) => {
   const navigate = useNavigate()
   const { t } = useTranslation(['purchases', 'common'])
   const [copiedRef, setCopiedRef] = useState(false)
+
+  const isVisible = Boolean(selectedPurchase && (isOpen ?? true))
 
   const copyReference = () => {
     if (!selectedPurchase?.reference_number) return
@@ -48,7 +55,7 @@ export const PurchaseDetailDrawer: React.FC<PurchaseDetailDrawerProps> = ({
 
   return (
     <AnimatePresence>
-      {selectedPurchase && (
+      {isVisible && selectedPurchase && (
         <div className="fixed inset-0 z-50 overflow-hidden flex justify-end print:static print:inset-auto print:overflow-visible print:block print:w-full print:bg-white print:p-0 print:m-0">
           {/* Backdrop */}
           <motion.div
@@ -105,73 +112,79 @@ export const PurchaseDetailDrawer: React.FC<PurchaseDetailDrawerProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
-                >
-                  <X size={18} />
-                </button>
+                <CloseButton onClose={onClose} size="md" color="rose" />
               </div>
 
               {/* Scrollable Content Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 {/* Operations Bar */}
-                {selectedPurchase.status !== 'cancelled' && (
-                  <div className="bg-muted/40 p-3.5 rounded-xl border border-border flex flex-wrap items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2">
-                      <PackageCheck size={15} className="text-primary" />
-                      <span className="text-xs font-bold text-foreground">
-                        {t('purchases.purchaseActions', 'Purchase Actions')}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {selectedPurchase.status !== 'received' && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenReceive(selectedPurchase)}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                        >
-                          <CheckCircle size={13} />
-                          <span>{t('purchases.receiveShipment', 'Receive Shipment (GRN)')}</span>
-                        </button>
-                      )}
-                      {selectedPurchase.payment_status !== 'paid' && (
-                        <button
-                          type="button"
-                          onClick={onOpenPayment}
-                          className="px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                        >
-                          <DollarSign size={13} />
-                          <span>{t('purchases.recordPayment', 'Record Payment')}</span>
-                        </button>
-                      )}
-                      {selectedPurchase.status !== 'received' && selectedPurchase.status !== 'partial' && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenCancel(selectedPurchase)}
-                          className="px-3 py-1.5 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <Ban size={13} />
-                          <span>{t('purchases.cancelPO', 'Cancel PO')}</span>
-                        </button>
-                      )}
-                      {(selectedPurchase.status === 'received' || selectedPurchase.status === 'partial') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onClose()
-                            navigate(`/purchases/returns?purchase_id=${selectedPurchase.id}`)
-                          }}
-                          className="px-3 py-1.5 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <RotateCcw size={13} />
-                          <span>{t('purchases.returnToSupplier', 'Return to Supplier')}</span>
-                        </button>
-                      )}
-                    </div>
+                <div className="bg-muted/40 p-3.5 rounded-xl border border-border flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <PackageCheck size={15} className="text-primary" />
+                    <span className="text-xs font-bold text-foreground">
+                      {t('purchases.purchaseActions', 'Purchase Actions')}
+                    </span>
                   </div>
-                )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedPurchase.status !== 'cancelled' && selectedPurchase.status !== 'received' && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenReceive(selectedPurchase)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        <CheckCircle size={13} />
+                        <span>{t('purchases.receiveShipment', 'Receive Shipment (GRN)')}</span>
+                      </button>
+                    )}
+                    {selectedPurchase.status !== 'cancelled' && selectedPurchase.payment_status !== 'paid' && (
+                      <button
+                        type="button"
+                        onClick={onOpenPayment}
+                        className="px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        <DollarSign size={13} />
+                        <span>{t('purchases.recordPayment', 'Record Payment')}</span>
+                      </button>
+                    )}
+                    {onDuplicate && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose()
+                          onDuplicate(selectedPurchase)
+                        }}
+                        className="px-3 py-1.5 border border-primary/30 text-primary hover:bg-primary/10 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        title={t('purchases.duplicatePO', 'Duplicate / Re-order PO')}
+                      >
+                        <Copy size={13} />
+                        <span>{t('purchases.duplicatePO', 'Re-order')}</span>
+                      </button>
+                    )}
+                    {selectedPurchase.status !== 'cancelled' && selectedPurchase.status !== 'received' && selectedPurchase.status !== 'partial' && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenCancel(selectedPurchase)}
+                        className="px-3 py-1.5 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Ban size={13} />
+                        <span>{t('purchases.cancelPO', 'Cancel PO')}</span>
+                      </button>
+                    )}
+                    {(selectedPurchase.status === 'received' || selectedPurchase.status === 'partial') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose()
+                          navigate(`/purchases/returns?purchase_id=${selectedPurchase.id}`)
+                        }}
+                        className="px-3 py-1.5 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <RotateCcw size={13} />
+                        <span>{t('purchases.returnToSupplier', 'Return to Supplier')}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 {/* Supplier & Warehouse Detail Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -226,6 +239,12 @@ export const PurchaseDetailDrawer: React.FC<PurchaseDetailDrawerProps> = ({
                         <div className="flex items-center justify-between text-muted-foreground">
                           <span>{t('purchases.dueDate', 'Due Date')}:</span>
                           <span className="font-mono text-foreground">{selectedPurchase.due_date}</span>
+                        </div>
+                      )}
+                      {selectedPurchase.creator?.name && (
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>{t('purchases.createdBy', 'Created By')}:</span>
+                          <span className="font-semibold text-foreground">{selectedPurchase.creator.name}</span>
                         </div>
                       )}
                     </div>
@@ -404,13 +423,7 @@ export const PurchaseDetailDrawer: React.FC<PurchaseDetailDrawerProps> = ({
                   <Printer size={14} />
                   <span>{t('purchases.printPurchaseOrder', 'Print Purchase Order')}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-xs font-bold text-foreground bg-card hover:bg-muted rounded-xl border border-border transition-all cursor-pointer"
-                >
-                  {t('common.close', 'Close')}
-                </button>
+                <CancelButton onClick={onClose} label={t('common.close', 'Close')} />
               </div>
             </motion.div>
           </div>

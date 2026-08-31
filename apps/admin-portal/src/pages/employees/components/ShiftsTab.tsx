@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit2, Trash2, Clock, Calendar, CheckCircle2, X, Loader2, ShieldAlert } from 'lucide-react'
-import api from '@/api/client'
+import { useTranslation } from 'react-i18next'
+import { employeeService } from '@/services/employeeService'
 import { useToast } from '@/hooks/useToast'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 
@@ -23,6 +24,7 @@ interface Shift {
 }
 
 const ShiftsTab: React.FC = () => {
+  const { t } = useTranslation()
   const toast = useToast()
   const qc = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
@@ -39,37 +41,37 @@ const ShiftsTab: React.FC = () => {
 
   const { data: shifts = [], isLoading } = useQuery<Shift[]>({
     queryKey: ['shifts'],
-    queryFn: () => api.get('/shifts').then(r => r.data?.data ?? []),
+    queryFn: () => employeeService.shifts().then(r => r.data ?? []),
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.post('/shifts', data),
+    mutationFn: (data: any) => employeeService.createShift(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shifts'] })
-      toast.success('Shift schedule created successfully')
+      toast.success(t('employees.createSuccess', 'Shift schedule created successfully'))
       closeModal()
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to create shift'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to create shift')),
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/shifts/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => employeeService.updateShift(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shifts'] })
-      toast.success('Shift schedule updated successfully')
+      toast.success(t('employees.updateSuccess', 'Shift schedule updated successfully'))
       closeModal()
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to update shift'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to update shift')),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/shifts/${id}`),
+    mutationFn: (id: number) => employeeService.deleteShift(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shifts'] })
-      toast.success('Shift schedule deleted')
+      toast.success(t('employees.deleteSuccess', 'Shift schedule deleted'))
       setDeleteTarget(null)
     },
-    onError: () => toast.error('Failed to delete shift'),
+    onError: () => toast.error(t('toast.error', 'Failed to delete shift')),
   })
 
   const openCreateModal = () => {

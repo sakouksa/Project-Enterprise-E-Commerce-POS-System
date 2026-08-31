@@ -9,7 +9,7 @@ export const namespaces = [
   'inventory', 'customers', 'customer', 'suppliers', 'sales', 'purchases', 'purchase', 'employees', 'employee',
   'settings', 'setting', 'reports', 'report', 'auth', 'tables', 'table', 'forms', 'form', 'pagination', 'errors', 'empty',
   'confirm', 'deleteConfirm', 'finance', 'logs', 'marketing', 'mobile',
-  'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website', 'pos', 'orders', 'order', 'security'
+  'nav', 'pageContent', 'profile', 'reviews', 'toast', 'website', 'pos', 'orders', 'order', 'security', 'cms'
 ]
 
 // Expose runtime translation dictionaries for React.createElement interceptor
@@ -227,7 +227,7 @@ export async function ensureLanguageLoaded(lng: string) {
   )
 }
 
-const savedLanguage = localStorage.getItem('enterprise-pos-lang') || 'en'
+const savedLanguage = localStorage.getItem('enterprise-pos-lang') || 'km'
 
 i18n
   .use(initReactI18next)

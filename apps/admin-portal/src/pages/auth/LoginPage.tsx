@@ -50,7 +50,7 @@ import { useCompanyStore } from '@/stores/companyStore'
 import { BrandLogo } from '@/components/common/BrandLogo'
 import LanguageDropdown from '@/components/layout/LanguageDropdown'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import api from '@/api/client'
+import { authService } from '@/services/authService'
 
 // ─── Pure Vector SVG Country Flag Component ───────────────────────────────────
 const CountryFlagIcon: React.FC<{ code: string; className?: string }> = ({ code, className = 'w-5 h-3.5' }) => {
@@ -115,11 +115,8 @@ const CountryFlagIcon: React.FC<{ code: string; className?: string }> = ({ code,
 
 // ─── Supported Languages Configuration ───────────────────────────────────────
 const LANGUAGES = [
-  { code: 'en', name: 'English', label: 'English' },
   { code: 'km', name: 'Khmer', label: 'ភាសាខ្មែរ' },
-  { code: 'th', name: 'Thai', label: 'ไทย' },
-  { code: 'vi', name: 'Vietnamese', label: 'Tiếng Việt' },
-  { code: 'zh', name: 'Chinese', label: '中文' },
+  { code: 'en', name: 'English', label: 'English' },
 ] as const
 
 type LanguageCode = (typeof LANGUAGES)[number]['code']
@@ -274,7 +271,7 @@ const LoginPage: React.FC = () => {
       setForgotError(null)
       setForgotSuccessMsg(null)
 
-      const res = await api.post('/auth/forgot-password', {
+      const res = await authService.forgotPassword({
         identifier: forgotIdentifier.trim(),
       })
 
@@ -314,7 +311,7 @@ const LoginPage: React.FC = () => {
       setForgotLoading(true)
       setForgotError(null)
 
-      const res = await api.post('/auth/reset-password', {
+      const res = await authService.resetPassword({
         identifier: forgotIdentifier.trim(),
         reset_token: forgotOtpToken.trim(),
         password: forgotNewPassword.trim(),
@@ -350,7 +347,7 @@ const LoginPage: React.FC = () => {
 
       setLoginProgress(50)
 
-      const res = await api.post('/auth/login', {
+      const res = await authService.login({
         username: sanitizedUsername,
         password: data.password,
         remember: data.remember ?? false,
@@ -378,43 +375,43 @@ const LoginPage: React.FC = () => {
       const status = err.response?.status
       const backendMsg = err.response?.data?.message
 
-      let errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
-      let errorMessage = t('auth.errors.unknown', 'មានកំហុសមិនរំពឹងទុកបានកើតឡើង។ សូមព្យាយាមម្តងទៀត។')
+      let errorTitle = t('auth.errorTitles.authFailed', 'Authentication Failed')
+      let errorMessage = t('auth.errors.unknown', 'An unexpected error occurred. Please try again.')
 
       if (!err.response) {
         if (!navigator.onLine) {
-          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorTitle = t('auth.errorTitles.network', 'Network Connection Error')
           errorMessage = t('auth.errors.offline')
         } else if (err.code === 'ECONNABORTED') {
-          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorTitle = t('auth.errorTitles.network', 'Network Connection Error')
           errorMessage = t('auth.errors.timeout')
         } else {
-          errorTitle = t('auth.errorTitles.network', 'បញ្ហាការតភ្ជាប់បណ្តាញ')
+          errorTitle = t('auth.errorTitles.network', 'Network Connection Error')
           errorMessage = t('auth.errors.networkError')
         }
       } else if (status === 401) {
-        errorTitle = t('auth.errorTitles.authFailed', 'មិនអាចចូលប្រព័ន្ធបានទេ')
+        errorTitle = t('auth.errorTitles.authFailed', 'Authentication Failed')
         errorMessage = t('auth.errors.401')
       } else if (status === 403) {
-        errorTitle = t('auth.errorTitles.accessDenied', 'គណនីគ្មានសិទ្ធិ ឬត្រូវបានផ្អាក')
+        errorTitle = t('auth.errorTitles.accessDenied', 'Access Denied')
         errorMessage = t('auth.errors.403')
       } else if (status === 404) {
-        errorTitle = t('auth.errorTitles.notFound', 'រកមិនឃើញគណនី')
+        errorTitle = t('auth.errorTitles.notFound', 'Account Not Found')
         errorMessage = t('auth.errors.404')
       } else if (status === 419) {
-        errorTitle = t('auth.errorTitles.sessionExpired', 'សេសសិនផុតកំណត់')
+        errorTitle = t('auth.errorTitles.sessionExpired', 'Session Expired')
         errorMessage = t('auth.errors.419')
       } else if (status === 422) {
-        errorTitle = t('auth.errorTitles.authFailed', 'ព័ត៌មានមិនត្រឹមត្រូវ')
+        errorTitle = t('auth.errorTitles.authFailed', 'Invalid Information')
         errorMessage = t('auth.errors.422')
       } else if (status === 429) {
-        errorTitle = t('auth.errorTitles.locked', 'គណនីត្រូវបានសោរបណ្តោះអាសន្ន')
+        errorTitle = t('auth.errorTitles.locked', 'Account Temporarily Locked')
         errorMessage = t('auth.errors.429')
       } else if (status === 500) {
-        errorTitle = t('auth.errorTitles.serverError', 'ប្រព័ន្ធកំពុងជួបបញ្ហា')
+        errorTitle = t('auth.errorTitles.serverError', 'System Error')
         errorMessage = t('auth.errors.500')
       } else if (status === 503) {
-        errorTitle = t('auth.errorTitles.maintenance', 'ម៉ាស៊ីនបម្រើកំពុងថែទាំ')
+        errorTitle = t('auth.errorTitles.maintenance', 'Server Under Maintenance')
         errorMessage = t('auth.errors.503')
       } else if (backendMsg) {
         errorMessage = backendMsg
@@ -467,17 +464,17 @@ const LoginPage: React.FC = () => {
           {/* Support Modal Trigger */}
           <button
             onClick={() => setActiveModal('support')}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 transition-all shadow-2xs cursor-pointer"
+            className="hidden md:inline-flex h-9 items-center gap-2 px-3.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-800 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
           >
             <Headphones className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>{t('auth.helpSupport')}</span>
+            <span>{t('auth.helpSupport', 'Help & Support')}</span>
           </button>
 
-          {/* Standard 5-Language Dropdown with Search & Flags (Exact match with Admin Dashboard) */}
-          <LanguageDropdown />
+          {/* Standard Language Dropdown */}
+          <LanguageDropdown isInNavbar={false} />
 
-          {/* Standard Theme Switcher with Light, Dark, and System Default (Exact match with Admin Dashboard) */}
-          <ThemeSwitcher />
+          {/* Standard Theme Switcher */}
+          <ThemeSwitcher isInNavbar={false} />
         </div>
       </header>
 
@@ -797,7 +794,7 @@ const LoginPage: React.FC = () => {
       {/* ─── FOOTER ───────────────────────────────────────────────────────── */}
       <footer className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 border-t border-slate-200/70 dark:border-slate-900 text-[11px] sm:text-xs text-slate-500 text-center sm:text-left">
         <div>
-          © {new Date().getFullYear()} {branding.brand_name || branding.company_name || 'OptaPOS'}. {language === 'km' ? 'រក្សាសិទ្ធិគ្រប់យ៉ាង។' : 'All rights reserved.'}
+          © {new Date().getFullYear()} {branding.brand_name || branding.company_name || 'OptaPOS'}. {t('auth.allRightsReserved', 'All rights reserved.')}
         </div>
 
         <div className="flex items-center gap-4 sm:gap-6">

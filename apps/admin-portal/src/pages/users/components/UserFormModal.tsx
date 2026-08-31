@@ -109,7 +109,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="label">Phone Number</label>
-                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555-0199" className="input w-full" />
+                  <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d+ -]/g, ''))} placeholder="012 345 678" className="input w-full font-mono" />
                 </div>
                 <div>
                   <label className="label">Gender</label>

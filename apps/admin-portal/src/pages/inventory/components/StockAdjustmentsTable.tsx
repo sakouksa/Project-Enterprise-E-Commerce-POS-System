@@ -91,7 +91,7 @@ export const StockAdjustmentsTable: React.FC<StockAdjustmentsTableProps> = ({
                   {t('colUser', 'Created By')}
                 </th>
               )}
-              <th className="sticky right-0 z-10 bg-background border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[80px]">
+              <th className="sticky right-0 z-20 bg-card dark:bg-card border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[80px]">
                 {t('common.actions', 'Actions')}
               </th>
             </tr>
@@ -128,7 +128,7 @@ export const StockAdjustmentsTable: React.FC<StockAdjustmentsTableProps> = ({
                 return (
                   <tr
                     key={item.id}
-                    className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                    className="hover:bg-muted/40 dark:hover:bg-muted/20 transition-colors group cursor-pointer"
                     onClick={() => onViewItem(item.id)}
                   >
                     {visibleColumns.date !== false && (
@@ -174,7 +174,7 @@ export const StockAdjustmentsTable: React.FC<StockAdjustmentsTableProps> = ({
                         {item.user?.name || 'Admin'}
                       </td>
                     )}
-                    <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[80px]" onClick={(e) => e.stopPropagation()}>
+                    <td className="sticky right-0 z-10 bg-card group-hover:bg-muted/40 dark:group-hover:bg-muted/20 transition-colors border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[80px]" onClick={(e) => e.stopPropagation()}>
                       <TableActionMenu
                         onView={() => onViewItem(item.id)}
                         onEdit={canEdit && onEditItem ? () => onEditItem(item.id) : undefined}

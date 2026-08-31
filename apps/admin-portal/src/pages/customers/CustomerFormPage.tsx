@@ -4,30 +4,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   User,
-  Phone,
   Award,
   CreditCard,
   FileText,
   Camera,
-  Trash2,
-  UploadCloud,
-  Check,
-  Loader2,
-  Building2,
-  Shield,
-  DollarSign,
-  Calendar,
-  Mail,
-  Receipt,
-  Sparkles,
-  Info,
-  CheckCircle2
+  Trash2
 } from 'lucide-react'
-import api from '@/api/client'
+import { customerService } from '@/services/customerService'
+import { companyService } from '@/services/companyService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
 import { FormHeader, FormFooter, LoadingSpinner } from '@/components/common'
 import CustomErrorMessage from '@/components/ui/CustomErrorMessage'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import { formatPhoneNumber } from '@/utils/formatters'
 import type { CustomerFormData } from './types'
 
 const BLANK_CUSTOMER_FORM: CustomerFormData = {
@@ -39,8 +29,14 @@ const BLANK_CUSTOMER_FORM: CustomerFormData = {
   phone: '',
   gender: '',
   birth_date: '',
+  payment_terms: 'prepaid',
   credit_limit: '1000',
+  is_credit_hold: false,
+  wallet_balance: '0',
   tax_number: '',
+  tax_branch_code: '00001',
+  rfm_segment: 'new',
+  tags: '',
   notes: '',
   is_active: true,
 }
@@ -55,6 +51,7 @@ export const CustomerFormPage: React.FC = () => {
   const toast = useToast()
 
   const [formData, setFormData] = useState<CustomerFormData>(BLANK_CUSTOMER_FORM)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   // Photo upload states
   const [photoFile, setPhotoFile] = useState<File | null>(null)
@@ -63,6 +60,13 @@ export const CustomerFormPage: React.FC = () => {
 
   const setFormField = (field: keyof CustomerFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    if (formErrors[field]) {
+      setFormErrors(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   // Fetch customer data if editing
@@ -74,28 +78,32 @@ export const CustomerFormPage: React.FC = () => {
     refetch: refetchDetail,
   } = useQuery({
     queryKey: ['customer-detail', customerId],
-    queryFn: () => (customerId ? api.get(`/customers/${customerId}`).then(r => r.data.data) : null),
+    queryFn: () => (customerId ? customerService.show(customerId) : null),
     enabled: isEdit && !isNaN(customerId as number),
   })
 
   // Queries for dropdowns
   const { data: companies = [] } = useQuery({
     queryKey: ['companies-list-dropdown'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getCompanies({ per_page: 100 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: groups = [] } = useQuery({
     queryKey: ['customer-groups-list'],
-    queryFn: () => api.get('/customer-groups', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => customerService.groups({ per_page: 100 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: users = [] } = useQuery({
     queryKey: ['users-list-dropdown'],
-    queryFn: () => api.get('/users', { params: { per_page: 200 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 200 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   useEffect(() => {
     if (customerDetail) {
+      const tagsString = Array.isArray(customerDetail.tags) 
+        ? customerDetail.tags.join(', ') 
+        : (customerDetail.tags || '')
+
       setFormData({
         company_id: customerDetail.company_id?.toString() || '1',
         customer_group_id: customerDetail.customer_group_id?.toString() || '',
@@ -105,8 +113,14 @@ export const CustomerFormPage: React.FC = () => {
         phone: customerDetail.phone || '',
         gender: customerDetail.gender || '',
         birth_date: customerDetail.birth_date || '',
+        payment_terms: customerDetail.payment_terms || 'prepaid',
         credit_limit: customerDetail.credit_limit?.toString() || '1000',
+        is_credit_hold: !!customerDetail.is_credit_hold,
+        wallet_balance: customerDetail.wallet_balance?.toString() || '0',
         tax_number: customerDetail.tax_number || '',
+        tax_branch_code: customerDetail.tax_branch_code || '00001',
+        rfm_segment: customerDetail.rfm_segment || 'new',
+        tags: tagsString,
         notes: customerDetail.notes || '',
         is_active: customerDetail.is_active !== undefined ? !!customerDetail.is_active : true,
       })
@@ -119,13 +133,13 @@ export const CustomerFormPage: React.FC = () => {
 
   // Create Mutation
   const createMutation = useMutation({
-    mutationFn: (payload: FormData) => api.post('/customers', payload, {
+    mutationFn: (payload: FormData) => customerService.create(payload, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
-      toast.success(t('toast.created', { item: t('customers.title', 'អតិថិជន') }))
+      toast.success(t('toast.created', { item: t('customers.title', 'Customer') }))
       navigate('/customers')
     },
     onError: (err: any) => {
@@ -135,22 +149,20 @@ export const CustomerFormPage: React.FC = () => {
 
   // Update Mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormData }) => api.post(`/customers/${id}`, data, {
+    mutationFn: ({ id, data }: { id: number; data: FormData }) => customerService.update(id, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
       qc.invalidateQueries({ queryKey: ['customer-detail', customerId] })
-      toast.success(t('toast.updated', { item: t('customers.title', 'អតិថិជន') }))
+      toast.success(t('toast.updated', { item: t('customers.title', 'Customer') }))
       navigate('/customers')
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to update customer.'))
     },
   })
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending
 
   const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -169,13 +181,20 @@ export const CustomerFormPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errors: Record<string, string> = {}
     if (!formData.name.trim()) {
-      toast.error(t('customers.validation.nameRequired', 'តម្រូវឱ្យបញ្ចូលឈ្មោះអតិថិជន'))
+      errors.name = t('customers.validationNameRequired', 'Customer name is required')
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      toast.error(t('toast.fixErrors', 'Please fix the required fields'))
       return
     }
 
     const dataPayload = new FormData()
-    dataPayload.append('company_id', formData.company_id || companies?.[0]?.id?.toString() || '1')
+    dataPayload.append('company_id', formData.company_id)
     if (formData.customer_group_id) dataPayload.append('customer_group_id', formData.customer_group_id)
     if (formData.user_id) dataPayload.append('user_id', formData.user_id)
     dataPayload.append('name', formData.name)
@@ -183,8 +202,16 @@ export const CustomerFormPage: React.FC = () => {
     if (formData.phone) dataPayload.append('phone', formData.phone)
     if (formData.gender) dataPayload.append('gender', formData.gender)
     if (formData.birth_date) dataPayload.append('birth_date', formData.birth_date)
+    
+    // Enterprise attributes
+    dataPayload.append('payment_terms', formData.payment_terms)
     if (formData.credit_limit) dataPayload.append('credit_limit', formData.credit_limit)
+    dataPayload.append('is_credit_hold', formData.is_credit_hold ? '1' : '0')
+    if (formData.wallet_balance) dataPayload.append('wallet_balance', formData.wallet_balance)
     if (formData.tax_number) dataPayload.append('tax_number', formData.tax_number)
+    if (formData.tax_branch_code) dataPayload.append('tax_branch_code', formData.tax_branch_code)
+    if (formData.rfm_segment) dataPayload.append('rfm_segment', formData.rfm_segment)
+    if (formData.tags) dataPayload.append('tags', formData.tags)
     if (formData.notes) dataPayload.append('notes', formData.notes)
     dataPayload.append('is_active', formData.is_active ? '1' : '0')
 
@@ -202,13 +229,15 @@ export const CustomerFormPage: React.FC = () => {
     }
   }
 
-  const selectedGroup = groups.find((g: any) => String(g.id) === String(formData.customer_group_id))
+  const isSubmitting = createMutation.isPending || updateMutation.isPending
+
+  const labelCls =
+    'block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5'
 
   if (isEdit && isLoadingDetail) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="flex h-96 items-center justify-center">
         <LoadingSpinner />
-        <span className="text-xs text-muted-foreground mt-2">{t('common.loading', 'Loading customer details...')}</span>
       </div>
     )
   }
@@ -217,539 +246,416 @@ export const CustomerFormPage: React.FC = () => {
     return (
       <div className="p-6">
         <CustomErrorMessage
-          title={t('common.errorLoading', 'Failed to load customer profile.')}
-          message={detailError?.message || t('common.error', 'An error occurred')}
+          details={detailError}
           onRetry={refetchDetail}
+          message={t('customers.errorFailedLoad', 'Failed to load customer profile details.')}
         />
       </div>
     )
   }
 
+  const selectedGroup = groups.find((g: any) => String(g.id) === String(formData.customer_group_id))
+
   return (
-    <div className="space-y-5 pb-10 w-full">
-      {/* ─── Global Form Header with Breadcrumbs & Actions ─── */}
+    <div className="space-y-6 pb-12">
       <FormHeader
-        isEdit={isEdit}
-        title={
-          isEdit
-            ? t('customers.editCustomerTitle', 'កែសម្រួលអតិថិជន: {{name}}', { name: formData.name || '' })
-            : t('customers.createCustomerTitle', 'បន្ថែមអតិថិជនថ្មី')
-        }
-        subtitle={t('customers.formSubtitle', 'គ្រប់គ្រង និងបំពេញព័ត៌មានអតិថិជនក្នុងប្រព័ន្ធ CRM')}
+        title={isEdit ? t('customers.editCustomerProfile', 'Edit Customer Profile') : t('customers.registerCustomer', 'Register New Customer')}
+        subtitle={t('customers.formSubtitle', 'Manage and complete customer profile in CRM')}
         breadcrumbs={[
-          { label: t('customers.title', 'អតិថិជន'), path: '/customers' },
-          {
-            label: isEdit
-              ? t('customers.editCustomer', 'កែសម្រួលអតិថិជន')
-              : t('customers.addCustomer', 'បន្ថែមអតិថិជនថ្មី'),
-          },
+          { label: t('customers.title', 'Customers'), href: '/customers' },
+          { label: isEdit ? t('customers.edit', 'Edit') : t('customers.create', 'Create') }
         ]}
-        backPath="/customers"
-        backLabel={t('common.back', 'ត្រឡប់ក្រោយ')}
-        isSubmitting={isSubmitting}
-        submitLabel={
-          isEdit
-            ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
-            : t('customers.saveCustomer', 'រក្សាទុកអតិថិជន')
-        }
-        onSubmit={handleSubmit}
       />
 
-      {/* ─── Form Container ─── */}
-      <form onSubmit={handleSubmit} className="space-y-5 w-full">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* ─── LEFT MAIN COLUMN (lg:col-span-8) ─── */}
+        <div className="lg:col-span-8 space-y-6">
 
-        {/* ══════════════════════════════════════════════════
-            ព័ត៌មានទូទៅ & រូបថត (SECTION 1)
-        ══════════════════════════════════════════════════ */}
-        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                <User size={18} />
+          {/* CARD 1: Core Customer Profile & Contact */}
+          <div className="p-6 rounded-2xl bg-card dark:bg-slate-900/80 border border-border dark:border-slate-800 space-y-5 shadow-2xs">
+            <div className="flex items-center gap-3 pb-3.5 border-b border-border/70 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <User size={16} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
-                  {t('customers.formTabGeneral', 'ព័ត៌មានទូទៅ & រូបថត')}
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100 leading-snug">
+                  {t('customers.sectionBasicDetails', 'General Information & Contact')}
                 </h3>
-                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                  {t('customers.generalSectionHelp', 'បំពេញព័ត៌មានមូលដ្ឋាន និងរូបថតប្រវត្តិរូបរបស់អតិថិជន')}
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {t('customers.sectionBasicDetailsSub', 'Customer identity, contact details, and profile photo')}
                 </p>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-4">
-            {/* Profile Photo Upload */}
-            <div className="p-4 rounded-xl border border-border/80 dark:border-slate-800 bg-muted/10 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center gap-5">
-              {photoPreview ? (
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border/80 dark:border-slate-700 group shadow-xs shrink-0 bg-background dark:bg-slate-900">
+            {/* Profile Photo Avatar Section */}
+            <div className="flex items-center gap-4.5 p-4 rounded-xl border border-border/70 dark:border-slate-800 bg-muted/20 dark:bg-slate-800/40">
+              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-border/80 dark:border-slate-700 group shadow-xs shrink-0 bg-background dark:bg-slate-900 flex items-center justify-center">
+                {photoPreview ? (
                   <img src={photoPreview} alt="Customer Avatar" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <label className="p-1.5 bg-card/90 dark:bg-slate-800/90 hover:bg-card dark:hover:bg-slate-700 text-foreground dark:text-slate-200 rounded-lg cursor-pointer transition-colors shadow-xs" title={t('customers.changePhoto', 'ប្តូររូបថត')}>
-                      <Camera size={14} />
-                      <input type="file" accept="image/*" onChange={onPhotoChange} className="hidden" />
-                    </label>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center">
+                    <User size={18} />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95">
+                    <Camera size={13} />
+                    <span>{photoPreview ? t('customers.changePhoto', 'Change Photo') : t('customers.uploadPhotoBtn', 'Upload Photo')}</span>
+                    <input type="file" accept="image/*" onChange={onPhotoChange} className="hidden" />
+                  </label>
+                  {photoPreview && (
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg cursor-pointer transition-colors shadow-xs"
-                      title={t('customers.removePhoto', 'លុបរូបថត')}
+                      className="h-8 px-2.5 rounded-lg border border-rose-500/30 dark:border-rose-500/40 text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-semibold inline-flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      title={t('customers.removePhoto', 'Remove Photo')}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
+                      <span>{t('customers.removePhoto', 'Remove')}</span>
                     </button>
-                  </div>
+                  )}
                 </div>
-              ) : (
-                <label className="w-full sm:w-auto flex-1 border-2 border-dashed border-border/80 dark:border-slate-700 hover:border-primary/50 dark:hover:border-primary/50 rounded-xl p-4 flex items-center justify-center gap-3.5 cursor-pointer bg-background dark:bg-slate-900 hover:bg-muted/30 dark:hover:bg-slate-800/60 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <UploadCloud size={20} />
-                  </div>
-                  <div>
-                    <span className="text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 block">
-                      {t('customers.clickUploadPhoto', 'ចុចដើម្បីបង្ហោះរូបថត')}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground dark:text-slate-400">
-                      {t('customers.photoHint', 'PNG, JPG ឬ WEBP (ទំហំអតិបរមា 2MB)')}
-                    </span>
-                  </div>
-                  <input type="file" accept="image/*" onChange={onPhotoChange} className="hidden" />
-                </label>
-              )}
-
-              {photoPreview && (
-                <div className="text-xs text-muted-foreground dark:text-slate-400 space-y-1 text-center sm:text-left">
-                  <span className="font-bold text-foreground dark:text-slate-100 block text-xs sm:text-[13px]">
-                    {t('customers.photoUpload', 'រូបថតប្រវត្តិរូប')}
-                  </span>
-                  <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                    {t('customers.photoHint', 'PNG, JPG ឬ WEBP (ទំហំអតិបរមា 2MB)')}
-                  </p>
-                </div>
-              )}
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {t('customers.photoHint', 'PNG, JPG, WEBP up to 5MB')}
+                </p>
+              </div>
             </div>
 
             {/* Customer Full Name */}
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('customers.fullName', 'ឈ្មោះពេញអតិថិជន')} <span className="text-rose-500">*</span>
+              <label className={labelCls}>
+                {t('customers.fullName', 'Customer Full Name')} <span className="text-rose-500">*</span>
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                  <User size={15} />
-                </div>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormField('name', e.target.value)}
+                placeholder={t('customers.namePlaceholder', 'e.g. Sok Chandara / Tech Solutions Co., Ltd')}
+                className="form-input font-medium"
+              />
+              {formErrors.name && <p className="text-[11px] text-rose-500 font-medium mt-1">{formErrors.name}</p>}
+            </div>
+
+            {/* Gender & Birth Date */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>{t('customers.gender', 'Gender')}</label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormField('gender', e.target.value)}
+                  className="form-select cursor-pointer"
+                >
+                  <option value="">{t('customers.selectGender', 'Select Gender')}</option>
+                  <option value="male">{t('customers.genderMale', 'Male')}</option>
+                  <option value="female">{t('customers.genderFemale', 'Female')}</option>
+                  <option value="other">{t('customers.genderOther', 'Other')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>{t('customers.birthDate', 'Date of Birth')}</label>
                 <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormField('name', e.target.value)}
-                  placeholder={t('customers.namePlaceholder', t('namePlaceholder', 'ឧ. សុខ ចាន់ដារ៉ា'))}
-                  className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
+                  type="date"
+                  value={formData.birth_date}
+                  onChange={(e) => setFormField('birth_date', e.target.value)}
+                  className="form-input"
                 />
               </div>
             </div>
 
-            {/* Gender & Date of Birth */}
+            {/* Phone & Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className={labelCls}>{t('customers.phone', 'Phone Number')}</label>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormField('phone', e.target.value.replace(/[^\d+ -]/g, ''))}
+                  placeholder="012 345 678"
+                  className="form-input font-mono"
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>{t('customers.email', 'Email Address')}</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormField('email', e.target.value)}
+                  placeholder="customer@domain.com"
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            {/* Linked User Login Account */}
+            <div>
+              <label className={labelCls}>
+                {t('customers.linkedUserLogin', 'Linked User Portal Account')}
+              </label>
+              <select
+                value={formData.user_id}
+                onChange={(e) => setFormField('user_id', e.target.value)}
+                className="form-select cursor-pointer"
+              >
+                <option value="">{t('customers.noLinkedUser', 'Not linked to any user account')}</option>
+                {users.map((u: any) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* CARD 2: Enterprise Credit & B2B Financial Terms */}
+          <div className="p-6 rounded-2xl bg-card dark:bg-slate-900/80 border border-border dark:border-slate-800 space-y-5 shadow-2xs">
+            <div className="flex items-center gap-3 pb-3.5 border-b border-border/70 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                <CreditCard size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100 leading-snug">
+                  {t('customers.sectionCreditTax', 'B2B Credit, Payment Terms & Tax')}
+                </h3>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {t('customers.sectionCreditTaxSub', 'Corporate payment limits, credit rules, and official VAT invoicing')}
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.gender', t('gender', 'ភេទ'))}
+                <label className={labelCls}>
+                  {t('customers.paymentTermsLabel', 'Payment Terms')}
                 </label>
                 <select
-                  value={formData.gender}
-                  onChange={(e) => setFormField('gender', e.target.value)}
-                  className="w-full h-10 min-h-[40px] px-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
+                  value={formData.payment_terms}
+                  onChange={(e) => setFormField('payment_terms', e.target.value)}
+                  className="form-select cursor-pointer font-mono font-bold"
                 >
-                  <option value="" className="dark:bg-slate-900">{t('customers.selectGender', t('selectGender', 'ជ្រើសរើសភេទ'))}</option>
-                  <option value="male" className="dark:bg-slate-900">{t('customers.genderMale', t('genderMale', 'ប្រុស'))}</option>
-                  <option value="female" className="dark:bg-slate-900">{t('customers.genderFemale', t('genderFemale', 'ស្រី'))}</option>
-                  <option value="other" className="dark:bg-slate-900">{t('customers.genderOther', t('genderOther', 'ផ្សេងទៀត'))}</option>
+                  <option value="prepaid">{t('customers.paymentTermPrepaid', 'Prepaid (Direct Payment)')}</option>
+                  <option value="net_15">{t('customers.paymentTermNet15', 'Net 15 Days')}</option>
+                  <option value="net_30">{t('customers.paymentTermNet30', 'Net 30 Days (Standard Corporate)')}</option>
+                  <option value="net_60">{t('customers.paymentTermNet60', 'Net 60 Days')}</option>
+                  <option value="eom">{t('customers.paymentTermEom', 'End of Month (EOM)')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.birthDate', 'ថ្ងៃខែឆ្នាំកំណើត')}
+                <label className={labelCls}>
+                  {t('customers.creditLimitLabel', 'Credit Limit ($)')}
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <Calendar size={15} />
-                  </div>
-                  <input
-                    type="date"
-                    value={formData.birth_date}
-                    onChange={(e) => setFormField('birth_date', e.target.value)}
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium dark:[color-scheme:dark]"
-                  />
-                </div>
+                <input
+                  type="number"
+                  step="100"
+                  value={formData.credit_limit}
+                  onChange={(e) => setFormField('credit_limit', e.target.value)}
+                  placeholder="5000.00"
+                  className="form-input font-mono font-bold"
+                />
               </div>
             </div>
 
-            {/* Active Status Switch */}
-            <div className="p-4 bg-muted/15 dark:bg-slate-800/40 border border-border/80 dark:border-slate-800 rounded-xl flex items-center justify-between">
-              <div className="space-y-0.5">
-                <label htmlFor="custActivePage" className="text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100 cursor-pointer select-none">
-                  {t('customers.activeCustomerAccount', 'គណនីអតិថិជនសកម្ម')}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>
+                  {t('customers.taxNumberLabel', 'Tax Identification Number (VAT ID / Tax Number)')}
                 </label>
-                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
-                  {t('customers.activeAccountHelp', 'អនុញ្ញាតឱ្យអតិថិជននេះអាចទិញទំនិញ និងប្រើប្រាស់សេវាកម្មក្នុងប្រព័ន្ធ')}
-                </p>
+                <input
+                  type="text"
+                  value={formData.tax_number}
+                  onChange={(e) => setFormField('tax_number', e.target.value.toUpperCase())}
+                  placeholder="K00123456"
+                  className="form-input font-mono uppercase"
+                />
               </div>
+
+              <div>
+                <label className={labelCls}>
+                  {t('customers.taxBranchCodeLabel', 'Tax Branch Code (e-Invoice Standard)')}
+                </label>
+                <input
+                  type="text"
+                  value={formData.tax_branch_code}
+                  onChange={(e) => setFormField('tax_branch_code', e.target.value)}
+                  placeholder="00001 (Head Office)"
+                  className="form-input font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Credit Hold Checkbox Card */}
+            <label
+              className={`p-3.5 rounded-xl border flex items-start gap-3 transition-all cursor-pointer select-none ${
+                formData.is_credit_hold
+                  ? 'bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/40 dark:border-rose-500/50 shadow-2xs'
+                  : 'bg-muted/20 dark:bg-slate-800/30 border-border/70 dark:border-slate-700/60 hover:bg-muted/40 dark:hover:bg-slate-800/50'
+              }`}
+            >
               <input
                 type="checkbox"
-                id="custActivePage"
+                checked={formData.is_credit_hold}
+                onChange={(e) => setFormField('is_credit_hold', e.target.checked)}
+                className="checkbox mt-0.5"
+              />
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-foreground dark:text-slate-200 block">
+                  {t('customers.creditHoldTitle', 'Lock Account / Credit Hold')}
+                </span>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {t('customers.creditHoldDesc', 'Temporarily suspend credit purchasing for this account')}
+                </p>
+              </div>
+            </label>
+          </div>
+
+        </div>
+
+        {/* ─── RIGHT SIDEBAR COLUMN (lg:col-span-4) ─── */}
+        <div className="lg:col-span-4 space-y-6">
+
+          {/* SIDEBAR CARD 1: Status & Classification */}
+          <div className="p-6 rounded-2xl bg-card dark:bg-slate-900/80 border border-border dark:border-slate-800 space-y-5 shadow-2xs">
+            <div className="flex items-center gap-3 pb-3.5 border-b border-border/70 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <Award size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100 leading-snug">
+                  {t('customers.sidebarGroupStatus', 'Group & Account Status')}
+                </h3>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {t('customers.sidebarGroupStatusSub', 'Membership tier, RFM segment and active state')}
+                </p>
+              </div>
+            </div>
+
+            {/* Active Status Checkbox Card */}
+            <label
+              className={`p-3.5 rounded-xl border flex items-start gap-3 transition-all cursor-pointer select-none ${
+                formData.is_active
+                  ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 dark:border-primary/40 shadow-2xs'
+                  : 'bg-muted/20 dark:bg-slate-800/30 border-border/70 dark:border-slate-700/60 hover:bg-muted/40 dark:hover:bg-slate-800/50'
+              }`}
+            >
+              <input
+                type="checkbox"
                 checked={formData.is_active}
                 onChange={(e) => setFormField('is_active', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-primary rounded border-border dark:border-slate-700 focus:ring-primary cursor-pointer"
+                className="checkbox mt-0.5"
               />
-            </div>
-          </div>
-        </div>
-
-        {/* ══════════════════════════════════════════════════
-            ទំនាក់ទំនង & គណនី (SECTION 2)
-        ══════════════════════════════════════════════════ */}
-        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                <Phone size={18} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
-                  {t('customers.formTabContact', 'ទំនាក់ទំនង & គណនី')}
-                </h3>
-                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                  {t('customers.contactSectionHelp', 'ព័ត៌មានទំនាក់ទំនង សាខាប្រតិបត្តិការ និងការភ្ជាប់គណនីចូលប្រើប្រព័ន្ធ')}
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-foreground dark:text-slate-200 block">
+                  {t('customers.accountActiveStatus', 'Account Active Status')}
+                </span>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {formData.is_active
+                    ? t('customers.statusActiveText', 'Account is Active')
+                    : t('customers.statusInactiveText', 'Account is Suspended')}
                 </p>
               </div>
-            </div>
-          </div>
+            </label>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.email', 'អាសយដ្ឋានអ៊ីមែល')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <Mail size={15} />
-                  </div>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormField('email', e.target.value)}
-                    placeholder={t('customers.emailPlaceholder', 'customer@example.com')}
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.phone', 'លេខទូរស័ព្ទ')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <Phone size={15} />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormField('phone', e.target.value)}
-                    placeholder={t('customers.phonePlaceholder', '012 345 678 / +855...')}
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.selectCompany', 'ក្រុមហ៊ុន / សាខាប្រតិបត្តិការ')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <Building2 size={15} />
-                  </div>
-                  <select
-                    value={formData.company_id}
-                    onChange={(e) => setFormField('company_id', e.target.value)}
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
-                  >
-                    {companies.map((c: any) => (
-                      <option key={c.id} value={c.id} className="dark:bg-slate-900">
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.selectUser', 'គណនីអ្នកប្រើប្រាស់ក្នុងប្រព័ន្ធ')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <Shield size={15} />
-                  </div>
-                  <select
-                    value={formData.user_id}
-                    onChange={(e) => setFormField('user_id', e.target.value)}
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
-                  >
-                    <option value="" className="dark:bg-slate-900">{t('customers.noLinkedUser', 'មិនទាន់ភ្ជាប់គណនីអ្នកប្រើប្រាស់')}</option>
-                    {users.map((u: any) => (
-                      <option key={u.id} value={u.id} className="dark:bg-slate-900">
-                        {u.name} ({u.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ══════════════════════════════════════════════════
-            ក្រុម & សមាជិកភាព (SECTION 3)
-        ══════════════════════════════════════════════════ */}
-        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                <Award size={18} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
-                  {t('customers.formTabGroup', 'ក្រុម & សមាជិកភាព')}
-                </h3>
-                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                  {t('customers.groupSectionHelp', 'ជ្រើសរើសក្រុមអតិថិជនដើម្បីទទួលបានការបញ្ចុះតម្លៃ និងអត្ថប្រយោជន៍ស្វ័យប្រវត្តិ')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
+            {/* Customer Group */}
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('customers.customerGroup', 'ក្រុមអតិថិជន')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                  <Award size={15} />
-                </div>
-                <select
-                  value={formData.customer_group_id}
-                  onChange={(e) => setFormField('customer_group_id', e.target.value)}
-                  className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
-                >
-                  <option value="" className="dark:bg-slate-900">{t('customers.noSpecialGroup', 'ក្រុមទូទៅ (Standard)')}</option>
-                  {groups.map((g: any) => (
-                    <option key={g.id} value={g.id} className="dark:bg-slate-900">
-                      {g.name} {g.discount_percent ? `(បញ្ចុះតម្លៃ ${g.discount_percent}%)` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <label className={labelCls}>{t('customers.customerGroup', 'Customer Group')}</label>
+              <select
+                value={formData.customer_group_id}
+                onChange={(e) => setFormField('customer_group_id', e.target.value)}
+                className="form-select cursor-pointer"
+              >
+                <option value="">{t('customers.standardGroup', 'General / Standard Group')}</option>
+                {groups.map((g: any) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} {g.discount_percent ? `(${g.discount_percent}% OFF)` : ''}
+                  </option>
+                ))}
+              </select>
+              {selectedGroup?.discount_percent && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 font-semibold">
+                  {t('customers.discountPercentLabel', { percent: selectedGroup.discount_percent })}
+                </p>
+              )}
             </div>
 
-            {/* Group Benefits Information Card */}
-            <div className="p-4 rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 space-y-2">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs sm:text-[13px]">
-                <Sparkles size={16} />
-                <span>{t('customers.groupBenefits', 'អត្ថប្រយោជន៍សមាជិកភាព')}</span>
-              </div>
-              <p className="text-xs text-muted-foreground dark:text-slate-300 leading-relaxed">
-                {selectedGroup
-                  ? t('customers.groupSelectedNotice', 'អតិថិជននេះស្ថិតក្នុងក្រុម "{{group}}" ដែលទទួលបានការបញ្ចុះតម្លៃស្វ័យប្រវត្តិចំនួន {{discount}}% លើការលក់ទំនិញ។', {
-                      group: selectedGroup.name,
-                      discount: selectedGroup.discount_percent || 0
-                    })
-                  : t('customers.groupStandardNotice', 'អតិថិជនក្នុងក្រុមទូទៅ នឹងទទួលបានតម្លៃលក់ស្តង់ដារ និងអាចសន្ំពិន្ទុភក្តីភាពបានធម្មតា។')}
+            {/* RFM Segment */}
+            <div>
+              <label className={labelCls}>
+                {t('customers.rfmSegmentLabel', 'RFM Segment')}
+              </label>
+              <select
+                value={formData.rfm_segment}
+                onChange={(e) => setFormField('rfm_segment', e.target.value)}
+                className="form-select cursor-pointer font-semibold"
+              >
+                <option value="new">{t('customers.rfmNewCustomer', 'New Customer')}</option>
+                <option value="potential">{t('customers.rfmPotentialLoyalist', 'Potential Loyalist')}</option>
+                <option value="loyal">{t('customers.rfmLoyalCustomer', 'Loyal Customer')}</option>
+                <option value="champions">{t('customers.rfmChampionsCustomer', 'Champions (VIP Top Spender)')}</option>
+                <option value="at_risk">{t('customers.rfmAtRiskCustomer', 'At-Risk (Churn Warning)')}</option>
+                <option value="hibernating">{t('customers.rfmHibernatingCustomer', 'Hibernating / Inactive')}</option>
+              </select>
+            </div>
+
+            {/* Customer Tags */}
+            <div>
+              <label className={labelCls}>
+                {t('customers.customerTags', 'Customer Tags')}
+              </label>
+              <input
+                type="text"
+                value={formData.tags}
+                onChange={(e) => setFormField('tags', e.target.value)}
+                placeholder={t('customers.customerTagsPlaceholder', '#VIP, #Wholesale, #B2BContract')}
+                className="form-input"
+              />
+              <p className="text-[10px] text-muted-foreground dark:text-slate-400 mt-1.5">
+                {t('customers.tagsHelperText', 'Separate tags with commas (e.g. #VIP, #Wholesale)')}
               </p>
             </div>
           </div>
-        </div>
 
-        {/* ══════════════════════════════════════════════════
-            ហិរញ្ញវត្ថុ & ពន្ធដារ (SECTION 4)
-        ══════════════════════════════════════════════════ */}
-        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                <CreditCard size={18} />
+          {/* SIDEBAR CARD 2: Internal Notes */}
+          <div className="p-6 rounded-2xl bg-card dark:bg-slate-900/80 border border-border dark:border-slate-800 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-3 pb-3 border-b border-border/70 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
+                <FileText size={16} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
-                  {t('customers.formTabFinancial', 'ហិរញ្ញវត្ថុ & ពន្ធដារ')}
+                <h3 className="text-sm font-bold text-foreground dark:text-slate-100 leading-snug">
+                  {t('customers.sectionNotes', 'Internal Notes')}
                 </h3>
-                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                  {t('customers.financialSectionHelp', 'កំណត់កម្រិតឥណទានទិញជំពាក់ និងលេខសម្គាល់សារពើពន្ធផ្លូវការ')}
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">
+                  {t('customers.sectionNotesSub', 'Operational remarks, preferences, and special contracts')}
                 </p>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.creditLimit', 'កម្រិតឥណទាន ($)')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <DollarSign size={15} />
-                  </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.credit_limit}
-                    onChange={(e) => setFormField('credit_limit', e.target.value)}
-                    placeholder="1000.00"
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                  {t('customers.taxNumber', 'លេខសម្គាល់សារពើពន្ធ')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground dark:text-slate-400">
-                    <Receipt size={15} />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.tax_number}
-                    onChange={(e) => setFormField('tax_number', e.target.value)}
-                    placeholder="TAX-90124"
-                    className="w-full h-10 min-h-[40px] pl-9 pr-3.5 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono font-medium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Credit Policy Notice Card */}
-            <div className="p-4 bg-muted/15 dark:bg-slate-800/40 border border-border/80 dark:border-slate-800 rounded-xl space-y-1.5">
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100">
-                <Info size={15} className="text-primary" />
-                <span>{t('customers.creditPolicyTitle', 'គោលការណ៍ឥណទាន និងពន្ធដារ')}</span>
-              </div>
-              <p className="text-xs text-muted-foreground dark:text-slate-300 leading-relaxed">
-                {t('customers.creditPolicyDesc', 'កម្រិតឥណទានអតិបរមាអនុញ្ញាតឱ្យអតិថិជនទិញជំពាក់លើការបញ្ជាទិញ និងវិក្កយបត្រ POS។')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ══════════════════════════════════════════════════
-            កំណត់ចំណាំ & សង្ខេប (SECTION 5)
-        ══════════════════════════════════════════════════ */}
-        <div className="bg-card dark:bg-slate-900 border border-border/80 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-border/80 dark:border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                <FileText size={18} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-foreground dark:text-slate-100">
-                  {t('customers.formTabNotes', 'កំណត់ចំណាំ & សង្ខេប')}
-                </h3>
-                <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                  {t('customers.notesSectionHelp', 'កត់ត្រាចំណូលចិត្ត ឬព័ត៌មានបន្ថែមរបស់អតិថិជន')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5">
-                {t('customers.internalNotes', t('internalNotes', 'កំណត់ចំណាំផ្ទៃក្នុង'))}
-              </label>
               <textarea
+                rows={4}
                 value={formData.notes}
                 onChange={(e) => setFormField('notes', e.target.value)}
-                rows={3}
-                placeholder={t('customers.notesPlaceholder', t('notesPlaceholder', 'ចំណូលចិត្តរបស់អតិថិជន ឬកំណត់ចំណាំបន្ថែមសម្រាប់ការថែទាំ...'))}
-                className="w-full p-3 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none font-medium leading-relaxed"
+                placeholder={t('customers.notesPlaceholder', 'Customer preferences, contracts or internal remarks...')}
+                className="form-input h-auto min-h-[100px] resize-none py-2.5 leading-relaxed"
               />
             </div>
-
-            {/* Live Summary Review Card */}
-            <div className="p-4 sm:p-5 rounded-xl border border-border/80 dark:border-slate-800 bg-muted/15 dark:bg-slate-800/40 space-y-3.5">
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-100">
-                <CheckCircle2 size={17} className="text-emerald-500" />
-                <span>{t('customers.summaryTitle', t('summaryTitle', 'ផ្ទៀងផ្ទាត់ព័ត៌មានសង្ខេបមុនពេលរក្សាទុក'))}</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.name', t('name', 'ឈ្មោះ'))}</span>
-                  <span className="font-bold text-foreground dark:text-slate-100 truncate block mt-0.5">
-                    {formData.name || '—'}
-                  </span>
-                </div>
-                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.phone', t('phone', 'ទូរស័ព្ទ'))}</span>
-                  <span className="font-bold text-foreground dark:text-slate-100 truncate block mt-0.5">
-                    {formData.phone || '—'}
-                  </span>
-                </div>
-                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.customerGroup', t('customerGroup', 'ក្រុម'))}</span>
-                  <span className="font-bold text-primary truncate block mt-0.5">
-                    {selectedGroup?.name || t('customers.standardGroup', t('standardGroup', 'ទូទៅ'))}
-                  </span>
-                </div>
-                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.creditLimit', t('creditLimit', 'ឥណទាន'))}</span>
-                  <span className="font-mono font-bold text-foreground dark:text-slate-100 block mt-0.5">
-                    ${Number(formData.credit_limit || 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('customers.taxNumber', 'លេខសារពើពន្ធ')}</span>
-                  <span className="font-mono font-medium text-foreground dark:text-slate-100 truncate block mt-0.5">
-                    {formData.tax_number || '—'}
-                  </span>
-                </div>
-                <div className="bg-background/80 dark:bg-slate-900/90 p-3 rounded-lg border border-border/60 dark:border-slate-800">
-                  <span className="text-[10px] text-muted-foreground dark:text-slate-400 block">{t('common.status', 'ស្ថានភាព')}</span>
-                  <span className={`font-bold inline-block text-[11px] mt-0.5 ${formData.is_active ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {formData.is_active ? t('common.active', 'សកម្ម') : t('common.inactive', 'អសកម្ម')}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
+
         </div>
 
-        {/* ─── Global Sticky Form Footer ─── */}
-        <FormFooter
-          cancelPath="/customers"
-          cancelLabel={t('common.cancel', 'បោះបង់')}
-          isSubmitting={isSubmitting}
-          submitLabel={
-            isEdit
-              ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
-              : t('customers.saveCustomer', 'រក្សាទុកអតិថិជន')
-          }
-          infoSummary={
-            formData.name ? (
-              <span>
-                {t('customers.title', 'អតិថិជន')}: <strong className="text-foreground dark:text-slate-100 font-semibold">"{formData.name}"</strong>
-              </span>
-            ) : (
-              <span>{isEdit ? t('customers.editSubtitle', 'កែសម្រួលព័ត៌មានអតិថិជន') : t('customers.createSubtitle', 'បំពេញព័ត៌មានអតិថិជនថ្មី')}</span>
-            )
-          }
-        />
+        {/* ─── FULL-WIDTH FOOTER ACTIONS ─── */}
+        <div className="col-span-1 lg:col-span-12">
+          <FormFooter
+            onCancel={() => navigate('/customers')}
+            isSubmitting={isSubmitting}
+            submitLabel={isEdit ? t('customers.saveChanges', 'Save Changes') : t('customers.registerCustomerBtn', 'Register Customer')}
+          />
+        </div>
       </form>
     </div>
   )

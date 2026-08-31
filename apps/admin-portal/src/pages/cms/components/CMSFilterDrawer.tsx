@@ -1,6 +1,7 @@
 import React from 'react'
 import ModernSelect from '@/components/shared/ModernSelect'
 import FilterDrawerShell from '@/components/shared/FilterDrawerShell'
+import { useTranslation } from 'react-i18next'
 
 interface CMSFilterDrawerProps {
   isOpen: boolean
@@ -22,63 +23,72 @@ const FL = ({ label, children }: { label: string; children: React.ReactNode }) =
 )
 
 export const CMSFilterDrawer: React.FC<CMSFilterDrawerProps> = ({
-  isOpen, onClose,
-  filterStatus, setFilterStatus,
-  filterAuthor, setFilterAuthor,
-  filterCategory, setFilterCategory,
+  isOpen,
+  onClose,
+  filterStatus,
+  setFilterStatus,
+  filterAuthor,
+  setFilterAuthor,
+  filterCategory,
+  setFilterCategory,
   onReset,
 }) => {
-  const activeCount = [filterStatus !== 'all' ? filterStatus : '', filterAuthor !== 'all' ? filterAuthor : '', filterCategory !== 'all' ? filterCategory : ''].filter(Boolean).length
+  const { t } = useTranslation(['cms', 'common'])
+  const activeCount = [
+    filterStatus !== 'all' ? filterStatus : '',
+    filterAuthor !== 'all' ? filterAuthor : '',
+    filterCategory !== 'all' ? filterCategory : '',
+  ].filter(Boolean).length
 
   return (
     <FilterDrawerShell
       isOpen={isOpen}
       onClose={onClose}
       onReset={onReset}
-      title="Filter CMS Content"
+      title={t('cms.filterTitle', 'Filter CMS Content')}
       activeCount={activeCount}
     >
-      <FL label="Publication Status">
+      <FL label={t('cms.pubStatus', 'Publication Status')}>
         <ModernSelect
           value={filterStatus}
           onChange={setFilterStatus}
           options={[
-            { value: 'all', label: 'All Statuses' },
-            { value: 'published', label: 'Published Live' },
-            { value: 'draft', label: 'Draft / Work in Progress' },
-            { value: 'archived', label: 'Archived / Hidden' },
-            { value: 'pending', label: 'Pending Editorial Review' },
+            { value: 'all', label: t('cms.allStatuses', 'All Statuses') },
+            { value: 'published', label: t('cms.publishedLive', 'Published Live') },
+            { value: 'draft', label: t('cms.draftWip', 'Draft / Work in Progress') },
+            { value: 'archived', label: t('cms.archivedHidden', 'Archived / Hidden') },
+            { value: 'pending', label: t('cms.pendingReview', 'Pending Editorial Review') },
           ]}
-          placeholder="All Statuses"
+          placeholder={t('cms.allStatuses', 'All Statuses')}
         />
       </FL>
 
-      <FL label="Author Filter">
+      <FL label={t('cms.authorFilter', 'Author Filter')}>
         <ModernSelect
           value={filterAuthor}
           onChange={setFilterAuthor}
           options={[
-            { value: 'all', label: 'All Authors' },
-            { value: 'admin', label: 'System Admin' },
-            { value: 'editor', label: 'Editor Team' },
-            { value: 'guest', label: 'Guest Contributor' },
+            { value: 'all', label: t('cms.allAuthors', 'All Authors') },
+            { value: 'admin', label: t('cms.systemAdmin', 'System Admin') },
+            { value: 'editor', label: t('cms.editorTeam', 'Editor Team') },
+            { value: 'guest', label: t('cms.guestContributor', 'Guest Contributor') },
           ]}
-          placeholder="All Authors"
+          placeholder={t('cms.allAuthors', 'All Authors')}
         />
       </FL>
 
-      <FL label="Content Category">
+      <FL label={t('cms.contentCategory', 'Content Category')}>
         <ModernSelect
           value={filterCategory}
           onChange={setFilterCategory}
           options={[
-            { value: 'all', label: 'All Categories' },
-            { value: 'news', label: 'Product News' },
-            { value: 'tutorials', label: 'Guides & Tutorials' },
-            { value: 'updates', label: 'Release Updates' },
-            { value: 'case-studies', label: 'Case Studies' },
+            { value: 'all', label: t('cms.allCategories', 'All Categories') },
+            { value: 'news', label: t('cms.productNews', 'Product News') },
+            { value: 'tutorials', label: t('cms.guidesTutorials', 'Guides & Tutorials') },
+            { value: 'updates', label: t('cms.releaseUpdates', 'Release Updates') },
+            { value: 'case-studies', label: t('cms.caseStudies', 'Case Studies') },
           ]}
-          placeholder="All Categories"
+          placeholder={t('cms.allCategories', 'All Categories')}
         />
       </FL>
     </FilterDrawerShell>

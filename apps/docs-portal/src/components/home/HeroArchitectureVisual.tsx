@@ -9,7 +9,7 @@ export const HeroArchitectureVisual: React.FC = () => {
   const clientLayers = [
     {
       id: 'admin',
-      name: language === 'km' ? 'Admin Dashboard' : language === 'zh' ? '管理后台' : language === 'th' ? 'แดชบอร์ด Admin' : language === 'vi' ? 'Bảng Admin' : 'Admin Dashboard',
+      name: language === 'km' ? 'Admin Dashboard' : 'Admin Dashboard',
       tech: 'React 19',
       port: ':5173',
       icon: ShieldCheck,
@@ -19,7 +19,7 @@ export const HeroArchitectureVisual: React.FC = () => {
     },
     {
       id: 'store',
-      name: language === 'km' ? 'Customer Store' : language === 'zh' ? '客户商城' : language === 'th' ? 'หน้าร้านค้า' : language === 'vi' ? 'Trang Khách' : 'Customer Store',
+      name: language === 'km' ? 'Customer Store' : 'Customer Store',
       tech: 'React 19',
       port: ':5174',
       icon: ShoppingBag,
@@ -29,7 +29,7 @@ export const HeroArchitectureVisual: React.FC = () => {
     },
     {
       id: 'mobile',
-      name: language === 'km' ? 'Mobile App' : language === 'zh' ? 'Flutter移动端' : language === 'th' ? 'แอปมือถือ' : language === 'vi' ? 'App Di Động' : 'Mobile App',
+      name: language === 'km' ? 'Mobile App' : 'Mobile App',
       tech: 'Flutter 3',
       port: 'iOS / Android',
       icon: Smartphone,

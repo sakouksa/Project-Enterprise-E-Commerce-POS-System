@@ -10,11 +10,10 @@ import { useThemeStore } from '@/stores/themeStore'
 import api from '@/api/client'
 import SwitchAccountModal from './SwitchAccountModal'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
-import { sound } from '@/utils/sound'
 import UserAvatar from '@/components/common/UserAvatar'
 
 interface LanguageOption {
-  code: 'km' | 'en' | 'zh' | 'th' | 'vi'
+  code: 'km' | 'en'
   name: string
   label: string
   flag: string
@@ -23,9 +22,6 @@ interface LanguageOption {
 const LANGUAGES: LanguageOption[] = [
   { code: 'km', name: 'ភាសាខ្មែរ', label: 'Khmer', flag: '🇰🇭' },
   { code: 'en', name: 'English', label: 'English (US)', flag: '🇺🇸' },
-  { code: 'zh', name: '简体中文', label: 'Chinese', flag: '🇨🇳' },
-  { code: 'th', name: 'ภาษาไทย', label: 'Thai', flag: '🇹🇭' },
-  { code: 'vi', name: 'Tiếng Việt', label: 'Vietnamese', flag: '🇻🇳' },
 ]
 
 // 5-Language Dictionary for Profile Popup
@@ -289,7 +285,6 @@ export const ProfileDropdown: React.FC = () => {
         onClick={() => {
           setIsOpen(!isOpen)
           setCurrentView('main')
-          sound.playClick()
         }}
         className="flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full cursor-pointer transition-transform active:scale-95"
       >
@@ -365,7 +360,6 @@ export const ProfileDropdown: React.FC = () => {
                       onClick={() => {
                         navigate('/profile')
                         setIsOpen(false)
-                        sound.playClick()
                       }}
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all cursor-pointer group"
                     >
@@ -383,7 +377,6 @@ export const ProfileDropdown: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setCurrentView('language')
-                        sound.playClick()
                       }}
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all cursor-pointer group"
                     >
@@ -407,7 +400,6 @@ export const ProfileDropdown: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setCurrentView('appearance')
-                        sound.playClick()
                       }}
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all cursor-pointer group"
                     >
@@ -435,7 +427,6 @@ export const ProfileDropdown: React.FC = () => {
                       onClick={() => {
                         navigate('/settings')
                         setIsOpen(false)
-                        sound.playClick()
                       }}
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all cursor-pointer group"
                     >
@@ -454,7 +445,6 @@ export const ProfileDropdown: React.FC = () => {
                       onClick={() => {
                         navigate('/activity-logs')
                         setIsOpen(false)
-                        sound.playClick()
                       }}
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all cursor-pointer group"
                     >
@@ -474,7 +464,6 @@ export const ProfileDropdown: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setIsLogoutConfirmOpen(true)
-                        sound.playClick()
                       }}
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-red-500 hover:bg-red-500/10 transition-all cursor-pointer group"
                     >
@@ -503,7 +492,6 @@ export const ProfileDropdown: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setCurrentView('main')
-                        sound.playClick()
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs font-black text-foreground border-b border-border/50 mb-2 cursor-pointer hover:text-primary transition-colors"
                     >
@@ -520,7 +508,6 @@ export const ProfileDropdown: React.FC = () => {
                           type="button"
                           onClick={() => {
                             setLanguage(lang.code)
-                            sound.playSuccess()
                             setCurrentView('main')
                             setIsOpen(false)
                           }}
@@ -559,7 +546,6 @@ export const ProfileDropdown: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setCurrentView('main')
-                        sound.playClick()
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs font-black text-foreground border-b border-border/50 mb-2 cursor-pointer hover:text-primary transition-colors"
                     >
@@ -580,7 +566,6 @@ export const ProfileDropdown: React.FC = () => {
                           type="button"
                           onClick={() => {
                             updateThemeMode(mode.id as any)
-                            sound.playSuccess()
                             setCurrentView('main')
                             setIsOpen(false)
                           }}
@@ -607,7 +592,6 @@ export const ProfileDropdown: React.FC = () => {
                         onClick={() => {
                           navigate('/settings?tab=appearance')
                           setIsOpen(false)
-                          sound.playClick()
                         }}
                         className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
                       >

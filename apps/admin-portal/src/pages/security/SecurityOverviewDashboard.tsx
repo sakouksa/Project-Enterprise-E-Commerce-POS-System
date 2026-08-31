@@ -16,7 +16,7 @@ import {
   ArrowRight,
   ShieldAlert
 } from 'lucide-react'
-import api from '../../api/client'
+import { securityService } from '@/services/securityService'
 import { showToast } from '../../utils/toast'
 
 export const SecurityOverviewDashboard: React.FC = () => {
@@ -50,9 +50,9 @@ export const SecurityOverviewDashboard: React.FC = () => {
   const fetchOverview = async () => {
     try {
       setLoading(true)
-      const res = await api.get('/security/overview')
-      if (res.data?.success) {
-        setData(res.data.data)
+      const res = await securityService.getOverview()
+      if (res.success || res.data) {
+        setData(res.data || res)
       }
     } catch (err: any) {
       showToast.error(err?.response?.data?.message || 'Failed to load security overview')

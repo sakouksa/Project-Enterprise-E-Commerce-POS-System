@@ -9,7 +9,8 @@ import {
   Users, Copy, Check, ShieldAlert, Award, FileText, Layers, RefreshCcw,
   CheckSquare, ShieldX
 } from 'lucide-react'
-import api from '@/api/client'
+import { permissionService } from '@/services/permissionService'
+import { roleService } from '@/services/roleService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
@@ -186,19 +187,19 @@ const PermissionsPage: React.FC = () => {
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['permissions', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/permissions', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => permissionService.list({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const { data: statsData } = useQuery({
     queryKey: ['permissions-dashboard-stats'],
-    queryFn: () => api.get('/permissions/stats').then(r => r.data.data ?? r.data),
+    queryFn: () => permissionService.getStats(),
     staleTime: 30000,
   })
 
   const { data: rolesList } = useQuery({
     queryKey: ['roles-list-select'],
-    queryFn: () => api.get('/roles').then(r => r.data.data ?? []),
+    queryFn: () => roleService.list().then(r => r.data ?? []),
   })
 
   const permissionsRaw: PermissionItem[] = data?.data ?? []
@@ -288,7 +289,7 @@ const PermissionsPage: React.FC = () => {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/permissions', payload),
+    mutationFn: (payload: any) => permissionService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['permissions'] })
       qc.invalidateQueries({ queryKey: ['permissions-dashboard-stats'] })
@@ -301,7 +302,7 @@ const PermissionsPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/permissions/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => permissionService.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['permissions'] })
       qc.invalidateQueries({ queryKey: ['permissions-dashboard-stats'] })
@@ -314,7 +315,7 @@ const PermissionsPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/permissions/${id}`),
+    mutationFn: (id: number) => permissionService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['permissions'] })
       qc.invalidateQueries({ queryKey: ['permissions-dashboard-stats'] })
@@ -369,7 +370,7 @@ const PermissionsPage: React.FC = () => {
 
   // ── CSV Export & Import Handlers ─────────────────────────────────────────
   const handleExportCSV = () => {
-    toast.info('Exporting permissions CSV dataset...')
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
     setTimeout(() => {
       const headers = ['ID', 'Permission Key', 'Guard Scope', 'Module Scope', 'Risk Level', 'Status']
       const rows = (permissions.length > 0 ? permissions : permissionsRaw).map((p) => [
@@ -378,11 +379,12 @@ const PermissionsPage: React.FC = () => {
         p.guard_name || 'api',
         p.name.includes('.') ? p.name.split('.')[0] : (p.module || 'general'),
         p.risk_level || (p.name.includes('delete') ? 'high' : 'low'),
-        p.is_active !== false ? 'Active' : 'Inactive',
+        p.is_active !== false ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
       ])
       downloadCsv('system_permissions_matrix', headers, rows)
-      toast.success(`Exported ${rows.length} permissions to CSV!`)
-    }, 300)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
   }
 
   const handleFileSelectForImport = (file: File) => {

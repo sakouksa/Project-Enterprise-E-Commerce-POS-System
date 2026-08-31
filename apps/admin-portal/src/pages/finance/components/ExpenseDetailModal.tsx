@@ -34,12 +34,16 @@ import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/utils/formatters'
 import { getStorageFileUrl } from '@/utils/image'
 import { useToast } from '@/hooks/useToast'
+import { CloseButton } from '@/components/common'
 
 interface ExpenseDetailModalProps {
   expense: any | null
   isOpen: boolean
   onClose: () => void
   onEdit?: (expense: any) => void
+  onPrintOfficialVoucher?: (expense: any) => void
+  onApprove?: (id: number) => void
+  onReject?: (id: number) => void
 }
 
 // ─── Visual Category Resolver with Full 5-Language Mapping ──────────────────
@@ -120,9 +124,12 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
   isOpen,
   onClose,
   onEdit,
+  onPrintOfficialVoucher,
+  onApprove,
+  onReject,
 }) => {
   const { t, i18n } = useTranslation(['finance', 'common'])
-  const currentLocale = i18n.language === 'km' ? 'km-KH' : i18n.language === 'zh' ? 'zh-CN' : i18n.language === 'th' ? 'th-TH' : i18n.language === 'vi' ? 'vi-VN' : 'en-US'
+  const currentLocale = i18n.language === 'km' ? 'km-KH' : 'en-US'
   const toast = useToast()
   const [copied, setCopied] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -146,7 +153,11 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
   }
 
   const handlePrint = () => {
-    window.print()
+    if (onPrintOfficialVoucher) {
+      onPrintOfficialVoucher(expense)
+    } else {
+      window.print()
+    }
   }
 
   const getStatusBadge = () => {
@@ -254,13 +265,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
                 >
                   <Printer size={17} />
                 </button>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                  title={t('common.close', 'Close')}
-                >
-                  <X size={18} />
-                </button>
+                <CloseButton onClose={onClose} size="md" variant="default" />
               </div>
             </div>
 
@@ -441,28 +446,69 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
             </div>
 
             {/* ─── 3. Action Footer ─── */}
-            <div className="p-4 sm:px-6 bg-muted/40 dark:bg-slate-900/60 border-t border-border flex items-center justify-between gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer select-none"
-              >
-                {t('common.close', 'Close')}
-              </button>
-
-              {onEdit && (
+            <div className="p-4 sm:px-6 bg-muted/40 dark:bg-slate-900/60 border-t border-border flex items-center justify-between gap-2.5 flex-wrap shrink-0">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    onClose()
-                    onEdit(expense)
-                  }}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-primary hover:opacity-95 transition-opacity cursor-pointer shadow-xs select-none"
+                  onClick={onClose}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer select-none"
                 >
-                  <Edit size={14} />
-                  <span>{t('finance.edit_expense_btn', 'Edit Expense')}</span>
+                  {t('common.close', 'Close')}
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer select-none shadow-2xs"
+                  title={t('finance.print_voucher', 'Print Official Voucher')}
+                >
+                  <Printer size={14} className="text-primary" />
+                  <span>{t('finance.print_voucher', 'Voucher')}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {status === 'pending' && onReject && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose()
+                      onReject(expense.id)
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors cursor-pointer"
+                  >
+                    <XCircle size={14} />
+                    <span>{t('finance.reject_btn', 'Reject')}</span>
+                  </button>
+                )}
+
+                {status === 'pending' && onApprove && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose()
+                      onApprove(expense.id)
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 transition-all cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>{t('finance.approve_btn', 'Approve')}</span>
+                  </button>
+                )}
+
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose()
+                      onEdit(expense)
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:opacity-95 active:scale-98 transition-all cursor-pointer shadow-xs select-none"
+                  >
+                    <Edit size={14} />
+                    <span>{t('finance.edit_expense_btn', 'Edit')}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>

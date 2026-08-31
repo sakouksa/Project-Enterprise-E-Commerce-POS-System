@@ -9,10 +9,16 @@ import {
   Building, Clock, CheckCircle2, ArrowUpRight, Sliders, Zap, ShieldCheck
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTranslation } from 'react-i18next'
-import api from '@/api/client'
+import { inventoryService } from '@/services/inventoryService'
+import { companyService } from '@/services/companyService'
+import { categoryService } from '@/services/categoryService'
+import { brandService } from '@/services/brandService'
+import { supplierService } from '@/services/supplierService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
+import { useTranslation } from 'react-i18next'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { HeaderActionsGroup, AddButton, ActionButton, FilterButton, RefreshButton } from '@/components/common'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
@@ -276,126 +282,117 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
   // Global Lists Queries
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses-list'],
-    queryFn: () => api.get('/warehouses').then(r => r.data.data),
+    queryFn: () => companyService.getWarehouses().then(r => r.data),
   })
 
   const { data: categories } = useQuery({
     queryKey: ['categories-list'],
-    queryFn: () => api.get('/categories').then(r => r.data.data),
+    queryFn: () => categoryService.list({ per_page: 500 }).then(r => r.data),
   })
 
   const { data: brands } = useQuery({
     queryKey: ['brands-list'],
-    queryFn: () => api.get('/brands').then(r => r.data.data),
+    queryFn: () => brandService.list({ per_page: 500 }).then(r => r.data),
   })
 
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers-list-inventory'],
-    queryFn: () => api.get('/suppliers', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => supplierService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: users } = useQuery({
     queryKey: ['users-list-inventory'],
-    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   // Tab Queries
   const { data: statsData } = useQuery({
     queryKey: ['inventory-dashboard-stats'],
-    queryFn: () => api.get('/inventory/stats').then(r => r.data.data ?? r.data),
+    queryFn: () => inventoryService.stats(),
     staleTime: 30000,
   })
 
   const { data: stockLevels, isLoading: loadingLevels, isFetching: fetchingLevels } = useQuery({
     queryKey: ['inventory-levels', page, debouncedSearch, perPage, selectedWarehouse, selectedCategory, selectedBrand, selectedStatus, selectedSupplier, filterStartDate, filterEndDate, selectedCreatedBy, sortBy, sortOrder],
-    queryFn: () => api.get('/inventory', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        warehouse_id: selectedWarehouse,
-        category_id: selectedCategory,
-        brand_id: selectedBrand,
-        status: selectedStatus,
-        supplier_id: selectedSupplier,
-        start_date: filterStartDate,
-        end_date: filterEndDate,
-        created_by: selectedCreatedBy,
-        sort_by: sortBy,
-        sort_order: sortOrder
-      }
-    }).then(r => r.data),
+    queryFn: () => inventoryService.list({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      warehouse_id: selectedWarehouse,
+      category_id: selectedCategory,
+      brand_id: selectedBrand,
+      status: selectedStatus,
+      supplier_id: selectedSupplier,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+      created_by: selectedCreatedBy,
+      sort_by: sortBy,
+      sort_order: sortOrder
+    }),
     enabled: activeTab === 'levels',
   })
 
   const { data: adjustmentsData, isLoading: loadingAdjustments, isFetching: fetchingAdjustments } = useQuery({
     queryKey: ['inventory-adjustments', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus, filterStartDate, filterEndDate],
-    queryFn: () => api.get('/stock-adjustments', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        warehouse_id: selectedWarehouse,
-        status: selectedStatus,
-        start_date: filterStartDate,
-        end_date: filterEndDate,
-      }
-    }).then(r => r.data),
+    queryFn: () => inventoryService.listAdjustments({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      warehouse_id: selectedWarehouse,
+      status: selectedStatus,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+    }),
     enabled: activeTab === 'adjustments',
   })
 
   const { data: transfersData, isLoading: loadingTransfers, isFetching: fetchingTransfers } = useQuery({
     queryKey: ['inventory-transfers', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus, filterStartDate, filterEndDate],
-    queryFn: () => api.get('/stock-transfers', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        from_warehouse_id: selectedWarehouse,
-        status: selectedStatus,
-        start_date: filterStartDate,
-        end_date: filterEndDate,
-      }
-    }).then(r => r.data),
+    queryFn: () => inventoryService.listTransfers({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      from_warehouse_id: selectedWarehouse,
+      status: selectedStatus,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+    }),
     enabled: activeTab === 'transfers',
   })
 
   const { data: opnamesData, isLoading: loadingOpnames, isFetching: fetchingOpnames } = useQuery({
     queryKey: ['inventory-opnames', page, debouncedSearch, perPage, selectedWarehouse, selectedStatus, filterStartDate, filterEndDate],
-    queryFn: () => api.get('/stock-opnames', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        warehouse_id: selectedWarehouse,
-        status: selectedStatus,
-        start_date: filterStartDate,
-        end_date: filterEndDate,
-      }
-    }).then(r => r.data),
+    queryFn: () => inventoryService.listOpnames({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      warehouse_id: selectedWarehouse,
+      status: selectedStatus,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+    }),
     enabled: activeTab === 'opnames',
   })
 
   const { data: movementsData, isLoading: loadingMovements, isFetching: fetchingMovements } = useQuery({
     queryKey: ['inventory-movements-list', page, debouncedSearch, perPage, selectedWarehouse, filterStartDate, filterEndDate],
-    queryFn: () => api.get('/inventory-movements', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        warehouse_id: selectedWarehouse,
-        start_date: filterStartDate,
-        end_date: filterEndDate,
-      }
-    }).then(r => r.data),
+    queryFn: () => inventoryService.getMovements({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      warehouse_id: selectedWarehouse,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+    }),
     enabled: activeTab === 'movements',
   })
 
   // Delete Mutations
   const deleteMutation = useMutation({
     mutationFn: async ({ type, id }: { type: 'transfer' | 'adjustment' | 'opname'; id: number }) => {
-      const endpoint = type === 'transfer' ? `/stock-transfers/${id}` : type === 'adjustment' ? `/stock-adjustments/${id}` : `/stock-opnames/${id}`
-      return api.delete(endpoint)
+      if (type === 'transfer') return inventoryService.deleteTransfer(id)
+      if (type === 'adjustment') return inventoryService.deleteAdjustment(id)
+      return inventoryService.deleteOpname(id)
     },
     onSuccess: (_, vars) => {
       toast.success(t('common.deletedSuccessfully', 'Record deleted successfully'))
@@ -432,13 +429,15 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
   }, [statsData, stockLevels, warehouses])
 
   const openCreateForm = (type: 'adjustment' | 'transfer' | 'opname') => {
-    setActiveFormType(type)
-    setActiveFormId(null)
+    if (type === 'adjustment') navigate('/inventory/adjustments/create')
+    else if (type === 'transfer') navigate('/inventory/transfers/create')
+    else if (type === 'opname') navigate('/inventory/opnames/create')
   }
 
   const openEditForm = (type: 'adjustment' | 'transfer' | 'opname', id: number) => {
-    setActiveFormType(type)
-    setActiveFormId(id)
+    if (type === 'adjustment') navigate(`/inventory/adjustments/${id}/edit`)
+    else if (type === 'transfer') navigate(`/inventory/transfers/${id}/edit`)
+    else if (type === 'opname') navigate(`/inventory/opnames/${id}/edit`)
   }
 
   // If creating/editing a transfer, adjustment, or opname, render dedicated full form page view
@@ -486,44 +485,39 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="print:hidden space-y-2">
-        <Breadcrumb items={[{ label: t('inventory', 'Inventory Management') }, { label: t(`tabs.${activeTab}`, 'Stock Management') }]} />
+      {/* Breadcrumb */}
+      <div className="print:hidden">
+        <Breadcrumb items={[{ label: t('inventory', 'Inventory Management') }, { label: t(`tabs.${activeTab}`, 'Stock') }]} />
+      </div>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Package className="h-6 w-6 text-primary" />
-              {t('inventoryOverview', 'Enterprise Inventory & Stock Management')}
-            </h1>
-            <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-              {t('inventorySubtitle', 'Track warehouse multi-location levels, real-time stock movements, transfers, adjustments, and cycle counting audits.')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => openCreateForm('opname')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-colors shadow-xs cursor-pointer"
-            >
-              <CheckCircle2 size={14} className="text-emerald-500" />
-              <span>{t('create_opname', 'New Stock Audit')}</span>
-            </button>
-            <button
-              onClick={() => openCreateForm('transfer')}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-colors shadow-xs cursor-pointer"
-            >
-              <ArrowLeftRight size={14} className="text-blue-500" />
-              <span>{t('newTransfer', 'Stock Transfer')}</span>
-            </button>
-            <button
-              onClick={() => openCreateForm('adjustment')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
-            >
-              <Plus size={15} />
-              <span>{t('newAdjustment', 'Stock Adjustment')}</span>
-            </button>
-          </div>
+      {/* Hero Header */}
+      <div className="bg-card border border-border p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Package className="h-6 w-6 text-primary" />
+            <span>{t('inventoryOverview', 'Inventory & Stock Management')}</span>
+          </h1>
+          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
+            {t('inventorySubtitle', 'Track stock levels across warehouses, real-time stock movements, transfers, adjustments, and stock opname audits.')}
+          </p>
         </div>
+
+        <HeaderActionsGroup>
+          <ActionButton
+            onClick={() => openCreateForm('opname')}
+            icon={<CheckCircle2 size={15} className="text-emerald-500" />}
+            label={t('create_opname', 'New Stock Opname')}
+          />
+          <ActionButton
+            onClick={() => openCreateForm('transfer')}
+            icon={<ArrowLeftRight size={15} className="text-blue-500" />}
+            label={t('newTransfer', 'Stock Transfer')}
+          />
+          <AddButton
+            onClick={() => openCreateForm('adjustment')}
+            label={t('newAdjustment', 'Stock Adjustment')}
+          />
+        </HeaderActionsGroup>
       </div>
 
       {/* KPI Overview Cards */}
@@ -542,28 +536,17 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
               placeholder="inventory.searchPlaceholder"
             />
 
-            <button
-              type="button"
+            <FilterButton
               onClick={() => setFilterDrawerOpen(true)}
-              className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
-                (selectedWarehouse || selectedCategory || selectedBrand || selectedStatus || selectedSupplier || filterStartDate || filterEndDate || selectedCreatedBy)
-                  ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
-                  : 'border-border bg-card hover:bg-muted/80 text-foreground'
-              }`}
-            >
-              <Filter size={15} className={(selectedWarehouse || selectedCategory || selectedBrand || selectedStatus || selectedSupplier || filterStartDate || filterEndDate || selectedCreatedBy) ? 'text-primary' : 'text-muted-foreground'} />
-              <span>{t('filter', 'Filter')}</span>
-              {(selectedWarehouse || selectedCategory || selectedBrand || selectedStatus || selectedSupplier || filterStartDate || filterEndDate || selectedCreatedBy) && (
-                <span className="w-2 h-2 rounded-full bg-primary" />
-              )}
-            </button>
+              isActive={!!(selectedWarehouse || selectedCategory || selectedBrand || selectedStatus || selectedSupplier || filterStartDate || filterEndDate || selectedCreatedBy)}
+              label={t('filter', 'Filter')}
+            />
 
             <ResetButton onClick={handleResetFilters} label={t('common.reset', 'Reset')} />
           </div>
 
           <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-            <button
-              type="button"
+            <RefreshButton
               onClick={() => {
                 if (activeTab === 'levels') qc.invalidateQueries({ queryKey: ['inventory-levels'] })
                 if (activeTab === 'movements') qc.invalidateQueries({ queryKey: ['inventory-movements-list'] })
@@ -572,11 +555,8 @@ const InventoryPage: React.FC<{ tab?: string }> = ({ tab }) => {
                 if (activeTab === 'opnames') qc.invalidateQueries({ queryKey: ['inventory-opnames'] })
                 qc.invalidateQueries({ queryKey: ['inventory-dashboard-stats'] })
               }}
-              className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
               title={t('common.refresh', 'Refresh')}
-            >
-              <RefreshCw size={15} />
-            </button>
+            />
 
             <ColumnSettingsPopover
               columns={currentTabColumnOptions}

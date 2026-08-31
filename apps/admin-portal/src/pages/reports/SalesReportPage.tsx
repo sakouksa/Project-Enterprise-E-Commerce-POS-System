@@ -5,21 +5,21 @@ import {
   BarChart2, RefreshCw, AlertTriangle, WifiOff, ShieldAlert,
   Download, Loader2, ChevronDown, Calendar, FileSpreadsheet
 } from 'lucide-react'
-import api from '@/api/client'
+import { reportService } from '@/services/reportService'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/useToast'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { downloadBlob } from '@/utils/export'
 
-import { SalesFilters, type SalesFilterState } from '@/components/reports/sales/SalesFilters'
-import { SalesSummaryCards } from '@/components/reports/sales/SalesSummaryCards'
-import { RevenueTrendChart } from '@/components/reports/sales/RevenueTrendChart'
-import { CategorySalesChart } from '@/components/reports/sales/CategorySalesChart'
-import { BrandSalesChart } from '@/components/reports/sales/BrandSalesChart'
-import { PaymentChart } from '@/components/reports/sales/PaymentChart'
-import { TopProductsTable } from '@/components/reports/sales/TopProductsTable'
-import { TopCustomersTable } from '@/components/reports/sales/TopCustomersTable'
-import { SalesReportTable } from '@/components/reports/sales/SalesReportTable'
+import { SalesFilters, type SalesFilterState } from './components/sales/SalesFilters'
+import { SalesSummaryCards } from './components/sales/SalesSummaryCards'
+import { RevenueTrendChart } from './components/sales/RevenueTrendChart'
+import { CategorySalesChart } from './components/sales/CategorySalesChart'
+import { BrandSalesChart } from './components/sales/BrandSalesChart'
+import { PaymentChart } from './components/sales/PaymentChart'
+import { TopProductsTable } from './components/sales/TopProductsTable'
+import { TopCustomersTable } from './components/sales/TopCustomersTable'
+import { SalesReportTable } from './components/sales/SalesReportTable'
 
 const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 const today = new Date().toISOString().split('T')[0]
@@ -71,7 +71,7 @@ export const SalesReportPage: React.FC = () => {
   } = useQuery({
     queryKey: ['sales-overview', filters, trendGroupBy],
     queryFn: () =>
-      api.get('/reports/sales/overview', { params: { ...filters, group_by: trendGroupBy } }).then((r) => r.data?.data),
+      reportService.salesOverview({ ...filters, group_by: trendGroupBy }),
     enabled: canView,
     staleTime: 15000,
   })
@@ -106,9 +106,7 @@ export const SalesReportPage: React.FC = () => {
   } = useQuery({
     queryKey: ['sales-list', filters, page, search, sortBy, sortOrder],
     queryFn: () =>
-      api.get('/reports/sales/list', {
-        params: { ...filters, page, search, sort_by: sortBy, sort_order: sortOrder, per_page: 15 },
-      }).then((r) => r.data),
+      reportService.salesList({ ...filters, page, search, sort_by: sortBy, sort_order: sortOrder, per_page: 15 }),
     enabled: canView,
     staleTime: 15000,
   })
@@ -118,18 +116,15 @@ export const SalesReportPage: React.FC = () => {
     refetchSalesList()
   }
 
-  const getPresetDateRange = (preset: 'today' | 'yesterday' | 'thisWeek' | 'thisMonth') => {
+  const getPresetDateRange = (preset: 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | '7days' | '30days' | 'lastMonth') => {
     const now = new Date()
     const todayStr = now.toISOString().split('T')[0]
-
     if (preset === 'today') {
       return { date_from: todayStr, date_to: todayStr }
     }
     if (preset === 'yesterday') {
-      const d = new Date()
-      d.setDate(d.getDate() - 1)
-      const y = d.toISOString().split('T')[0]
-      return { date_from: y, date_to: y }
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+      return { date_from: yesterday, date_to: yesterday }
     }
     if (preset === 'thisWeek') {
       const d = new Date()
@@ -141,6 +136,14 @@ export const SalesReportPage: React.FC = () => {
     if (preset === 'thisMonth') {
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
       return { date_from: firstDay, date_to: todayStr }
+    }
+    if (preset === '7days') {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+      return { date_from: sevenDaysAgo, date_to: todayStr }
+    }
+    if (preset === '30days') {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+      return { date_from: thirtyDaysAgo, date_to: todayStr }
     }
     return { date_from: filters.date_from, date_to: filters.date_to }
   }
@@ -165,10 +168,7 @@ export const SalesReportPage: React.FC = () => {
       : filters
 
     try {
-      const response = await api.get('/reports/sales/export', {
-        params: { ...exportFilters, format },
-        responseType: 'blob',
-      })
+      const response = await reportService.exportSales({ ...exportFilters, format })
 
       const blob = new Blob([response.data], { type: format === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8;' })
       downloadBlob(blob, `sales_report_${exportFilters.date_from}_${exportFilters.date_to}.${format === 'excel' ? 'csv' : format}`)

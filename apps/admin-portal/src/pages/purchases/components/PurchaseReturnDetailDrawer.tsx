@@ -5,8 +5,10 @@ import { X, CheckCircle, RotateCcw, Copy, Check, Building2, Phone, Calendar, Use
 import { RETURN_STATUS_BADGE, type PurchaseReturn } from '../types/purchaseReturn.types'
 import { formatCurrency } from '../utils/purchaseCurrency'
 import { PurchaseReturnPrintVoucher } from './PurchaseReturnPrintVoucher'
+import { CloseButton, CancelButton } from '@/components/common'
 
 interface PurchaseReturnDetailDrawerProps {
+  isOpen?: boolean
   selectedReturn: PurchaseReturn | null
   onClose: () => void
   onOpenApprove: (r: PurchaseReturn) => void
@@ -14,6 +16,7 @@ interface PurchaseReturnDetailDrawerProps {
 }
 
 export const PurchaseReturnDetailDrawer: React.FC<PurchaseReturnDetailDrawerProps> = ({
+  isOpen,
   selectedReturn,
   onClose,
   onOpenApprove,
@@ -21,6 +24,8 @@ export const PurchaseReturnDetailDrawer: React.FC<PurchaseReturnDetailDrawerProp
 }) => {
   const { t } = useTranslation(['purchases', 'common'])
   const [copiedRef, setCopiedRef] = useState(false)
+
+  const isVisible = Boolean(selectedReturn && (isOpen ?? true))
 
   const copyReference = () => {
     if (!selectedReturn?.reference_number) return
@@ -35,7 +40,7 @@ export const PurchaseReturnDetailDrawer: React.FC<PurchaseReturnDetailDrawerProp
 
   return (
     <AnimatePresence>
-      {selectedReturn && (
+      {isVisible && selectedReturn && (
         <div className="fixed inset-0 z-50 overflow-hidden flex justify-end print:static print:inset-auto print:overflow-visible print:block print:w-full print:bg-white print:p-0 print:m-0">
           {/* Backdrop */}
           <motion.div
@@ -84,22 +89,16 @@ export const PurchaseReturnDetailDrawer: React.FC<PurchaseReturnDetailDrawerProp
                       <span className="text-muted-foreground/40">•</span>
                       <span className={RETURN_STATUS_BADGE[selectedReturn.status] || 'inline-flex items-center justify-center px-2 py-0.5 rounded text-xs bg-muted'}>
                         {selectedReturn.status === 'completed' || selectedReturn.status === 'approved'
-                          ? t('purchases.approved', 'បានអនុម័ត')
+                          ? t('purchases.approved', 'Approved')
                           : selectedReturn.status === 'cancelled'
-                          ? t('purchases.cancelled', 'បានបោះបង់')
-                          : t('purchases.draft', 'សេចក្តីព្រាង')}
+                          ? t('purchases.cancelled', 'Cancelled')
+                          : t('purchases.draft', 'Draft')}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
-                >
-                  <X size={18} />
-                </button>
+                <CloseButton onClose={onClose} size="md" color="rose" />
               </div>
 
               {/* Scrollable Content */}
@@ -290,13 +289,7 @@ export const PurchaseReturnDetailDrawer: React.FC<PurchaseReturnDetailDrawerProp
                   <Printer size={14} />
                   <span>{t('purchases.printDebitNote', 'Print Debit Note')}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-xs font-bold text-foreground bg-card hover:bg-muted rounded-xl border border-border transition-all cursor-pointer"
-                >
-                  {t('common.close', 'Close')}
-                </button>
+                <CancelButton onClick={onClose} label={t('common.close', 'Close')} />
               </div>
             </motion.div>
           </div>

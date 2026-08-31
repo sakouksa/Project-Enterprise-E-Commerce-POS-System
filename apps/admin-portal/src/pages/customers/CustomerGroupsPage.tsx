@@ -5,7 +5,7 @@ import {
   ChevronUp, ChevronDown, Download, Award,
   AlertCircle
 } from 'lucide-react'
-import api from '@/api/client'
+import { customerService } from '@/services/customerService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -16,7 +16,7 @@ import ModernSelect from '@/components/shared/ModernSelect'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import ResetButton from '@/components/shared/ResetButton'
 import { useTranslation } from 'react-i18next'
-import { CustomerGroupModal, PercentBadge, StatusBadge, type CustomerGroup } from '@/components/common'
+import { CustomerGroupModal, PercentBadge, StatusBadge, type CustomerGroup, HeaderActionsGroup, AddButton, ExportButton } from '@/components/common'
 
 interface CustomerGroupsPageProps {
   isTab?: boolean
@@ -63,21 +63,19 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['customer-groups', page, debouncedSearch, perPage, statusFilter, sortBy, sortOrder],
-    queryFn: () => api.get('/customer-groups', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        status: statusFilter,
-        sort_by: sortBy,
-        sort_order: sortOrder
-      }
-    }).then(r => r.data),
+    queryFn: () => customerService.groups({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      sort_by: sortBy,
+      sort_order: sortOrder
+    }),
     placeholderData: (prev) => prev,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/customer-groups/${id}`),
+    mutationFn: (id: number) => customerService.deleteGroup(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customer-groups'] })
       toast.success(t('toast.deleted', { item: t('customers.customerGroups') }))
@@ -91,7 +89,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/customer-groups/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => customerService.bulkDeleteGroups(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customer-groups'] })
       toast.success(t('toast.deleted', { item: `${selectedRows.length} ${t('customers.customerGroups', 'Customer Groups')}` }))
@@ -257,22 +255,16 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
           </div>
-          <div className="flex gap-2">
-            <button
+          <HeaderActionsGroup>
+            <ExportButton
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in cursor-pointer"
-            >
-              <Download size={15} />
-              {t('common.export', 'Export')}
-            </button>
-            <button
+              label={t('customers.exportCsv', 'Export CSV')}
+            />
+            <AddButton
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in cursor-pointer"
-            >
-              <Plus size={16} />
-              {t('customers.addGroup', 'Add Group')}
-            </button>
-          </div>
+              label={t('customers.addGroup', 'Add Customer Group')}
+            />
+          </HeaderActionsGroup>
         </div>
       )}
 
@@ -285,7 +277,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder={t('customers.searchGroups', 'Search groups...')}
-                className="form-input pl-9 pr-3 w-full h-9 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                className="form-input pl-9 pr-3 w-full h-10 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
             
@@ -308,7 +300,7 @@ const CustomerGroupsPage: React.FC<CustomerGroupsPageProps> = ({ isTab = false, 
           <div className="flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-groups'] })}
-              className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
+              className="h-10 w-10 min-h-[40px] min-w-[40px] flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
               title={t('common.refresh', 'Refresh')}
             >
               <RefreshCw size={14} />

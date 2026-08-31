@@ -12,7 +12,7 @@ import { PanelsTab } from './components/tabs/PanelsTab'
 import { TypographyTab } from './components/tabs/TypographyTab'
 import { LayoutTab } from './components/tabs/LayoutTab'
 import { WidgetsTab } from './components/tabs/WidgetsTab'
-import type { ThemeTemplate, PanelTemplate } from './types'
+import type { ThemeTemplate, PanelTemplate, UnifiedThemeTemplate } from './types'
 
 type TabId = 'theme' | 'fonts' | 'panels' | 'components' | 'widgets'
 
@@ -138,6 +138,26 @@ const AppearanceSettings: React.FC = () => {
     customizer.updateWidgetsList(list.sort((a, b) => a.order - b.order))
   }
 
+  const handleApplyUnifiedTemplate = (tpl: UnifiedThemeTemplate) => {
+    customizer.updatePrimaryColor(tpl.primaryColor)
+    customizer.updateThemeMode(tpl.mode)
+    customizer.updateSidebar({
+      bgColor: tpl.sidebarBg,
+      textColor: tpl.sidebarText,
+      activeBgColor: tpl.activeBg,
+      activeTextColor: tpl.activeText,
+      roundedStyle: tpl.roundedStyle || 'rounded-xl',
+      width: tpl.sidebarWidth || 260,
+    })
+    customizer.updateNavbar({
+      bgColor: tpl.navbarBg,
+      textColor: tpl.navbarText,
+      borderColor: tpl.navbarBorder,
+      shadow: tpl.navbarShadow || 'sm',
+    })
+    sound.playSuccess()
+  }
+
   const handleApplyTemplate = (tpl: ThemeTemplate) => {
     customizer.updatePrimaryColor(tpl.primaryColor)
     customizer.updateThemeMode(tpl.mode)
@@ -196,6 +216,7 @@ const AppearanceSettings: React.FC = () => {
         {activeTab === 'theme' || activeTab === 'panels' ? (
           <TemplatesTab
             customizer={customizer}
+            handleApplyUnifiedTemplate={handleApplyUnifiedTemplate}
             handleApplyTemplate={handleApplyTemplate}
             handleApplyPanelTemplate={handleApplyPanelTemplate}
           />

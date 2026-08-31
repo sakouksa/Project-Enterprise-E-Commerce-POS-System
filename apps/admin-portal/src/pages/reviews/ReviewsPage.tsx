@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Search, Trash2, RefreshCw, Star, CheckCircle, XCircle, MessageSquare, Loader2, Filter } from 'lucide-react'
-import api from '@/api/client'
+import { reviewService } from '@/services/reviewService'
 import { useToast } from '@/hooks/useToast'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 import Pagination from '@/components/shared/Pagination'
@@ -48,20 +48,18 @@ const ReviewsPage: React.FC = () => {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['reviews', page, debouncedSearch, perPage, statusFilter, ratingFilter],
-    queryFn: () => api.get('/reviews', {
-      params: {
-        page,
-        search,
-        status: statusFilter || undefined,
-        rating: ratingFilter || undefined,
-        per_page: 15,
-      },
-    }).then(r => r.data),
+    queryFn: () => reviewService.getReviews({
+      page,
+      search,
+      status: statusFilter || undefined,
+      rating: ratingFilter || undefined,
+      per_page: 15,
+    }),
     placeholderData: (prev) => prev,
   })
 
   const approveMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/reviews/${id}/approve`),
+    mutationFn: (id: number) => reviewService.approveReview(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews'] })
       toast.success('Review approved successfully.')
@@ -72,7 +70,7 @@ const ReviewsPage: React.FC = () => {
   })
 
   const rejectMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/reviews/${id}/reject`),
+    mutationFn: (id: number) => reviewService.rejectReview(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews'] })
       toast.success('Review rejected successfully.')
@@ -83,7 +81,7 @@ const ReviewsPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/reviews/${id}`),
+    mutationFn: (id: number) => reviewService.deleteReview(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews'] })
       toast.success(t('toast.deleted', { item: t('nav.reviews') }))

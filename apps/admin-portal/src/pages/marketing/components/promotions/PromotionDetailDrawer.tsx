@@ -2,6 +2,7 @@ import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Megaphone, Copy, CheckCircle2, Clock } from 'lucide-react'
 import { formatJsonValue, type Promotion } from '../../types/promotion'
+import { CloseButton, CancelButton } from '@/components/common'
 
 interface PromotionDetailDrawerProps {
   promo: Promotion | null
@@ -34,9 +35,7 @@ export const PromotionDetailDrawer: React.FC<PromotionDetailDrawerProps> = ({
                   <Megaphone size={18} className="text-primary" />
                   <span>Promotion Campaign Details</span>
                 </h3>
-                <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-                  <X size={20} />
-                </button>
+                <CloseButton onClose={onClose} size="md" color="rose" />
               </div>
 
               {/* Profile Card Header */}
@@ -109,9 +108,7 @@ export const PromotionDetailDrawer: React.FC<PromotionDetailDrawerProps> = ({
             </div>
 
             <div className="border-t pt-4 flex justify-end print:hidden">
-              <button onClick={onClose} className="px-4 py-2 text-sm font-semibold bg-muted hover:bg-muted/80 text-foreground rounded-xl border border-border">
-                Close Drawer
-              </button>
+              <CancelButton onClick={onClose} label="Close Drawer" />
             </div>
           </motion.div>
         </div>

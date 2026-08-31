@@ -1,5 +1,5 @@
 import type { Product } from '../types'
-import api from '@/api/client'
+import { posService } from '@/services/posService'
 
 export interface AIVisualMatchResult {
   mode: 'barcode' | 'ai_vision' | 'manual'
@@ -356,7 +356,7 @@ export async function performAIVisionSearch(options: {
   } = options
 
   try {
-    const res = await api.post('/pos/vision-search', {
+    const res = await posService.visionSearch({
       image: imageFrame,
       ocr_hint: ocrHint,
       visual_category: visualCategory,
@@ -364,10 +364,11 @@ export async function performAIVisionSearch(options: {
       warehouse_id: warehouseId,
       branch_id: branchId,
       company_id: companyId,
-    })
+    } as any)
 
-    if (res.data && res.data.success) {
-      const { recognition, products, product } = res.data
+    if (res && (res.success || res.data?.success)) {
+      const payload = res.data || res
+      const { recognition, products, product } = payload
       return {
         mode: recognition?.mode === 'barcode_exact' ? 'barcode' : 'ai_vision',
         detectedCode: recognition?.detected_code || ocrHint,

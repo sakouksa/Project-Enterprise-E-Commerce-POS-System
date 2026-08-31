@@ -1,13 +1,15 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ModalHeader } from '@/components/common/ModalHeader'
 import { 
   Plus, Edit2, Trash2, X, Tag, ToggleLeft, ToggleRight, Loader2, 
   ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, 
   Image as ImageIcon, Package, Sparkles, Save
 } from 'lucide-react'
-import api from '@/api/client'
+import { brandService } from '@/services/brandService'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import { downloadBlob } from '@/utils/export'
 import { useToast } from '@/hooks/useToast'
@@ -133,16 +135,14 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   // Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['brands', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
-    queryFn: () => api.get('/brands', { 
-      params: { 
-        page, 
-        search: debouncedSearch, 
-        per_page: perPage, 
-        sort_by: sortBy, 
-        sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
-      } 
-    }).then(r => r.data),
+    queryFn: () => brandService.list({ 
+      page, 
+      search: debouncedSearch, 
+      per_page: perPage, 
+      sort_by: sortBy, 
+      sort_order: sortOrder,
+      status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
+    }),
     placeholderData: (prev) => prev,
   })
 
@@ -151,7 +151,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (fd: FormData) => api.post('/brands', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    mutationFn: (fd: FormData) => brandService.create(fd),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.created', { item: t('products.colBrand', 'Brand') }))
@@ -165,7 +165,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   const updateMutation = useMutation({
     mutationFn: ({ id, fd }: { id: number; fd: FormData }) => {
       fd.append('_method', 'PUT')
-      return api.post(`/brands/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      return brandService.update(id, fd)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
@@ -178,7 +178,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/brands/${id}`),
+    mutationFn: (id: number) => brandService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.deleted', { item: t('products.colBrand', 'Brand') }))
@@ -193,7 +193,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   })
 
   const restoreMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/brands/${id}/restore`),
+    mutationFn: (id: number) => brandService.restore(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.restored'))
@@ -204,7 +204,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   })
 
   const forceDeleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/brands/${id}/force`),
+    mutationFn: (id: number) => brandService.forceDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.deleted'))
@@ -217,7 +217,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/brands/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => brandService.bulkDelete(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.deleted'))
@@ -230,7 +230,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   })
 
   const bulkRestoreMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/brands/bulk-restore', { ids }),
+    mutationFn: (ids: number[]) => brandService.bulkRestore(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['brands'] })
       toast.success(t('toast.restored'))
@@ -304,7 +304,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
     const fd = new FormData()
     fd.append('file', importFile)
     try {
-      await api.post('/brands/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await brandService.import(fd)
       toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
@@ -317,7 +317,7 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
   }
 
   const handleExport = () => {
-    api.get('/brands/export', { responseType: 'blob' })
+    brandService.export()
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
         const dateStamp = new Date().toISOString().split('T')[0]
@@ -691,9 +691,9 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
       </div>
 
       {/* Clean Enterprise Brand Create/Edit Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      {modalOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.96, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -701,29 +701,14 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="bg-card border border-border/80 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
             >
-              {/* Clean Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-muted/15">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-xs">
-                    <Tag size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-foreground leading-tight">
-                      {editingBrand ? t('products.editBrand', 'Edit Brand') : t('products.addBrand', 'Add Brand')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {editingBrand ? t('products.editBrandDesc', 'Update brand metadata and logo insignia') : t('products.addBrandDesc', 'Create a new manufacturer or brand mark')}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={closeModal} 
-                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                  title={t('common.cancel', 'Close')}
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              {/* Global Modal Header */}
+              <ModalHeader
+                title={editingBrand ? t('products.editBrand', 'Edit Brand') : t('products.addBrand', 'Add Brand')}
+                subtitle={editingBrand ? t('products.editBrandDesc', 'Update brand metadata and logo insignia') : t('products.addBrandDesc', 'Create a new manufacturer or brand mark')}
+                icon={<Tag size={20} />}
+                iconVariant="blue"
+                onClose={closeModal}
+              />
 
               {/* Form Body */}
               <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
@@ -853,25 +838,27 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* CSV Import Modal */}
-      <AnimatePresence>
-        {importOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {importOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-card border border-border rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-base text-foreground">{t('products.importCSV')}</h3>
-                <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={t('products.importCSV', 'Import CSV')}
+                subtitle={t('products.brandsImportInstruction', 'Upload CSV file to import brands in bulk')}
+                icon={<Upload size={20} />}
+                iconVariant="blue"
+                onClose={() => setImportOpen(false)}
+              />
 
               <form onSubmit={handleImport} className="p-6 space-y-4">
                 <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:bg-muted/10 transition-colors">
@@ -885,32 +872,34 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
                     required
                   />
                   <label htmlFor="csv-brand-upload" className="cursor-pointer font-medium text-primary hover:underline">
-                    {importFile ? importFile.name : t('products.clickToUploadCSV')}
+                    {importFile ? importFile.name : t('products.clickToUploadCSV', 'Click to upload CSV')}
                   </label>
+                  <p className="text-xs text-muted-foreground mt-1">{t('products.brandsImportInstruction', 'CSV format: Name, Description')}</p>
                 </div>
 
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setImportOpen(false)}
-                    className="px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted rounded-xl cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={importing || !importFile}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-primary rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {importing && <Loader2 size={14} className="animate-spin" />}
-                    {t('products.importCSV')}
+                    {t('products.importCSV', 'Import CSV')}
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog

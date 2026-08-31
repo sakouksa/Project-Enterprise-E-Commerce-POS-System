@@ -1,9 +1,0 @@
-{
-  "feed.loading_more": "Đang tải thêm sản phẩm...",
-  "feed.reached_end": "Bạn đã xem hết danh sách sản phẩm",
-  "feed.all_caught_up": "Đã tải tất cả sản phẩm",
-  "feed.load_error": "Không thể tải thêm sản phẩm",
-  "feed.retry": "Thử lại",
-  "feed.back_to_top": "Về đầu trang",
-  "feed.showing_count": "Hiển thị {{count}} trên {{total}} sản phẩm"
-}

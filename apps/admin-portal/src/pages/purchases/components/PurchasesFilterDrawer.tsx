@@ -8,11 +8,14 @@ interface PurchasesFilterDrawerProps {
   onClose: () => void
   suppliers: any[]
   warehouses: any[]
+  branches?: any[]
   users: any[]
   supplierFilter: string
   setSupplierFilter: (val: string) => void
   warehouseFilter: string
   setWarehouseFilter: (val: string) => void
+  branchFilter?: string
+  setBranchFilter?: (val: string) => void
   statusFilter: string
   setStatusFilter: (val: string) => void
   paymentStatusFilter: string
@@ -49,11 +52,14 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
   onClose,
   suppliers = [],
   warehouses = [],
+  branches = [],
   users = [],
   supplierFilter,
   setSupplierFilter,
   warehouseFilter,
   setWarehouseFilter,
+  branchFilter = '',
+  setBranchFilter,
   statusFilter,
   setStatusFilter,
   paymentStatusFilter,
@@ -62,6 +68,10 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
   setPurchaseDateStartFilter,
   purchaseDateEndFilter,
   setPurchaseDateEndFilter,
+  dueDateStartFilter,
+  setDueDateStartFilter,
+  dueDateEndFilter,
+  setDueDateEndFilter,
   minAmountFilter,
   setMinAmountFilter,
   maxAmountFilter,
@@ -76,10 +86,13 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
   const activeCount = [
     supplierFilter,
     warehouseFilter,
+    branchFilter,
     statusFilter,
     paymentStatusFilter,
     purchaseDateStartFilter,
     purchaseDateEndFilter,
+    dueDateStartFilter,
+    dueDateEndFilter,
     minAmountFilter,
     maxAmountFilter,
     createdByFilter,
@@ -121,6 +134,21 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
         />
       </FieldLabel>
 
+      {/* Branch Filter */}
+      {setBranchFilter && (
+        <FieldLabel label={t('purchases.branch', 'Branch')}>
+          <ModernSelect
+            value={branchFilter}
+            onChange={(val) => { setBranchFilter(String(val)); setPage(1); }}
+            options={[
+              { value: '', label: t('purchases.allBranches', 'All Branches') },
+              ...(branches ?? []).map((b: any) => ({ value: String(b.id), label: b.name })),
+            ]}
+            placeholder={t('purchases.allBranches', 'All Branches')}
+          />
+        </FieldLabel>
+      )}
+
       {/* Status Filter */}
       <FieldLabel label={t('purchases.status', 'Status')}>
         <ModernSelect
@@ -130,6 +158,7 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
             { value: '', label: t('purchases.allStatuses', 'All Statuses') },
             { value: 'draft', label: t('purchases.draft', 'Draft') },
             { value: 'ordered', label: t('purchases.ordered', 'Ordered') },
+            { value: 'partial', label: t('purchases.partial', 'Partially Received') },
             { value: 'received', label: t('purchases.received', 'Received') },
             { value: 'completed', label: t('purchases.completed', 'Completed') },
             { value: 'cancelled', label: t('purchases.cancelled', 'Cancelled') },
@@ -146,7 +175,7 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
           options={[
             { value: '', label: t('purchases.allPaymentStatuses', 'All Payment Statuses') },
             { value: 'unpaid', label: t('purchases.unpaid', 'Unpaid') },
-            { value: 'partial', label: t('purchases.partial', 'Partial') },
+            { value: 'partial', label: t('purchases.partial', 'Partially Paid') },
             { value: 'paid', label: t('purchases.paid', 'Paid') },
           ]}
           placeholder={t('purchases.allPaymentStatuses', 'All Payment Statuses')}
@@ -166,6 +195,24 @@ export const PurchasesFilterDrawer: React.FC<PurchasesFilterDrawerProps> = ({
             type="date"
             value={purchaseDateEndFilter}
             onChange={(e) => { setPurchaseDateEndFilter(e.target.value); setPage(1); }}
+            className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
+          />
+        </div>
+      </FieldLabel>
+
+      {/* Due Date Range */}
+      <FieldLabel label={t('purchases.dueDateRange', 'Due Date Range')}>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            value={dueDateStartFilter}
+            onChange={(e) => { setDueDateStartFilter(e.target.value); setPage(1); }}
+            className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
+          />
+          <input
+            type="date"
+            value={dueDateEndFilter}
+            onChange={(e) => { setDueDateEndFilter(e.target.value); setPage(1); }}
             className="w-full h-10 text-xs sm:text-[13px] font-medium rounded-xl bg-card dark:bg-slate-900/90 border border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all px-3 text-foreground dark:text-slate-100 shadow-2xs placeholder:text-xs sm:placeholder:text-[13px] placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 dark:[color-scheme:dark]"
           />
         </div>

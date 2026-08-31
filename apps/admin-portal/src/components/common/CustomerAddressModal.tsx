@@ -3,20 +3,19 @@ import { useForm } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  MapPin, User, Home, Building2, Phone, UserCheck, Navigation,
-  Globe, Compass, Tag, Package, LocateFixed, Loader2, Check,
+  MapPin, Home, Building2, Package, Tag, Check,
   Store, Building, Factory, Hotel, Landmark, ShieldCheck, Sparkles, X
 } from 'lucide-react'
 import api from '@/api/client'
 import { useToast } from '@/hooks/useToast'
 import EnterpriseModal from './EnterpriseModal'
 import ModalFooter from './ModalFooter'
-import { MapLocationPickerModal } from './MapLocationPickerModal'
+import { formatPhoneNumber } from '@/utils/formatters'
 
 export interface CustomerAddress {
   id?: number
   customer_id: number | string
-  customer?: { id?: number; name: string }
+  customer?: { id?: number; name: string; email?: string; phone?: string }
   label: 'Home' | 'Office' | 'Warehouse' | 'Other' | string
   name: string
   phone: string
@@ -41,8 +40,6 @@ export interface AddressFormData {
   province: string
   country: string
   postal_code: string
-  latitude: string
-  longitude: string
   is_default: boolean
 }
 
@@ -114,15 +111,11 @@ export const CustomerAddressModal: React.FC<CustomerAddressModalProps> = ({
   onSuccess,
   className = '',
 }) => {
-  const { t, i18n } = useTranslation(['customers', 'common'])
-  const isKhmer = i18n.language === 'km'
+  const { t } = useTranslation(['customers', 'common'])
   const toast = useToast()
   const qc = useQueryClient()
-  const [isLocating, setIsLocating] = useState(false)
   const [selectedPreset, setSelectedPreset] = useState<'Home' | 'Office' | 'Warehouse' | 'Other'>('Home')
   const [customLabel, setCustomLabel] = useState('')
-  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false)
-  const [showManualCoords, setShowManualCoords] = useState(false)
 
   const isEdit = Boolean(initialData?.id)
 
@@ -145,8 +138,6 @@ export const CustomerAddressModal: React.FC<CustomerAddressModalProps> = ({
       province: '',
       country: 'Cambodia',
       postal_code: '',
-      latitude: '',
-      longitude: '',
       is_default: false,
     },
   })
@@ -189,8 +180,6 @@ export const CustomerAddressModal: React.FC<CustomerAddressModalProps> = ({
           province: initialData.province || '',
           country: initialData.country || 'Cambodia',
           postal_code: initialData.postal_code || '',
-          latitude: initialData.latitude !== undefined && initialData.latitude !== null ? String(initialData.latitude) : '',
-          longitude: initialData.longitude !== undefined && initialData.longitude !== null ? String(initialData.longitude) : '',
           is_default: Boolean(initialData.is_default),
         })
       } else {
@@ -206,8 +195,6 @@ export const CustomerAddressModal: React.FC<CustomerAddressModalProps> = ({
           province: '',
           country: 'Cambodia',
           postal_code: '',
-          latitude: '',
-          longitude: '',
           is_default: false,
         })
       }
@@ -275,10 +262,10 @@ export const CustomerAddressModal: React.FC<CustomerAddressModalProps> = ({
       address: data.address.trim(),
       city: data.city.trim(),
       province: data.province.trim(),
-      country: data.country.trim(),
+      country: data.country.trim() || 'Cambodia',
       postal_code: data.postal_code.trim(),
-      latitude: data.latitude ? parseFloat(data.latitude) : null,
-      longitude: data.longitude ? parseFloat(data.longitude) : null,
+      latitude: initialData?.latitude ? Number(initialData.latitude) : null,
+      longitude: initialData?.longitude ? Number(initialData.longitude) : null,
       is_default: Boolean(data.is_default),
     }
 
@@ -287,145 +274,6 @@ export const CustomerAddressModal: React.FC<CustomerAddressModalProps> = ({
     } else {
       await createMutation.mutateAsync(payload)
     }
-  }
-
-const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = {
-  'phnom penh': { lat: '11.556400', lng: '104.928200' },
-  'ភ្នំពេញ': { lat: '11.556400', lng: '104.928200' },
-  'kampong thom': { lat: '12.711126', lng: '104.888735' },
-  'កំពង់ធំ': { lat: '12.711126', lng: '104.888735' },
-  'siem reap': { lat: '13.367100', lng: '103.844800' },
-  'សៀមរាប': { lat: '13.367100', lng: '103.844800' },
-  'battambang': { lat: '13.095700', lng: '103.202200' },
-  'បាត់ដំបង': { lat: '13.095700', lng: '103.202200' },
-  'sihanoukville': { lat: '10.627500', lng: '103.522100' },
-  'ព្រះសីហនុ': { lat: '10.627500', lng: '103.522100' },
-  'kampong cham': { lat: '11.992400', lng: '105.464500' },
-  'កំពង់ចាម': { lat: '11.992400', lng: '105.464500' },
-  'kampot': { lat: '10.610400', lng: '104.181500' },
-  'កំពត': { lat: '10.610400', lng: '104.181500' },
-  'kandal': { lat: '11.455200', lng: '104.945000' },
-  'កណ្តាល': { lat: '11.455200', lng: '104.945000' },
-  'banteay meanchey': { lat: '13.585900', lng: '102.973700' },
-  'បន្ទាយមានជ័យ': { lat: '13.585900', lng: '102.973700' },
-  'poipet': { lat: '13.656100', lng: '102.562500' },
-  'ប៉ោយប៉ែត': { lat: '13.656100', lng: '102.562500' },
-  'takeo': { lat: '10.990800', lng: '104.784900' },
-  'តាកែវ': { lat: '10.990800', lng: '104.784900' },
-  'prey veng': { lat: '11.485100', lng: '105.325300' },
-  'ព្រៃវែង': { lat: '11.485100', lng: '105.325300' },
-  'svay rieng': { lat: '11.087800', lng: '105.799300' },
-  'ស្វាយរៀង': { lat: '11.087800', lng: '105.799300' },
-  'pursat': { lat: '12.538800', lng: '103.919200' },
-  'ពោធិ៍សាត់': { lat: '12.538800', lng: '103.919200' },
-  'kampong chhnang': { lat: '12.250000', lng: '104.666700' },
-  'កំពង់ឆ្នាំង': { lat: '12.250000', lng: '104.666700' },
-  'kampong speu': { lat: '11.453300', lng: '104.520900' },
-  'កំពង់ស្ពឺ': { lat: '11.453300', lng: '104.520900' },
-  'kratie': { lat: '12.488100', lng: '106.018800' },
-  'ក្រចេះ': { lat: '12.488100', lng: '106.018800' },
-  'stung treng': { lat: '13.525900', lng: '105.968300' },
-  'ស្ទឹងត្រែង': { lat: '13.525900', lng: '105.968300' },
-  'ratanakiri': { lat: '13.739400', lng: '106.987300' },
-  'រតនគិរី': { lat: '13.739400', lng: '106.987300' },
-  'mondulkiri': { lat: '12.455800', lng: '107.188100' },
-  'មណ្ឌលគិរី': { lat: '12.455800', lng: '107.188100' },
-  'koh kong': { lat: '11.615300', lng: '102.983800' },
-  'កោះកុង': { lat: '11.615300', lng: '102.983800' },
-  'kep': { lat: '10.482900', lng: '104.316700' },
-  'កែប': { lat: '10.482900', lng: '104.316700' },
-  'pailin': { lat: '12.848900', lng: '102.609300' },
-  'ប៉ៃលិន': { lat: '12.848900', lng: '102.609300' },
-  'preah vihear': { lat: '13.807300', lng: '104.980500' },
-  'ព្រះវិហារ': { lat: '13.807300', lng: '104.980500' },
-  'oddar meanchey': { lat: '14.181800', lng: '103.517600' },
-  'ឧត្តរមានជ័យ': { lat: '14.181800', lng: '103.517600' },
-  'tboung khmum': { lat: '11.889100', lng: '105.659200' },
-  'ត្បូងឃ្មុំ': { lat: '11.889100', lng: '105.659200' },
-}
-
-  // GPS Auto-Locate feature: Prioritizes real GPS first, then City match, then IP fallback
-  const handleGetLocation = () => {
-    setIsLocating(true)
-
-    const applyCoordinates = (lat: number | string, lng: number | string, sourceName?: string) => {
-      setValue('latitude', Number(lat).toFixed(6), { shouldValidate: true })
-      setValue('longitude', Number(lng).toFixed(6), { shouldValidate: true })
-      setIsLocating(false)
-      toast.success(
-        sourceName
-          ? `${t('customers.gpsSuccess', 'Coordinates retrieved successfully!')} (${sourceName})`
-          : t('customers.gpsSuccess', 'Coordinates retrieved successfully!')
-      )
-    }
-
-    const fallbackToCityOrIp = async (error?: GeolocationPositionError) => {
-      if (error && error.code === error.PERMISSION_DENIED) {
-        setIsLocating(false)
-        toast.warning(
-          isKhmer
-            ? '⚠️ សូមចុច "Allow" ឬបើកសិទ្ធិចាប់ទីតាំង (Location Permission) លើ Browser/ទូរស័ព្ទរបស់អ្នក ដើម្បីចាប់ទីតាំងបច្ចុប្បន្ន។'
-            : t('customers.gpsPermissionDenied', 'Location permission denied. Please allow location access in browser settings.')
-        )
-        return
-      }
-
-      // Check if user already typed a known City or Address matching Cambodia provinces
-      const currentCity = (watch('city') || '').trim().toLowerCase()
-      const currentAddress = (watch('address') || '').trim().toLowerCase()
-      const currentProvince = (watch('province') || '').trim().toLowerCase()
-
-      for (const [cityName, coords] of Object.entries(CAMBODIA_CITY_COORDINATES)) {
-        if (
-          (currentCity && (currentCity.includes(cityName) || cityName.includes(currentCity))) ||
-          (currentProvince && (currentProvince.includes(cityName) || cityName.includes(currentProvince))) ||
-          (currentAddress && currentAddress.includes(cityName))
-        ) {
-          applyCoordinates(coords.lat, coords.lng, cityName.toUpperCase())
-          return
-        }
-      }
-
-      // Try Clean IP Geolocation lookup fallback (ipwho.is)
-      try {
-        const res = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(3000) })
-        if (res.ok) {
-          const data = await res.json()
-          if (data && data.success && data.latitude && data.longitude) {
-            applyCoordinates(data.latitude, data.longitude, data.city || 'Network IP')
-            if (!watch('city') && data.city) {
-              setValue('city', data.city)
-            }
-            return
-          }
-        }
-      } catch {
-        // continue
-      }
-
-      // If all automatic methods fail, default to standard Phnom Penh coordinates
-      setIsLocating(false)
-      applyCoordinates(11.5564, 104.9282, 'Phnom Penh')
-    }
-
-    if (!navigator.geolocation) {
-      fallbackToCityOrIp()
-      return
-    }
-
-    // Step 1: Attempt Real High-Accuracy GPS first (works on Mobile/GPS devices & Wi-Fi enabled Macs)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => applyCoordinates(pos.coords.latitude, pos.coords.longitude, 'Real GPS'),
-      (errHigh) => {
-        // Step 2: Fallback to standard network/Wi-Fi positioning (enableHighAccuracy: false)
-        navigator.geolocation.getCurrentPosition(
-          (pos) => applyCoordinates(pos.coords.latitude, pos.coords.longitude, 'Network/Wi-Fi'),
-          () => fallbackToCityOrIp(errHigh),
-          { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
-        )
-      },
-      { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
-    )
   }
 
   const isSaving = isSubmitting || createMutation.isPending || updateMutation.isPending
@@ -438,9 +286,7 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
       : (customers as any[]).find((c) => String(c.id) === String(currentCustomerId))?.name)
 
   const inputCls =
-    'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
-  const inputWithIconCls =
-    'w-full h-10 min-h-[40px] !pl-10 pr-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/70 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
+    'w-full h-10 min-h-[40px] px-3.5 py-2 text-xs sm:text-[13px] rounded-lg border border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900/90 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/60 dark:placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium dark:[color-scheme:dark]'
   const labelCls =
     'block text-xs font-semibold text-foreground/90 dark:text-slate-200 mb-1.5'
 
@@ -455,7 +301,7 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
       }
       subtitle={t(
         'customers.addressModalSubtitle',
-        'Manage delivery location coordinates and recipient contact details'
+        'Manage delivery address and recipient contact details'
       )}
       icon={<MapPin size={20} />}
       iconVariant="emerald"
@@ -484,8 +330,7 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
               <label className={labelCls}>
                 {t('customers.customer', 'Customer')}
               </label>
-              <div className="flex items-center gap-2 h-10 px-3.5 rounded-lg border border-border/80 dark:border-slate-700/80 bg-muted/30 dark:bg-slate-800/60 text-foreground dark:text-slate-200 text-xs sm:text-[13px] font-semibold">
-                <User size={15} className="text-primary shrink-0" />
+              <div className="flex items-center h-10 px-3.5 rounded-lg border border-border/80 dark:border-slate-700/80 bg-muted/30 dark:bg-slate-800/60 text-foreground dark:text-slate-200 text-xs sm:text-[13px] font-semibold">
                 <span className="truncate">{resolvedCustomerName || `Customer #${customerId}`}</span>
               </div>
             </div>
@@ -494,24 +339,19 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
               <label className={labelCls}>
                 {t('customers.customer', 'Customer')} <span className="text-rose-500">*</span>
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                  <User size={15} />
-                </div>
-                <select
-                  {...register('customer_id', {
-                    required: t('customers.validation.customerRequired', 'Customer is required'),
-                  })}
-                  className={`${inputWithIconCls} cursor-pointer`}
-                >
-                  <option value="">{t('customers.selectCustomer', '-- Select Customer --')}</option>
-                  {(customers ?? []).map((c: any) => (
-                    <option key={c.id} value={String(c.id)}>
-                      {c.name} {c.phone ? `(${c.phone})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                {...register('customer_id', {
+                  required: t('customers.validation.customerRequired', 'Customer is required'),
+                })}
+                className={`${inputCls} cursor-pointer`}
+              >
+                <option value="">{t('customers.selectCustomer', '-- Select Customer --')}</option>
+                {(customers ?? []).map((c: any) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name} {c.phone ? `(${c.phone})` : ''}
+                  </option>
+                ))}
+              </select>
               {errors.customer_id && (
                 <p className="text-rose-500 text-[11px] mt-1 font-medium">
                   {errors.customer_id.message}
@@ -524,10 +364,8 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
         {/* ─── Address Label Selection & Custom Format ─── */}
         <div className="p-4 bg-muted/20 dark:bg-slate-900/60 border border-border/80 dark:border-slate-800 rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-foreground dark:text-slate-200 flex items-center gap-1.5">
-              <Tag size={14} className="text-primary" />
-              <span>{t('customers.addressLabel', 'Address Label')}</span>
-              <span className="text-rose-500">*</span>
+            <label className="text-xs font-bold text-foreground dark:text-slate-200">
+              {t('customers.addressLabel', 'Address Label')} <span className="text-rose-500">*</span>
             </label>
             {selectedPreset === 'Other' && (
               <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 dark:bg-rose-500/20 px-2.5 py-0.5 rounded-full border border-rose-500/20">
@@ -553,13 +391,13 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
                       setValue('label', customLabel.trim() || 'Other')
                     }
                   }}
-                  className={`h-11 px-3 rounded-xl border text-xs sm:text-[13px] font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer select-none active:scale-98 ${
+                  className={`h-10 px-3 rounded-xl border text-xs sm:text-[13px] font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer select-none active:scale-98 ${
                     isSelected
                       ? `${type.activeBg} font-bold shadow-xs`
                       : 'border-border/80 dark:border-slate-700/80 bg-background dark:bg-slate-900 text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted/50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <IconComponent size={15} className={isSelected ? 'text-current shrink-0' : 'opacity-70 shrink-0'} />
+                  <IconComponent size={14} className={isSelected ? 'text-current shrink-0' : 'opacity-70 shrink-0'} />
                   <span className="truncate">{t(type.labelKey, type.defaultLabel)}</span>
                 </button>
               )
@@ -574,9 +412,6 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
                   {t('customers.customAddressLabel', 'Custom Label Name')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-500">
-                    <Tag size={14} />
-                  </div>
                   <input
                     type="text"
                     value={customLabel}
@@ -585,7 +420,7 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
                       setValue('label', e.target.value.trim() || 'Other')
                     }}
                     placeholder={t('customers.customAddressLabelPlaceholder', 'e.g. Villa, Branch Store, Condo, Factory...')}
-                    className="w-full h-9 pl-9 pr-8 text-xs sm:text-[13px] rounded-lg border border-rose-300 dark:border-rose-900/60 bg-background dark:bg-slate-900 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-rose-500/30 font-medium"
+                    className="w-full h-9 px-3 pr-8 text-xs sm:text-[13px] rounded-lg border border-rose-300 dark:border-rose-900/60 bg-background dark:bg-slate-900 text-foreground dark:text-slate-100 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-rose-500/30 font-medium"
                     autoFocus
                   />
                   {customLabel && (
@@ -647,18 +482,13 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
             <label className={labelCls}>
               {t('customers.receiverName', 'Recipient Name')} <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                <UserCheck size={15} />
-              </div>
-              <input
-                {...register('name', {
-                  required: t('customers.validation.receiverNameRequired', 'Recipient name is required'),
-                })}
-                placeholder={t('customers.receiverNamePlaceholder', 'e.g. Sok Chantha')}
-                className={inputWithIconCls}
-              />
-            </div>
+            <input
+              {...register('name', {
+                required: t('customers.validation.receiverNameRequired', 'Recipient name is required'),
+              })}
+              placeholder={t('customers.receiverNamePlaceholder', 'e.g. Sok Chantha')}
+              className={inputCls}
+            />
             {errors.name && (
               <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.name.message}</p>
             )}
@@ -668,18 +498,18 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
             <label className={labelCls}>
               {t('customers.phone', 'Phone Number')} <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                <Phone size={15} />
-              </div>
-              <input
-                {...register('phone', {
-                  required: t('customers.validation.phoneRequired', 'Phone number is required'),
-                })}
-                placeholder={t('customers.phonePlaceholder', '012 345 678')}
-                className={`${inputWithIconCls} font-mono`}
-              />
-            </div>
+            <input
+              {...register('phone', {
+                required: t('customers.validation.phoneRequired', 'Phone number is required'),
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                  e.target.value = e.target.value.replace(/[^\d+ -]/g, '')
+                },
+              })}
+              type="tel"
+              inputMode="tel"
+              placeholder="012 345 678"
+              className={`${inputCls} font-mono`}
+            />
             {errors.phone && (
               <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.phone.message}</p>
             )}
@@ -691,18 +521,13 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
           <label className={labelCls}>
             {t('customers.streetAddress', 'Street Address')} <span className="text-rose-500">*</span>
           </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-              <MapPin size={15} />
-            </div>
-            <input
-              {...register('address', {
-                required: t('customers.validation.addressRequired', 'Street address is required'),
-              })}
-              placeholder={t('customers.streetAddressPlaceholder', 'e.g. #123 St. 456, Sangkat Boeung Keng Kang 1')}
-              className={inputWithIconCls}
-            />
-          </div>
+          <input
+            {...register('address', {
+              required: t('customers.validation.addressRequired', 'Street address is required'),
+            })}
+            placeholder={t('customers.streetAddressPlaceholder', 'e.g. #123 St. 456, Sangkat Boeung Keng Kang 1')}
+            className={inputCls}
+          />
           {errors.address && (
             <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.address.message}</p>
           )}
@@ -717,18 +542,13 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
             <label className={labelCls}>
               {t('customers.city', 'City')} <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                <Navigation size={14} />
-              </div>
-              <input
-                {...register('city', {
-                  required: t('customers.validation.cityRequired', 'City is required'),
-                })}
-                placeholder={t('customers.cityPlaceholder', 'e.g. Phnom Penh')}
-                className={inputWithIconCls}
-              />
-            </div>
+            <input
+              {...register('city', {
+                required: t('customers.validation.cityRequired', 'City is required'),
+              })}
+              placeholder={t('customers.cityPlaceholder', 'e.g. Phnom Penh')}
+              className={inputCls}
+            />
             {errors.city && (
               <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.city.message}</p>
             )}
@@ -738,18 +558,13 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
             <label className={labelCls}>
               {t('customers.province', 'Province')} <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                <Building2 size={14} />
-              </div>
-              <input
-                {...register('province', {
-                  required: t('customers.validation.provinceRequired', 'Province is required'),
-                })}
-                placeholder={t('customers.provincePlaceholder', 'Phnom Penh')}
-                className={inputWithIconCls}
-              />
-            </div>
+            <input
+              {...register('province', {
+                required: t('customers.validation.provinceRequired', 'Province is required'),
+              })}
+              placeholder={t('customers.provincePlaceholder', 'Phnom Penh')}
+              className={inputCls}
+            />
             {errors.province && (
               <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.province.message}</p>
             )}
@@ -759,139 +574,24 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
             <label className={labelCls}>
               {t('customers.postalCode', 'Postal Code')} <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
-                <Compass size={14} />
-              </div>
-              <input
-                {...register('postal_code', {
-                  required: t('customers.validation.postalCodeRequired', 'Postal code is required'),
-                })}
-                placeholder={t('customers.postalCodePlaceholder', '12000')}
-                className={`${inputWithIconCls} font-mono`}
-              />
-            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              {...register('postal_code', {
+                required: t('customers.validation.postalCodeRequired', 'Postal code is required'),
+                onChange: (e: any) => {
+                  e.target.value = e.target.value.replace(/[^0-9a-zA-Z-]/g, '')
+                }
+              })}
+              placeholder={t('customers.postalCodePlaceholder', '12000')}
+              className={`${inputCls} font-mono`}
+            />
             {errors.postal_code && (
               <p className="text-rose-500 text-[11px] mt-1 font-medium">
                 {errors.postal_code.message}
               </p>
             )}
           </div>
-        </div>
-
-        {/* ─── Map Coordinates & GPS Pinning (100% Clean & Optional for Admin) ─── */}
-        <div className="p-3.5 sm:p-4 bg-muted/20 dark:bg-slate-900/60 border border-border/80 dark:border-slate-800 rounded-2xl space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start sm:items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-                <MapPin size={16} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-[13px] font-bold text-foreground dark:text-slate-200">
-                    {t('customers.mapGpsTitle', 'ទីតាំងលើផែនទី & GPS')}
-                  </span>
-                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    {t('common.optional', 'ស្រេចចិត្ត / Optional')}
-                  </span>
-                </div>
-                <p className="text-[11px] text-muted-foreground dark:text-slate-400 mt-0.5">
-                  {watch('latitude') && watch('longitude')
-                    ? t('customers.coordsAttachedHelp', 'បានភ្ជាប់កូអរដោនេរួចរាល់សម្រាប់អ្នកដឹកជញ្ជូន')
-                    : t('customers.coordsOptionalHelp', 'មិនបាច់ដាក់ក៏បាន (Admin បំពេញតែអាសយដ្ឋានខាងលើ ឬជ្រើសរើសលើផែនទី) ')}
-                </p>
-              </div>
-            </div>
-
-            {/* Clean Action Buttons */}
-            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsMapPickerOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-2xs"
-                title={t('customers.pickOnMap', 'ជ្រើសរើសទីតាំងលើផែនទី')}
-              >
-                <MapPin size={13} />
-                <span>{watch('latitude') && watch('longitude') ? t('customers.changeOnMap', 'ប្តូរទីតាំងលើផែនទី') : t('customers.pickOnMap', 'ជ្រើសរើសលើផែនទី')}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGetLocation}
-                disabled={isLocating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-2xs"
-                title={t('customers.gpsLocateHelp', 'Auto-detect current GPS coordinates')}
-              >
-                {isLocating ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <LocateFixed size={13} />
-                )}
-                <span>{t('customers.locateMe', 'ចាប់ GPS')}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Active Coordinates Display & Actions */}
-          {Boolean(watch('latitude') && watch('longitude')) && (
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30 text-xs">
-              <div className="flex items-center gap-2 font-mono text-emerald-700 dark:text-emerald-300 font-bold">
-                <Check size={14} className="text-emerald-500 shrink-0" />
-                <span>Lat: {Number(watch('latitude')).toFixed(6)}</span>
-                <span className="opacity-40">•</span>
-                <span>Lng: {Number(watch('longitude')).toFixed(6)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowManualCoords(!showManualCoords)}
-                  className="text-[11px] text-muted-foreground hover:text-foreground font-medium underline cursor-pointer"
-                >
-                  {showManualCoords ? t('customers.hideDetails', 'លាក់លេខកូដ') : t('customers.editCoordinatesManual', 'កែសម្រួលលេខដោយដៃ')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValue('latitude', '', { shouldValidate: true })
-                    setValue('longitude', '', { shouldValidate: true })
-                    toast.success(t('customers.coordsCleared', 'បានលុបកូអរដោនេទីតាំងរួចរាល់'))
-                  }}
-                  className="p-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                  title={t('common.clear', 'លុបកូអរដោនេ')}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Manual Coordinates Input (only if admin wants to customize digits) */}
-          {showManualCoords && (
-            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-border/60 dark:border-slate-800">
-              <div>
-                <label className={labelCls}>
-                  {t('customers.latitude', 'Latitude')}
-                </label>
-                <input
-                  step="any"
-                  {...register('latitude')}
-                  placeholder="11.556400"
-                  className={`${inputCls} font-mono`}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>
-                  {t('customers.longitude', 'Longitude')}
-                </label>
-                <input
-                  step="any"
-                  {...register('longitude')}
-                  placeholder="104.928200"
-                  className={`${inputCls} font-mono`}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ─── Default Address Toggle Card ─── */}
@@ -918,36 +618,6 @@ const CAMBODIA_CITY_COORDINATES: Record<string, { lat: string; lng: string }> = 
           />
         </div>
       </form>
-
-      {/* ─── Map Location Picker Modal (Rendered outside form to avoid bubbling) ─── */}
-      {isMapPickerOpen && (
-        <MapLocationPickerModal
-          isOpen={isMapPickerOpen}
-          onClose={() => setIsMapPickerOpen(false)}
-          initialLat={watch('latitude') ? parseFloat(watch('latitude')) : null}
-          initialLng={watch('longitude') ? parseFloat(watch('longitude')) : null}
-          initialCity={watch('province') || watch('city')}
-          initialAddress={watch('address')}
-          onSelectLocation={(loc) => {
-            setValue('latitude', loc.latitude.toFixed(6), { shouldValidate: true, shouldDirty: true })
-            setValue('longitude', loc.longitude.toFixed(6), { shouldValidate: true, shouldDirty: true })
-            if (loc.address) {
-              setValue('address', loc.address, { shouldValidate: true, shouldDirty: true })
-            }
-            if (loc.city) {
-              setValue('city', loc.city, { shouldValidate: true, shouldDirty: true })
-            }
-            if (loc.province) {
-              setValue('province', loc.province, { shouldValidate: true, shouldDirty: true })
-            }
-            if (loc.postal_code) {
-              setValue('postal_code', loc.postal_code, { shouldValidate: true, shouldDirty: true })
-            }
-            setValue('country', 'Cambodia', { shouldValidate: true, shouldDirty: true })
-            toast.success(t('customers.mapLocationSelected', 'Location selected from map successfully!'))
-          }}
-        />
-      )}
     </EnterpriseModal>
   )
 }

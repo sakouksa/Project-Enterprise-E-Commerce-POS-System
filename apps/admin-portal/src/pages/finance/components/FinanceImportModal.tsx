@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import api from '@/api/client'
+import { financeService } from '@/services/financeService'
 import { useToast } from '@/hooks/useToast'
 import { useQueryClient } from '@tanstack/react-query'
 import CsvImportModal from '@/components/shared/CsvImportModal'
@@ -44,19 +44,17 @@ export const FinanceImportModal: React.FC<FinanceImportModalProps> = ({
     const formData = new FormData()
     formData.append('file', importFile)
 
-    api.post(`/${activeTab}/import`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    financeService.importData(activeTab, formData)
       .then(() => {
         setImporting(false)
-        toast.success(`Successfully imported ${activeTab} dataset.`)
-        qc.invalidateQueries({ queryKey: [activeTab] })
+        toast.success(t('common.importSuccess', 'Successfully imported dataset.'))
+        qc.invalidateQueries({ queryKey: [`${activeTab}-tab`] })
         onClose()
         setImportFile(null)
       })
       .catch((err) => {
         setImporting(false)
-        toast.error(err?.response?.data?.message ?? 'Failed to import CSV.')
+        toast.error(err?.response?.data?.message ?? t('common.importFailed', 'Failed to import CSV.'))
       })
   }
 
@@ -64,7 +62,7 @@ export const FinanceImportModal: React.FC<FinanceImportModalProps> = ({
     <CsvImportModal
       isOpen={isOpen}
       onClose={onClose}
-      resourceName={activeTab.toUpperCase()}
+      resourceName={t(`finance.tab_${activeTab}`, activeTab)}
       expectedHeaders={FINANCE_EXPECTED_HEADERS_MAP[activeTab] || []}
       importFile={importFile}
       setImportFile={setImportFile}

@@ -38,38 +38,38 @@ export const BannerFilterDrawer: React.FC<BannerFilterDrawerProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       onReset={onReset}
-      title={t('filterBanners', t('marketing.filterBanners', 'តម្រងផ្ទាំងបដា'))}
+      title={t('marketing.filterBanners', 'Filter Banners')}
       activeCount={activeCount}
-      applyLabel={t('applyFilters', t('customers.applyFilters', 'អនុវត្តតម្រង'))}
-      resetLabel={t('resetFilters', t('customers.resetFilters', 'កំណត់ឡើងវិញ'))}
+      applyLabel={t('customers.applyFilters', 'Apply Filters')}
+      resetLabel={t('customers.resetFilters', 'Reset Filters')}
     >
       {/* Position Filter */}
-      <FL label={t('position', t('marketing.position', 'ទីតាំងបង្ហាញ'))}>
+      <FL label={t('marketing.position', 'Position')}>
         <ModernSelect
           value={positionFilter}
           onChange={setPositionFilter}
           options={[
-            { value: 'all', label: t('allPositions', t('marketing.allPositions', 'គ្រប់ទីតាំងទាំងអស់')) },
-            { value: 'hero', label: t('posHero', t('marketing.posHero', 'ផ្ទាំងបដាធំទំព័រដើម')) },
-            { value: 'sidebar', label: t('posSidebar', t('marketing.posSidebar', 'ផ្ទាំងបដាចំហៀង')) },
-            { value: 'popup', label: t('posPopup', t('marketing.posPopup', 'ផ្ទាំងបដាផុសឡើង')) },
-            { value: 'footer', label: t('posFooter', t('marketing.posFooter', 'ផ្ទាំងបដាខាងក្រោម')) },
+            { value: 'all', label: t('marketing.allPositions', 'All Positions') },
+            { value: 'hero', label: t('marketing.posHero', 'Hero Banner') },
+            { value: 'sidebar', label: t('marketing.posSidebar', 'Sidebar Banner') },
+            { value: 'popup', label: t('marketing.posPopup', 'Popup Banner') },
+            { value: 'footer', label: t('marketing.posFooter', 'Footer Banner') },
           ]}
-          placeholder={t('allPositions', t('marketing.allPositions', 'គ្រប់ទីតាំងទាំងអស់'))}
+          placeholder={t('marketing.allPositions', 'All Positions')}
         />
       </FL>
 
       {/* Status Filter */}
-      <FL label={t('activeStatus', t('marketing.activeStatus', 'ស្ថានភាព'))}>
+      <FL label={t('marketing.activeStatus', 'Status')}>
         <ModernSelect
           value={statusFilter}
           onChange={setStatusFilter}
           options={[
-            { value: 'all', label: t('allStatuses', t('marketing.allStatuses', 'គ្រប់ស្ថានភាពទាំងអស់')) },
-            { value: 'active', label: t('active', t('marketing.active', 'សកម្ម')) },
-            { value: 'inactive', label: t('inactive', t('marketing.inactive', 'អសកម្ម')) },
+            { value: 'all', label: t('marketing.allStatuses', 'All Statuses') },
+            { value: 'active', label: t('marketing.active', 'Active') },
+            { value: 'inactive', label: t('marketing.inactive', 'Inactive') },
           ]}
-          placeholder={t('allStatuses', t('marketing.allStatuses', 'គ្រប់ស្ថានភាពទាំងអស់'))}
+          placeholder={t('marketing.allStatuses', 'All Statuses')}
         />
       </FL>
     </FilterDrawerShell>

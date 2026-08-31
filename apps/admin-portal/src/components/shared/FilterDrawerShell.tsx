@@ -5,8 +5,9 @@
  */
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, X, RotateCcw } from 'lucide-react'
+import { Filter, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { CloseButton } from '@/components/common'
 
 interface FilterDrawerShellProps {
   isOpen: boolean
@@ -71,13 +72,7 @@ export const FilterDrawerShell: React.FC<FilterDrawerShellProps> = ({
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 hover:bg-muted dark:hover:bg-slate-800 rounded-xl text-muted-foreground hover:text-foreground dark:hover:text-slate-200 transition-colors cursor-pointer shrink-0"
-              >
-                <X size={18} />
-              </button>
+              <CloseButton onClose={onClose} size="md" color="rose" />
             </div>
 
             {/* Body — scrollable */}

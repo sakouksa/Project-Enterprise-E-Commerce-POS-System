@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ModalHeader } from '@/components/common/ModalHeader'
 import { 
   Plus, Edit2, Trash2, X, Tag, ToggleLeft, ToggleRight, Loader2, 
   ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, 
   Sliders, Paintbrush, ListPlus, Settings, Save
 } from 'lucide-react'
-import api from '@/api/client'
+import { attributeService } from '@/services/attributeService'
 import { useToast } from '@/hooks/useToast'
 import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
@@ -123,16 +125,14 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   // Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['attributes', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
-    queryFn: () => api.get('/attributes', { 
-      params: { 
-        page, 
-        search: debouncedSearch, 
-        per_page: perPage, 
-        sort_by: sortBy, 
-        sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
-      } 
-    }).then(r => r.data),
+    queryFn: () => attributeService.list({ 
+      page, 
+      search: debouncedSearch, 
+      per_page: perPage, 
+      sort_by: sortBy, 
+      sort_order: sortOrder,
+      status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
+    }),
     placeholderData: (prev) => prev,
   })
 
@@ -141,7 +141,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/attributes', payload),
+    mutationFn: (payload: any) => attributeService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.created'))
@@ -153,7 +153,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.put(`/attributes/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: any }) => attributeService.update(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.updated'))
@@ -165,7 +165,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/attributes/${id}`),
+    mutationFn: (id: number) => attributeService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.deleted'))
@@ -178,7 +178,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   })
 
   const restoreMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/attributes/${id}/restore`),
+    mutationFn: (id: number) => attributeService.restore(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.restored'))
@@ -189,7 +189,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   })
 
   const forceDeleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/attributes/${id}/force`),
+    mutationFn: (id: number) => attributeService.forceDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.deleted'))
@@ -202,7 +202,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/attributes/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => attributeService.bulkDelete(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.deleted'))
@@ -215,7 +215,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   })
 
   const bulkRestoreMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/attributes/bulk-restore', { ids }),
+    mutationFn: (ids: number[]) => attributeService.bulkRestore(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attributes'] })
       toast.success(t('toast.restored'))
@@ -317,7 +317,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
     const fd = new FormData()
     fd.append('file', importFile)
     try {
-      await api.post('/attributes/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await attributeService.import(fd)
       toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
@@ -330,7 +330,7 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
   }
 
   const handleExport = () => {
-    api.get('/attributes/export', { responseType: 'blob' })
+    attributeService.export()
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
         const dateStamp = new Date().toISOString().split('T')[0]
@@ -596,32 +596,17 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
       </div>
 
       {/* Create / Edit Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fade-in">
+      {modalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in">
           <div className="relative w-full max-w-lg bg-card rounded-3xl border border-border shadow-2xl overflow-hidden animate-scale-in">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-muted/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-2xs">
-                  <Sliders size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-foreground leading-tight">
-                    {editingAttr ? t('products.editAttribute', 'Edit Attribute') : t('products.addAttribute', 'Add Attribute')}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {editingAttr ? t('products.editAttributeDesc', 'Modify display type and customizable variant options') : t('products.addAttributeDesc', 'Create a new product variation dimension (e.g. Size, Color, Storage...)')}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={closeModal}
-                type="button"
-                className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            <ModalHeader
+              title={editingAttr ? t('products.editAttribute', 'Edit Attribute') : t('products.addAttribute', 'Add Attribute')}
+              subtitle={editingAttr ? t('products.editAttributeDesc', 'Modify display type and customizable variant options') : t('products.addAttributeDesc', 'Create a new product variation dimension (e.g. Size, Color, Storage...)')}
+              icon={<Sliders size={20} />}
+              iconVariant="blue"
+              onClose={closeModal}
+            />
 
             {/* Modal Body Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4.5 max-h-[calc(85vh-130px)] overflow-y-auto">
@@ -805,29 +790,31 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* CSV Import Modal */}
-      <AnimatePresence>
-        {importOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {importOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">{t('products.importCSV')}</h3>
-                <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={t('products.importCSV', 'Import CSV')}
+                subtitle={t('products.attributesImportInstruction', 'Upload CSV file to import attributes in bulk')}
+                icon={<Upload size={18} />}
+                iconVariant="blue"
+                onClose={() => setImportOpen(false)}
+              />
 
               <form onSubmit={handleImport} className="p-6 space-y-4">
                 <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/10 transition-colors">
-                  <Upload className="mx-auto text-muted-foreground mb-2" size={32} />
+                  <Upload className="mx-auto text-primary mb-2 opacity-80" size={32} />
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -836,33 +823,35 @@ const AttributesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     id="csv-attribute-upload"
                     required
                   />
-                  <label htmlFor="csv-attribute-upload" className="cursor-pointer font-medium text-primary hover:underline">
-                    {importFile ? importFile.name : t('products.clickToUploadCSV')}
+                  <label htmlFor="csv-attribute-upload" className="cursor-pointer font-bold text-xs text-primary hover:underline block">
+                    {importFile ? importFile.name : t('products.clickToUploadCSV', 'Click to browse CSV / TXT file')}
                   </label>
+                  <p className="text-[11px] text-muted-foreground mt-1">UTF-8 CSV format (name, type, values)</p>
                 </div>
 
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setImportOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-xl transition-all cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={importing || !importFile}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    {importing && <Loader2 size={14} className="animate-spin" />}
-                    {t('products.importCSV')}
+                    {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    {t('products.importCSV', 'Import CSV')}
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog

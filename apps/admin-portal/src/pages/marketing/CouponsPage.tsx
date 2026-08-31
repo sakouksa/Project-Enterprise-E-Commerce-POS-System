@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion'
 import {
   Ticket, Plus, Search, Filter, RefreshCw, Download, Upload, Settings
 } from 'lucide-react'
-import api from '@/api/client'
+import { marketingService } from '@/services/marketingService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -23,8 +23,8 @@ import type { Coupon } from './types/coupon'
 
 const CouponsPage: React.FC = () => {
   const { t } = useTranslation()
-  const toast = useToast()
   const qc = useQueryClient()
+  const toast = useToast()
 
   const {
     page,
@@ -88,7 +88,7 @@ const CouponsPage: React.FC = () => {
   // Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['coupons', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/coupons', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => marketingService.getCoupons({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
@@ -204,7 +204,7 @@ const CouponsPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (newCoupon: any) => api.post('/coupons', newCoupon),
+    mutationFn: (newCoupon: any) => marketingService.createCoupon(newCoupon),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['coupons'] })
       toast.success('Coupon created successfully.')
@@ -214,7 +214,7 @@ const CouponsPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/coupons/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => marketingService.updateCoupon(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['coupons'] })
       toast.success('Coupon updated successfully.')
@@ -224,7 +224,7 @@ const CouponsPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/coupons/${id}`),
+    mutationFn: (id: number) => marketingService.deleteCoupon(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['coupons'] })
       toast.success('Coupon deleted successfully.')
@@ -238,7 +238,7 @@ const CouponsPage: React.FC = () => {
   })
 
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => api.put(`/coupons/${id}`, { is_active }),
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => marketingService.updateCoupon(id, { is_active }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['coupons'] })
       toast.success('Coupon status updated.')
@@ -249,8 +249,8 @@ const CouponsPage: React.FC = () => {
   const handleGenerateCode = async () => {
     setGenerating(true)
     try {
-      const res = await api.get('/coupons/generate-code')
-      const generatedCode = res.data?.data?.code || res.data?.code
+      const res = await marketingService.generateCouponCode()
+      const generatedCode = res.data?.data?.code || res.data?.code || res.data
       if (generatedCode) setCode(generatedCode)
       else toast.error('Failed to generate code.')
     } catch {

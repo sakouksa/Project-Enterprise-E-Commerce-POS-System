@@ -6,6 +6,8 @@
   "saved": "Saved successfully",
   "error": "An error occurred",
   "exportSuccess": "Exported successfully",
+  "exportDownloading": "Preparing and downloading data...",
+  "noDataToExport": "No data available to export",
   "importSuccess": "Imported successfully",
   "exportError": "Failed to export data",
   "importError": "Failed to import data",
@@ -18,6 +20,8 @@
   "toast.saved": "Saved successfully",
   "toast.error": "An error occurred",
   "toast.exportSuccess": "Exported successfully",
+  "toast.exportDownloading": "Preparing and downloading data...",
+  "toast.noDataToExport": "No data available to export",
   "toast.exportError": "Failed to export data",
   "toast.exportExcelSuccess": "Exported to Excel successfully.",
   "toast.exportingExcel": "Preparing Excel export..."

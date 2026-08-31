@@ -113,10 +113,15 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
             <span>{t('personal_tab.phone', 'Phone Number')}</span>
           </label>
           <input
-            type="text"
-            {...register('phone')}
-            placeholder={t('personal_tab.phone_placeholder', 'e.g. +855 12 345 678')}
-            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            type="tel"
+            inputMode="tel"
+            {...register('phone', {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                e.target.value = e.target.value.replace(/[^\d+ -]/g, '')
+              },
+            })}
+            placeholder="012 345 678"
+            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/60 font-mono"
           />
         </div>
 

@@ -14,7 +14,7 @@ import {
   FileText,
   UserCheck
 } from 'lucide-react'
-import api from '../../api/client'
+import { securityService } from '../../services/securityService'
 import { showToast } from '../../utils/toast'
 
 export const SecuritySettingsPage: React.FC = () => {
@@ -33,15 +33,20 @@ export const SecuritySettingsPage: React.FC = () => {
 
   // Policy Settings state
   const [settings, setSettings] = useState({
-    session_timeout_minutes: 60,
+    session_timeout_minutes: 120,
+    max_active_sessions_per_user: 3,
     max_failed_attempts: 5,
     lockout_duration_minutes: 15,
-    allow_multiple_devices: true,
     max_active_devices: 5,
+    enforce_device_fingerprinting: true,
+    auto_revoke_suspicious_device: false,
+    require_manager_for_discount: true,
+    max_cashier_discount_percent: 10,
+    cashier_max_discount: 10,
+    supervisor_max_discount: 25,
+    manager_max_discount: 50,
     pos_require_shift_for_sale: true,
-    cashier_max_discount: 5,
-    supervisor_max_discount: 15,
-    manager_max_discount: 30,
+    require_manager_for_price_override: true,
     require_manager_for_refund: true,
     require_manager_for_void: true,
     audit_logging_enabled: true,
@@ -50,10 +55,11 @@ export const SecuritySettingsPage: React.FC = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true)
-      const res = await api.get('/security/settings')
-      if (res.data?.success) {
-        setSettings((prev) => ({ ...prev, ...(res.data.data?.settings || {}) }))
-        setHasManagerPin(Boolean(res.data.data?.has_manager_pin))
+      const res = await securityService.getSettings()
+      if (res.success || res.data) {
+        const payload = res.data?.settings || res.settings || res.data || {}
+        setSettings((prev) => ({ ...prev, ...payload }))
+        setHasManagerPin(Boolean(res.data?.has_manager_pin ?? res.has_manager_pin))
       }
     } catch (err: any) {
       showToast.error(err?.response?.data?.message || 'Failed to load security settings')
@@ -70,8 +76,8 @@ export const SecuritySettingsPage: React.FC = () => {
     e.preventDefault()
     try {
       setSaving(true)
-      const res = await api.put('/security/settings', settings)
-      if (res.data?.success) {
+      const res = await securityService.updateSettings(settings)
+      if (res.success || res) {
         showToast.success(t('security:settings.saveSuccess', 'Security policies updated successfully'))
       }
     } catch (err: any) {
@@ -97,13 +103,13 @@ export const SecuritySettingsPage: React.FC = () => {
 
     try {
       setPinLoading(true)
-      const res = await api.post('/security/set-manager-pin', {
+      const res = await securityService.setManagerPin({
         current_password: pinCurrentPassword,
         pin: newPin,
         pin_confirmation: confirmPin,
       })
 
-      if (res.data?.success) {
+      if (res.success || res) {
         showToast.success(t('security:settings.pinSetSuccess', 'Manager PIN updated successfully'))
         setHasManagerPin(true)
         setIsPinModalOpen(false)

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { ArrowUp, ArrowDown, ArrowUpDown, Copy, Printer, Warehouse, Edit3 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
@@ -17,9 +18,15 @@ interface ProductTableSectionProps {
   recycleBinMode: boolean
   selectedRows: number[]
   setSelectedRows: React.Dispatch<React.SetStateAction<number[]>>
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  onSort?: (column: string) => void
   onView: (product: Product) => void
   onEdit: (product: Product) => void
   onDelete: (product: Product) => void
+  onDuplicate?: (product: Product) => void
+  onPrintBarcode?: (product: Product) => void
+  onQuickStockAdjust?: (product: Product) => void
   onRestore: (id: number) => void
   onForceDelete: (product: Product) => void
   formatCurrency: (val: number) => string
@@ -30,14 +37,17 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
   isLoading,
   isFetching,
   visibleColumns,
-  recycleBinMode,
   selectedRows,
   setSelectedRows,
+  sortBy = 'id',
+  sortOrder = 'desc',
+  onSort,
   onView,
   onEdit,
   onDelete,
-  onRestore,
-  onForceDelete,
+  onDuplicate,
+  onPrintBarcode,
+  onQuickStockAdjust,
   formatCurrency,
 }) => {
   const { language } = useThemeStore()
@@ -57,12 +67,24 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
     )
   }
 
+  const renderSortIcon = (columnKey: string) => {
+    if (!onSort) return null
+    if (sortBy === columnKey) {
+      return sortOrder === 'asc' ? (
+        <ArrowUp size={13} className="text-primary shrink-0 transition-transform" />
+      ) : (
+        <ArrowDown size={13} className="text-primary shrink-0 transition-transform" />
+      )
+    }
+    return <ArrowUpDown size={13} className="opacity-0 group-hover:opacity-60 text-muted-foreground shrink-0 transition-opacity" />
+  }
+
   return (
     <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden print:hidden">
       <TableWrapper isFetching={isFetching}>
         <div className="overflow-x-auto">
           <table className="w-full data-table border-collapse">
-            <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
+            <thead className="bg-muted/40 sticky top-0 border-b border-border z-10 select-none">
               <tr>
                 <th className="w-10 text-center">
                   <input
@@ -73,12 +95,79 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                   />
                 </th>
                 {visibleColumns.image && <th className="w-12">{t('colPhoto', 'Image')}</th>}
-                {visibleColumns.name && <th>{t('colName', 'Product Name')}</th>}
-                {visibleColumns.sku && <th>{t('sku', 'SKU')}</th>}
-                {visibleColumns.category && <th>{t('colCategory', 'Category')}</th>}
-                {visibleColumns.price && <th>{t('colPrice', 'Price')}</th>}
-                {visibleColumns.stock && <th>{t('colStock', 'Stock')}</th>}
-                {visibleColumns.status && <th>{t('colStatus', 'Status')}</th>}
+                
+                {visibleColumns.name && (
+                  <th
+                    onClick={() => onSort?.('name')}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{t('colName', 'Product Name')}</span>
+                      {renderSortIcon('name')}
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.sku && (
+                  <th
+                    onClick={() => onSort?.('sku')}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{t('sku', 'SKU')}</span>
+                      {renderSortIcon('sku')}
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.category && (
+                  <th
+                    onClick={() => onSort?.('category_id')}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{t('colCategory', 'Category')}</span>
+                      {renderSortIcon('category_id')}
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.price && (
+                  <th
+                    onClick={() => onSort?.('selling_price')}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{t('colPrice', 'Price')}</span>
+                      {renderSortIcon('selling_price')}
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.stock && (
+                  <th
+                    onClick={() => onSort?.('stock')}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{t('colStock', 'Stock')}</span>
+                      {renderSortIcon('stock')}
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.status && (
+                  <th
+                    onClick={() => onSort?.('status')}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{t('colStatus', 'Status')}</span>
+                      {renderSortIcon('status')}
+                    </div>
+                  </th>
+                )}
+
                 <th className="text-right">{t('colActions', 'Actions')}</th>
               </tr>
             </thead>
@@ -91,6 +180,8 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                 products.map((p) => {
                   const isSelected = selectedRows.includes(p.id)
                   const isLowStock = (p.stock ?? 0) <= (p.low_stock_threshold || 5)
+                  const isOutOfStock = (p.stock ?? 0) <= 0
+
                   return (
                     <tr key={p.id} className={`hover:bg-muted/40 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
                       <td className="text-center" onClick={(e) => e.stopPropagation()}>
@@ -102,11 +193,11 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                         />
                       </td>
                       {visibleColumns.image && (
-                        <td>
+                        <td onClick={() => onView(p)} className="cursor-pointer" title={t('common.view', 'View')}>
                           <ProductThumbnail
                             name={p.name}
                             primaryImage={p.primary_image}
-                            images={p.images}
+                            images={p.images || undefined}
                             image={(p as any).image}
                             categoryName={p.category?.name}
                             size="sm"
@@ -115,7 +206,7 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                       )}
                       {visibleColumns.name && (
                         <td>
-                          <p onClick={() => onView(p)} className="font-bold text-foreground hover:text-primary cursor-pointer text-sm">
+                          <p onClick={() => onView(p)} className="font-bold text-foreground hover:text-primary cursor-pointer text-sm line-clamp-1">
                             {p.name}
                           </p>
                           {p.brand?.name && <p className="text-[11px] text-muted-foreground">{p.brand.name}</p>}
@@ -134,15 +225,28 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                         </td>
                       )}
                       {visibleColumns.price && (
-                        <td className="font-mono text-xs font-bold text-emerald-600">
+                        <td className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
                           {formatCurrency(p.selling_price)}
                         </td>
                       )}
                       {visibleColumns.stock && (
-                        <td className="font-mono text-xs font-bold">
-                          <span className={isLowStock ? 'text-rose-500 font-extrabold' : 'text-foreground'}>
-                            {p.stock ?? 0}
-                          </span>
+                        <td>
+                          <div
+                            onClick={() => onQuickStockAdjust?.(p)}
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-muted/80 cursor-pointer transition-colors group"
+                            title={t('quickStockAdjust', 'Quick Stock Adjust')}
+                          >
+                            <span className={`font-mono text-xs font-bold ${
+                              isOutOfStock
+                                ? 'text-rose-500 font-extrabold'
+                                : isLowStock
+                                ? 'text-amber-500 font-extrabold'
+                                : 'text-foreground'
+                            }`}>
+                              {p.stock ?? 0}
+                            </span>
+                            <Edit3 size={11} className="opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity" />
+                          </div>
                         </td>
                       )}
                       {visibleColumns.status && (
@@ -155,6 +259,22 @@ export const ProductTableSection: React.FC<ProductTableSectionProps> = ({
                           onView={() => onView(p)}
                           onEdit={() => onEdit(p)}
                           onDelete={() => onDelete(p)}
+                          onPrint={onPrintBarcode ? () => onPrintBarcode(p) : undefined}
+                          printLabel={t('printBarcode', 'Print Barcode')}
+                          items={[
+                            ...(onDuplicate ? [{
+                              label: t('duplicateProduct', 'Duplicate Product (Clone)'),
+                              icon: Copy,
+                              onClick: () => onDuplicate(p),
+                              variant: 'default' as const,
+                            }] : []),
+                            ...(onQuickStockAdjust ? [{
+                              label: t('quickStockAdjust', 'Quick Stock Adjust'),
+                              icon: Warehouse,
+                              onClick: () => onQuickStockAdjust(p),
+                              variant: 'default' as const,
+                            }] : []),
+                          ]}
                         />
                       </td>
                     </tr>

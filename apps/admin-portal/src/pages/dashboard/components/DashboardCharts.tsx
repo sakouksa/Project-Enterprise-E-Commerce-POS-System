@@ -68,11 +68,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
     const raw = chartsData?.category_breakdown || []
     if (!raw.length) {
       return [
-        { name: t('categories.laptops', 'កុំព្យូទ័រ & Laptops'), value: 142 },
-        { name: t('categories.smartphones', 'ទូរស័ព្ទដៃ & Smartphones'), value: 218 },
-        { name: t('categories.accessories', 'គ្រឿងបន្លាស់ & Accessories'), value: 385 },
-        { name: t('categories.audio', 'ឧបករណ៍សំឡេង & Audio'), value: 96 },
-        { name: t('categories.monitors', 'អេក្រង់ & Displays'), value: 74 },
+        { name: t('categories.laptops', 'Laptops & Computers'), value: 142 },
+        { name: t('categories.smartphones', 'Smartphones & Mobile'), value: 218 },
+        { name: t('categories.accessories', 'Accessories'), value: 385 },
+        { name: t('categories.audio', 'Audio & Sound'), value: 96 },
+        { name: t('categories.monitors', 'Monitors & Displays'), value: 74 },
       ]
     }
     return raw.map((item: any) => ({
@@ -86,11 +86,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
     const raw = chartsData?.payment_methods || []
     if (!raw.length) {
       return [
-        { name: t('paymentMethods.cash', 'សាច់ប្រាក់ (Cash)'), value: 45000 },
-        { name: t('paymentMethods.khqr', 'KHQR / QRIS Code'), value: 38000 },
-        { name: t('paymentMethods.card', 'កាត Visa / Master'), value: 24000 },
-        { name: t('paymentMethods.bank', 'ផ្ទេរតាម Bank'), value: 18500 },
-        { name: t('paymentMethods.wallet', 'កាបូប E-Wallet'), value: 12000 },
+        { name: t('paymentMethods.cash', 'Cash'), value: 45000 },
+        { name: t('paymentMethods.khqr', 'KHQR / QR Code'), value: 38000 },
+        { name: t('paymentMethods.card', 'Visa / Mastercard'), value: 24000 },
+        { name: t('paymentMethods.bank', 'Bank Transfer'), value: 18500 },
+        { name: t('paymentMethods.wallet', 'E-Wallet'), value: 12000 },
       ]
     }
     const map = new Map<string, number>()
@@ -111,11 +111,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
     const raw = chartsData?.branch_sales || []
     if (!raw.length || raw.length === 1) {
       return [
-        { name: t('branches.headOffice', 'ការិយាល័យកណ្តាល (Head Office)'), value: 29500000 },
-        { name: t('branches.phnomPenh', 'សាខា ភ្នំពេញ (Phnom Penh)'), value: 18400000 },
-        { name: t('branches.siemReap', 'សាខា សៀមរាប (Siem Reap)'), value: 12200000 },
-        { name: t('branches.battambang', 'សាខា បាត់ដំបង (Battambang)'), value: 8700000 },
-        { name: t('branches.sihanoukville', 'សាខា ព្រះសីហនុ (Sihanoukville)'), value: 6500000 },
+        { name: t('branches.headOffice', 'Head Office'), value: 29500000 },
+        { name: t('branches.phnomPenh', 'Phnom Penh Branch'), value: 18400000 },
+        { name: t('branches.siemReap', 'Siem Reap Branch'), value: 12200000 },
+        { name: t('branches.battambang', 'Battambang Branch'), value: 8700000 },
+        { name: t('branches.sihanoukville', 'Sihanoukville Branch'), value: 6500000 },
       ]
     }
     return raw.map((item: any) => ({
@@ -183,11 +183,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
   }, [activeChartTab, salesTrend, expenseTrend, categoryData, paymentData, branchData, t])
 
   const chartTabs = [
-    { id: 'sales', label: t('dashboard.salesTrend', 'និន្នាការការលក់ និងចំណូល'), icon: <LineChart className="w-4 h-4" /> },
-    { id: 'expenses', label: t('dashboard.expenseTrend', 'វិភាគចំណាយ'), icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'category', label: t('dashboard.stockCategory', 'ទំនិញតាមប្រភេទ'), icon: <PieIcon className="w-4 h-4" /> },
-    { id: 'payments', label: t('dashboard.paymentMethod', 'ការលក់តាមវិធីទូទាត់'), icon: <CreditCard className="w-4 h-4" /> },
-    { id: 'branches', label: t('dashboard.salesByBranch', 'ការលក់តាមសាខា'), icon: <Building2 className="w-4 h-4" /> },
+    { id: 'sales', label: t('dashboard.salesTrend', 'Sales & Revenue Trend'), icon: <LineChart className="w-4 h-4" /> },
+    { id: 'expenses', label: t('dashboard.expenseTrend', 'Expense Analysis'), icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'category', label: t('dashboard.stockCategory', 'Products by Category'), icon: <PieIcon className="w-4 h-4" /> },
+    { id: 'payments', label: t('dashboard.paymentMethod', 'Sales by Payment Method'), icon: <CreditCard className="w-4 h-4" /> },
+    { id: 'branches', label: t('dashboard.salesByBranch', 'Sales by Branch'), icon: <Building2 className="w-4 h-4" /> },
   ] as const
 
   return (
@@ -231,7 +231,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
       <div className="h-64 sm:h-80 md:h-96 w-full">
         {isLoading ? (
           <div className="h-full w-full bg-muted/20 animate-pulse rounded-xl flex items-center justify-center text-xs text-muted-foreground font-semibold">
-            {t('dashboard.loadingDashboard', 'កំពុងភ្ជាប់ទិន្នន័យ...')}
+            {t('dashboard.loadingDashboard', 'Loading dashboard data...')}
           </div>
         ) : activeChartTab === 'sales' ? (
           salesTrend.length > 0 ? (
@@ -247,7 +247,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <Tooltip
-                  formatter={(val: any) => [formatCurrency(val), t('dashboard.todaySales', 'ការលក់ថ្ងៃនេះ')]}
+                  formatter={(val: any) => [formatCurrency(val), t('dashboard.todaySales', "Today's Sales")]}
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
                 />
                 <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2.5} fill="url(#salesGrad)" />
@@ -255,7 +255,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground font-semibold">
-              {t('dashboard.noDataAvailable', 'មិនទាន់មានទិន្នន័យ')}
+              {t('dashboard.noDataAvailable', 'No data available')}
             </div>
           )
         ) : activeChartTab === 'expenses' ? (
@@ -266,7 +266,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <Tooltip
-                  formatter={(val: any) => [formatCurrency(val), t('dashboard.todayExpenses', 'ចំណាយថ្ងៃនេះ')]}
+                  formatter={(val: any) => [formatCurrency(val), t('dashboard.todayExpenses', "Today's Expenses")]}
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }}
                 />
                 <Bar dataKey="amount" fill="#f43f5e" radius={[6, 6, 0, 0]} barSize={28} />
@@ -274,7 +274,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground font-semibold">
-              {t('dashboard.noDataAvailable', 'មិនទាន់មានទិន្នន័យ')}
+              {t('dashboard.noDataAvailable', 'No data available')}
             </div>
           )
         ) : activeChartTab === 'category' ? (
@@ -300,7 +300,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground font-semibold">
-              {t('dashboard.noDataAvailable', 'មិនទាន់មានទិន្នន័យ')}
+              {t('dashboard.noDataAvailable', 'No data available')}
             </div>
           )
         ) : activeChartTab === 'payments' ? (
@@ -325,7 +325,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
                     tick={{ fontSize: 11, fontWeight: 700, fill: 'hsl(var(--foreground))' }} 
                   />
                   <Tooltip
-                    formatter={(val: any) => [formatCurrency(val), t('dashboard.todaySales', 'ចំណូលលក់')]}
+                    formatter={(val: any) => [formatCurrency(val), t('dashboard.todaySales', 'Sales Revenue')]}
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))', 
@@ -344,7 +344,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground font-semibold">
-              {t('dashboard.noDataAvailable', 'មិនទាន់មានទិន្នន័យ')}
+              {t('dashboard.noDataAvailable', 'No data available')}
             </div>
           )
         ) : (
@@ -373,7 +373,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
                     tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
                   />
                   <Tooltip
-                    formatter={(val: any) => [formatCurrency(val), t('dashboard.todaySales', 'ចំណូលលក់សាខា')]}
+                    formatter={(val: any) => [formatCurrency(val), t('dashboard.todaySales', 'Branch Sales')]}
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))', 
@@ -392,7 +392,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ salesData, cha
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground font-semibold">
-              {t('dashboard.noDataAvailable', 'មិនទាន់មានទិន្នន័យ')}
+              {t('dashboard.noDataAvailable', 'No data available')}
             </div>
           )
         )}

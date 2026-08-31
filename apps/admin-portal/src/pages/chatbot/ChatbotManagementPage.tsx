@@ -20,7 +20,7 @@ import {
   Calendar,
   Sparkles,
 } from 'lucide-react'
-import api from '@/api/client'
+import { chatbotService } from '@/services/chatbotService'
 
 interface DashboardMetrics {
   total_sessions: number
@@ -38,68 +38,75 @@ interface ChatSession {
   id: number
   channel: string
   session_token: string
-  title: string
-  status: string
+  contact_info?: string
+  last_activity_at: string
+  last_message_at?: string
+  message_count?: number
   messages_count?: number
-  last_message_at: string
-  customer?: { id: number; name: string; email: string }
-  messages?: Array<{
+  customer?: { id: number; name: string }
+  user?: {
     id: number
-    role: string
-    content: string
-    tool_name?: string
-    tool_arguments?: any
-    created_at: string
-  }>
+    name: string
+    email: string
+  }
+  status?: string
+  messages?: any[]
+  [key: string]: any
 }
 
 interface SupportRequest {
   id: number
+  name?: string
+  customer_name?: string
+  customer_contact?: string
+  contact?: string
   channel: string
-  customer_name: string
-  customer_contact: string
-  subject: string
   message: string
-  status: 'pending' | 'in_progress' | 'resolved' | 'cancelled'
+  status: string
   admin_notes?: string
   created_at: string
-  customer?: { id: number; name: string }
+  [key: string]: any
 }
 
 interface TelegramUser {
   id: number
-  telegram_id: number
+  telegram_id?: string | number
+  telegram_chat_id?: string
+  telegram_username?: string
   username?: string
   first_name?: string
   last_name?: string
-  linked_at: string
-  is_active: boolean
+  is_active?: boolean
+  created_at?: string
+  linked_at?: string
   customer?: { id: number; name: string }
+  user?: {
+    id: number
+    name: string
+    email: string
+    role: string
+  }
+  [key: string]: any
 }
 
-export const ChatbotManagementPage: React.FC = () => {
+function ChatbotManagementPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'support' | 'telegram' | 'test'>('overview')
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
-  const [loadingMetrics, setLoadingMetrics] = useState(false)
-
-  // Sessions state
   const [sessions, setSessions] = useState<ChatSession[]>([])
-  const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null)
-  const [sessionFilter, setSessionFilter] = useState<'all' | 'web' | 'telegram'>('all')
-  const [sessionSearch, setSessionSearch] = useState('')
-  const [loadingSessions, setLoadingSessions] = useState(false)
-
-  // Support requests state
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([])
-  const [loadingSupport, setLoadingSupport] = useState(false)
-
-  // Telegram users state
   const [telegramUsers, setTelegramUsers] = useState<TelegramUser[]>([])
+  
+  const [loadingMetrics, setLoadingMetrics] = useState(false)
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [loadingSupport, setLoadingSupport] = useState(false)
   const [loadingTelegramUsers, setLoadingTelegramUsers] = useState(false)
-
-  // Test notification state
-  const [testStatus, setTestStatus] = useState<string | null>(null)
+  
+  const [selectedSession, setSelectedSession] = useState<any | null>(null)
+  const [sessionFilter, setSessionFilter] = useState('all')
+  const [sessionSearch, setSessionSearch] = useState('')
+  const [testNotificationType, setTestNotificationType] = useState('test_ping')
   const [sendingTest, setSendingTest] = useState(false)
+  const [testStatus, setTestStatus] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDashboard()
@@ -114,9 +121,9 @@ export const ChatbotManagementPage: React.FC = () => {
   const fetchDashboard = async () => {
     setLoadingMetrics(true)
     try {
-      const response = await api.get('/admin/chatbot/dashboard')
-      if (response.data?.data?.metrics) {
-        setMetrics(response.data.data.metrics)
+      const response = await chatbotService.getDashboard()
+      if (response.data?.metrics || response.metrics) {
+        setMetrics(response.data?.metrics || response.metrics)
       }
     } catch (err) {
       console.error('Failed to load chatbot metrics:', err)
@@ -132,9 +139,9 @@ export const ChatbotManagementPage: React.FC = () => {
       if (sessionFilter !== 'all') params.channel = sessionFilter
       if (sessionSearch) params.search = sessionSearch
 
-      const response = await api.get('/admin/chatbot/sessions', { params })
-      if (response.data?.data?.data) {
-        setSessions(response.data.data.data)
+      const response = await chatbotService.getSessions(params)
+      if (response.data?.data || response.data) {
+        setSessions(response.data?.data || response.data)
       }
     } catch (err) {
       console.error('Failed to load chat sessions:', err)
@@ -145,9 +152,9 @@ export const ChatbotManagementPage: React.FC = () => {
 
   const fetchSessionDetails = async (id: number) => {
     try {
-      const response = await api.get(`/admin/chatbot/sessions/${id}`)
-      if (response.data?.data) {
-        setSelectedSession(response.data.data)
+      const response = await chatbotService.getSessionDetail(id)
+      if (response.data || response) {
+        setSelectedSession(response.data || response)
       }
     } catch (err) {
       console.error('Failed to load session details:', err)
@@ -157,9 +164,9 @@ export const ChatbotManagementPage: React.FC = () => {
   const fetchSupportRequests = async () => {
     setLoadingSupport(true)
     try {
-      const response = await api.get('/admin/chatbot/support-requests')
-      if (response.data?.data?.data) {
-        setSupportRequests(response.data.data.data)
+      const response = await chatbotService.getSupportRequests()
+      if (response.data?.data || response.data) {
+        setSupportRequests(response.data?.data || response.data)
       }
     } catch (err) {
       console.error('Failed to load support requests:', err)
@@ -170,7 +177,7 @@ export const ChatbotManagementPage: React.FC = () => {
 
   const handleUpdateSupportStatus = async (id: number, status: string) => {
     try {
-      await api.put(`/admin/chatbot/support-requests/${id}`, { status })
+      await chatbotService.updateSupportStatus(id, status)
       fetchSupportRequests()
     } catch (err) {
       console.error('Failed to update support status:', err)
@@ -180,9 +187,9 @@ export const ChatbotManagementPage: React.FC = () => {
   const fetchTelegramUsers = async () => {
     setLoadingTelegramUsers(true)
     try {
-      const response = await api.get('/admin/chatbot/telegram-users')
-      if (response.data?.data?.data) {
-        setTelegramUsers(response.data.data.data)
+      const response = await chatbotService.getTelegramUsers()
+      if (response.data?.data || response.data) {
+        setTelegramUsers(response.data?.data || response.data)
       }
     } catch (err) {
       console.error('Failed to load telegram users:', err)
@@ -195,8 +202,8 @@ export const ChatbotManagementPage: React.FC = () => {
     setSendingTest(true)
     setTestStatus(null)
     try {
-      const response = await api.post('/admin/chatbot/test-notification', { type })
-      setTestStatus(response.data?.message || 'Test notification dispatched!')
+      const response = await chatbotService.sendTestNotification(type)
+      setTestStatus(response.message || 'Test notification dispatched!')
     } catch (err: any) {
       setTestStatus('Failed to send test notification: ' + (err.response?.data?.message || err.message))
     } finally {
@@ -466,7 +473,7 @@ export const ChatbotManagementPage: React.FC = () => {
                   </div>
 
                   <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                    {selectedSession.messages?.map((msg) => (
+                    {selectedSession.messages?.map((msg: any) => (
                       <div
                         key={msg.id}
                         className={`p-3 rounded-xl text-xs ${

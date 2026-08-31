@@ -2,7 +2,7 @@ import React from 'react'
 import { X, ArrowLeftRight, Package, Warehouse, User, Clock, AlertCircle, RefreshCw, Truck, CheckCircle2, Edit, Printer, ArrowRight, FileText } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import api from '@/api/client'
+import { inventoryService } from '@/services/inventoryService'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import StockTransferPrintVoucher from './StockTransferPrintVoucher'
@@ -24,7 +24,7 @@ export const StockTransferDetailPage: React.FC<StockTransferDetailPageProps> = (
 
   const { data: detail, isLoading, isError, refetch } = useQuery({
     queryKey: ['stock-transfer-detail', transferId],
-    queryFn: () => api.get(`/stock-transfers/${transferId}`).then(r => r.data.data),
+    queryFn: () => inventoryService.getTransfer(transferId),
     enabled: !!transferId
   })
 

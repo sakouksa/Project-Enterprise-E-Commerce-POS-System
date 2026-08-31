@@ -27,7 +27,8 @@ import {
   Layers,
   Tag
 } from 'lucide-react'
-import api from '@/api/client'
+import { expenseService } from '@/services/expenseService'
+import { companyService } from '@/services/companyService'
 import { useToast } from '@/hooks/useToast'
 import { FormHeader, FormFooter, LoadingSpinner, FileUpload } from '@/components/common'
 import CustomErrorMessage from '@/components/ui/CustomErrorMessage'
@@ -147,7 +148,6 @@ export const ExpenseFormPage: React.FC = () => {
 
   // Fetch expense data if editing
   // staleTime:0 + refetchOnMount:'always' ensures we never show stale/cached
-  // receipt paths after a file has been updated and the user re-opens the form.
   const {
     data: expenseDetail,
     isLoading: isLoadingDetail,
@@ -156,7 +156,7 @@ export const ExpenseFormPage: React.FC = () => {
     refetch: refetchDetail,
   } = useQuery({
     queryKey: ['expense-detail', expenseId],
-    queryFn: () => (expenseId ? api.get(`/expenses/${expenseId}`).then(r => r.data.data) : null),
+    queryFn: () => (expenseId ? expenseService.getExpense(expenseId) : null),
     enabled: isEdit && !isNaN(expenseId as number),
     staleTime: 0,           // always treat cached data as stale
     refetchOnMount: 'always', // always re-fetch from server when this page mounts
@@ -165,13 +165,13 @@ export const ExpenseFormPage: React.FC = () => {
   // Fetch categories for dropdown
   const { data: categories = [] } = useQuery({
     queryKey: ['expense-categories-dropdown'],
-    queryFn: () => api.get('/expense-categories', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => expenseService.getCategories({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   // Fetch branches for dropdown
   const { data: branches = [] } = useQuery({
     queryKey: ['branches-dropdown'],
-    queryFn: () => api.get('/branches', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getBranches({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   // Populate data in edit mode
@@ -218,9 +218,9 @@ export const ExpenseFormPage: React.FC = () => {
         company_id: 1,
       }
       if (isEdit && expenseId) {
-        return api.put(`/expenses/${expenseId}`, formattedPayload)
+        return expenseService.updateExpense(expenseId, formattedPayload)
       }
-      return api.post('/expenses', formattedPayload)
+      return expenseService.createExpense(formattedPayload)
     },
     onSuccess: () => {
       // Invalidate all related queries so list, stats, and detail are all fresh
@@ -920,12 +920,6 @@ export const ExpenseFormPage: React.FC = () => {
         isSubmitting={saveMutation.isPending}
         onSubmit={handleSubmit}
         submitLabel={isEdit ? t('common.save_changes', 'Save Changes') : t('finance.save_expense', 'Save Expense')}
-        infoSummary={
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{t('finance.ready_to_save', 'Ready to save transaction into general ledger.')}</span>
-          </div>
-        }
       />
     </div>
   )

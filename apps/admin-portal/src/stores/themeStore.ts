@@ -98,7 +98,7 @@ export interface WidgetConfig {
 interface ThemeState {
   // Theme Mode
   themeMode: 'light' | 'dark' | 'system'
-  language: 'en' | 'km' | 'th' | 'vi' | 'zh'
+  language: 'en' | 'km'
   primaryColor: string
   
   // Custom configurations
@@ -114,7 +114,7 @@ interface ThemeState {
   widgetsList: WidgetConfig[]
 
   // Action methods
-  setLanguage: (lang: 'en' | 'km' | 'th' | 'vi' | 'zh') => void
+  setLanguage: (lang: 'en' | 'km') => void
   updateThemeMode: (mode: 'light' | 'dark' | 'system') => void
   updatePrimaryColor: (color: string) => void
   updateFont: (config: Partial<FontConfig>) => void
@@ -183,7 +183,7 @@ export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       themeMode: 'light',
-      language: (localStorage.getItem('enterprise-pos-lang') as 'en' | 'km' | 'th' | 'vi' | 'zh') || 'en',
+      language: (localStorage.getItem('enterprise-pos-lang') as 'en' | 'km') || 'km',
       primaryColor: '#3b82f6',
 
       font: {

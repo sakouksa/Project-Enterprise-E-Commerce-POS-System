@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, Phone, Mail, MapPin, AlertTriangle, FileText, Warehouse, User } from 'lucide-react'
 import { formatCurrency } from '../utils/purchaseCurrency'
 import type { PurchaseReturn } from '../types/purchaseReturn.types'
-import { GlobalPrintHeader, GlobalPrintFooter } from '@/components/shared/print'
+import { GlobalPrintHeader, GlobalPrintFooter } from '@/components/shared/GlobalPrint'
 
 interface PurchaseReturnPrintVoucherProps {
   returnData: PurchaseReturn | null
@@ -34,7 +34,6 @@ export const PurchaseReturnPrintVoucher: React.FC<PurchaseReturnPrintVoucherProp
       {/* ─── Global Enterprise Header ─────────────────────────────────────── */}
       <GlobalPrintHeader
         title={t('purchases.purchaseReturnDebitNoteTitle', 'PURCHASE RETURN / DEBIT NOTE')}
-        subtitleKhmer={i18n.language === 'km' ? undefined : (i18n.language === 'en' ? 'លិខិតឥណពន្ធបង្វិលសងទំនិញ' : undefined)}
         documentTypeLabel={t('purchases.officialDebitNote', 'Official Debit Note')}
         referenceNumber={`#${returnData.reference_number}`}
         referenceLabel={t('purchases.returnReference', 'Return Reference #')}

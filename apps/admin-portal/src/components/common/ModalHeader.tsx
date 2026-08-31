@@ -1,6 +1,6 @@
 import React from 'react'
-import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import CloseButton from './CloseButton'
 
 export type ModalHeaderIconVariant =
   | 'emerald'
@@ -65,19 +65,20 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({
 
   return (
     <div
-      className={`flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-900/50 shrink-0 ${className}`}
+      className={`relative flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border/80 dark:border-slate-800 bg-muted/20 dark:bg-slate-900/50 shrink-0 ${className}`}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      {/* Left side: Icon + Title & Subtitle */}
+      <div className="flex items-center gap-3 min-w-0 flex-1 pr-14">
         {icon && (
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs transition-transform ${variantStyles[iconVariant]}`}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs ${variantStyles[iconVariant]}`}
           >
             {icon}
           </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-slate-100 leading-tight truncate">
+            <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-slate-100 leading-snug">
               {title}
             </h3>
             {badge && <div className="shrink-0">{badge}</div>}
@@ -90,17 +91,11 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 ml-3">
+      {/* Right corner: Actions & Close Button anchored tight to the corner */}
+      <div className="absolute top-3.5 right-4 sm:top-4 sm:right-4 flex items-center gap-2 z-10">
         {actions}
         {showClose && onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('common.close', 'Close')}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-800 transition-colors cursor-pointer active:scale-95"
-          >
-            <X size={18} />
-          </button>
+          <CloseButton onClose={onClose} size="md" variant="default" />
         )}
       </div>
     </div>

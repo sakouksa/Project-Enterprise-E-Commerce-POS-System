@@ -35,14 +35,14 @@ interface POSVoiceSearchModalProps {
 }
 
 const QUICK_AI_PROMPTS = [
-  { label: 'ទូរស័ព្ទ Apple (iPhone)', query: 'Apple Smartphone' },
-  { label: 'កុំព្យូទ័រ Dell (Laptop)', query: 'Xiaomi Laptop' },
-  { label: 'កាមេរ៉ា (Camera)', query: 'Dell Camera' },
-  { label: 'អេក្រង់ Monitor JBL', query: 'JBL Monitor' },
-  { label: 'នាឡិកា Smartwatch', query: 'Sony Smartwatch' },
-  { label: 'ក្តារចុច Keyboard', query: 'Xiaomi Keyboard' },
-  { label: 'ឆ្នាំងសាក Charger', query: 'Samsung Charger' },
-  { label: 'កាស/បាស Audio', query: 'Xiaomi Audio' },
+  { label: 'Apple iPhone', query: 'Apple Smartphone' },
+  { label: 'Dell Laptop', query: 'Xiaomi Laptop' },
+  { label: 'Digital Camera', query: 'Dell Camera' },
+  { label: 'JBL Monitor', query: 'JBL Monitor' },
+  { label: 'Sony Smartwatch', query: 'Sony Smartwatch' },
+  { label: 'Gaming Keyboard', query: 'Xiaomi Keyboard' },
+  { label: 'Fast Charger', query: 'Samsung Charger' },
+  { label: 'Wireless Audio', query: 'Xiaomi Audio' },
 ]
 
 export const POSVoiceSearchModal: React.FC<POSVoiceSearchModalProps> = ({
@@ -183,7 +183,7 @@ export const POSVoiceSearchModal: React.FC<POSVoiceSearchModalProps> = ({
             ) : (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium my-2">
                 <Volume2 size={15} className="text-primary" />
-                <span>{t('speakFreelyPrompt', 'និយាយឈ្មោះទំនិញជាភាសាខ្មែរ ឬ អង់គ្លេស (ឧ. "ទូរស័ព្ទ Apple" ឬ "Dell Camera")')}</span>
+                <span>{t('speakFreelyPrompt', 'Speak product name clearly in Khmer or English (e.g. "Apple iPhone" or "Dell Laptop")')}</span>
               </div>
             )}
 
@@ -216,7 +216,7 @@ export const POSVoiceSearchModal: React.FC<POSVoiceSearchModalProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Sparkles size={14} className="text-primary" />
-                    {t('aiFuzzyMatches', 'AI Matched Products (លទ្ធផលស្រដៀង)')}:
+                    {t('aiFuzzyMatches', 'AI Matched Products')}:
                   </span>
                   <span className="text-[10px] font-semibold text-muted-foreground">
                     {aiMatches.length} {t('itemsFound', 'found')}
@@ -291,7 +291,7 @@ export const POSVoiceSearchModal: React.FC<POSVoiceSearchModalProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
                   <Sparkles size={12} className="text-amber-500" />
-                  {t('quickVoiceQueries', 'Quick AI Voice Samples / ឃ្លាគំរូ')}:
+                  {t('quickVoiceQueries', 'Quick AI Voice Samples')}:
                 </span>
                 {hasError && (
                   <button

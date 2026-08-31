@@ -1,6 +1,6 @@
 import type { Product } from '../types'
 
-export type SupportedLanguageCode = 'km-KH' | 'en-US' | 'zh-CN' | 'th-TH' | 'vi-VN'
+export type SupportedLanguageCode = 'km-KH' | 'en-US'
 
 export interface LanguageInfo {
   code: SupportedLanguageCode
@@ -12,27 +12,15 @@ export interface LanguageInfo {
 export const SUPPORTED_LANGUAGES: Record<SupportedLanguageCode, LanguageInfo> = {
   'km-KH': { code: 'km-KH', name: 'Khmer', nativeName: 'ភាសាខ្មែរ', flag: '🇰🇭' },
   'en-US': { code: 'en-US', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  'zh-CN': { code: 'zh-CN', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
-  'th-TH': { code: 'th-TH', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
-  'vi-VN': { code: 'vi-VN', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
 }
 
-// Conversational filler phrases to strip across 5 languages
+// Conversational filler phrases to strip across Khmer & English
 const CONVERSATIONAL_STOP_WORDS: Record<SupportedLanguageCode, string[]> = {
   'km-KH': [
     'ចង់បាន', 'រកមើល', 'សូមស្វែងរក', 'ស្វែងរក', 'ទិញ', 'ចង់ទិញ', 'មានលក់', 'យក', 'ប្រាប់ពី', 'តម្លៃ', 'មួយ', 'ពីរ', 'បី', 'សូម', 'អោយ', 'ឱ្យ',
   ],
   'en-US': [
     'i want', 'look for', 'search for', 'find', 'buy', 'show me', 'need', 'get me', 'check', 'please', 'the', 'a', 'an', 'price of',
-  ],
-  'zh-CN': [
-    '我要买', '我想买', '找一下', '搜索', '有没有', '看看', '帮我找', '请问', '给我', '买', '要', '一台', '一个',
-  ],
-  'th-TH': [
-    'อยากได้', 'หา', 'ซื้อ', 'ขอซื้อ', 'มีไหม', 'ค้นหา', 'ช่วยหา', 'ต้องการ', 'ขอ', 'ราคา',
-  ],
-  'vi-VN': [
-    'tôi muốn mua', 'tìm kiếm', 'mua', 'cần', 'cho xem', 'có bán', 'tìm', 'giá', 'một cái',
   ],
 }
 
@@ -218,7 +206,7 @@ export function stringSimilarity(s1: string, s2: string): number {
 }
 
 /**
- * 1. AI Language & Script Detector across 5 Languages
+ * 1. AI Language & Script Detector (Khmer & English)
  */
 export function detectLanguageFromVoiceText(text: string): LanguageInfo {
   const trimmed = text.trim()
@@ -227,21 +215,6 @@ export function detectLanguageFromVoiceText(text: string): LanguageInfo {
   // Khmer Unicode Range: \u1780-\u17FF
   if (/[\u1780-\u17FF]/.test(trimmed)) {
     return SUPPORTED_LANGUAGES['km-KH']
-  }
-
-  // Chinese Unicode Range: \u4E00-\u9FFF
-  if (/[\u4E00-\u9FFF]/.test(trimmed)) {
-    return SUPPORTED_LANGUAGES['zh-CN']
-  }
-
-  // Thai Unicode Range: \u0E00-\u0E7F
-  if (/[\u0E00-\u0E7F]/.test(trimmed)) {
-    return SUPPORTED_LANGUAGES['th-TH']
-  }
-
-  // Vietnamese specific characters (e.g. ă, â, đ, ê, ô, ơ, ư)
-  if (/[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(trimmed)) {
-    return SUPPORTED_LANGUAGES['vi-VN']
   }
 
   return SUPPORTED_LANGUAGES['en-US']

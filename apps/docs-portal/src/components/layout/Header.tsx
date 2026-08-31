@@ -18,9 +18,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const languages: { code: Language; label: string; nativeName: string; flag: string }[] = [
     { code: 'km', label: 'Khmer', nativeName: 'ខ្មែរ', flag: '🇰🇭' },
     { code: 'en', label: 'English', nativeName: 'English', flag: '🇬🇧' },
-    { code: 'th', label: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
-    { code: 'vi', label: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
-    { code: 'zh', label: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
   ];
 
   const currentLang = languages.find((l) => l.code === language) || languages[0];

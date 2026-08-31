@@ -39,7 +39,7 @@ import {
   InvertedLuminanceSource,
 } from '@zxing/library'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
-import api from '@/api/client'
+import { posService } from '@/services/posService'
 
 const getProductImageUrl = (product?: Product | null): string => {
   if (!product) return ''
@@ -316,16 +316,14 @@ export const POSCameraScannerModal: React.FC<POSCameraScannerModalProps> = ({
 
       // 2. Query Backend Exact Barcode Lookup
       try {
-        const res = await api.get(`/pos/products/barcode/${encodeURIComponent(cleanCode)}`, {
-          params: {
-            warehouse_id: selectedWarehouseId,
-            branch_id: selectedBranchId,
-            company_id: companyId,
-          },
+        const res = await posService.barcodeLookup(cleanCode, {
+          warehouse_id: selectedWarehouseId,
+          branch_id: selectedBranchId,
+          company_id: companyId,
         })
 
-        if (res.data && res.data.success && res.data.product) {
-          const foundProduct: Product = res.data.product
+        if (res && (res.success || res.product) && (res.product || res.data)) {
+          const foundProduct: Product = res.product || res.data
           setScannedProductFound({
             product: foundProduct,
             code: cleanCode,
@@ -344,14 +342,12 @@ export const POSCameraScannerModal: React.FC<POSCameraScannerModalProps> = ({
       } catch {
         // 3. Fallback: Search general product search endpoint
         try {
-          const searchRes = await api.get('/pos/product-search', {
-            params: {
-              search: cleanCode,
-              warehouse_id: selectedWarehouseId,
-              branch_id: selectedBranchId,
-            },
+          const searchRes = await posService.productSearch({
+            search: cleanCode,
+            warehouse_id: selectedWarehouseId,
+            branch_id: selectedBranchId,
           })
-          const items: Product[] = searchRes.data?.data || []
+          const items: Product[] = searchRes.data?.data || searchRes.data || searchRes || []
           const exact = items.find(
             (p) =>
               (p.barcode && p.barcode.toLowerCase() === cleanCode.toLowerCase()) ||

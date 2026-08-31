@@ -6,7 +6,7 @@ import {
   Building2, Plus, Search, Filter, RefreshCw, Download, Upload, Settings,
   Store, Warehouse, Network, MapPin
 } from 'lucide-react'
-import api from '@/api/client'
+import { companyService } from '@/services/companyService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -109,7 +109,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
   // Main API Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: [currentTab, page, debouncedSearch, perPage],
-    queryFn: () => api.get(`/${currentTab}`, { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => companyService.getItemsByTab(currentTab, { page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
     enabled: currentTab === 'companies' || currentTab === 'structures',
   })
@@ -117,22 +117,22 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
   // Dropdowns
   const { data: companiesDropdown } = useQuery({
     queryKey: ['companies-dropdown'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => companyService.getCompanies({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: branchesDropdown } = useQuery({
     queryKey: ['branches-dropdown'],
-    queryFn: () => api.get('/branches', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => companyService.getBranches({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: storesDropdown } = useQuery({
     queryKey: ['stores-dropdown'],
-    queryFn: () => api.get('/stores', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => companyService.getStores({ per_page: 100 }).then(r => r.data),
   })
 
   const { data: warehousesDropdown } = useQuery({
     queryKey: ['warehouses-dropdown'],
-    queryFn: () => api.get('/warehouses', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => companyService.getWarehouses({ per_page: 100 }).then(r => r.data),
   })
 
   const recordsRaw: any[] = data?.data ?? []
@@ -218,7 +218,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post(`/${currentTab}`, payload),
+    mutationFn: (payload: any) => companyService.createItemByTab(currentTab, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [currentTab] })
       toast.success(`${addButtonLabel} created successfully.`)
@@ -228,7 +228,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/${currentTab}/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => companyService.updateItemByTab(currentTab, id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [currentTab] })
       toast.success(`${addButtonLabel} updated successfully.`)
@@ -238,7 +238,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/${currentTab}/${id}`),
+    mutationFn: (id: number) => companyService.deleteItemByTab(currentTab, id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [currentTab] })
       toast.success(`${addButtonLabel} deleted successfully.`)
@@ -252,7 +252,7 @@ const CompanyPage: React.FC<CompanyPageProps> = ({ activeTab: initialTab }) => {
   })
 
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => api.put(`/${currentTab}/${id}`, { is_active }),
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => companyService.updateItemByTab(currentTab, id, { is_active }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [currentTab] })
       toast.success('Active status updated.')

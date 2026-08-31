@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, X, ShieldCheck, Truck, Package } from 'lucide-react'
+import { Eye, ShieldCheck, Truck, Package } from 'lucide-react'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import CloseButton from '@/components/common/CloseButton'
 
 interface ProductLivePreviewDrawerProps {
   isOpen: boolean
@@ -49,180 +51,160 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
   const brandName = brands?.find(b => String(b.id) === String(form.brand_id))?.name || productDetail?.brand?.name || t('products.generalBrand', 'Brand')
   const variants: any[] = productDetail?.variants || []
 
-  return (
+  if (!isOpen) return null
+
+  return createPortal(
     <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs">
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="bg-card w-full max-w-md border-l border-border h-full flex flex-col justify-between shadow-2xl overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/80 backdrop-blur-md">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
-                  <Eye size={18} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-foreground">{t('products.livePreviewTitle', 'Live Storefront Preview')}</h3>
-                  <p className="text-[11px] text-muted-foreground">{t('products.livePreviewSub', 'Interactive customer shopping view')}</p>
-                </div>
+      <div className="fixed inset-0 z-[9999] flex justify-end bg-black/50 backdrop-blur-xs">
+        <motion.div
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="bg-card w-full max-w-md border-l border-border h-full flex flex-col justify-between shadow-2xl overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/80 backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                <Eye size={18} />
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                title={t('common.close', 'Close')}
-              >
-                <X size={18} />
-              </button>
+              <div>
+                <h3 className="font-bold text-sm text-foreground">{t('products.livePreviewTitle', 'Live Storefront Preview')}</h3>
+                <p className="text-[11px] text-muted-foreground">{t('products.livePreviewSub', 'Interactive customer shopping view')}</p>
+              </div>
             </div>
+            <CloseButton onClose={onClose} size="md" />
+          </div>
 
-            {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
-              {/* Product Hero Image */}
-              <div className="space-y-3">
-                {allImages.length > 0 ? (
-                  <>
-                    <div className="rounded-2xl overflow-hidden border border-border bg-muted/20 aspect-square relative shadow-xs">
-                      <img
-                        src={allImages[selectedImageIndex] || allImages[0]}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                      {form.is_featured && (
-                        <span className="absolute top-3 left-3 bg-amber-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm tracking-wide">
-                          {t('products.featuredBadge', 'FEATURED')}
-                        </span>
-                      )}
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+            {/* Product Hero Image */}
+            <div className="space-y-3">
+              {allImages.length > 0 ? (
+                <>
+                  <div className="rounded-2xl overflow-hidden border border-border bg-muted/20 aspect-square relative shadow-xs">
+                    <img
+                      src={allImages[selectedImageIndex] || allImages[0]}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase">
+                      {form?.is_featured ? t('products.featuredBadge', 'FEATURED') : categoryName}
                     </div>
-
-                    {/* Thumbnails */}
-                    {allImages.length > 1 && (
-                      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                        {allImages.map((src, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setSelectedImageIndex(idx)}
-                            className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
-                              selectedImageIndex === idx ? 'border-primary shadow-xs' : 'border-border opacity-60 hover:opacity-100'
-                            }`}
-                          >
-                            <img src={src} alt="thumb" className="w-full h-full object-cover" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="rounded-2xl overflow-hidden border border-dashed border-border/80 bg-muted/15 aspect-square relative shadow-xs flex flex-col items-center justify-center p-6 text-center">
-                    <div className="p-3.5 rounded-2xl bg-muted/50 border border-border/80 text-muted-foreground/60 mb-2.5">
-                      <Package size={38} strokeWidth={1.5} />
-                    </div>
-                    <span className="text-xs font-bold text-foreground">
-                      {t('products.noImagePreview', 'មិនទាន់មានរូបភាពទំនិញ')}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground mt-1 max-w-[240px] leading-relaxed">
-                      {t('products.uploadImageHint', 'សូមបញ្ចូលរូបភាពទំនិញក្នុងផ្ទាំង "ព័ត៌មានទូទៅ & រូបភាព"')}
-                    </span>
-                    {form.is_featured && (
-                      <span className="absolute top-3 left-3 bg-amber-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm tracking-wide">
-                        {t('products.featuredBadge', 'FEATURED')}
-                      </span>
-                    )}
                   </div>
-                )}
-              </div>
-
-              {/* Product Meta & Title */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                  <span className="text-primary font-bold">{brandName}</span>
-                  <span>·</span>
-                  <span>{categoryName}</span>
-                </div>
-                <h2 className="text-base font-bold text-foreground leading-snug">
-                  {form.name || t('products.productTitlePlaceholder', 'Product Title')}
-                </h2>
-                <div className="flex items-center gap-3">
-                  <span className="text-xl font-extrabold text-primary font-mono">
-                    ${Number(form.selling_price || 0).toFixed(2)}
-                  </span>
-                  {form.compare_price && Number(form.compare_price) > Number(form.selling_price) && (
-                    <span className="text-xs text-muted-foreground line-through font-mono">
-                      ${Number(form.compare_price).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Short Description */}
-              {form.short_description && (
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  {form.short_description}
-                </p>
-              )}
-
-              {/* Variants Selector */}
-              {variants.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-border/60">
-                  <span className="font-bold text-foreground text-xs block">
-                    {t('products.availableOptions', 'Available Options:')}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {variants.map((v: any) => {
-                      const isSelected = selectedVariantId === v.id
-                      return (
+                  {/* Thumbnails */}
+                  {allImages.length > 1 && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                      {allImages.map((img, idx) => (
                         <button
-                          key={v.id}
+                          key={idx}
                           type="button"
-                          onClick={() => setSelectedVariantId(v.id)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                              : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
+                          onClick={() => setSelectedImageIndex(idx)}
+                          className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                            selectedImageIndex === idx
+                              ? 'border-primary ring-2 ring-primary/20'
+                              : 'border-border/80 opacity-60 hover:opacity-100'
                           }`}
                         >
-                          <span>{v.name}</span>
-                          <span className="ml-1 opacity-80 font-mono">(${Number(v.selling_price || 0).toFixed(2)})</span>
+                          <img src={img} alt="" className="w-full h-full object-cover" />
                         </button>
-                      )
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border bg-muted/20 aspect-square flex flex-col items-center justify-center text-muted-foreground gap-2 p-6 text-center">
+                  <Package size={32} className="opacity-40" />
+                  <p className="text-xs">{t('products.noImagesUploaded', 'No product images uploaded yet.')}</p>
                 </div>
               )}
+            </div>
 
-              {/* Value Badges */}
-              <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-2.5 text-[11px] text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-primary shrink-0" />
-                  <span>{t('products.certifiedQuality', '100% Genuine Enterprise Certified Product')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Truck size={16} className="text-primary shrink-0" />
-                  <span>{t('products.fastDispatch', 'Instant POS & Fast Warehouse Dispatch')}</span>
-                </div>
+            {/* Product Metadata & Title */}
+            <div className="space-y-2 border-b border-border/60 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wider">{brandName}</span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-[11px] text-muted-foreground">{categoryName}</span>
+              </div>
+              <h2 className="text-base font-extrabold text-foreground leading-snug">
+                {form?.name || t('products.productTitlePlaceholder', 'Product Title')}
+              </h2>
+              <div className="flex items-baseline gap-2 pt-1">
+                <span className="text-xl font-black text-foreground">
+                  ${Number(form?.selling_price || productDetail?.selling_price || 0).toFixed(2)}
+                </span>
+                {form?.cost_price && Number(form.cost_price) > 0 && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    ${(Number(form.selling_price || 0) * 1.2).toFixed(2)}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-4 border-t border-border bg-muted/20 flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer text-center"
-              >
-                {t('products.closePreview', 'Close Preview')}
-              </button>
+            {/* Variants options picker if available */}
+            {variants.length > 0 && (
+              <div className="space-y-2 border-b border-border/60 pb-4">
+                <label className="text-xs font-bold text-foreground block">
+                  {t('products.availableOptions', 'Available Options:')}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((v: any) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVariantId(v.id)}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        selectedVariantId === v.id
+                          ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
+                          : 'border-border bg-card hover:bg-muted text-foreground'
+                      }`}
+                    >
+                      {v.name} · ${Number(v.selling_price || 0).toFixed(2)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Short Description */}
+            <div className="space-y-1.5 border-b border-border/60 pb-4">
+              <label className="text-xs font-bold text-foreground block">
+                {t('products.colDescription', 'Description')}
+              </label>
+              <p className="text-muted-foreground leading-relaxed text-[11px]">
+                {form?.description || productDetail?.description || t('products.noDescriptionProvided', 'No detailed description provided for this product.')}
+              </p>
             </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+
+            {/* Trust Badges */}
+            <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-primary shrink-0" />
+                <span>{t('products.certifiedQuality', '100% Genuine Enterprise Certified Product')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Truck size={16} className="text-primary shrink-0" />
+                <span>{t('products.fastDispatch', 'Instant POS & Fast Warehouse Dispatch')}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-border bg-muted/20 flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer text-center"
+            >
+              {t('products.closePreview', 'Close Preview')}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>,
+    document.body
   )
 }
 

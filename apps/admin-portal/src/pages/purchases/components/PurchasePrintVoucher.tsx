@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, Phone, Mail, MapPin, FileText, Warehouse, User, Calendar } from 'lucide-react'
 import { formatCurrency, getDetailDualValues } from '../utils/purchaseCurrency'
 import { getDeliveryStatusLabel, getPaymentStatusLabel, type Purchase } from '../types/purchase.types'
-import { GlobalPrintHeader, GlobalPrintFooter } from '@/components/shared/print'
+import { GlobalPrintHeader, GlobalPrintFooter } from '@/components/shared/GlobalPrint'
 
 interface PurchasePrintVoucherProps {
   purchase: Purchase | null
@@ -48,7 +48,6 @@ export const PurchasePrintVoucher: React.FC<PurchasePrintVoucherProps> = ({ purc
       {/* ─── Clean Monochrome Header ─────────────────────────────────────── */}
       <GlobalPrintHeader
         title={t('purchases.purchaseOrderTitle', 'OFFICIAL PURCHASE ORDER VOUCHER')}
-        subtitleKhmer={i18n.language === 'km' ? undefined : (i18n.language === 'en' ? 'ប័ណ្ណបញ្ជាទិញទំនិញផ្លូវការ' : undefined)}
         documentTypeLabel={t('purchases.officialPurchaseOrder', 'Official Purchase Order')}
         referenceNumber={`#${purchase.reference_number}`}
         referenceLabel={t('purchases.poReference', 'PO Reference #')}

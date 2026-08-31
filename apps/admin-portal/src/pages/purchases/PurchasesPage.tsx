@@ -7,20 +7,33 @@ import {
   Tag, Percent, PlusCircle, ArrowLeft, Trash, Save, Edit, RefreshCw as ResetIcon,
   ChevronUp, ChevronDown, Wallet, FileCheck, Truck, ShoppingCart,
   Settings, Filter, AlertCircle, ShieldAlert, Sliders,
-  EditIcon, Edit2
+  EditIcon, Edit2, Copy, FileSpreadsheet, RotateCcw, PackageCheck, Ban
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 
-import api from '@/api/client'
+import { purchaseService } from '@/services/purchaseService'
+import { supplierService } from '@/services/supplierService'
+import { companyService } from '@/services/companyService'
+import { productService } from '@/services/productService'
+import { reportService } from '@/services/reportService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import TableWrapper from '@/components/shared/TableWrapper'
 import ResetButton from '@/components/shared/ResetButton'
-import TableActionMenu from '@/components/shared/TableActionMenu'
+import TableActionMenu, { type TableActionItem } from '@/components/shared/TableActionMenu'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import {
+  HeaderActionsGroup,
+  AddButton,
+  ExportButton
+} from '@/components/common'
+import { downloadCsv } from '@/utils/export'
 
 // Modular Components & Helpers
 import { STATUS_BADGE, PAYMENT_BADGE, getDeliveryStatusLabel, getPaymentStatusLabel, type Purchase, type PurchaseItem } from './types/purchase.types'
@@ -46,8 +59,14 @@ const PurchasesPage: React.FC = () => {
   const [printPurchase, setPrintPurchase] = useState<Purchase | null>(null)
   const [receiveTarget, setReceiveTarget] = useState<Purchase | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Purchase | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Purchase | null>(null)
   const [editLoading, setEditLoading] = useState(false)
   const [viewingId, setViewingId] = useState<number | null>(null)
+
+  // Selection state for bulk actions
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [bulkCancelConfirmOpen, setBulkCancelConfirmOpen] = useState(false)
 
   // Server pagination hook
   const {
@@ -58,13 +77,15 @@ const PurchasesPage: React.FC = () => {
     search,
     setSearch,
     debouncedSearch,
-    reset
+    reset,
+    adjustAfterDelete
   } = useServerPagination({ storageKey: 'purchases' })
 
   // Filters state
   const [statusFilter, setStatusFilter] = useState('')
   const [supplierFilter, setSupplierFilter] = useState('')
   const [warehouseFilter, setWarehouseFilter] = useState('')
+  const [branchFilter, setBranchFilter] = useState('')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
   const [purchaseDateStartFilter, setPurchaseDateStartFilter] = useState('')
   const [purchaseDateEndFilter, setPurchaseDateEndFilter] = useState('')
@@ -74,22 +95,18 @@ const PurchasesPage: React.FC = () => {
   const [maxAmountFilter, setMaxAmountFilter] = useState('')
   const [createdByFilter, setCreatedByFilter] = useState('')
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false)
-  const [visibleColumns, setVisibleColumns] = useState({
+
+  // Column customization (8 standard columns)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     reference: true,
     date: true,
     supplier: true,
     warehouse: true,
     items: true,
-    subtotal: true,
     grandTotal: true,
     paymentStatus: true,
     status: true,
-    createdBy: true
   })
-  const toggleColumn = (key: keyof typeof visibleColumns) => {
-    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }))
-  }
 
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -98,6 +115,7 @@ const PurchasesPage: React.FC = () => {
     statusFilter,
     supplierFilter,
     warehouseFilter,
+    branchFilter,
     paymentStatusFilter,
     purchaseDateStartFilter,
     purchaseDateEndFilter,
@@ -127,6 +145,7 @@ const PurchasesPage: React.FC = () => {
     setStatusFilter('')
     setSupplierFilter('')
     setWarehouseFilter('')
+    setBranchFilter('')
     setPaymentStatusFilter('')
     setPurchaseDateStartFilter('')
     setPurchaseDateEndFilter('')
@@ -137,6 +156,7 @@ const PurchasesPage: React.FC = () => {
     setCreatedByFilter('')
     setSortBy('created_at')
     setSortOrder('desc')
+    setSelectedRows([])
     reset()
   }
 
@@ -153,10 +173,8 @@ const PurchasesPage: React.FC = () => {
   const [currencyCode, setCurrencyCode] = useState('USD')
   const [exchangeRate, setExchangeRate] = useState('4100')
 
-  // Payment recording modal
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [paymentNotes, setPaymentNotes] = useState('')
+  // Payment recording target
+  const [paymentTarget, setPaymentTarget] = useState<Purchase | null>(null)
 
   // Create / Edit items list
   const [formItems, setFormItems] = useState<any[]>([])
@@ -185,26 +203,27 @@ const PurchasesPage: React.FC = () => {
   const [prodSearch, setProdSearch] = useState('')
   const [prodDropdownOpen, setProdDropdownOpen] = useState(false)
   const [recvQuantities, setRecvQuantities] = useState<Record<number, string>>({})
+  const [isExporting, setIsExporting] = useState(false)
 
   // ─── Queries ──────────────────────────────────────────────────────────────
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers-list'],
-    queryFn: () => api.get('/suppliers', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => supplierService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses-list'],
-    queryFn: () => api.get('/warehouses', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getWarehouses().then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: branches } = useQuery({
     queryKey: ['branches-list'],
-    queryFn: () => api.get('/branches', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getBranches().then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: products } = useQuery({
     queryKey: ['products-for-po-select'],
-    queryFn: () => api.get('/products', { params: { per_page: 500 } }).then(r => r.data.data ?? []),
+    queryFn: () => productService.list({ per_page: 500 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const selectableProducts = useMemo(() => {
@@ -264,15 +283,15 @@ const PurchasesPage: React.FC = () => {
 
   const { data: reportData } = useQuery({
     queryKey: ['purchase-dashboard-stats'],
-    queryFn: () => api.get('/purchase-report').then(r => r.data.data),
+    queryFn: () => reportService.purchaseSummary(),
   })
 
   const { data: users } = useQuery({
     queryKey: ['users-list'],
-    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
-  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: [
       'purchases',
       page,
@@ -281,6 +300,7 @@ const PurchasesPage: React.FC = () => {
       statusFilter,
       supplierFilter,
       warehouseFilter,
+      branchFilter,
       paymentStatusFilter,
       purchaseDateStartFilter,
       purchaseDateEndFilter,
@@ -292,75 +312,175 @@ const PurchasesPage: React.FC = () => {
       sortBy,
       sortOrder
     ],
-    queryFn: () => api.get('/purchases', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        status: statusFilter,
-        supplier_id: supplierFilter,
-        warehouse_id: warehouseFilter,
-        payment_status: paymentStatusFilter,
-        purchase_date_start: purchaseDateStartFilter,
-        purchase_date_end: purchaseDateEndFilter,
-        due_date_start: dueDateStartFilter,
-        due_date_end: dueDateEndFilter,
-        min_amount: minAmountFilter,
-        max_amount: maxAmountFilter,
-        created_by: createdByFilter,
-        sort_by: sortBy,
-        sort_order: sortOrder
-      }
-    }).then(r => r.data),
+    queryFn: () => purchaseService.list({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      status: statusFilter || undefined,
+      supplier_id: supplierFilter || undefined,
+      warehouse_id: warehouseFilter || undefined,
+      branch_id: branchFilter || undefined,
+      payment_status: paymentStatusFilter || undefined,
+      purchase_date_start: purchaseDateStartFilter || undefined,
+      purchase_date_end: purchaseDateEndFilter || undefined,
+      due_date_start: dueDateStartFilter || undefined,
+      due_date_end: dueDateEndFilter || undefined,
+      min_amount: minAmountFilter || undefined,
+      max_amount: maxAmountFilter || undefined,
+      created_by: createdByFilter || undefined,
+      sort_by: sortBy,
+      sort_order: sortOrder
+    }),
     placeholderData: (prev) => prev,
   })
 
   const purchases: Purchase[] = Array.isArray(data?.data) ? data.data : []
-  const pagination = data?.pagination ?? { total: 0, current_page: 1, last_page: 1 }
+  const pagination = data?.pagination ?? { total: purchases.length, current_page: page, last_page: 1 }
+
+  // ─── Selection Helpers ───────────────────────────────────────────────────
+  const isAllSelected = purchases.length > 0 && purchases.every(p => selectedRows.includes(p.id))
+  const isIndeterminate = purchases.some(p => selectedRows.includes(p.id)) && !isAllSelected
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedRows([])
+    } else {
+      setSelectedRows(purchases.map(p => p.id))
+    }
+  }
+
+  const toggleSelectRow = (id: number) => {
+    setSelectedRows(prev =>
+      prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
+    )
+  }
+
+  // Safe Bulk Action Selection Sets
+  const selectedPurchases = React.useMemo(() => {
+    return purchases.filter((p) => selectedRows.includes(p.id))
+  }, [purchases, selectedRows])
+
+  const cancellablePurchases = React.useMemo(() => {
+    return selectedPurchases.filter((p) => p.status === 'draft' || p.status === 'ordered')
+  }, [selectedPurchases])
+
+  const deletablePurchases = React.useMemo(() => {
+    return selectedPurchases.filter((p) => p.status === 'draft' || p.status === 'cancelled')
+  }, [selectedPurchases])
+
+  const handleBulkCancelClick = () => {
+    if (selectedRows.length === 0) return
+    if (cancellablePurchases.length === 0) {
+      toast.error(t('purchases.noCancellableOrders', 'Selected purchase orders are already received and cannot be cancelled. Use Purchase Returns instead.'))
+      return
+    }
+    setBulkCancelConfirmOpen(true)
+  }
+
+  const handleBulkDeleteClick = () => {
+    if (selectedRows.length === 0) return
+    if (deletablePurchases.length === 0) {
+      toast.error(t('purchases.noDeletableOrders', 'Only draft or cancelled purchase orders can be deleted.'))
+      return
+    }
+    setBulkDeleteConfirmOpen(true)
+  }
 
   // ─── Mutations ────────────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: (newPO: any) => api.post('/purchases', newPO),
+    mutationFn: (newPO: any) => purchaseService.create(newPO),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchases'] })
       qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
       toast.success(t('purchases.toast.createSuccess', 'Purchase order created successfully!'))
       setActiveWorkspaceTab('list')
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error')),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.createFailed', 'Failed to create purchase order.')),
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.put(`/purchases/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: any }) => purchaseService.update(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchases'] })
       qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
       toast.success(t('purchases.toast.updateSuccess', 'Purchase order updated successfully!'))
       setActiveWorkspaceTab('list')
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error')),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.updateFailed', 'Failed to update purchase order.')),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => purchaseService.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['purchases'] })
+      qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
+      toast.success(t('purchases.toast.deleteSuccess', 'Purchase order deleted successfully.'))
+      setDeleteTarget(null)
+      setSelectedRows(prev => prev.filter(r => r !== deleteTarget?.id))
+      adjustAfterDelete(1)
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.deleteFailed', 'Failed to delete purchase order.')),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const results = await Promise.allSettled(ids.map(id => purchaseService.delete(id)))
+      const rejected = results.filter(r => r.status === 'rejected')
+      if (rejected.length > 0 && rejected.length === ids.length) {
+        const firstErr: any = (rejected[0] as PromiseRejectedResult).reason
+        throw firstErr
+      }
+      return { successCount: ids.length - rejected.length }
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['purchases'] })
+      qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
+      toast.success(t('purchases.toast.bulkDeleteSuccess', 'Selected purchase orders deleted successfully.'))
+      setBulkDeleteConfirmOpen(false)
+      setSelectedRows([])
+      adjustAfterDelete(data?.successCount || 1)
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.bulkDeleteFailed', 'Failed to delete selected purchase orders.')),
+  })
+
+  const bulkCancelMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const results = await Promise.allSettled(ids.map(id => purchaseService.cancel(id)))
+      const rejected = results.filter(r => r.status === 'rejected')
+      if (rejected.length > 0 && rejected.length === ids.length) {
+        const firstErr: any = (rejected[0] as PromiseRejectedResult).reason
+        throw firstErr
+      }
+      return { successCount: ids.length - rejected.length }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['purchases'] })
+      qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
+      toast.success(t('purchases.toast.bulkCancelSuccess', 'Selected purchase orders cancelled successfully.'))
+      setBulkCancelConfirmOpen(false)
+      setSelectedRows([])
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.bulkCancelFailed', 'Failed to cancel selected purchase orders.')),
   })
 
   const receiveMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.post(`/purchases/${id}/receive`, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: any }) => purchaseService.receiveShipment(id, payload),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['purchases'] })
       qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
       qc.invalidateQueries({ queryKey: ['products'] })
       toast.success(t('purchases.toast.receiveSuccess', 'Shipment receiving recorded!'))
-      const updatedPO = res?.data?.data?.purchase
-      if (updatedPO) {
+      const updatedPO = res?.data?.purchase || res?.purchase || res
+      if (selectedPurchase && updatedPO && updatedPO.id) {
         setSelectedPurchase(updatedPO as Purchase)
-      } else if (receiveTarget) {
-        api.get(`/purchases/${receiveTarget.id}`).then(r => setSelectedPurchase(r.data.data as Purchase)).catch(() => {})
       }
       setReceiveTarget(null)
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error')),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.receiveFailed', 'Failed to receive shipment.')),
   })
 
   const cancelMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/purchases/${id}/cancel`),
+    mutationFn: (id: number) => purchaseService.cancel(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchases'] })
       qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
@@ -368,22 +488,23 @@ const PurchasesPage: React.FC = () => {
       setCancelTarget(null)
       setSelectedPurchase(null)
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error')),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.cancelFailed', 'Failed to cancel purchase order.')),
   })
 
   const paymentMutation = useMutation({
     mutationFn: ({ id, amount, notes }: { id: number; amount: number; notes: string }) =>
-      api.post(`/purchases/${id}/record-payment`, { amount, notes }),
+      purchaseService.recordPayment(id, { amount, notes }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['purchases'] })
       qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
       toast.success(t('purchases.toast.paymentSuccess', 'Payment recorded successfully!'))
-      setPaymentModalOpen(false)
-      setPaymentAmount('')
-      setPaymentNotes('')
-      if (res?.data?.data) setSelectedPurchase(res.data.data as Purchase)
+      setPaymentTarget(null)
+      if (selectedPurchase && (res?.data || res)) {
+        const updated = (res.data || res) as Purchase
+        setSelectedPurchase(prev => prev ? { ...prev, ...updated } : null)
+      }
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('toast.error')),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('purchases.toast.paymentFailed', 'Failed to record payment.')),
   })
 
   // ─── Route & Workspace Sync ─────────────────────────────────────────────
@@ -408,9 +529,9 @@ const PurchasesPage: React.FC = () => {
         setActiveWorkspaceTab('edit')
         setEditLoading(true)
         setEditPurchaseId(pId)
-        api.get(`/purchases/${pId}`)
+        purchaseService.show(pId)
           .then(res => {
-            const fullPO = res.data.data as Purchase
+            const fullPO = (res?.data || res) as Purchase
             setSupplierId(fullPO.supplier?.id?.toString() ?? (fullPO as any).supplier_id?.toString() ?? '')
             setWarehouseId(fullPO.warehouse?.id?.toString() ?? (fullPO as any).warehouse_id?.toString() ?? '')
             setBranchId(fullPO.branch?.id?.toString() ?? (fullPO as any).branch_id?.toString() ?? '1')
@@ -454,9 +575,9 @@ const PurchasesPage: React.FC = () => {
 
   const handleViewPurchase = (po: Purchase) => {
     setViewingId(po.id)
-    api.get(`/purchases/${po.id}`)
-      .then(res => setSelectedPurchase(res.data.data as Purchase))
-      .catch(() => toast.error('Failed to load purchase details.'))
+    purchaseService.show(po.id)
+      .then(res => setSelectedPurchase((res?.data || res) as Purchase))
+      .catch(() => toast.error(t('purchases.failedLoadItems', 'Failed to load purchase details.')))
       .finally(() => setViewingId(null))
   }
 
@@ -467,20 +588,140 @@ const PurchasesPage: React.FC = () => {
         window.print()
       }, 100)
     } else {
-      api.get(`/purchases/${po.id}`)
+      purchaseService.show(po.id)
         .then(res => {
-          const fullPO = res.data.data as Purchase
+          const fullPO = (res?.data || res) as Purchase
           setPrintPurchase(fullPO)
           setTimeout(() => {
             window.print()
           }, 100)
         })
-        .catch(() => {
-          setPrintPurchase(po)
-          setTimeout(() => {
-            window.print()
-          }, 100)
-        })
+        .catch(() => toast.error(t('purchases.failedLoadItems', 'Failed to load full purchase order details.')))
+    }
+  }
+
+  // Duplicate / Re-order PO
+  const handleDuplicatePO = async (po: Purchase) => {
+    try {
+      let fullPO = po
+      if (!po.items || po.items.length === 0) {
+        const res = await purchaseService.show(po.id)
+        fullPO = (res?.data || res) as Purchase
+      }
+      setEditPurchaseId(null)
+      setSupplierId(fullPO.supplier?.id?.toString() ?? (fullPO as any).supplier_id?.toString() ?? '')
+      setWarehouseId(fullPO.warehouse?.id?.toString() ?? (fullPO as any).warehouse_id?.toString() ?? '')
+      setBranchId(fullPO.branch?.id?.toString() ?? (fullPO as any).branch_id?.toString() ?? '1')
+      setPoDate(new Date().toISOString().split('T')[0])
+      setDueDate('')
+      setShippingCost((fullPO.shipping_cost ?? 0).toString())
+      setPaidAmount('0')
+      setNotes(fullPO.notes ? `Re-order from PO #${fullPO.reference_number}: ${fullPO.notes}` : `Re-order from PO #${fullPO.reference_number}`)
+      setCurrencyCode(fullPO.currency_code ?? 'USD')
+      setExchangeRate((fullPO.exchange_rate ?? 4100).toString())
+      const mapped = (fullPO.items ?? []).map(item => ({
+        product_id: item.product_id,
+        product_variant_id: item.product_variant_id || null,
+        product_name: item.variant?.name ? `${item.product_name ?? item.product?.name ?? `Product #${item.product_id}`} (${item.variant.name})` : (item.product_name ?? item.product?.name ?? `Product #${item.product_id}`),
+        quantity: (item.quantity ?? 1).toString(),
+        unit_cost: (item.unit_cost ?? 0).toString(),
+        discount_percent: (item.discount_percent ?? 0).toString(),
+        tax_percent: (item.tax_percent ?? 0).toString(),
+        notes: item.notes ?? ''
+      }))
+      setFormItems(mapped)
+      setActiveWorkspaceTab('create')
+      navigate('/purchases/create')
+      toast.success(t('purchases.duplicateSuccess', 'Purchase order copied to create form successfully!'))
+    } catch {
+      toast.error(t('purchases.failedLoadItems', 'Failed to load purchase items for duplication.'))
+    }
+  }
+
+  // Export Data to CSV with progress and localized feedback
+  const handleExportData = async (exportSelectedOnly = false) => {
+    if (isExporting) return
+    const listToExport = exportSelectedOnly
+      ? purchases.filter(p => selectedRows.includes(p.id))
+      : purchases
+
+    if (listToExport.length === 0) {
+      toast.error(t('purchases.toast.exportEmpty', t('common.noDataToExport', 'មិនមានទិន្នន័យដើម្បីនាំចេញទេ!')))
+      return
+    }
+
+    setIsExporting(true)
+    const toastId = toast.info({
+      title: t('common.downloading', 'កំពុងទាញយក'),
+      message: t('purchases.toast.exportDownloading', t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...')),
+      duration: 2500,
+    })
+
+    try {
+      // Smooth loading experience so users know download is progressing
+      await new Promise(resolve => setTimeout(resolve, 600))
+
+      const headers = [
+        'Reference Number',
+        'Order Date',
+        'Due Date',
+        'Supplier',
+        'Warehouse',
+        'Branch',
+        'Items Count',
+        'Subtotal ($)',
+        'Discount ($)',
+        'Tax ($)',
+        'Shipping ($)',
+        'Grand Total ($)',
+        'Paid ($)',
+        'Due ($)',
+        'Payment Status',
+        'Delivery Status',
+        'Created By',
+        'Notes'
+      ]
+
+      const rows = listToExport.map(p => [
+        p.reference_number || '',
+        p.date || '',
+        p.due_date || '',
+        p.supplier?.name || '',
+        p.warehouse?.name || '',
+        p.branch?.name || 'Main Branch',
+        p.items_count ?? (p.items?.length || 0),
+        Number(p.subtotal || 0).toFixed(2),
+        Number(p.discount_amount || 0).toFixed(2),
+        Number(p.tax_amount || 0).toFixed(2),
+        Number(p.shipping_cost || 0).toFixed(2),
+        Number(p.grand_total || 0).toFixed(2),
+        Number(p.paid_amount || 0).toFixed(2),
+        Number(p.due_amount || 0).toFixed(2),
+        p.payment_status || '',
+        p.status || '',
+        p.creator?.name || '',
+        p.notes || ''
+      ])
+
+      downloadCsv('purchase_orders', headers, rows)
+      if (toastId) {
+        toast.dismiss(toastId)
+      }
+      toast.success({
+        title: t('common.success', 'ជោគជ័យ'),
+        message: t('purchases.toast.exportSuccess', t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!')),
+        duration: 3500,
+      })
+    } catch {
+      if (toastId) {
+        toast.dismiss(toastId)
+      }
+      toast.error({
+        title: t('common.error', 'កំហុស'),
+        message: t('purchases.toast.exportError', t('common.exportError', 'ការនាំចេញទិន្នន័យបានបរាជ័យ!')),
+      })
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -606,15 +847,15 @@ const PurchasesPage: React.FC = () => {
       setRecvQuantities(initialQtys)
       return
     }
-    api.get(`/purchases/${po.id}`).then(res => {
-      const fullPO = res.data.data as Purchase
+    purchaseService.show(po.id).then(res => {
+      const fullPO = (res?.data || res) as Purchase
       setReceiveTarget(fullPO)
       const initialQtys: Record<number, string> = {}
       ;(fullPO.items ?? []).forEach(item => {
         initialQtys[item.id] = (item.quantity - item.quantity_received).toString()
       })
       setRecvQuantities(initialQtys)
-    }).catch(() => toast.error('Failed to load purchase items.'))
+    }).catch(() => toast.error(t('purchases.failedLoadItems', 'Failed to load purchase items.')))
   }
 
   const handleReceiveSubmit = (e: React.FormEvent) => {
@@ -627,7 +868,7 @@ const PurchasesPage: React.FC = () => {
       })).filter(i => i.quantity_received > 0)
     }
     if (payload.items.length === 0) {
-      toast.error('Please input receiving quantity for at least one item.')
+      toast.error(t('purchases.inputReceivingQuantity', 'Please input receiving quantity for at least one item.'))
       return
     }
     receiveMutation.mutate({ id: receiveTarget.id, payload })
@@ -676,15 +917,18 @@ const PurchasesPage: React.FC = () => {
                 {t('purchases.subtitle', 'Manage purchase orders, suppliers, receiving status, payments, inventory replenishment, and procurement operations.')}
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
+            
+            <HeaderActionsGroup>
+              <ExportButton
+                onClick={() => handleExportData(false)}
+                loading={isExporting}
+                label={t('common.exportCsv', 'នាំចេញ CSV')}
+              />
+              <AddButton
                 onClick={() => switchToTab('create')}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs cursor-pointer"
-              >
-                <Plus size={16} />
-                {t('purchases.createPO', 'Add Purchase')}
-              </button>
-            </div>
+                label={t('purchases.createPO', 'Add Purchase')}
+              />
+            </HeaderActionsGroup>
           </div>
 
           {/* Dashboard Metrics */}
@@ -692,27 +936,58 @@ const PurchasesPage: React.FC = () => {
             reportData={reportData}
             purchases={purchases}
             suppliersCount={suppliers?.length ?? 0}
+            totalOrdersCount={pagination?.total ?? data?.total ?? purchases.length}
+            warehousesCount={warehouses?.length ?? 0}
+          />
+
+          {/* Bulk Selection Action Banner */}
+          <BulkSelectionBanner
+            selectedCount={selectedRows.length}
+            onClear={() => setSelectedRows([])}
+            onDelete={handleBulkDeleteClick}
+            deleteLabel={t('purchases.bulkDelete', 'Delete Selected')}
+            extraActions={
+              <>
+                <button
+                  type="button"
+                  disabled={isExporting}
+                  onClick={() => handleExportData(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-card border border-primary/30 text-primary hover:bg-primary/10 transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                  <span>{t('purchases.bulkExport', 'នាំចេញដែលបានជ្រើស')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkCancelClick}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-card border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-all cursor-pointer shadow-xs"
+                >
+                  <Ban size={13} />
+                  <span>{t('purchases.bulkCancel', 'Cancel Selected')}</span>
+                </button>
+              </>
+            }
           />
 
           {/* Search & Action Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
-            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm print:hidden">
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto flex-1">
               <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder={t('purchases.searchPlaceholder', 'Search Reference, Supplier, Invoice...')}
-                  className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
+                  placeholder={t('purchases.searchPlaceholder', 'Search Reference, Supplier, Invoice, Product...')}
+                  className="w-full h-10 min-h-[40px] pl-9 pr-8 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-xs font-medium"
                 />
                 {search && (
                   <button
                     onClick={() => { setSearch(''); setPage(1); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
                     type="button"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 )}
               </div>
@@ -720,22 +995,20 @@ const PurchasesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFilterDrawerOpen(true)}
-                className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
-                  activeFiltersCount > 0 
-                    ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15' 
-                    : 'bg-card border-border text-foreground hover:bg-muted/80'
+                className={`inline-flex items-center gap-1.5 h-10 min-h-[40px] px-3.5 text-xs sm:text-[13px] font-medium rounded-lg border transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
+                  activeFiltersCount > 0
+                    ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
+                    : 'border-border/80 bg-background hover:bg-muted text-foreground'
                 }`}
               >
-                <Filter size={15} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
+                <Filter size={14} className={activeFiltersCount > 0 ? 'text-primary' : 'text-muted-foreground'} />
                 <span>{t('common.filter', 'Filter')}</span>
                 {activeFiltersCount > 0 && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none">
-                    {activeFiltersCount}
-                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 )}
               </button>
 
-              <ResetButton onClick={handleResetFilters} label={t("common.reset", "Reset")} />
+              <ResetButton onClick={handleResetFilters} />
             </div>
 
             <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
@@ -745,11 +1018,12 @@ const PurchasesPage: React.FC = () => {
                   qc.invalidateQueries({ queryKey: ['purchases'] })
                   qc.invalidateQueries({ queryKey: ['purchase-dashboard-stats'] })
                 }}
-                className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+                className="h-10 w-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background hover:bg-muted transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
                 title={t('common.refresh', 'Refresh')}
               >
-                <RefreshCw size={15} />
+                <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
               </button>
+
               <ColumnSettingsPopover
                 columns={[
                   { key: 'reference', label: t('purchases.referenceNumber', 'Reference') },
@@ -768,28 +1042,42 @@ const PurchasesPage: React.FC = () => {
           </div>
 
           {/* Table */}
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden print:hidden">
+          <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden print:hidden">
             <TableWrapper isFetching={isFetching}>
               <table className="w-full data-table">
                 <thead>
-                  <tr className="bg-muted/30 border-b border-border">
+                  <tr className="bg-muted/40 dark:bg-muted/20 border-b border-border">
+                    {/* Checkbox Column */}
+                    <th className="w-10 px-3.5 py-3.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = isIndeterminate
+                        }}
+                        onChange={toggleSelectAll}
+                        className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer h-4 w-4"
+                        aria-label="Select all purchase orders"
+                      />
+                    </th>
+
                     {visibleColumns.reference !== false && (
-                      <th onClick={() => handleSort('reference_number')} className="sticky left-0 z-30 bg-background border-r border-border text-left cursor-pointer hover:bg-muted py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('reference_number')} className="sticky left-0 z-20 bg-card dark:bg-card border-r border-border text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.referenceNumber', 'Reference')} {renderSortIcon('reference_number')}
                       </th>
                     )}
                     {visibleColumns.date !== false && (
-                      <th onClick={() => handleSort('date')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('date')} className="text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.date', 'Date')} {renderSortIcon('date')}
                       </th>
                     )}
                     {visibleColumns.supplier !== false && (
-                      <th onClick={() => handleSort('supplier_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('supplier_id')} className="text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.supplier', 'Supplier')} {renderSortIcon('supplier_id')}
                       </th>
                     )}
                     {visibleColumns.warehouse !== false && (
-                      <th onClick={() => handleSort('warehouse_id')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('warehouse_id')} className="text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.warehouse', 'Warehouse')} {renderSortIcon('warehouse_id')}
                       </th>
                     )}
@@ -799,27 +1087,30 @@ const PurchasesPage: React.FC = () => {
                       </th>
                     )}
                     {visibleColumns.grandTotal !== false && (
-                      <th onClick={() => handleSort('grand_total')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('grand_total')} className="text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.grandTotal', 'Grand Total')} {renderSortIcon('grand_total')}
                       </th>
                     )}
                     {visibleColumns.paymentStatus !== false && (
-                      <th onClick={() => handleSort('payment_status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('payment_status')} className="text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.paymentStatus', 'Payment Status')} {renderSortIcon('payment_status')}
                       </th>
                     )}
                     {visibleColumns.status !== false && (
-                      <th onClick={() => handleSort('status')} className="text-left cursor-pointer hover:bg-muted/65 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
+                      <th onClick={() => handleSort('status')} className="text-left cursor-pointer hover:bg-muted/50 py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap">
                         {t('purchases.status', 'Status')} {renderSortIcon('status')}
                       </th>
                     )}
-                    <th className="sticky right-0 z-30 bg-background border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[96px]">{t('common.actions', 'Actions')}</th>
+                    <th className="sticky right-0 z-20 bg-card dark:bg-card border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[96px]">
+                      {t('common.actions', 'Actions')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
+                        <td className="p-4 text-center"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
                         {visibleColumns.reference !== false && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
                         {visibleColumns.date !== false && <td className="p-4"><div className="skeleton h-4 w-20 rounded" /></td>}
                         {visibleColumns.supplier !== false && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
@@ -833,67 +1124,153 @@ const PurchasesPage: React.FC = () => {
                     ))
                   ) : purchases.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-16 text-center">
+                      <td colSpan={10} className="py-16 text-center">
                         <ShoppingBag size={40} className="mx-auto mb-3 text-muted-foreground/30" />
                         <p className="text-muted-foreground text-sm font-medium">{t('purchases.noPurchasesFound', 'No purchase orders found')}</p>
                       </td>
                     </tr>
                   ) : (
-                    purchases.map((purchase) => (
-                      <tr key={purchase.id} className="hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => handleViewPurchase(purchase)}>
-                        {visibleColumns.reference !== false && (
-                          <td className="sticky left-0 z-10 bg-background group-hover:bg-muted border-r border-border py-3 px-4 font-mono font-bold text-xs text-primary whitespace-nowrap">
-                            {purchase.reference_number}
+                    purchases.map((purchase) => {
+                      const isRowSelected = selectedRows.includes(purchase.id)
+                      const isDraft = purchase.status === 'draft'
+                      const isOrdered = purchase.status === 'ordered'
+                      const isReceived = purchase.status === 'received' || purchase.status === 'completed'
+                      const isPartial = purchase.status === 'partial'
+                      const isCancelled = purchase.status === 'cancelled'
+                      const isPaid = purchase.payment_status === 'paid'
+
+                      const rowActionItems: TableActionItem[] = [
+                        {
+                          label: t('common.view', 'View Details'),
+                          icon: Eye,
+                          onClick: () => handleViewPurchase(purchase),
+                          variant: 'default',
+                        },
+                        {
+                          label: t('common.print', 'Print Voucher'),
+                          icon: Printer,
+                          onClick: () => handlePrintPurchase(purchase),
+                          variant: 'default',
+                        },
+                        {
+                          label: t('common.edit', 'Edit Order'),
+                          icon: Edit2,
+                          onClick: () => switchToTab('edit', purchase),
+                          variant: 'default',
+                          hidden: !isDraft && !isOrdered,
+                        },
+                        {
+                          label: t('purchases.receiveShipment', 'Receive Shipment (GRN)'),
+                          icon: PackageCheck,
+                          onClick: () => openReceiveModal(purchase),
+                          variant: 'success',
+                          hidden: isReceived || isCancelled,
+                        },
+                        {
+                          label: t('purchases.recordPayment', 'Record Payment'),
+                          icon: DollarSign,
+                          onClick: () => setPaymentTarget(purchase),
+                          variant: 'success',
+                          hidden: isPaid || isCancelled,
+                        },
+                        {
+                          label: t('purchases.returnToSupplier', 'Return to Supplier'),
+                          icon: RotateCcw,
+                          onClick: () => navigate(`/purchases/returns?purchase_id=${purchase.id}`),
+                          variant: 'warning',
+                          hidden: !isReceived && !isPartial,
+                        },
+                        {
+                          label: t('purchases.duplicatePO', 'Duplicate / Re-order'),
+                          icon: Copy,
+                          onClick: () => handleDuplicatePO(purchase),
+                          variant: 'default',
+                        },
+                        {
+                          label: t('purchases.cancelPO', 'Cancel Order'),
+                          icon: Ban,
+                          onClick: () => setCancelTarget(purchase),
+                          variant: 'danger',
+                          hidden: isReceived || isCancelled || isPartial,
+                        },
+                        {
+                          label: t('common.delete', 'Delete Order'),
+                          icon: Trash2,
+                          onClick: () => setDeleteTarget(purchase),
+                          variant: 'danger',
+                          hidden: !isDraft && !isCancelled,
+                        }
+                      ]
+
+                      return (
+                        <tr
+                          key={purchase.id}
+                          className={`hover:bg-muted/40 dark:hover:bg-muted/20 transition-colors group cursor-pointer ${
+                            isRowSelected ? 'bg-primary/10 dark:bg-primary/15' : ''
+                          }`}
+                          onClick={() => handleViewPurchase(purchase)}
+                        >
+                          {/* Row Checkbox */}
+                          <td className="w-10 px-3.5 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={isRowSelected}
+                              onChange={() => toggleSelectRow(purchase.id)}
+                              className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer h-4 w-4"
+                              aria-label={`Select purchase ${purchase.reference_number}`}
+                            />
                           </td>
-                        )}
-                        {visibleColumns.date !== false && (
-                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
-                            {purchase.date || '—'}
+
+                          {visibleColumns.reference !== false && (
+                            <td className={`sticky left-0 z-10 ${isRowSelected ? 'bg-primary/10 dark:bg-primary/15' : 'bg-card group-hover:bg-muted/40 dark:group-hover:bg-muted/20'} transition-colors border-r border-border py-3 px-4 font-mono font-bold text-xs text-primary whitespace-nowrap`}>
+                              {purchase.reference_number}
+                            </td>
+                          )}
+                          {visibleColumns.date !== false && (
+                            <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
+                              {purchase.date || '—'}
+                            </td>
+                          )}
+                          {visibleColumns.supplier !== false && (
+                            <td className="py-3 px-4 font-medium text-foreground text-xs whitespace-nowrap">
+                              {purchase.supplier?.name || '—'}
+                            </td>
+                          )}
+                          {visibleColumns.warehouse !== false && (
+                            <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
+                              {purchase.warehouse?.name || '—'}
+                            </td>
+                          )}
+                          {visibleColumns.items !== false && (
+                            <td className="py-3 px-4 text-xs text-foreground font-semibold whitespace-nowrap">
+                              {purchase.items_count ?? (purchase.items ? purchase.items.length : 0)}
+                            </td>
+                          )}
+                          {visibleColumns.grandTotal !== false && (
+                            <td className="py-3 px-4 font-mono font-bold text-xs text-foreground whitespace-nowrap">
+                              ${Number(purchase.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          )}
+                          {visibleColumns.paymentStatus !== false && (
+                            <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
+                              <span className={PAYMENT_BADGE[purchase.payment_status] ?? 'px-2 py-0.5 rounded text-[11px] bg-muted'}>
+                                {getPaymentStatusLabel(purchase.payment_status, t)}
+                              </span>
+                            </td>
+                          )}
+                          {visibleColumns.status !== false && (
+                            <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
+                              <span className={STATUS_BADGE[purchase.status] ?? 'px-2 py-0.5 rounded text-[11px] bg-muted'}>
+                                {getDeliveryStatusLabel(purchase.status, t)}
+                              </span>
+                            </td>
+                          )}
+                          <td className={`sticky right-0 z-10 ${isRowSelected ? 'bg-primary/10 dark:bg-primary/15' : 'bg-card group-hover:bg-muted/40 dark:group-hover:bg-muted/20'} transition-colors border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]`} onClick={(e) => e.stopPropagation()}>
+                            <TableActionMenu items={rowActionItems} />
                           </td>
-                        )}
-                        {visibleColumns.supplier !== false && (
-                          <td className="py-3 px-4 font-medium text-foreground text-xs whitespace-nowrap">
-                            {purchase.supplier?.name || '—'}
-                          </td>
-                        )}
-                        {visibleColumns.warehouse !== false && (
-                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
-                            {purchase.warehouse?.name || '—'}
-                          </td>
-                        )}
-                        {visibleColumns.items !== false && (
-                          <td className="py-3 px-4 text-xs text-foreground font-semibold whitespace-nowrap">
-                            {purchase.items_count ?? (purchase.items ? purchase.items.length : 0)}
-                          </td>
-                        )}
-                        {visibleColumns.grandTotal !== false && (
-                          <td className="py-3 px-4 font-mono font-bold text-xs text-foreground whitespace-nowrap">
-                            ${Number(purchase.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                        )}
-                        {visibleColumns.paymentStatus !== false && (
-                          <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
-                            <span className={PAYMENT_BADGE[purchase.payment_status] ?? 'px-2 py-0.5 rounded text-[11px] bg-muted'}>
-                              {getPaymentStatusLabel(purchase.payment_status, t)}
-                            </span>
-                          </td>
-                        )}
-                        {visibleColumns.status !== false && (
-                          <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
-                            <span className={STATUS_BADGE[purchase.status] ?? 'px-2 py-0.5 rounded text-[11px] bg-muted'}>
-                              {getDeliveryStatusLabel(purchase.status, t)}
-                            </span>
-                          </td>
-                        )}
-                        <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]" onClick={(e) => e.stopPropagation()}>
-                          <TableActionMenu
-                            onView={() => handleViewPurchase(purchase)}
-                            onPrint={() => handlePrintPurchase(purchase)}
-                            onEdit={purchase.status === 'draft' || purchase.status === 'ordered' ? () => switchToTab('edit', purchase) : undefined}
-                          />
-                        </td>
-                      </tr>
-                    ))
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -952,11 +1329,13 @@ const PurchasesPage: React.FC = () => {
 
       {/* Detail Side Drawer */}
       <PurchaseDetailDrawer
+        isOpen={Boolean(selectedPurchase) && !paymentTarget && !receiveTarget && !cancelTarget}
         selectedPurchase={selectedPurchase}
         onClose={() => setSelectedPurchase(null)}
         onOpenReceive={openReceiveModal}
-        onOpenPayment={() => { setPaymentModalOpen(true); setPaymentAmount(''); setPaymentNotes('') }}
+        onOpenPayment={() => setPaymentTarget(selectedPurchase)}
         onOpenCancel={(po) => setCancelTarget(po)}
+        onDuplicate={handleDuplicatePO}
       />
 
       {/* Shipment Receiving Modal */}
@@ -969,60 +1348,93 @@ const PurchasesPage: React.FC = () => {
         isSubmitting={receiveMutation.isPending}
       />
 
-      {/* Cancel Confirmation Modal */}
-      <AnimatePresence>
-        {cancelTarget && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <div className="flex items-center gap-2 text-rose-500 font-bold">
-                  <ShieldAlert size={18} />
-                  <span>{t('purchases.cancelPOTitle', 'Cancel Purchase Order')}</span>
-                </div>
-                <button onClick={() => setCancelTarget(null)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
+      {/* Single Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        title={t('purchases.cancelPOTitle', 'Cancel Purchase Order')}
+        message={
+          cancelTarget
+            ? t('purchases.cancelPOConfirm', 'Are you sure you want to cancel purchase order {{ref}}? This action cannot be undone.', { ref: `#${cancelTarget.reference_number}` })
+            : ''
+        }
+        warningText={t('purchases.cancelPOWarning', 'This action will lock the purchase order and prevent inventory receiving.')}
+        confirmText={t('common.confirm', 'Confirm Cancel')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={cancelMutation.isPending}
+        variant="danger"
+        onConfirm={() => cancelTarget && cancelMutation.mutate(cancelTarget.id)}
+        onCancel={() => setCancelTarget(null)}
+      />
 
-              <p className="text-xs text-muted-foreground">
-                {t('purchases.cancelPOPrompt', 'Are you sure you want to cancel purchase order')} <strong>PO #{cancelTarget.reference_number}</strong>?
-              </p>
+      {/* Single Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={t('purchases.deletePOTitle', 'Delete Purchase Order')}
+        message={
+          deleteTarget
+            ? t('purchases.deletePOConfirm', 'Are you sure you want to delete purchase order {{ref}}? This action cannot be undone.', { ref: `#${deleteTarget.reference_number}` })
+            : ''
+        }
+        confirmText={t('common.delete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMutation.mutate(deleteTarget.id)
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setCancelTarget(null)}
-                  className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted cursor-pointer"
-                >
-                  {t('common.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => cancelMutation.mutate(cancelTarget.id)}
-                  disabled={cancelMutation.isPending}
-                  className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-sm hover:bg-rose-700 cursor-pointer disabled:opacity-50"
-                >
-                  {cancelMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : 'Confirm Cancel'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={bulkDeleteConfirmOpen}
+        title={t('purchases.bulkDelete', 'Bulk Delete Purchase Orders')}
+        message={
+          deletablePurchases.length < selectedRows.length
+            ? t('purchases.bulkDeletePartialDesc', 'Only {{deletableCount}} purchase orders can be deleted ({{skippedCount}} orders cannot be deleted and will be skipped). Do you want to proceed with deleting {{deletableCount}} orders?', {
+                deletableCount: deletablePurchases.length,
+                skippedCount: selectedRows.length - deletablePurchases.length
+              })
+            : t('purchases.bulkDeleteConfirm', 'Are you sure you want to delete {{count}} selected purchase orders? This action cannot be undone.', {
+                count: deletablePurchases.length
+              })
+        }
+        confirmText={t('common.deleteSelected', 'Delete Selected')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate(deletablePurchases.map(p => p.id))}
+        onCancel={() => setBulkDeleteConfirmOpen(false)}
+      />
+
+      {/* Bulk Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        open={bulkCancelConfirmOpen}
+        variant="warning"
+        title={t('purchases.bulkCancel', 'Bulk Cancel Purchase Orders')}
+        message={
+          cancellablePurchases.length < selectedRows.length
+            ? t('purchases.bulkCancelPartialDesc', 'Only {{cancellableCount}} purchase orders can be cancelled ({{skippedCount}} orders are already received and will be skipped). Do you want to proceed with cancelling {{cancellableCount}} orders?', {
+                cancellableCount: cancellablePurchases.length,
+                skippedCount: selectedRows.length - cancellablePurchases.length
+              })
+            : t('purchases.bulkCancelConfirm', 'Are you sure you want to cancel {{count}} selected purchase orders?', {
+                count: cancellablePurchases.length
+              })
+        }
+        confirmText={t('common.confirm', 'Confirm Cancel')}
+        cancelText={t('common.cancel', 'Cancel')}
+        loading={bulkCancelMutation.isPending}
+        onConfirm={() => bulkCancelMutation.mutate(cancellablePurchases.map(p => p.id))}
+        onCancel={() => setBulkCancelConfirmOpen(false)}
+      />
 
       {/* Record Payment Modal */}
       <RecordPaymentModal
-        isOpen={paymentModalOpen}
-        purchase={selectedPurchase}
-        onClose={() => setPaymentModalOpen(false)}
+        isOpen={Boolean(paymentTarget)}
+        purchase={paymentTarget}
+        onClose={() => setPaymentTarget(null)}
         onSubmit={(amount, notes) => {
-          if (!selectedPurchase) return
-          paymentMutation.mutate({ id: selectedPurchase.id, amount, notes })
+          if (!paymentTarget) return
+          paymentMutation.mutate({ id: paymentTarget.id, amount, notes })
         }}
         isSubmitting={paymentMutation.isPending}
       />
@@ -1033,11 +1445,14 @@ const PurchasesPage: React.FC = () => {
         onClose={() => setFilterDrawerOpen(false)}
         suppliers={suppliers || []}
         warehouses={warehouses || []}
+        branches={branches || []}
         users={users || []}
         supplierFilter={supplierFilter}
         setSupplierFilter={setSupplierFilter}
         warehouseFilter={warehouseFilter}
         setWarehouseFilter={setWarehouseFilter}
+        branchFilter={branchFilter}
+        setBranchFilter={setBranchFilter}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         paymentStatusFilter={paymentStatusFilter}

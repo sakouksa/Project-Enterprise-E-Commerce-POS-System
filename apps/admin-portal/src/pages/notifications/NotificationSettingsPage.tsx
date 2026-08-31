@@ -137,14 +137,6 @@ const SimpleDropdown: React.FC<{
 
 const LANGUAGE_OPTIONS = [
   {
-    value: 'en',
-    flag: '🇺🇸',
-    flagCode: 'us',
-    name: 'English',
-    native: 'English',
-    country: 'United States',
-  },
-  {
     value: 'km',
     flag: '🇰🇭',
     flagCode: 'kh',
@@ -153,28 +145,12 @@ const LANGUAGE_OPTIONS = [
     country: 'Cambodia',
   },
   {
-    value: 'th',
-    flag: '🇹🇭',
-    flagCode: 'th',
-    name: 'Thai',
-    native: 'ภาษาไทย',
-    country: 'Thailand',
-  },
-  {
-    value: 'vi',
-    flag: '🇻🇳',
-    flagCode: 'vn',
-    name: 'Vietnamese',
-    native: 'Tiếng Việt',
-    country: 'Vietnam',
-  },
-  {
-    value: 'zh',
-    flag: '🇨🇳',
-    flagCode: 'cn',
-    name: 'Chinese',
-    native: '中文',
-    country: 'China',
+    value: 'en',
+    flag: '🇺🇸',
+    flagCode: 'us',
+    name: 'English',
+    native: 'English',
+    country: 'United States',
   },
 ]
 

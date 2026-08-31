@@ -12,11 +12,11 @@ import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, Building2,
   ToggleLeft, ToggleRight, Eye, Mail, Phone, MapPin, Loader2, Star, Check
 } from 'lucide-react'
-import api from '@/api/client'
+import { companyService } from '@/services/companyService'
 import { useToast } from '@/hooks/useToast'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
-import StatusBadge from '@/components/common/StatusBadge'
+import { StatusBadge, CloseButton } from '@/components/common'
 
 interface Branch {
   id:          number
@@ -65,12 +65,12 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['branches', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/branches', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => companyService.getBranches({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const createMutation = useMutation({
-    mutationFn: (newBranch: any) => api.post('/branches', newBranch),
+    mutationFn: (newBranch: any) => companyService.createBranch(newBranch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['branches'] })
       toast.success('Branch created successfully.')
@@ -83,7 +83,7 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/branches/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => companyService.updateBranch(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['branches'] })
       toast.success('Branch updated successfully.')
@@ -96,7 +96,7 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/branches/${id}`),
+    mutationFn: (id: number) => companyService.deleteBranch(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['branches'] })
       toast.success('Branch deleted successfully.')
@@ -381,10 +381,12 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Phone</label>
                     <input
+                      type="tel"
+                      inputMode="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Contact number"
-                      className="form-input"
+                      onChange={(e) => setPhone(e.target.value.replace(/[^\d+ -]/g, ''))}
+                      placeholder="012 345 678"
+                      className="form-input font-mono"
                     />
                   </div>
                 </div>
@@ -491,9 +493,7 @@ const BranchesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                 <h3 className="font-semibold text-lg text-foreground">Branch Detail</h3>
-                <button onClick={() => setViewBranch(null)} className="text-muted-foreground hover:text-foreground">
-                  <X size={18} />
-                </button>
+                <CloseButton onClose={() => setViewBranch(null)} size="md" color="rose" />
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">

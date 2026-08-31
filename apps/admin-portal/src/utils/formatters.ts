@@ -232,3 +232,48 @@ export const formatJsonValue = (val: any): string => {
     return String(val)
   }
 }
+
+/**
+ * Standard phone number formatter (Cambodia & International).
+ * Automatically groups digits nicely:
+ * - Local Cambodia: 012 345 678, 097 123 4567
+ * - International: +855 12 345 678, +1 234 567 8900
+ */
+export const formatPhoneNumber = (value?: string | number | null): string => {
+  if (value === undefined || value === null) return ''
+  const trimmed = String(value).trim()
+  if (!trimmed) return ''
+
+  const isPlus = trimmed.startsWith('+')
+  const digits = trimmed.replace(/\D/g, '')
+
+  if (!digits) return isPlus ? '+' : ''
+
+  if (isPlus) {
+    if (digits.startsWith('855')) {
+      const rest = digits.slice(3)
+      if (rest.length <= 2) return `+855 ${rest}`
+      if (rest.length <= 5) return `+855 ${rest.slice(0, 2)} ${rest.slice(2)}`
+      if (rest.length <= 8) return `+855 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`
+      return `+855 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5, 9)}`
+    }
+    if (digits.length <= 3) return `+${digits}`
+    if (digits.length <= 6) return `+${digits.slice(0, 3)} ${digits.slice(3)}`
+    if (digits.length <= 9) return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+    return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`
+  }
+
+  // Local phone numbers (012 345 678 or 097 123 4567)
+  if (digits.startsWith('0')) {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    if (digits.length <= 9) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`
+  }
+
+  // Non-zero starting numbers
+  if (digits.length <= 2) return digits
+  if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`
+  if (digits.length <= 8) return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`
+  return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`
+}

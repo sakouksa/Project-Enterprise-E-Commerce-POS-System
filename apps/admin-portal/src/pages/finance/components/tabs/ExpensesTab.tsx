@@ -4,13 +4,16 @@ import {
   Check,
   FileText,
   Calendar,
-  Tag
+  Tag,
+  Printer,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import TableWrapper from '@/components/shared/TableWrapper'
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
-import TableActionMenu from '@/components/shared/TableActionMenu'
+import TableActionMenu, { type TableActionItem } from '@/components/shared/TableActionMenu'
 import { formatCurrency } from '@/utils/formatters'
 import { getStorageFileUrl } from '@/utils/image'
 import { useToast } from '@/hooks/useToast'
@@ -33,6 +36,9 @@ interface ExpensesTabProps {
   handleSelectAll?: (allIds: number[]) => void
   activeCategoryFilter?: string
   setActiveCategoryFilter?: (catId: string) => void
+  onPrintVoucher?: (expense: any) => void
+  onApprove?: (id: number) => void
+  onReject?: (id: number) => void
 }
 
 export const ExpensesTab: React.FC<ExpensesTabProps> = ({
@@ -51,6 +57,9 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
   handleSelectAll,
   activeCategoryFilter = '',
   setActiveCategoryFilter,
+  onPrintVoucher,
+  onApprove,
+  onReject,
 }) => {
   const { t, i18n } = useTranslation(['finance', 'common'])
   const currentLocale = i18n.language === 'km' ? 'km-KH' : i18n.language
@@ -59,34 +68,34 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
   const [viewExpense, setViewExpense] = useState<any | null>(null)
   const [copiedId, setCopiedId] = useState<number | null>(null)
 
-  const copyRef = (e: React.MouseEvent, id: number, code: string) => {
+  const copyRef = (e: React.MouseEvent, id: number, text: string) => {
     e.stopPropagation()
-    navigator.clipboard.writeText(code)
+    navigator.clipboard.writeText(text)
     setCopiedId(id)
     toast.success(t('common.copied', 'Copied to clipboard!'))
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Filter expenses by category if quick filter is chosen
+  // Filter based on selected quick category filter pill
   const displayedExpenses = useMemo(() => {
     if (!activeCategoryFilter) return expenses
-    return expenses.filter((exp: any) => {
-      const catId = String(exp.expense_category_id || exp.category?.id || '')
-      return catId === String(activeCategoryFilter)
+    return expenses.filter((item: any) => {
+      const catId = item.expense_category_id || item.category?.id || item.category_id
+      return String(catId) === String(activeCategoryFilter)
     })
   }, [expenses, activeCategoryFilter])
 
-  const allIds = displayedExpenses.map((e: any) => e.id)
-  const isAllSelected = allIds.length > 0 && allIds.every((id: number) => selectedRows.includes(id))
+  const allDisplayedIds = displayedExpenses.map((exp: any) => exp.id)
+  const isAllSelected = allDisplayedIds.length > 0 && allDisplayedIds.every((id: number) => selectedRows.includes(id))
 
   const handleToggleAll = () => {
     if (handleSelectAll) {
-      handleSelectAll(allIds)
+      handleSelectAll(allDisplayedIds)
     }
   }
 
   return (
-    <div className="space-y-3 print:hidden">
+    <div className="space-y-4 print:p-0">
       {/* ─── Interactive Quick Category Filter Strip ─── */}
       {categories.length > 0 && setActiveCategoryFilter && (() => {
         const baseExpensesForCounts = allExpenses && allExpenses.length > 0 ? allExpenses : expenses
@@ -155,7 +164,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                     </th>
                   )}
                   {visibleColumns.expense_title && (
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('title')}>
+                    <th className="cursor-pointer select-none px-4 py-3 text-left" onClick={() => handleSort('title')}>
                       <div className="flex items-center gap-1.5">
                         <span>{t('finance.title_col', 'Expense Details')}</span>
                         {renderSortIcon('title')}
@@ -163,7 +172,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                     </th>
                   )}
                   {visibleColumns.expense_category && (
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('expense_category_id')}>
+                    <th className="cursor-pointer select-none px-4 py-3 text-left" onClick={() => handleSort('expense_category_id')}>
                       <div className="flex items-center gap-1.5">
                         <span>{t('finance.category_col', 'Category')}</span>
                         {renderSortIcon('expense_category_id')}
@@ -171,36 +180,44 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                     </th>
                   )}
                   {visibleColumns.expense_amount && (
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('amount')}>
+                    <th className="cursor-pointer select-none px-4 py-3 text-left" onClick={() => handleSort('amount')}>
                       <div className="flex items-center gap-1.5">
-                        <span>{t('finance.amount_col', 'Amount')}</span>
+                        <span>{t('finance.amount_col', 'Amount ($)')}</span>
                         {renderSortIcon('amount')}
                       </div>
                     </th>
                   )}
+                  {visibleColumns.expense_status && (
+                    <th className="cursor-pointer select-none px-4 py-3 text-left" onClick={() => handleSort('status')}>
+                      <div className="flex items-center gap-1.5">
+                        <span>{t('finance.status_col', 'Status')}</span>
+                        {renderSortIcon('status')}
+                      </div>
+                    </th>
+                  )}
                   {visibleColumns.expense_date && (
-                    <th className="cursor-pointer select-none" onClick={() => handleSort('date')}>
+                    <th className="cursor-pointer select-none px-4 py-3 text-left" onClick={() => handleSort('date')}>
                       <div className="flex items-center gap-1.5">
                         <span>{t('finance.date_col', 'Date')}</span>
                         {renderSortIcon('date')}
                       </div>
                     </th>
                   )}
+                  {visibleColumns.expense_description && (
+                    <th className="px-4 py-3 text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span>{t('finance.description_col', 'Description')}</span>
+                      </div>
+                    </th>
+                  )}
                   {visibleColumns.expense_receipt && (
-                    <th>
-                      <div className="flex items-center gap-1.5">
-                        <span>{t('finance.receipt_col', 'Receipt')}</span>
+                    <th className="text-center px-4 py-3">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>{t('finance.receipt', 'Receipt')}</span>
                       </div>
                     </th>
                   )}
-                  {visibleColumns.expense_branch && (
-                    <th>
-                      <div className="flex items-center gap-1.5">
-                        <span>{t('finance.branch_col', 'Branch')}</span>
-                      </div>
-                    </th>
-                  )}
-                  <th className="text-right">{t('common.actions', 'Actions')}</th>
+                  <th className="text-right py-3.5 px-4">{t('common.actions', 'Actions')}</th>
                 </tr>
               </thead>
 
@@ -218,11 +235,38 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                     const isSelected = selectedRows.includes(row.id)
                     const amountVal = Number(row.amount || 0)
 
+                    // Build contextual actions for each expense row
+                    const customActions: TableActionItem[] = []
+                    if (onPrintVoucher) {
+                      customActions.push({
+                        label: t('finance.print_voucher', 'Print Voucher'),
+                        icon: Printer,
+                        onClick: () => onPrintVoucher(row),
+                      })
+                    }
+                    if (row.status === 'pending') {
+                      if (onApprove) {
+                        customActions.push({
+                          label: t('finance.approve_btn', 'Approve Expense'),
+                          icon: CheckCircle2,
+                          onClick: () => onApprove(row.id),
+                          variant: 'success',
+                        })
+                      }
+                      if (onReject) {
+                        customActions.push({
+                          label: t('finance.reject_btn', 'Reject Expense'),
+                          icon: XCircle,
+                          onClick: () => onReject(row.id),
+                          variant: 'danger',
+                        })
+                      }
+                    }
+
                     return (
                       <tr
                         key={row.id}
-                        onClick={() => setViewExpense(row)}
-                        className={`hover:bg-muted/40 transition-colors group cursor-pointer ${
+                        className={`hover:bg-muted/40 transition-colors group ${
                           isSelected ? 'bg-primary/5' : ''
                         }`}
                       >
@@ -280,67 +324,92 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
 
                         {/* Category Column */}
                         {visibleColumns.expense_category && (
-                          <td className="py-3">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${visual.colorDef.bg} ${visual.colorDef.text} ${visual.colorDef.border}`}>
-                              <CatIcon size={12} />
+                          <td className="py-3 px-4">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold" style={{ backgroundColor: `${visual.colorDef.hex}15`, color: visual.colorDef.hex, borderColor: `${visual.colorDef.hex}30` }}>
+                              <CatIcon size={13} />
                               <span>{categoryName}</span>
-                            </span>
+                            </div>
                           </td>
                         )}
 
                         {/* Amount Column */}
                         {visibleColumns.expense_amount && (
-                          <td className="py-3">
-                            <div>
-                              <span className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">
-                                {formatCurrency(amountVal, { locale: currentLocale })}
-                              </span>
-                              <div className="text-[10px] text-muted-foreground font-medium">
-                                {String(t(`finance.status_${row.status || 'approved'}`, row.status || 'approved'))}
-                              </div>
-                            </div>
+                          <td className="py-3 px-4 font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
+                            -{formatCurrency(amountVal, { locale: currentLocale })}
+                          </td>
+                        )}
+
+                        {/* Status Column */}
+                        {visibleColumns.expense_status && (
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold capitalize ${
+                              row.status === 'approved'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : row.status === 'pending'
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                            }`}>
+                              {row.status === 'approved'
+                                ? t('finance.status_approved', 'Approved')
+                                : row.status === 'pending'
+                                ? t('finance.status_pending', 'Pending')
+                                : t('finance.status_rejected', 'Rejected')}
+                            </span>
                           </td>
                         )}
 
                         {/* Date Column */}
                         {visibleColumns.expense_date && (
-                          <td className="py-3 text-xs text-muted-foreground font-mono">
+                          <td className="py-3 px-4 text-xs font-mono text-muted-foreground whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <Calendar size={13} className="text-muted-foreground/70" />
-                              <span>{row.date ? new Date(row.date).toLocaleDateString(currentLocale) : '—'}</span>
+                              <span>{row.date || '—'}</span>
                             </div>
                           </td>
                         )}
 
                         {/* Description Column */}
                         {visibleColumns.expense_description && (
-                          <td className="py-3 text-xs text-muted-foreground max-w-xs truncate">
+                          <td className="py-3 px-4 text-xs text-muted-foreground max-w-xs truncate">
                             {row.description || '—'}
                           </td>
                         )}
 
                         {/* Receipt Attachment Column */}
-                        <td className="py-3 text-center">
-                          {row.receipt ? (
-                            <a
-                              href={getStorageFileUrl(row.receipt)}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
-                            >
-                              <FileText size={12} />
-                              <span>{t('finance.receipt_view', 'Receipt')}</span>
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </td>
+                        {visibleColumns.expense_receipt && (
+                          <td className="py-3 text-center">
+                            {row.receipt ? (
+                              <a
+                                href={getStorageFileUrl(row.receipt)}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                              >
+                                <FileText size={12} />
+                                <span>{t('finance.receipt_view', 'Receipt')}</span>
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </td>
+                        )}
 
                         {/* Actions Column */}
                         <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end">
+                          <div className="flex items-center justify-end gap-1">
+                            {onPrintVoucher && (
+                              <button
+                                type="button"
+                                onClick={() => onPrintVoucher(row)}
+                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                title={t('finance.print_voucher', 'Print Voucher')}
+                              >
+                                <Printer size={15} />
+                              </button>
+                            )}
                             <TableActionMenu
+                              items={customActions}
                               onView={() => setViewExpense(row)}
                               onEdit={() => openEditDrawer(row)}
                               onDelete={() => handleDelete(row.id, row.title)}
@@ -363,6 +432,9 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
         expense={viewExpense}
         onClose={() => setViewExpense(null)}
         onEdit={openEditDrawer}
+        onPrintOfficialVoucher={onPrintVoucher}
+        onApprove={onApprove}
+        onReject={onReject}
       />
     </div>
   )

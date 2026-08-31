@@ -10,7 +10,7 @@ import {
   Ticket, Megaphone, Image as ImageIcon, Ruler, Sparkles, AlertOctagon,
   History, ChevronRight, Check, ArrowRight
 } from 'lucide-react'
-import api from '@/api/client'
+import { recycleBinService } from '@/services/recycleBinService'
 import { useToast } from '@/hooks/useToast'
 import { sound } from '@/utils/sound'
 import Pagination from '@/components/shared/Pagination'
@@ -20,6 +20,7 @@ import SearchInput from '@/components/shared/SearchInput'
 import ResetButton from '@/components/shared/ResetButton'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { CloseButton, CancelButton } from '@/components/common'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { downloadCsv } from '@/utils/export'
@@ -232,23 +233,17 @@ const RecycleBinPage: React.FC = () => {
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['recycle-bin', activeTab, page, debouncedSearch, perPage],
-    queryFn: () =>
-      api
-        .get(`/${activeTab}`, {
-          params: {
-            page,
-            search: debouncedSearch,
-            status: 'deleted',
-            per_page: perPage,
-          },
-        })
-        .then((r) => r.data),
+    queryFn: () => recycleBinService.getDeletedItems(activeTab, {
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+    }),
     placeholderData: (prev) => prev,
   })
 
   const { data: statsData } = useQuery({
     queryKey: ['recycle-bin-dashboard-stats'],
-    queryFn: () => api.get('/recycle-bin/stats').then(r => r.data.data ?? r.data),
+    queryFn: () => recycleBinService.getStats(),
     staleTime: 30000,
   })
 
@@ -317,7 +312,7 @@ const RecycleBinPage: React.FC = () => {
 
   // ── Single Item Mutations ───────────────────────────────────────────────────
   const restoreMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/${activeTab}/${id}/restore`),
+    mutationFn: (id: number) => recycleBinService.restoreItem(activeTab, id),
     onSuccess: () => {
       sound.playSuccess()
       qc.invalidateQueries({ queryKey: ['recycle-bin', activeTab] })
@@ -333,7 +328,7 @@ const RecycleBinPage: React.FC = () => {
   })
 
   const forceDeleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/${activeTab}/${id}/force`),
+    mutationFn: (id: number) => recycleBinService.forceDeleteItem(activeTab, id),
     onSuccess: () => {
       sound.playSuccess()
       qc.invalidateQueries({ queryKey: ['recycle-bin', activeTab] })
@@ -352,7 +347,7 @@ const RecycleBinPage: React.FC = () => {
   // ── Batch Mutations ────────────────────────────────────────────────────────
   const batchRestoreMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      return Promise.all(ids.map(id => api.post(`/${activeTab}/${id}/restore`)))
+      return recycleBinService.bulkRestore(activeTab, ids)
     },
     onSuccess: () => {
       sound.playSuccess()
@@ -370,7 +365,7 @@ const RecycleBinPage: React.FC = () => {
 
   const batchForceDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      return Promise.all(ids.map(id => api.delete(`/${activeTab}/${id}/force`)))
+      return recycleBinService.bulkForceDelete(activeTab, ids)
     },
     onSuccess: () => {
       sound.playSuccess()
@@ -442,7 +437,7 @@ const RecycleBinPage: React.FC = () => {
   // ── CSV Export Handler ─────────────────────────────────────────────────────
   const handleExportCSV = () => {
     sound.playClick()
-    toast.info(`Exporting ${activeTab} recycle bin CSV dataset...`)
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
     setTimeout(() => {
       const headers = ['ID', 'Record Name', 'Module', 'Deleted At', 'Deleted By', 'Status']
       const rows = (trashItems.length > 0 ? trashItems : trashRaw).map((item) => [
@@ -454,8 +449,9 @@ const RecycleBinPage: React.FC = () => {
         item.status || 'Deleted',
       ])
       downloadCsv(`recycle_bin_${activeTab}`, headers, rows)
-      toast.success(`Exported ${rows.length} deleted records to CSV!`)
-    }, 300)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
   }
 
   const getItemDisplayName = (item: TrashItem) => {
@@ -1266,12 +1262,7 @@ const RecycleBinPage: React.FC = () => {
                     <Sliders className="h-5 w-5 text-primary" />
                     <h2 className="text-lg font-bold text-foreground">Advanced Recycle Bin Filters</h2>
                   </div>
-                  <button
-                    onClick={() => setFilterDrawerOpen(false)}
-                    className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
+                  <CloseButton onClose={() => setFilterDrawerOpen(false)} size="md" color="rose" />
                 </div>
 
                 {/* Drawer Body */}
@@ -1389,9 +1380,7 @@ const RecycleBinPage: React.FC = () => {
                   <Trash2 className="h-5 w-5 text-rose-500" />
                   <span>Deleted Record Metadata</span>
                 </h3>
-                <button onClick={() => setViewItem(null)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                  <X size={18} />
-                </button>
+                <CloseButton onClose={() => setViewItem(null)} size="md" color="rose" />
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-5">

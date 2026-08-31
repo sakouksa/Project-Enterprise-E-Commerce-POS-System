@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, RefreshCw } from 'lucide-react'
-import api from '@/api/client'
+import { dashboardService } from '@/services/dashboardService'
 import { useThemeStore } from '@/stores/themeStore'
 import { DEFAULT_WIDGETS_LIST } from '@/config/dashboardWidgets'
 
@@ -38,7 +38,7 @@ const DashboardPage: React.FC = () => {
     refetch: refetchStats 
   } = useQuery({
     queryKey: ['dashboard-stats', selectedBranchId],
-    queryFn: () => api.get('/dashboard/stats', { params: { branch_id: selectedBranchId } }).then((r) => r.data.data),
+    queryFn: () => dashboardService.getStats(selectedBranchId),
     staleTime: 30000,
   })
 
@@ -49,47 +49,47 @@ const DashboardPage: React.FC = () => {
     refetch: refetchCharts
   } = useQuery({
     queryKey: ['dashboard-charts', selectedBranchId],
-    queryFn: () => api.get('/dashboard/charts', { params: { branch_id: selectedBranchId } }).then((r) => r.data.data),
+    queryFn: () => dashboardService.getCharts(selectedBranchId),
     staleTime: 60000,
   })
 
   // Real backend query for sales chart fallback
   const { data: salesChartRes } = useQuery({
     queryKey: ['sales-chart', selectedBranchId],
-    queryFn: () => api.get('/dashboard/sales-chart', { params: { branch_id: selectedBranchId } }).then((r) => r.data.data),
+    queryFn: () => dashboardService.getSalesChart(selectedBranchId),
     staleTime: 60000,
   })
 
   // Real backend query for operation panels
   const { data: panelsRes, refetch: refetchPanels } = useQuery({
     queryKey: ['dashboard-operation-panels'],
-    queryFn: () => api.get('/dashboard/operation-panels').then((r) => r.data.data),
+    queryFn: () => dashboardService.getOperationPanels(),
     staleTime: 30000,
   })
 
   // Real backend query for business alerts
   const { data: alertsRes, isLoading: alertsLoading, refetch: refetchAlerts } = useQuery({
     queryKey: ['dashboard-alerts'],
-    queryFn: () => api.get('/dashboard/alerts').then((r) => r.data.data),
+    queryFn: () => dashboardService.getAlerts(),
     staleTime: 30000,
   })
 
   // Real backend query for system health
   const { data: healthRes, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
     queryKey: ['dashboard-system-health'],
-    queryFn: () => api.get('/dashboard/system-health').then((r) => r.data.data),
+    queryFn: () => dashboardService.getSystemHealth(),
     staleTime: 60000,
   })
 
   // Legacy fallback queries
   const { data: topProductsRes } = useQuery({
     queryKey: ['top-products'],
-    queryFn: () => api.get('/dashboard/top-products').then((r) => r.data.data),
+    queryFn: () => dashboardService.getTopProducts(),
   })
 
   const { data: lowStockRes } = useQuery({
     queryKey: ['low-stock'],
-    queryFn: () => api.get('/dashboard/low-stock').then((r) => r.data.data),
+    queryFn: () => dashboardService.getLowStock(),
   })
 
   const handleRefresh = async () => {

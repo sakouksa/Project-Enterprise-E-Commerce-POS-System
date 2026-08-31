@@ -8,7 +8,7 @@ import {
   User, ShoppingBag, Info, Clipboard, LayoutGrid, Table as TableIcon,
   DollarSign, TrendingUp, ShoppingCart, ShieldCheck, Tag, Sparkles, Filter, CheckCircle2
 } from 'lucide-react'
-import api from '@/api/client'
+import { salesService } from '@/services/salesService'
 import { useToast } from '@/hooks/useToast'
 import { sound } from '@/utils/sound'
 import Pagination from '@/components/shared/Pagination'
@@ -112,26 +112,22 @@ const SalesPage: React.FC = () => {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sales', page, debouncedSearch, perPage, dateFrom, dateTo, tab, statusFilter, paymentStatusFilter, paymentMethodFilter, minTotal, maxTotal],
-    queryFn: () => api.get('/sales', {
-      params: {
-        page,
-        search,
-        per_page: perPage || 12,
-        date_from: dateFrom || undefined,
-        date_to:   dateTo   || undefined,
-        status:    tab === 'returns' ? 'refunded' : statusFilter || undefined,
-        payment_status: paymentStatusFilter || undefined,
-        payment_method: paymentMethodFilter || undefined,
-        min_total: minTotal || undefined,
-        max_total: maxTotal || undefined,
-      },
-    }).then(r => r.data),
+    queryFn: () => salesService.list({
+      page,
+      search,
+      per_page: perPage || 12,
+      start_date: dateFrom || undefined,
+      end_date: dateTo || undefined,
+      status: tab === 'returns' ? 'refunded' : statusFilter || undefined,
+      payment_status: paymentStatusFilter || undefined,
+      sort: paymentMethodFilter || undefined,
+    }),
     placeholderData: (prev) => prev,
   })
 
-  const { data: saleDetail, isLoading: detailLoading } = useQuery<Sale>({
+  const { data: saleDetail, isLoading: detailLoading } = useQuery<Sale | null>({
     queryKey: ['sales', selectedSaleId],
-    queryFn: () => api.get(`/sales/${selectedSaleId}`).then(r => r.data.data),
+    queryFn: () => (selectedSaleId ? salesService.show(selectedSaleId) : Promise.resolve(null)),
     enabled: selectedSaleId !== null,
   })
 
@@ -148,7 +144,7 @@ const SalesPage: React.FC = () => {
         quantity: Number(i.quantity || 1),
       }))
 
-      return api.post(`/pos/sales/${saleObj.id}/return`, {
+      return salesService.returnSale(saleObj.id, {
         reason: payload.reason,
         refund_method: payload.refund_method,
         items: itemsPayload.length > 0 ? itemsPayload : undefined,
@@ -193,10 +189,10 @@ const SalesPage: React.FC = () => {
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
             <Receipt className="h-6 w-6 text-primary" />
-            <span>{t('salesOrdersAndReceipts', 'បញ្ជាទិញ & វិក្កយបត្រ')}</span>
+            <span>{t('salesOrdersAndReceipts', 'Sales Orders & Invoices')}</span>
           </h1>
           <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            {t('salesOrdersAndReceiptsDesc', 'ប្រវត្តិប្រតិបត្តិការ POS របស់សហគ្រាស វិក្កយបត្រ និងការត្រួតពិនិត្យ')}
+            {t('salesOrdersAndReceiptsDesc', 'Enterprise POS transaction logs, sales orders history, receipts, and audit trail')}
           </p>
         </div>
       </div>
@@ -335,14 +331,14 @@ const SalesPage: React.FC = () => {
               </span>
             </div>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-              <ShieldCheck size={10} /> {t('auditVerified', 'ត្រូវបានផ្ទៀងផ្ទាត់')}
+              <ShieldCheck size={10} /> {t('auditVerified', 'Audit Verified')}
             </span>
           </div>
 
           {/* Big Number */}
           <div className="my-1">
             <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
-              <span className="font-mono">{pagination.total}</span> <span className="text-sm font-bold text-muted-foreground">{t('records', 'កំណត់ត្រា')}</span>
+              <span className="font-mono">{pagination.total}</span> <span className="text-sm font-bold text-muted-foreground">{t('records', 'Records')}</span>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-1">
               {t('auditTrailInvoiceLogs')}
@@ -372,7 +368,7 @@ const SalesPage: React.FC = () => {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Receipt size={14} /> {t('salesOrdersCount', 'បញ្ជាទិញ')} ({pagination.total})
+          <Receipt size={14} /> {t('salesOrdersCount', 'Sales Orders')} ({pagination.total})
         </button>
         <button
           onClick={() => {
@@ -388,7 +384,7 @@ const SalesPage: React.FC = () => {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <CornerUpLeft size={14} /> {t('saleReturnsRefunds', 'ការត្រឡប់ / ការសងប្រាក់')}
+          <CornerUpLeft size={14} /> {t('saleReturnsRefunds', 'Returns & Refunds')}
         </button>
       </div>
 
@@ -444,8 +440,8 @@ const SalesPage: React.FC = () => {
         ) : salesList.length === 0 ? (
           <div className="col-span-full py-16 text-center bg-card border border-border rounded-2xl">
             <Receipt className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-            <h3 className="font-bold text-foreground text-base">{t('noSalesOrdersFound', 'រកមិនឃើញបញ្ជាទិញ')}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{t('tryClearingFilters', 'សូមសាកល្បងលុបតម្រង ឬស្វែងរកវិក្កយបត្រផ្សេងទៀត')}</p>
+            <h3 className="font-bold text-foreground text-base">{t('noSalesOrdersFound', 'No sales orders found')}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t('tryClearingFilters', 'Try clearing filters or search for another invoice')}</p>
           </div>
         ) : (
           salesList.map((sale) => {
@@ -487,17 +483,17 @@ const SalesPage: React.FC = () => {
                     <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/40 gap-2">
                       <span className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium shrink-0">
                         <User size={12} className="text-primary shrink-0" />
-                        <span>{t('customer', 'អតិថិជន')}:</span>
+                        <span>{t('customer', 'Customer')}:</span>
                       </span>
                       <span className="font-bold text-foreground truncate text-right text-xs">
-                        {sale.customer?.name || t('walkInCustomer', 'អតិថិជនទូទៅ')}
+                        {sale.customer?.name || t('walkInCustomer', 'Walk-in Customer')}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1.5 shrink-0">
                         <ShieldCheck size={12} className="shrink-0" />
-                        <span>{t('cashier', 'អ្នកគិតប្រាក់')}:</span>
+                        <span>{t('cashier', 'Cashier')}:</span>
                       </span>
                       <span className="font-medium text-foreground truncate text-right">
                         {sale.cashier?.name || t('superAdmin', 'Super Admin')}
@@ -506,7 +502,7 @@ const SalesPage: React.FC = () => {
 
                     {/* Payment Method Badge */}
                     <div className="flex items-center justify-between px-1 pt-0.5 text-[11px]">
-                      <span className="text-muted-foreground">{t('paymentMethod', 'វិធីទូទាត់')}:</span>
+                      <span className="text-muted-foreground">{t('paymentMethod', 'Payment Method')}:</span>
                       <span className="px-2 py-0.5 rounded-md font-mono font-bold text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                         {paymentMethodLabel}
                       </span>
@@ -519,7 +515,7 @@ const SalesPage: React.FC = () => {
                   <div className="flex items-baseline justify-between gap-2">
                     <div>
                       <span className="text-[10px] text-muted-foreground font-semibold block uppercase tracking-wider">
-                        {t('grandTotal', 'សរុបចុងក្រោយ')}
+                        {t('grandTotal', 'Grand Total')}
                       </span>
                       <span className="text-base sm:text-lg font-mono font-black text-foreground tracking-tight">
                         ${Number(sale.grand_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -527,21 +523,21 @@ const SalesPage: React.FC = () => {
                     </div>
                     <div className="text-right text-[10px] text-muted-foreground">
                       {Number(sale.tax_amount || 0) > 0 && (
-                        <div>{t('tax', 'ពន្ធ')}: ${Number(sale.tax_amount).toFixed(2)}</div>
+                        <div>{t('tax', 'Tax')}: ${Number(sale.tax_amount).toFixed(2)}</div>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-1">
                     <span className="text-[11px] text-muted-foreground font-semibold">
-                      {itemCount} {t('items', 'មុខទំនិញ')}
+                      {itemCount} {t('items', 'Items')}
                     </span>
                     <button
                       onClick={() => setSelectedSaleId(sale.id)}
                       className="h-8 px-3 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
                     >
                       <Eye size={12} />
-                      <span>{t('viewInvoice', 'វិក្កយបត្រ')}</span>
+                      <span>{t('viewInvoice', 'View Invoice')}</span>
                     </button>
                   </div>
                 </div>
@@ -591,11 +587,11 @@ const SalesPage: React.FC = () => {
       <AnimatePresence>
         {selectedSaleId !== null && (
           <SalesDetailDrawer
-            sale={saleDetail || salesList.find(s => s.id === selectedSaleId)}
+            sale={(saleDetail || salesList.find(s => s.id === selectedSaleId)) as Sale | undefined}
             isLoading={detailLoading && !salesList.find(s => s.id === selectedSaleId)}
             onClose={() => setSelectedSaleId(null)}
             onRefund={() => {
-              const activeSale = saleDetail || salesList.find(s => s.id === selectedSaleId)
+              const activeSale = (saleDetail || salesList.find(s => s.id === selectedSaleId)) as Sale | undefined
               if (activeSale) setRefundModalSale(activeSale)
             }}
             isRefunding={refundMutation.isPending}

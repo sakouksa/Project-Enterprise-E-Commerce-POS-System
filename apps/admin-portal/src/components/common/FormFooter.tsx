@@ -6,7 +6,7 @@ import { Check, Loader2, ArrowLeft, Command } from 'lucide-react'
 export interface FormFooterProps {
   /** Path for Cancel/Back button */
   cancelPath?: string
-  /** Label for Cancel button. Defaults to t('common.cancel', 'បោះបង់') */
+  /** Label for Cancel button. Defaults to t('common.cancel', 'Cancel') */
   cancelLabel?: string
   /** Custom handler for Cancel button */
   onCancel?: () => void
@@ -53,13 +53,13 @@ export const FormFooter: React.FC<FormFooterProps> = ({
   submitIcon,
   showSubmit = true,
   infoSummary,
-  showShortcutHint = true,
+  showShortcutHint = false,
   extraActions,
   sticky = false,
   children,
   className = '',
 }) => {
-  const { t } = useTranslation(['common'])
+  const { t } = useTranslation(['common', 'buttons'])
   const navigate = useNavigate()
 
   // Handle Cmd+S / Ctrl+S keyboard shortcut to save
@@ -89,39 +89,33 @@ export const FormFooter: React.FC<FormFooterProps> = ({
     }
   }
 
-  const isMac = typeof window !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform)
-
   return (
     <div
       className={`${
         sticky
-          ? 'fixed bottom-0 left-0 right-0 z-30 bg-card/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-border dark:border-slate-800 py-3 px-4 sm:px-6 shadow-lg'
-          : 'bg-card/90 dark:bg-slate-900/90 border border-border/80 dark:border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xs backdrop-blur-xl'
+          ? 'sticky bottom-0 left-0 right-0 z-30 bg-background/85 dark:bg-slate-950/85 backdrop-blur-md border-t border-border/70 dark:border-slate-800 py-3.5 px-4 sm:px-6 shadow-sm'
+          : 'pt-5 sm:pt-6 border-t border-border/70 dark:border-slate-800/80'
       } ${className}`}
     >
       <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-        {/* Left: Summary Context & Helpful Hints */}
+        {/* Left: Summary Context if provided */}
         <div className="flex items-center gap-2.5 text-xs text-muted-foreground dark:text-slate-400 min-w-0 flex-1">
-          {infoSummary ? (
-            <div className="truncate max-w-md">{infoSummary}</div>
-          ) : (
-            showShortcutHint && onSubmit && (
-              <div className="hidden md:flex items-center gap-1.5 text-[11px] text-muted-foreground/80 dark:text-slate-400">
-                <span>{t('common.quickSaveHint', 'ចុច')}</span>
-                <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-muted dark:bg-slate-800 border border-border/70 dark:border-slate-700 rounded-md font-semibold text-foreground/80 dark:text-slate-300 flex items-center gap-0.5">
-                  {isMac ? <Command size={10} /> : 'Ctrl +'} S
-                </kbd>
-                <span>{t('common.toSave', 'ដើម្បីរក្សាទុក')}</span>
-              </div>
-            )
+          {infoSummary && <div className="truncate max-w-md">{infoSummary}</div>}
+          {showShortcutHint && (
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium select-none">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/80 dark:bg-slate-800 border border-border/60 dark:border-slate-700 font-mono text-[10px] font-bold">
+                <Command size={10} /> S
+              </span>
+              <span>{isEdit ? t('common.quickSavePrompt', 'to update') : t('common.quickSavePromptCreate', 'to save')}</span>
+            </div>
           )}
         </div>
 
         {/* Custom children slot if provided */}
         {children && <div className="flex items-center gap-2">{children}</div>}
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 self-end sm:self-auto ml-auto flex-wrap shrink-0">
+        {/* Right: Action Buttons Group */}
+        <div className="flex items-center gap-2.5 self-end sm:self-auto ml-auto flex-wrap shrink-0">
           {extraActions}
 
           {/* Cancel Button */}
@@ -129,10 +123,10 @@ export const FormFooter: React.FC<FormFooterProps> = ({
             <button
               type="button"
               onClick={handleCancel}
-              className="h-10 min-h-[40px] px-4 text-xs sm:text-[13px] font-semibold border border-border/80 dark:border-slate-700 bg-background/60 dark:bg-slate-800/80 hover:bg-muted/80 dark:hover:bg-slate-700/80 rounded-lg text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1.5"
+              className="h-9 min-h-[36px] sm:h-10 sm:min-h-[40px] px-4 text-xs sm:text-[13px] font-bold border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900 text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted/80 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1.5"
             >
-              <ArrowLeft size={13} className="opacity-70" />
-              <span>{cancelLabel || t('common.cancel', 'បោះបង់')}</span>
+              <ArrowLeft size={14} className="opacity-70" />
+              <span>{cancelLabel || t('common.cancel', 'Cancel')}</span>
             </button>
           )}
 
@@ -142,14 +136,14 @@ export const FormFooter: React.FC<FormFooterProps> = ({
               type={onSubmit ? 'button' : 'submit'}
               onClick={onSubmit}
               disabled={isSubmitting || disabled}
-              className="h-10 min-h-[40px] px-5 text-xs sm:text-[13px] bg-primary text-white rounded-lg font-bold shadow-xs hover:bg-primary/90 hover:shadow transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+              className="h-9 min-h-[36px] sm:h-10 sm:min-h-[40px] px-5 text-xs sm:text-[13px] bg-primary text-white rounded-xl font-bold shadow-xs hover:bg-primary/90 hover:shadow transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
             >
               {isSubmitting ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
                 submitIcon || <Check size={14} strokeWidth={2.5} />
               )}
-              <span>{submitLabel || (isEdit ? t('common.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ') : t('common.save', 'រក្សាទុក'))}</span>
+              <span>{submitLabel || (isEdit ? t('common.saveChanges', 'Save Changes') : t('common.save', 'Save'))}</span>
             </button>
           )}
         </div>

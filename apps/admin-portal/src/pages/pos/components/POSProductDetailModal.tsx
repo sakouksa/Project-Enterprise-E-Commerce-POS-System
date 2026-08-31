@@ -151,66 +151,66 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
     const s = (specSample || '').toLowerCase()
 
     if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone')) {
-      return { title: 'Storage & RAM (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Smartphone }
+      return { title: 'Storage & RAM', Icon: Smartphone }
     }
     if (c.includes('laptop') || c.includes('computer') || c.includes('macbook')) {
-      return { title: 'RAM & SSD Spec (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Laptop }
+      return { title: 'RAM & SSD Spec', Icon: Laptop }
     }
     if (c.includes('monitor') || c.includes('display') || c.includes('screen')) {
-      return { title: 'Display Size & Resolution (ទំហំអេក្រង់)', Icon: Monitor }
+      return { title: 'Display Size & Resolution', Icon: Monitor }
     }
     if (c.includes('watch') || c.includes('smartwatch')) {
-      return { title: 'Case Size & Connectivity (ទំហំប្រអប់)', Icon: Watch }
+      return { title: 'Case Size & Connectivity', Icon: Watch }
     }
     if (c.includes('keyboard')) {
-      return { title: 'Switch Type & Format (ប្រភេទ Switch)', Icon: Keyboard }
+      return { title: 'Switch Type & Format', Icon: Keyboard }
     }
     if (c.includes('headphone') || c.includes('speaker') || c.includes('audio') || c.includes('earbud') || c.includes('sound') || c.includes('mice') || c.includes('mouse')) {
-      return { title: 'Audio Type & Connectivity (ប្រភេទកាស / បាស)', Icon: Headphones }
+      return { title: 'Audio Type & Connectivity', Icon: Headphones }
     }
     if (c.includes('camera') || c.includes('lens')) {
-      return { title: 'Lens Kit & Sensor Spec (លក្ខណៈ Lens)', Icon: Camera }
+      return { title: 'Lens Kit & Sensor Spec', Icon: Camera }
     }
     if (c.includes('charger') || c.includes('power') || c.includes('adapter')) {
-      return { title: 'Output Wattage & Ports (កម្លាំងសាក Watt)', Icon: Zap }
+      return { title: 'Output Wattage & Ports', Icon: Zap }
     }
     if (c.includes('shoe') || c.includes('sneaker') || c.includes('footwear')) {
-      return { title: 'Shoe Size (ទំហំស្បែកជើង)', Icon: Footprints }
+      return { title: 'Shoe Size', Icon: Footprints }
     }
     if (c.includes('apparel') || c.includes('clothing') || c.includes('shirt') || c.includes('fashion') || c.includes('dress')) {
-      return { title: 'Clothing Size (ទំហំសម្លៀកបំពាក់)', Icon: Shirt }
+      return { title: 'Clothing Size', Icon: Shirt }
     }
 
     // Spec content fallbacks
     if (/\b(gb|tb|mb|ram|storage)\b/i.test(s)) {
-      return { title: 'Storage / RAM (ទំហំផ្ទុក / ក្រាហ្វិក)', Icon: Smartphone }
+      return { title: 'Storage / RAM', Icon: Smartphone }
     }
     if (/\b(fhd|qhd|4k|uhd|144hz|165hz|curved|ultrawide)\b/i.test(s) || /"/i.test(s)) {
-      return { title: 'Display Size & Resolution (ទំហំអេក្រង់)', Icon: Monitor }
+      return { title: 'Display Size & Resolution', Icon: Monitor }
     }
     if (/\b(gps|cellular|ultra)\b/i.test(s) || /\b\d+mm\b/i.test(s)) {
-      return { title: 'Case Size & Connectivity (ទំហំប្រអប់)', Icon: Watch }
+      return { title: 'Case Size & Connectivity', Icon: Watch }
     }
     if (/\b(switch|tkl|rgb)\b/i.test(s)) {
-      return { title: 'Switch Type & Format (ប្រភេទ Switch)', Icon: Keyboard }
+      return { title: 'Switch Type & Format', Icon: Keyboard }
     }
     if (/\b(wired|bluetooth|wireless|anc|noise canceling|studio)\b/i.test(s)) {
-      return { title: 'Audio Type & Connectivity (ប្រភេទកាស / បាស)', Icon: Headphones }
+      return { title: 'Audio Type & Connectivity', Icon: Headphones }
     }
     if (/\b(lens|body only|zoom|cinema)\b/i.test(s)) {
-      return { title: 'Lens Kit & Sensor Spec (លក្ខណៈ Lens)', Icon: Camera }
+      return { title: 'Lens Kit & Sensor Spec', Icon: Camera }
     }
     if (/\b(watt|usb-c|gan|\d+w)\b/i.test(s)) {
-      return { title: 'Output Wattage & Ports (កម្លាំងសាក Watt)', Icon: Zap }
+      return { title: 'Output Wattage & Ports', Icon: Zap }
     }
     if (/\b(eu\s*\d+|us\s*\d+|uk\s*\d+)\b/i.test(s)) {
-      return { title: 'Shoe Size (ទំហំស្បែកជើង)', Icon: Footprints }
+      return { title: 'Shoe Size', Icon: Footprints }
     }
     if (/^(xs|s|m|l|xl|xxl|xxxl|free size)$/i.test(s.trim())) {
-      return { title: 'Clothing Size (ទំហំសម្លៀកបំពាក់)', Icon: Shirt }
+      return { title: 'Clothing Size', Icon: Shirt }
     }
 
-    return { title: 'Options & Specifications (ជម្រើសលក្ខណៈ)', Icon: Sparkles }
+    return { title: 'Options & Specifications', Icon: Sparkles }
   }
 
   // Extract available specs dynamically from product variants
@@ -339,7 +339,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
   const handleAdd = () => {
     if (isOutOfStock) {
       sound.playError()
-      toast.error(t('productOutOfStock', `ទំនិញ "${product.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+      toast.error(t('productOutOfStock', `Product "${product.name}" is out of stock!`))
       return
     }
     onAddToCart(product, selectedVariant, imei.trim() || undefined)
@@ -426,7 +426,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
           <div className="space-y-2">
             <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Palette size={14} className="text-rose-500 shrink-0" />
-              <span>Color (ជ្រើសរើសពណ៌)</span>
+              <span>{t('selectColor', 'Select Color')}</span>
             </label>
             <div className="grid grid-cols-1 gap-1.5">
               {colorOptions.map((c) => {
@@ -462,7 +462,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
           <div className="space-y-2">
             <label className="text-xs font-extrabold text-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles size={14} className="text-rose-500 shrink-0" />
-              <span>Product Options (ជ្រើសរើស ជម្រើស)</span>
+              <span>{t('productOptions', 'Product Options')}</span>
             </label>
             <div className="space-y-1.5">
               {variantsList.map((v) => {
@@ -514,7 +514,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
             {isOutOfStock ? (
               <span className="font-bold text-rose-500 flex items-center gap-1">
                 <Ban size={12} />
-                0 {t('units', 'units')} ({t('outOfStock', 'អស់ពីស្តុក')})
+                0 {t('units', 'units')} ({t('outOfStock', 'Out of Stock')})
               </span>
             ) : (
               <span className="font-bold text-foreground flex items-center gap-1">
@@ -532,7 +532,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
           </div>
         </div>
 
-        {/* ── 4. 1688 STYLED BOTTOM FULL-WIDTH ACTION BUTTON (បន្ថែមទៅរទេះ) ────────────── */}
+        {/* ── 4. 1688 STYLED BOTTOM FULL-WIDTH ACTION BUTTON ────────────── */}
         <div className="pt-2 border-t border-border/60">
           {isOutOfStock ? (
             <button
@@ -542,7 +542,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
               className="w-full py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 cursor-not-allowed shadow-none"
             >
               <Ban size={18} className="text-rose-500" />
-              <span>{t('outOfStockCannotSell', 'អស់ពីស្តុក - មិនអាចលក់បានទេ')}</span>
+              <span>{t('outOfStockCannotSell', 'Out of Stock - Cannot Sell')}</span>
             </button>
           ) : (
             <button
@@ -550,7 +550,7 @@ export const POSProductDetailModal: React.FC<POSProductDetailModalProps> = ({
               onClick={handleAdd}
               className="w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
             >
-              <ShoppingCart size={18} /> {t('addToSaleCart', 'បន្ថែមទៅរទេះ')}
+              <ShoppingCart size={18} /> {t('addToSaleCart', 'Add to Cart')}
             </button>
           )}
         </div>

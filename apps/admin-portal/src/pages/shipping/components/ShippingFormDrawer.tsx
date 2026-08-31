@@ -183,7 +183,7 @@ export const ShippingFormDrawer: React.FC<ShippingFormDrawerProps> = ({
               required
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="ZONE_NA"
+              placeholder="ZONE_PP_URBAN"
               className="input w-full font-mono uppercase"
             />
           </div>
@@ -193,7 +193,7 @@ export const ShippingFormDrawer: React.FC<ShippingFormDrawerProps> = ({
               type="text"
               value={countries}
               onChange={(e) => setCountries(e.target.value)}
-              placeholder='["US", "CA"]'
+              placeholder='["KH"]'
               className="input w-full font-mono text-xs"
             />
           </div>
@@ -203,17 +203,17 @@ export const ShippingFormDrawer: React.FC<ShippingFormDrawerProps> = ({
               type="text"
               value={provinces}
               onChange={(e) => setProvinces(e.target.value)}
-              placeholder='["California", "Texas"]'
+              placeholder='["Phnom Penh", "Kandal", "Siem Reap"]'
               className="input w-full font-mono text-xs"
             />
           </div>
           <div>
-            <label className="label">Cities (JSON string array)</label>
+            <label className="label">Cities / Districts (JSON string array)</label>
             <input
               type="text"
               value={cities}
               onChange={(e) => setCities(e.target.value)}
-              placeholder='["Phnom Penh", "Siem Reap"]'
+              placeholder='["Khan Daun Penh", "Krong Siem Reap", "Krong Suong"]'
               className="input w-full font-mono text-xs"
             />
           </div>

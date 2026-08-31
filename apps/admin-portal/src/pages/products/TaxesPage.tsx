@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ModalHeader } from '@/components/common/ModalHeader'
 import { 
   Plus, Edit2, Trash2, X, Percent, ToggleLeft, ToggleRight, Loader2, 
   ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle, Settings,
   Save
 } from 'lucide-react'
-import api from '@/api/client'
+import { taxService } from '@/services/taxService'
 import { useToast } from '@/hooks/useToast'
 import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
@@ -110,16 +112,14 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   // Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['taxes', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
-    queryFn: () => api.get('/taxes', { 
-      params: { 
-        page, 
-        search: debouncedSearch, 
-        per_page: perPage, 
-        sort_by: sortBy, 
-        sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
-      } 
-    }).then(r => r.data),
+    queryFn: () => taxService.list({ 
+      page, 
+      search: debouncedSearch, 
+      per_page: perPage, 
+      sort_by: sortBy, 
+      sort_order: sortOrder,
+      status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
+    }),
     placeholderData: (prev) => prev,
   })
 
@@ -128,7 +128,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/taxes', payload),
+    mutationFn: (payload: any) => taxService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.created'))
@@ -140,7 +140,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.put(`/taxes/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: any }) => taxService.update(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.updated'))
@@ -152,7 +152,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/taxes/${id}`),
+    mutationFn: (id: number) => taxService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.deleted'))
@@ -165,7 +165,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const restoreMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/taxes/${id}/restore`),
+    mutationFn: (id: number) => taxService.restore(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.restored'))
@@ -176,7 +176,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const forceDeleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/taxes/${id}/force`),
+    mutationFn: (id: number) => taxService.forceDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.deleted'))
@@ -189,7 +189,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/taxes/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => taxService.bulkDelete(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.deleted'))
@@ -202,7 +202,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const bulkRestoreMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/taxes/bulk-restore', { ids }),
+    mutationFn: (ids: number[]) => taxService.bulkRestore(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['taxes'] })
       toast.success(t('toast.restored'))
@@ -261,7 +261,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
     const fd = new FormData()
     fd.append('file', importFile)
     try {
-      await api.post('/taxes/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await taxService.import(fd)
       toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
@@ -275,7 +275,7 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
 
   const handleExport = () => {
     const infoId = toast.info(t('products.toast.exportDownloading', 'Downloading CSV export...'))
-    api.get('/taxes/export', { responseType: 'blob' })
+    taxService.export()
       .then(res => {
         if (infoId) toast.dismiss(infoId)
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
@@ -519,9 +519,9 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       </div>
 
       {/* Tax Create/Edit Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      {modalOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -530,28 +530,13 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
               className="bg-card border border-border/80 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-2xs">
-                    <Percent size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground leading-tight">
-                      {editingTax ? t('products.editTaxRule', 'Edit Tax Rule') : t('products.addTaxRule', 'Add Tax Rule')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {editingTax ? t('products.editTaxDesc', 'Modify tax rate, calculation formula and status') : t('products.addTaxDesc', 'Create a new tax regulation for sales and checkout')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={closeModal}
-                  type="button"
-                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={editingTax ? t('products.editTaxRule', 'Edit Tax Rule') : t('products.addTaxRule', 'Add Tax Rule')}
+                subtitle={editingTax ? t('products.editTaxDesc', 'Modify tax rate, calculation formula and status') : t('products.addTaxDesc', 'Create a new tax regulation for sales and checkout')}
+                icon={<Percent size={20} />}
+                iconVariant="blue"
+                onClose={closeModal}
+              />
 
               {/* Modal Body Form */}
               <form onSubmit={handleSubmit} className="p-6 space-y-4.5 max-h-[calc(85vh-130px)] overflow-y-auto">
@@ -658,29 +643,31 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* CSV Import Modal */}
-      <AnimatePresence>
-        {importOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {importOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h3 className="font-semibold text-lg text-foreground">{t('products.importCSV')}</h3>
-                <button onClick={() => setImportOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={t('products.importCSV', 'Import CSV')}
+                subtitle={t('products.taxesImportInstruction', 'Upload CSV file to import tax rules in bulk')}
+                icon={<Upload size={18} />}
+                iconVariant="blue"
+                onClose={() => setImportOpen(false)}
+              />
 
               <form onSubmit={handleImport} className="p-6 space-y-4">
                 <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/10 transition-colors">
-                  <Upload className="mx-auto text-muted-foreground mb-2" size={32} />
+                  <Upload className="mx-auto text-primary mb-2 opacity-80" size={32} />
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -689,33 +676,35 @@ const TaxesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                     id="csv-tax-upload"
                     required
                   />
-                  <label htmlFor="csv-tax-upload" className="cursor-pointer font-medium text-primary hover:underline">
-                    {importFile ? importFile.name : t('products.clickToUploadCSV')}
+                  <label htmlFor="csv-tax-upload" className="cursor-pointer font-bold text-xs text-primary hover:underline block">
+                    {importFile ? importFile.name : t('products.clickToUploadCSV', 'Click to browse CSV / TXT file')}
                   </label>
+                  <p className="text-[11px] text-muted-foreground mt-1">UTF-8 CSV format (name, rate, type)</p>
                 </div>
 
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setImportOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-xl transition-all cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={importing || !importFile}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-primary rounded-lg flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    {importing && <Loader2 size={14} className="animate-spin" />}
-                    {t('products.importCSV')}
+                    {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    {t('products.importCSV', 'Import CSV')}
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog

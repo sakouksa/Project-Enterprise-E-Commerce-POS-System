@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, Search, Trash2, RefreshCw, MapPin,
   ChevronUp, ChevronDown, Download, CheckCircle2,
-  AlertCircle, Home, Building2, Package, Tag, Store, Building, Factory, Hotel
+  AlertCircle, Home, Building2, Package, Tag, Store, Building, Factory, Hotel, User, Phone
 } from 'lucide-react'
-import api from '@/api/client'
+import { customerService } from '@/services/customerService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -16,7 +16,8 @@ import ModernSelect from '@/components/shared/ModernSelect'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import ResetButton from '@/components/shared/ResetButton'
 import { useTranslation } from 'react-i18next'
-import { CustomerAddressModal, type CustomerAddress } from '@/components/common'
+import { CustomerAddressModal, type CustomerAddress, HeaderActionsGroup, AddButton, ExportButton } from '@/components/common'
+import { CustomerAddressDetailDrawer } from './components/CustomerAddressDetailDrawer'
 
 interface CustomerAddressesPageProps {
   isTab?: boolean
@@ -147,8 +148,7 @@ const renderAddressLabelBadge = (label: string, t: any) => {
 }
 
 const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = false, onRegisterActions }) => {
-  const { t, i18n } = useTranslation(['customers', 'common'])
-  const isKhmer = i18n.language === 'km'
+  const { t } = useTranslation(['customers', 'common'])
   const toast = useToast()
   const qc = useQueryClient()
 
@@ -170,17 +170,16 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingAddress, setEditingAddress] = useState<CustomerAddress | null>(null)
+  const [viewingAddress, setViewingAddress] = useState<CustomerAddress | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CustomerAddress | null>(null)
+
+  // 6 Standard Columns
   const [visibleColumns, setVisibleColumns] = useState({
-    id: true,
     customer: true,
     label: true,
     recipient: true,
-    phone: true,
     address: true,
     region: true,
-    postalCode: true,
-    coordinates: true,
     status: true,
     actions: true,
   })
@@ -194,41 +193,39 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
   // Queries
   const { data: customers } = useQuery({
     queryKey: ['customers-addresses-dropdown'],
-    queryFn: () => api.get('/customers', { params: { per_page: 200 } }).then(r => r.data.data ?? []),
+    queryFn: () => customerService.list({ per_page: 200 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: addressesData, isLoading, isFetching } = useQuery({
     queryKey: ['customer-addresses', page, debouncedSearch, perPage, customerFilter, defaultFilter, sortBy, sortOrder],
-    queryFn: () => api.get('/customer-addresses', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        customer_id: customerFilter,
-        is_default: defaultFilter === 'default' ? '1' : defaultFilter === 'secondary' ? '0' : undefined,
-        sort_by: sortBy,
-        sort_order: sortOrder
-      }
-    }).then(r => r.data),
+    queryFn: () => customerService.addresses({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      customer_id: customerFilter !== 'all' ? customerFilter : undefined,
+      is_default: defaultFilter === 'default' ? '1' : defaultFilter === 'secondary' ? '0' : undefined,
+      sort_by: sortBy,
+      sort_order: sortOrder
+    }),
     placeholderData: (prev) => prev,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/customer-addresses/${id}`),
+    mutationFn: (id: number) => customerService.deleteAddress(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customer-addresses'] })
-      toast.success(t('toast.deleted', { item: t('customers.customerAddresses') }))
+      toast.success(t('toast.deleted', { item: t('customers.customerAddresses', 'Customer Address') }))
       setDeleteTarget(null)
       adjustAfterDelete(addresses.length)
     },
     onError: () => {
-      toast.error(t('toast.error'))
+      toast.error(t('toast.error', 'Failed to delete customer address.'))
       setDeleteTarget(null)
     },
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/customer-addresses/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => customerService.bulkDeleteAddresses(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customer-addresses'] })
       toast.success(t('toast.deleted', { item: `${selectedRows.length} ${t('customers.customerAddresses', 'Customer Addresses')}` }))
@@ -293,17 +290,15 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
       const titleText = t('customers.customerAddresses', 'Customer Addresses')
       const headers = [
         t('customers.id', 'ID'),
-        t('customers.customer', 'Customer'),
+        t('customers.title', 'Customer'),
         t('customers.addressLabel', 'Address Label'),
-        t('customers.receiverName', 'Recipient Name'),
+        t('customers.recipient', 'Recipient Name'),
         t('customers.phone', 'Phone'),
         t('customers.streetAddress', 'Address'),
         t('customers.city', 'City'),
         t('customers.province', 'Province'),
         t('customers.country', 'Country'),
         t('customers.postalCode', 'Postal Code'),
-        t('customers.latitude', 'Latitude'),
-        t('customers.longitude', 'Longitude'),
         t('customers.defaultAddress', 'Default Address')
       ]
 
@@ -324,8 +319,6 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
           '<td>' + (addr.province || '—') + '</td>' +
           '<td>' + (addr.country || '—') + '</td>' +
           '<td class="text-center">' + (addr.postal_code || '—') + '</td>' +
-          '<td class="text-center">' + (addr.latitude ?? '—') + '</td>' +
-          '<td class="text-center">' + (addr.longitude ?? '—') + '</td>' +
           '<td class="text-center">' + defaultText + '</td>' +
           '</tr>'
       })
@@ -347,8 +340,8 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         '<body>' +
         '  <table>' +
         '    <thead>' +
-        '      <tr><th colspan="13" class="title-cell">ENTERPRISE POS - ' + titleText + '</th></tr>' +
-        '      <tr><th colspan="13" class="subtitle-cell">Generated on: ' + new Date().toLocaleString() + ' | Total Records: ' + addresses.length + '</th></tr>' +
+        '      <tr><th colspan="11" class="title-cell">ENTERPRISE POS - ' + titleText + '</th></tr>' +
+        '      <tr><th colspan="11" class="subtitle-cell">Generated on: ' + new Date().toLocaleString() + ' | Total Records: ' + addresses.length + '</th></tr>' +
         '      <tr>' +
         headers.map(h => '<th>' + h + '</th>').join('') +
         '      </tr>' +
@@ -399,27 +392,21 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
       {!isTab && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{t('customers.customerAddresses')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('customers.customerAddresses', 'Delivery Addresses')}</h1>
             <p className="text-muted-foreground text-sm">
               {t('common.showing', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total })}
             </p>
           </div>
-          <div className="flex gap-2">
-            <button
+          <HeaderActionsGroup>
+            <ExportButton
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shadow-sm animate-fade-in"
-            >
-              <Download size={15} />
-              {t('common.export')}
-            </button>
-            <button
+              label={t('customers.exportCsv', 'Export CSV')}
+            />
+            <AddButton
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-sm animate-fade-in"
-            >
-              <Plus size={16} />
-              {t('customers.addAddress')}
-            </button>
-          </div>
+              label={t('customers.addAddress', 'Add Address')}
+            />
+          </HeaderActionsGroup>
         </div>
       )}
 
@@ -432,8 +419,8 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
               <input
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                placeholder={t('customers.searchAddresses')}
-                className="form-input pl-9 pr-3 w-full h-9 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                placeholder={t('customers.searchAddresses', 'Search addresses...')}
+                className="form-input pl-9 pr-3 w-full h-10 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background text-foreground focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
 
@@ -442,7 +429,7 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
               value={customerFilter}
               onChange={val => { setCustomerFilter(val); setPage(1); }}
               options={[
-                { value: '', label: `${t('customers.title')}: ${t('common.allStatus')}` },
+                { value: '', label: `${t('customers.title', 'Customer')}: ${t('common.allStatus', 'All')}` },
                 ...(customers ?? []).map((c: any) => ({ value: String(c.id), label: c.name }))
               ]}
               className="w-52"
@@ -453,8 +440,8 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
               value={defaultFilter}
               onChange={val => { setDefaultFilter(val); setPage(1); }}
               options={[
-                { value: 'all', label: `${t('common.status')}: ${t('common.allStatus')}` },
-                { value: 'default', label: t('customers.defaultAddress') },
+                { value: 'all', label: `${t('common.status', 'Status')}: ${t('common.allStatus', 'All')}` },
+                { value: 'default', label: t('customers.defaultAddress', 'Default Address') },
                 { value: 'secondary', label: t('customers.secondaryAddress', 'Secondary Address') }
               ]}
               className="w-48"
@@ -466,22 +453,19 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
           <div className="flex items-center gap-2">
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ['customer-addresses'] })}
-              className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
-              title={t('common.refresh')}
+              className="h-10 w-10 min-h-[40px] min-w-[40px] flex items-center justify-center hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background transition-colors shadow-xs cursor-pointer active:scale-95"
+              title={t('common.refresh', 'Refresh')}
             >
               <RefreshCw size={14} />
             </button>
+            {/* Exactly 6 Selectable Columns */}
             <ColumnSettingsPopover
               columns={[
-                { key: 'id', label: t('customers.id', 'ID') },
                 { key: 'customer', label: t('customers.title', 'Customer') },
                 { key: 'label', label: t('customers.addressLabel', 'Label') },
-                { key: 'recipient', label: t('customers.recipient', 'Recipient') },
-                { key: 'phone', label: t('common.phone', 'Phone') },
-                { key: 'address', label: t('customers.addresses', 'Address') },
-                { key: 'region', label: t('customers.region', 'Region') },
-                { key: 'postalCode', label: t('customers.postalCode', 'Postal Code') },
-                { key: 'coordinates', label: t('customers.coordinates', 'Coordinates') },
+                { key: 'recipient', label: t('customers.recipientAndPhone', 'Recipient & Phone') },
+                { key: 'address', label: t('customers.streetAddress', 'Address') },
+                { key: 'region', label: t('customers.region', 'Region / Province') },
                 { key: 'status', label: t('common.status', 'Status') },
               ]}
               visibleColumns={visibleColumns}
@@ -516,175 +500,199 @@ const CustomerAddressesPage: React.FC<CustomerAddressesPageProps> = ({ isTab = f
         </div>
       )}
 
-      {/* Customer Addresses Enterprise Table */}
+      {/* Customer Addresses Enterprise Table (6 Clean Columns) */}
       <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
-          <TableWrapper isFetching={isFetching}>
-            <div className="overflow-x-auto">
-              <table className="w-full data-table min-w-[1200px]">
-                <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
-                  <tr>
-                    <th className="w-10 text-center !px-3">
-                      <input
-                        type="checkbox"
-                        className="checkbox h-4 w-4 rounded border-border"
-                        checked={addresses.length > 0 && selectedRows.length === addresses.length}
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                      />
+        <TableWrapper isFetching={isFetching}>
+          <div className="overflow-x-auto">
+            <table className="w-full data-table min-w-[1000px]">
+              <thead className="bg-muted/40 sticky top-0 border-b border-border z-10">
+                <tr>
+                  <th className="w-10 text-center !px-3">
+                    <input
+                      type="checkbox"
+                      className="checkbox h-4 w-4 rounded border-border"
+                      checked={addresses.length > 0 && selectedRows.length === addresses.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </th>
+                  {visibleColumns.customer && (
+                    <th onClick={() => handleSort('customer_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('customers.title', 'Customer')} {renderSortIcon('customer_id')}
                     </th>
-                    {visibleColumns.id && (
-                      <th onClick={() => handleSort('id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.id', 'ID')} {renderSortIcon('id')}
-                      </th>
-                    )}
-                    {visibleColumns.customer && (
-                      <th onClick={() => handleSort('customer_id')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.title', 'Customer')} {renderSortIcon('customer_id')}
-                      </th>
-                    )}
-                    {visibleColumns.label && (
-                      <th onClick={() => handleSort('label')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.addressLabel', 'Label')} {renderSortIcon('label')}
-                      </th>
-                    )}
-                    {visibleColumns.recipient && (
-                      <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.recipient', 'Recipient')} {renderSortIcon('name')}
-                      </th>
-                    )}
-                    {visibleColumns.phone && (
-                      <th onClick={() => handleSort('phone')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('common.phone', 'Phone')} {renderSortIcon('phone')}
-                      </th>
-                    )}
-                    {visibleColumns.address && (
-                      <th onClick={() => handleSort('address')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.addresses', 'Address')} {renderSortIcon('address')}
-                      </th>
-                    )}
-                    {visibleColumns.region && (
-                      <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.region', 'Region')}
-                      </th>
-                    )}
-                    {visibleColumns.postalCode && (
-                      <th onClick={() => handleSort('postal_code')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.postalCode', 'Postal Code')} {renderSortIcon('postal_code')}
-                      </th>
-                    )}
-                    {visibleColumns.coordinates && (
-                      <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
-                        {t('customers.coordinates', 'Coordinates (Lat, Lng)')}
-                      </th>
-                    )}
-                    {visibleColumns.status && (
-                      <th onClick={() => handleSort('is_default')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none whitespace-nowrap">
-                        {t('customers.defaultAddress', 'Default Address')} {renderSortIcon('is_default')}
-                      </th>
-                    )}
-                    {visibleColumns.actions && (
-                      <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('customers.actions', t('common.actions', 'Actions'))}</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <tr key={i} className="hover:bg-muted/5">
-                        <td className="w-10 text-center !px-3"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
-                        {visibleColumns.id && <td className="p-4"><div className="skeleton h-4 w-8 rounded" /></td>}
-                        {visibleColumns.customer && <td className="p-4"><div className="skeleton h-4 w-32 rounded" /></td>}
-                        {visibleColumns.label && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
-                        {visibleColumns.recipient && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
-                        {visibleColumns.phone && <td className="p-4"><div className="skeleton h-4 w-24 rounded" /></td>}
-                        {visibleColumns.address && <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>}
-                        {visibleColumns.region && <td className="p-4"><div className="skeleton h-4 w-36 rounded" /></td>}
-                        {visibleColumns.postalCode && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
-                        {visibleColumns.coordinates && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
-                        {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-12 rounded" /></td>}
-                        {visibleColumns.actions && <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>}
-                      </tr>
-                    ))
-                  ) : addresses.map((addr) => {
-                    const isSelected = typeof addr.id === 'number' ? selectedRows.includes(addr.id) : false
-                    return (
-                      <tr key={addr.id} className={`hover:bg-muted/10 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
-                        <td className="w-10 text-center !px-3" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            className="checkbox h-4 w-4 rounded border-border"
-                            checked={isSelected}
-                            onChange={(e) => addr.id && handleSelectRow(addr.id, e.target.checked)}
+                  )}
+                  {visibleColumns.label && (
+                    <th onClick={() => handleSort('label')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('customers.addressLabel', 'Label')} {renderSortIcon('label')}
+                    </th>
+                  )}
+                  {visibleColumns.recipient && (
+                    <th onClick={() => handleSort('name')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('customers.recipientAndPhone', 'Recipient & Phone')} {renderSortIcon('name')}
+                    </th>
+                  )}
+                  {visibleColumns.address && (
+                    <th onClick={() => handleSort('address')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('customers.streetAddress', 'Address')} {renderSortIcon('address')}
+                    </th>
+                  )}
+                  {visibleColumns.region && (
+                    <th className="text-left p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">
+                      {t('customers.region', 'Region / Province')}
+                    </th>
+                  )}
+                  {visibleColumns.status && (
+                    <th onClick={() => handleSort('is_default')} className="text-left cursor-pointer hover:bg-muted/65 p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none whitespace-nowrap">
+                      {t('common.status', 'Status')} {renderSortIcon('is_default')}
+                    </th>
+                  )}
+                  {visibleColumns.actions && (
+                    <th className="text-right p-4 text-xs font-semibold uppercase text-muted-foreground tracking-wider select-none">{t('customers.actions', t('common.actions', 'Actions'))}</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="hover:bg-muted/5">
+                      <td className="w-10 text-center !px-3"><div className="skeleton h-4 w-4 rounded mx-auto" /></td>
+                      {visibleColumns.customer && <td className="p-4"><div className="skeleton h-4 w-32 rounded" /></td>}
+                      {visibleColumns.label && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                      {visibleColumns.recipient && <td className="p-4"><div className="skeleton h-4 w-28 rounded" /></td>}
+                      {visibleColumns.address && <td className="p-4"><div className="skeleton h-4 w-40 rounded" /></td>}
+                      {visibleColumns.region && <td className="p-4"><div className="skeleton h-4 w-36 rounded" /></td>}
+                      {visibleColumns.status && <td className="p-4"><div className="skeleton h-4 w-16 rounded" /></td>}
+                      {visibleColumns.actions && <td className="p-4 text-right"><div className="skeleton h-4 w-16 rounded ml-auto" /></td>}
+                    </tr>
+                  ))
+                ) : addresses.map((addr) => {
+                  const isSelected = typeof addr.id === 'number' ? selectedRows.includes(addr.id) : false
+                  const customerName = addr.customer?.name || (addr.customer_id ? `Customer #${addr.customer_id}` : '—')
+                  return (
+                    <tr
+                      key={addr.id}
+                      onClick={() => setViewingAddress(addr)}
+                      className={`hover:bg-muted/10 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                    >
+                      <td className="w-10 text-center !px-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="checkbox h-4 w-4 rounded border-border"
+                          checked={isSelected}
+                          onChange={(e) => addr.id && handleSelectRow(addr.id, e.target.checked)}
+                        />
+                      </td>
+
+                      {/* 1. Customer */}
+                      {visibleColumns.customer && (
+                        <td className="p-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                              {customerName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-sm text-foreground hover:text-primary transition-colors truncate">
+                                {customerName}
+                              </div>
+                              {addr.customer?.email && (
+                                <div className="text-[11px] text-muted-foreground font-mono truncate">
+                                  {addr.customer.email}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* 2. Label */}
+                      {visibleColumns.label && (
+                        <td className="p-4 text-sm">
+                          {renderAddressLabelBadge(addr.label, t)}
+                        </td>
+                      )}
+
+                      {/* 3. Recipient & Phone */}
+                      {visibleColumns.recipient && (
+                        <td className="p-4">
+                          <div className="font-semibold text-sm text-foreground">{addr.name || '—'}</div>
+                          {addr.phone && (
+                            <div className="text-xs text-muted-foreground font-mono mt-0.5 flex items-center gap-1">
+                              <Phone size={11} className="shrink-0 text-muted-foreground/70" />
+                              <span>{addr.phone}</span>
+                            </div>
+                          )}
+                        </td>
+                      )}
+
+                      {/* 4. Address */}
+                      {visibleColumns.address && (
+                        <td className="p-4 text-sm text-muted-foreground max-w-[240px] truncate" title={addr.address}>
+                          <span className="font-medium text-foreground/90">{addr.address || '—'}</span>
+                        </td>
+                      )}
+
+                      {/* 5. Region / Province / Country */}
+                      {visibleColumns.region && (
+                        <td className="p-4 text-sm text-muted-foreground">
+                          <div>{[addr.city, addr.province].filter(Boolean).join(', ') || '—'}</div>
+                          <div className="text-[11px] text-muted-foreground/75 mt-0.5">
+                            {addr.country || 'Cambodia'} {addr.postal_code ? `(${addr.postal_code})` : ''}
+                          </div>
+                        </td>
+                      )}
+
+                      {/* 6. Status */}
+                      {visibleColumns.status && (
+                        <td className="p-4 text-sm whitespace-nowrap">
+                          {addr.is_default ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap shadow-2xs">
+                              <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                              <span>{t('customers.defaultAddress', 'Default Address')}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60 whitespace-nowrap">
+                              {t('customers.secondaryAddress', 'Secondary Address')}
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Actions */}
+                      {visibleColumns.actions && (
+                        <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <TableActionMenu
+                            onView={() => setViewingAddress(addr)}
+                            onEdit={() => openEditModal(addr)}
+                            onDelete={() => setDeleteTarget(addr)}
                           />
                         </td>
-                        {visibleColumns.id && <td className="p-4 text-sm font-mono text-muted-foreground">{addr.id}</td>}
-                        {visibleColumns.customer && (
-                          <td className="p-4 font-semibold text-sm text-foreground">
-                            {addr.customer?.name ?? '—'}
-                          </td>
-                        )}
-                        {visibleColumns.label && (
-                          <td className="p-4 text-sm">
-                            {renderAddressLabelBadge(addr.label, t)}
-                          </td>
-                        )}
-                        {visibleColumns.recipient && <td className="p-4 text-sm font-semibold text-foreground">{addr.name}</td>}
-                        {visibleColumns.phone && <td className="p-4 text-sm font-mono text-muted-foreground">{addr.phone}</td>}
-                        {visibleColumns.address && (
-                          <td className="p-4 text-sm text-muted-foreground max-w-[200px] truncate" title={addr.address}>
-                            {addr.address}
-                          </td>
-                        )}
-                        {visibleColumns.region && (
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {addr.city}, {addr.province} ({addr.country})
-                          </td>
-                        )}
-                        {visibleColumns.postalCode && <td className="p-4 text-sm text-muted-foreground font-mono">{addr.postal_code}</td>}
-                        {visibleColumns.coordinates && (
-                          <td className="p-4 text-sm text-muted-foreground font-mono">
-                            {addr.latitude !== null && addr.longitude !== null ? `${addr.latitude}, ${addr.longitude}` : '—'}
-                          </td>
-                        )}
-                        {visibleColumns.status && (
-                          <td className="p-4 text-sm whitespace-nowrap">
-                            {addr.is_default ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap shadow-2xs">
-                                <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-                                <span>{t('customers.defaultAddress', 'Default Address')}</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 text-muted-foreground border border-border/60 whitespace-nowrap">
-                                {t('customers.secondaryAddress', 'Secondary Address')}
-                              </span>
-                            )}
-                          </td>
-                        )}
-                        {visibleColumns.actions && (
-                          <td className="p-4 text-right">
-                            <TableActionMenu
-                              onEdit={() => openEditModal(addr)}
-                              onDelete={() => setDeleteTarget(addr)}
-                            />
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })}
-                  {!isLoading && addresses.length === 0 && (
-                    <tr>
-                      <td colSpan={12} className="py-16 text-center">
-                        <MapPin size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                        <p className="text-muted-foreground">{t('common.noData', 'No data available')}</p>
-                      </td>
+                      )}
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </TableWrapper>
+                  )
+                })}
+                {!isLoading && addresses.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="py-16 text-center">
+                      <MapPin size={40} className="mx-auto mb-3 text-muted-foreground/30" />
+                      <p className="text-muted-foreground font-medium">{t('common.noData', 'No data available')}</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TableWrapper>
 
-          <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
-        </div>
+        <Pagination currentPage={pagination.current_page} lastPage={pagination.last_page} total={pagination.total} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+      </div>
+
+      {/* ─── Detail Drawer for Address ─── */}
+      <CustomerAddressDetailDrawer
+        address={viewingAddress}
+        isOpen={!!viewingAddress}
+        onClose={() => setViewingAddress(null)}
+        onEdit={openEditModal}
+        onDelete={setDeleteTarget}
+      />
 
       {/* ─── Global Customer Address Modal ─── */}
       <CustomerAddressModal

@@ -244,5 +244,8 @@
   "deletePayrollTitle": "Delete Payroll Record",
   "deleteSuccess": "Record deleted successfully",
   "forceDeleteSuccess": "Record permanently deleted successfully",
-  "restoreSuccess": "Record restored successfully"
+  "restoreSuccess": "Record restored successfully",
+  "export_generating": "Generating export... download will begin shortly.",
+  "export_success": "Export downloaded successfully.",
+  "export_error": "Export failed. Please try again."
 }

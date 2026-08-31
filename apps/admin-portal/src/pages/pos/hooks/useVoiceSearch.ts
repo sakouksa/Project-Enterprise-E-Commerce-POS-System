@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { sound } from '../../../utils/sound'
 
-export type VoiceLanguageCode = 'auto' | 'km-KH' | 'en-US' | 'zh-CN' | 'th-TH' | 'vi-VN'
+export type VoiceLanguageCode = 'auto' | 'km-KH' | 'en-US'
 
 export interface VoiceLanguageOption {
   code: VoiceLanguageCode
@@ -16,9 +16,6 @@ export const VOICE_LANGUAGES: VoiceLanguageOption[] = [
   { code: 'auto', name: 'AI Auto-Detect', nativeName: '✨ AI Auto', flag: '⚡', shortLabel: 'AI' },
   { code: 'km-KH', name: 'Khmer', nativeName: 'ភាសាខ្មែរ', flag: '🇰🇭', shortLabel: 'KM' },
   { code: 'en-US', name: 'English', nativeName: 'English (US)', flag: '🇺🇸', shortLabel: 'EN' },
-  { code: 'zh-CN', name: 'Chinese', nativeName: '中文 (普通话)', flag: '🇨🇳', shortLabel: 'ZH' },
-  { code: 'th-TH', name: 'Thai', nativeName: 'ภาษาไทย', flag: '🇹🇭', shortLabel: 'TH' },
-  { code: 'vi-VN', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳', shortLabel: 'VI' },
 ]
 
 // Automatic Language Detector from spoken characters
@@ -30,18 +27,6 @@ export function detectLanguageFromText(text: string): { langCode: VoiceLanguageC
   // Khmer Unicode Range: 1780-17FF
   if (/[\u1780-\u17FF]/.test(text)) {
     return { langCode: 'km-KH', langName: 'ភាសាខ្មែរ (Khmer)', flag: '🇰🇭' }
-  }
-  // Chinese Unicode Range: 4E00-9FFF
-  if (/[\u4E00-\u9FFF]/.test(text)) {
-    return { langCode: 'zh-CN', langName: '中文 (Chinese)', flag: '🇨🇳' }
-  }
-  // Thai Unicode Range: 0E00-0E7F
-  if (/[\u0E00-\u0E7F]/.test(text)) {
-    return { langCode: 'th-TH', langName: 'ภาษาไทย (Thai)', flag: '🇹🇭' }
-  }
-  // Vietnamese diacritics
-  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text)) {
-    return { langCode: 'vi-VN', langName: 'Tiếng Việt (Vietnamese)', flag: '🇻🇳' }
   }
 
   return { langCode: 'en-US', langName: 'English', flag: '🇺🇸' }
@@ -101,14 +86,14 @@ export function useVoiceSearch(options: UseVoiceSearchOptions = {}) {
       return target
     }
 
-    const appLocale = (i18n.language || 'km').toLowerCase()
+    const appLocale = (i18n.language || 'en').toLowerCase()
     if (appLocale.startsWith('km')) return 'km-KH'
     if (appLocale.startsWith('zh')) return 'zh-CN'
     if (appLocale.startsWith('th')) return 'th-TH'
     if (appLocale.startsWith('vi')) return 'vi-VN'
     if (appLocale.startsWith('en')) return 'en-US'
 
-    return 'km-KH' // Default to Khmer in Cambodia POS
+    return 'en-US' 
   }, [i18n.language])
 
   const getRecognition = useCallback((requestedLang?: VoiceLanguageCode) => {
@@ -197,14 +182,14 @@ export function useVoiceSearch(options: UseVoiceSearchOptions = {}) {
       }
 
       setHasError(true)
-      let userFriendlyMsg = 'សេវាស្វែងរកសំឡេងមិនអាចដំណើរការបាន'
+      let userFriendlyMsg = 'Voice search service is currently unavailable'
 
       if (err === 'not-allowed' || err === 'service-not-allowed') {
-        userFriendlyMsg = 'សូមអនុញ្ញាតសិទ្ធិ Microphone ក្នុង Browser ដើម្បីប្រើប្រាស់ Voice Search'
+        userFriendlyMsg = 'Please grant microphone access in your browser to use voice search'
       } else if (err === 'network') {
-        userFriendlyMsg = 'ការតភ្ជាប់អ៊ីនធឺណិតរវល់។ ប្រព័ន្ធកំពុងស្វែងរកទំនិញក្នុងស្តុក POS ជំនួស...'
+        userFriendlyMsg = 'Network connection issue. Searching POS inventory locally instead...'
       } else if (err === 'language-not-supported') {
-        userFriendlyMsg = 'AI កំពុងប្តូរទៅ Multi-Language Speech Engine...'
+        userFriendlyMsg = 'AI is switching to Multi-Language Speech Engine...'
       }
 
       setStatusMessage(userFriendlyMsg)
@@ -224,7 +209,7 @@ export function useVoiceSearch(options: UseVoiceSearchOptions = {}) {
     const rec = getRecognition(overrideLang)
     if (!rec) {
       setIsSupported(false)
-      setStatusMessage('ឧបករណ៍នេះមិនគាំទ្រ Voice Recognition ទេ។ អ្នកអាចប្រើប្រាស់ Text Search បាន')
+      setStatusMessage('Voice recognition is not supported on this device. You can use Text Search instead.')
       return
     }
 

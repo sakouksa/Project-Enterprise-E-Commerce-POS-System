@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { X, Activity, Info, Package, Warehouse, Clock, AlertTriangle, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import api from '@/api/client'
+import { inventoryService } from '@/services/inventoryService'
 import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { formatShortDate } from '@/utils/formatters'
@@ -20,19 +20,17 @@ export const InventoryDetailPage: React.FC<InventoryDetailPageProps> = ({ itemId
 
   const { data: detail, isLoading, isError, refetch } = useQuery({
     queryKey: ['inventory-detail', effectiveId],
-    queryFn: () => api.get(`/inventory/${effectiveId}`).then(r => r.data.data),
+    queryFn: () => inventoryService.show(effectiveId!),
     enabled: !!effectiveId
   })
 
   const { data: movements, isLoading: loadingMovements } = useQuery({
     queryKey: ['inventory-item-movements', detail?.product_id, detail?.warehouse_id],
-    queryFn: () => api.get('/inventory-movements', {
-      params: {
-        product_id: detail?.product_id,
-        warehouse_id: detail?.warehouse_id,
-        per_page: 50
-      }
-    }).then(r => r.data.data),
+    queryFn: () => inventoryService.getMovements({
+      product_id: detail?.product_id,
+      warehouse_id: detail?.warehouse_id,
+      per_page: 50
+    }).then(r => r.data),
     enabled: !!detail?.product_id && !!detail?.warehouse_id
   })
 

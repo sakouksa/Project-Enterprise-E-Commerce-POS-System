@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ModalHeader } from '@/components/common/ModalHeader'
 import { 
   Plus, Edit2, Trash2, X, Scale, ToggleLeft, ToggleRight, Loader2, 
   ChevronUp, ChevronDown, Download, Upload, Trash, RefreshCw, AlertCircle,
   Save, Sparkles
 } from 'lucide-react'
-import api from '@/api/client'
+import { unitService } from '@/services/unitService'
 import { useToast } from '@/hooks/useToast'
 import { downloadBlob } from '@/utils/export'
 import Pagination from '@/components/shared/Pagination'
@@ -135,16 +137,14 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   // Query
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['units', page, debouncedSearch, perPage, sortBy, sortOrder, recycleBinMode, statusFilter],
-    queryFn: () => api.get('/units', { 
-      params: { 
-        page, 
-        search: debouncedSearch, 
-        per_page: perPage, 
-        sort_by: sortBy, 
-        sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
-      } 
-    }).then(r => r.data),
+    queryFn: () => unitService.list({ 
+      page, 
+      search: debouncedSearch, 
+      per_page: perPage, 
+      sort_by: sortBy, 
+      sort_order: sortOrder,
+      status: recycleBinMode ? 'deleted' : (statusFilter !== 'all' ? statusFilter : undefined)
+    }),
     placeholderData: (prev) => prev,
   })
 
@@ -153,7 +153,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/units', payload),
+    mutationFn: (payload: any) => unitService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.created'))
@@ -165,7 +165,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => api.put(`/units/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: any }) => unitService.update(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.updated'))
@@ -177,7 +177,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/units/${id}`),
+    mutationFn: (id: number) => unitService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.deleted'))
@@ -190,7 +190,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const restoreMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/units/${id}/restore`),
+    mutationFn: (id: number) => unitService.restore(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.restored'))
@@ -201,7 +201,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const forceDeleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/units/${id}/force`),
+    mutationFn: (id: number) => unitService.forceDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.deleted'))
@@ -214,7 +214,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/units/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => unitService.bulkDelete(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.deleted'))
@@ -227,7 +227,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   })
 
   const bulkRestoreMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/units/bulk-restore', { ids }),
+    mutationFn: (ids: number[]) => unitService.bulkRestore(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['units'] })
       toast.success(t('toast.restored'))
@@ -286,7 +286,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
     const fd = new FormData()
     fd.append('file', importFile)
     try {
-      await api.post('/units/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await unitService.import(fd)
       toast.success(t('toast.importSuccess'))
       setImportOpen(false)
       setImportFile(null)
@@ -299,7 +299,7 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
   }
 
   const handleExport = () => {
-    api.get('/units/export', { responseType: 'blob' })
+    unitService.export()
       .then(res => {
         const blob = new Blob(['\uFEFF', res.data], { type: 'text/csv;charset=utf-8;' })
         const dateStamp = new Date().toISOString().split('T')[0]
@@ -535,9 +535,9 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
       </div>
 
       {/* Unit Create/Edit Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      {modalOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -546,28 +546,13 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
               className="bg-card border border-border/80 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-2xs">
-                    <Scale size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground leading-tight">
-                      {editingUnit ? t('products.editUnit', 'Edit Unit') : t('products.addUnit', 'Add Unit')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {editingUnit ? t('products.editUnitDesc', 'Modify measurement unit attributes and notation') : t('products.addUnitDesc', 'Create a new measurement unit for inventory tracking')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={closeModal}
-                  type="button"
-                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={editingUnit ? t('products.editUnit', 'Edit Unit') : t('products.addUnit', 'Add Unit')}
+                subtitle={editingUnit ? t('products.editUnitDesc', 'Modify measurement unit attributes and notation') : t('products.addUnitDesc', 'Create a new measurement unit for inventory tracking')}
+                icon={<Scale size={20} />}
+                iconVariant="blue"
+                onClose={closeModal}
+              />
 
               {/* Modal Body Form */}
               <form onSubmit={handleSubmit} className="p-6 space-y-4.5 max-h-[calc(85vh-130px)] overflow-y-auto">
@@ -702,33 +687,27 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* CSV Import Modal */}
-      <AnimatePresence>
-        {importOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      {importOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               className="bg-card border border-border/80 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-2xs">
-                    <Upload size={18} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground leading-tight">{t('products.importCSV')}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('products.importCSVDesc', 'Batch import measurement units via CSV/TXT file')}</p>
-                  </div>
-                </div>
-                <button onClick={() => setImportOpen(false)} className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
+              <ModalHeader
+                title={t('products.importCSV', 'Import CSV')}
+                subtitle={t('products.importCSVDesc', 'Batch import measurement units via CSV/TXT file')}
+                icon={<Upload size={18} />}
+                iconVariant="blue"
+                onClose={() => setImportOpen(false)}
+              />
 
               <form onSubmit={handleImport} className="p-6 space-y-4">
                 <div className="border-2 border-dashed border-border/80 rounded-2xl p-6 text-center hover:bg-muted/10 transition-colors">
@@ -747,28 +726,29 @@ const UnitsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab, 
                   <p className="text-[11px] text-muted-foreground mt-1">UTF-8 CSV format (name, symbol, description)</p>
                 </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-2">
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setImportOpen(false)}
                     className="px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-xl transition-all cursor-pointer"
                   >
-                    {t('common.cancel')}
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={importing || !importFile}
-                    className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-primary rounded-xl hover:opacity-90 shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    {t('products.importCSV')}
+                    {t('products.importCSV', 'Import CSV')}
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Unified Delete Confirmation Dialog */}
       <ConfirmDialog

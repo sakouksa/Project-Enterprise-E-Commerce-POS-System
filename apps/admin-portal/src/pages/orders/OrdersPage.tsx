@@ -7,7 +7,7 @@ import {
   Loader2, Filter, Mail, Phone, MapPin, DollarSign, Calendar, Info,
   PackageCheck, Clock, User, ArrowRight, ShieldCheck, Printer, FileText, CornerUpLeft, CheckCircle2
 } from 'lucide-react'
-import api from '@/api/client'
+import { orderService } from '@/services/orderService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -23,43 +23,42 @@ interface OrderItem {
   id:              number
   product_id:      number
   product_name:    string
-  sku?:            string
+  product_image?:  string
   quantity:        number
   unit_price:      number
-  discount_amount: number
-  total:           number
-  product?:        { name: string; primary_image?: any }
+  subtotal:        number
 }
 
 interface Order {
-  id:                 number
-  order_number:       string
-  customer?:          { name: string; phone?: string; email?: string }
-  grand_total:        number
-  subtotal:           number
-  tax_amount:         number
-  discount_amount:    number
-  shipping_cost:      number
-  status:             'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled' | 'refunded'
-  payment_status:     'unpaid' | 'partial' | 'paid' | 'refunded'
-  fulfillment_status: 'unfulfilled' | 'partial' | 'fulfilled'
-  shipping_name?:     string
-  shipping_phone?:    string
-  shipping_address?:  string
-  shipping_city?:     string
-  shipping_province?: string
-  shipping_postal_code?: string
-  carrier?:           string
-  tracking_number?:   string
-  notes?:             string
-  created_at:         string
-  items?:             OrderItem[]
+  id:                  number
+  order_number:        string
+  customer_name?:      string
+  customer?:           any
+  shipping_name?:      string
+  customer_phone?:     string
+  customer_email?:     string
+  status:              'pending' | 'processing' | 'completed' | 'cancelled' | string
+  payment_status:      'paid' | 'unpaid' | 'refunded' | string
+  payment_method?:     string
+  fulfillment_status?: 'unfulfilled' | 'fulfilled' | 'partial' | string
+  shipping_address?:   string
+  total_amount?:       number
+  grand_total?:        number
+  subtotal?:           number
+  tax_amount?:         number
+  discount_amount?:    number
+  shipping_fee?:       number
+  shipping_cost?:      number
+  notes?:              string
+  created_at:          string
+  items?:              OrderItem[]
+  [key: string]:       any
 }
 
 const OrdersPage: React.FC = () => {
   const { t } = useTranslation('orders')
-  const qc    = useQueryClient()
   const toast = useToast()
+  const qc = useQueryClient()
 
   const {
     page,
@@ -70,34 +69,41 @@ const OrdersPage: React.FC = () => {
     setSearch,
     debouncedSearch,
     reset,
+    adjustAfterDelete,
   } = useServerPagination({ storageKey: 'orders' })
 
   // Drawer & Filter States
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string | undefined>(undefined)
-  const [fulfillmentStatusFilter, setFulfillmentStatusFilter] = useState<string | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
+  const [fulfillmentStatusFilter, setFulfillmentStatusFilter] = useState('')
   const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo]     = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [minTotal, setMinTotal] = useState('')
   const [maxTotal, setMaxTotal] = useState('')
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
+
+  // Status Change Dialog State
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+  const [targetOrder, setTargetOrder] = useState<Order | null>(null)
+  const [newStatus, setNewStatus] = useState<Order['status']>('pending')
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   const activeFiltersCount = [
     statusFilter,
     paymentStatusFilter,
     fulfillmentStatusFilter,
-    dateFrom || undefined,
-    dateTo || undefined,
-    minTotal || undefined,
-    maxTotal || undefined,
+    dateFrom,
+    dateTo,
+    minTotal,
+    maxTotal,
   ].filter(Boolean).length
 
   const handleResetAllFilters = () => {
     reset()
-    setStatusFilter(undefined)
-    setPaymentStatusFilter(undefined)
-    setFulfillmentStatusFilter(undefined)
+    setStatusFilter('')
+    setPaymentStatusFilter('')
+    setFulfillmentStatusFilter('')
     setDateFrom('')
     setDateTo('')
     setMinTotal('')
@@ -107,26 +113,24 @@ const OrdersPage: React.FC = () => {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['orders', page, debouncedSearch, perPage, statusFilter, paymentStatusFilter, fulfillmentStatusFilter, dateFrom, dateTo, minTotal, maxTotal],
-    queryFn: () => api.get('/orders', {
-      params: {
-        page,
-        search,
-        per_page: perPage || 12,
-        status: statusFilter || undefined,
-        payment_status: paymentStatusFilter || undefined,
-        fulfillment_status: fulfillmentStatusFilter || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-        min_total: minTotal || undefined,
-        max_total: maxTotal || undefined,
-      },
-    }).then(r => r.data),
+    queryFn: () => orderService.list({
+      page,
+      search,
+      per_page: perPage || 12,
+      status: statusFilter || undefined,
+      payment_status: paymentStatusFilter || undefined,
+      fulfillment_status: fulfillmentStatusFilter || undefined,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
+      min_total: minTotal || undefined,
+      max_total: maxTotal || undefined,
+    }),
     placeholderData: (prev) => prev,
   })
 
   const { data: orderDetails, isLoading: detailLoading } = useQuery<Order>({
     queryKey: ['order-details', selectedOrderId],
-    queryFn: () => api.get(`/orders/${selectedOrderId}`).then(r => r.data.data),
+    queryFn: () => orderService.show(selectedOrderId!),
     enabled: selectedOrderId !== null,
   })
 
@@ -151,10 +155,10 @@ const OrdersPage: React.FC = () => {
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
             <ShoppingBag className="h-6 w-6 text-primary" />
-            <span>{t('title', 'ការបញ្ជាទិញតាមវេបសាយ')}</span>
+            <span>{t('title', 'Web Orders Management')}</span>
           </h1>
           <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            {t('description', 'គ្រប់គ្រងការបញ្ជាទិញតាមហាងអនឡាញ អាសយដ្ឋានដឹកជញ្ជូន និងការអនុវត្តការដឹកជញ្ជូន')}
+            {t('description', 'Manage online store orders, customer delivery addresses, and shipment fulfillments')}
           </p>
         </div>
       </div>
@@ -174,11 +178,11 @@ const OrdersPage: React.FC = () => {
                 <DollarSign className="w-4 h-4 text-emerald-500" />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t('webEcommerceRevenue', 'ចំណូលលក់តាមវេបសាយ')}
+                {t('webEcommerceRevenue', 'Web E-Commerce Revenue')}
               </span>
             </div>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-              {t('onlineStore', 'ហាងអនឡាញ')}
+              {t('onlineStore', 'Online Store')}
             </span>
           </div>
 
@@ -187,7 +191,7 @@ const OrdersPage: React.FC = () => {
               ${ordersList.reduce((acc, o) => acc + Number(o.grand_total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-1">
-              {t('onlineWebStoreSales', 'ការលក់ចេញពីហាងអនឡាញ')}
+              {t('onlineWebStoreSales', 'Web Store Inflow Sales')}
             </p>
           </div>
 
@@ -209,20 +213,20 @@ const OrdersPage: React.FC = () => {
                 <Clock className="w-4 h-4 text-amber-500" />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t('pendingAndProcessing', 'រង់ចាំ និង កំពុងដំណើរការ')}
+                {t('pendingAndProcessing', 'Pending & Processing')}
               </span>
             </div>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-              {t('needsAction', 'ត្រូវការសកម្មភាព')}
+              {t('needsAction', 'Needs Action')}
             </span>
           </div>
 
           <div className="my-1">
             <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
-              <span className="font-mono">{ordersList.filter((o) => ['pending', 'processing'].includes(o.status)).length}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'ការបញ្ជាទិញ')}</span>
+              <span className="font-mono">{ordersList.filter((o) => ['pending', 'processing'].includes(o.status)).length}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'Orders')}</span>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-1">
-              {t('awaitingDispatchDelivery', 'រង់ចាំការរៀបចំ និង ដឹកជញ្ជូន')}
+              {t('awaitingDispatchDelivery', 'Awaiting packaging & dispatch')}
             </p>
           </div>
 
@@ -244,20 +248,20 @@ const OrdersPage: React.FC = () => {
                 <PackageCheck className="w-4 h-4 text-blue-500" />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t('completedAndDelivered', 'បានបញ្ចប់ និង ដឹកជញ្ជូនរួច')}
+                {t('completedAndDelivered', 'Completed & Delivered')}
               </span>
             </div>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
-              {t('onTime', 'ទាន់ពេល 100%')}
+              {t('onTime', '100% On-Time')}
             </span>
           </div>
 
           <div className="my-1">
             <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
-              <span className="font-mono">{ordersList.filter((o) => ['completed', 'delivered'].includes(o.status)).length}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'ការបញ្ជាទិញ')}</span>
+              <span className="font-mono">{ordersList.filter((o) => ['completed', 'delivered'].includes(o.status)).length}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'Orders')}</span>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-1">
-              {t('successfullyDelivered', 'ដឹកជញ្ជូនបានជោគជ័យ')}
+              {t('successfullyDelivered', 'Successfully delivered to customer')}
             </p>
           </div>
 
@@ -279,20 +283,20 @@ const OrdersPage: React.FC = () => {
                 <ShoppingBag className="w-4 h-4 text-purple-500" />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t('totalWebOrders', 'ការបញ្ជាទិញសរុប')}
+                {t('totalWebOrders', 'Total Web Orders')}
               </span>
             </div>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
-              {t('liveEcommerce', 'អនឡាញ')}
+              {t('liveEcommerce', 'Live Store')}
             </span>
           </div>
 
           <div className="my-1">
             <div className="text-2xl xl:text-3xl font-black text-foreground tracking-tight">
-              <span className="font-mono">{pagination.total}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'ការបញ្ជាទិញ')}</span>
+              <span className="font-mono">{pagination.total}</span> <span className="text-sm font-bold text-muted-foreground">{t('ordersCount', 'Orders')}</span>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-1">
-              {t('customerCheckoutRegistry', 'កំណត់ត្រាការបញ្ជាទិញរបស់អតិថិជន')}
+              {t('customerCheckoutRegistry', 'Customer checkout orders record')}
             </p>
           </div>
 
@@ -392,10 +396,10 @@ const OrdersPage: React.FC = () => {
                   <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/40 gap-2">
                     <span className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium shrink-0">
                       <User size={12} className="text-primary shrink-0" />
-                      <span>{t('customer', 'អតិថិជន')}:</span>
+                      <span>{t('customer', 'Customer')}:</span>
                     </span>
                     <span className="font-bold text-foreground truncate text-right text-xs">
-                      {order.customer?.name || order.shipping_name || t('customer', 'អតិថិជន')}
+                      {order.customer?.name || order.shipping_name || t('customer', 'Customer')}
                     </span>
                   </div>
 
@@ -403,7 +407,7 @@ const OrdersPage: React.FC = () => {
                     <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1.5 shrink-0">
                         <Phone size={11} />
-                        <span>{t('contact', 'ទំនាក់ទំនង')}:</span>
+                        <span>{t('contact', 'Contact')}:</span>
                       </span>
                       <span className="font-mono font-medium text-foreground">{order.customer.phone}</span>
                     </div>
@@ -423,7 +427,7 @@ const OrdersPage: React.FC = () => {
                 <div className="flex items-baseline justify-between gap-2">
                   <div>
                     <span className="text-[10px] text-muted-foreground font-semibold block uppercase tracking-wider">
-                      {t('grandTotal', 'សរុបចុងក្រោយ')}
+                      {t('grandTotal', 'Grand Total')}
                     </span>
                     <span className="text-base sm:text-lg font-mono font-black text-foreground tracking-tight">
                       ${Number(order.grand_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -431,24 +435,24 @@ const OrdersPage: React.FC = () => {
                   </div>
                   <div className="text-right text-[10px] text-muted-foreground space-y-0.5">
                     {Number(order.shipping_cost || 0) > 0 && (
-                      <div>{t('shipping', 'ដឹកជញ្ជូន')}: ${Number(order.shipping_cost).toFixed(2)}</div>
+                      <div>{t('shipping', 'Shipping')}: ${Number(order.shipping_cost).toFixed(2)}</div>
                     )}
                     {Number(order.discount_amount || 0) > 0 && (
-                      <div className="text-emerald-600 dark:text-emerald-400">-{t('disc', 'បញ្ចុះ')}: ${Number(order.discount_amount).toFixed(2)}</div>
+                      <div className="text-emerald-600 dark:text-emerald-400">-{t('disc', 'Discount')}: ${Number(order.discount_amount).toFixed(2)}</div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <span className="text-[10px] font-semibold text-muted-foreground">
-                    {t('fulfillment', 'ការដឹកជញ្ជូន')}: <span className="text-foreground font-bold">{t(order.fulfillment_status as any) || order.fulfillment_status || t('unfulfilled', 'មិនទាន់បំពេញ')}</span>
+                    {t('fulfillment', 'Fulfillment')}: <span className="text-foreground font-bold">{t(order.fulfillment_status as any) || order.fulfillment_status || t('unfulfilled', 'Unfulfilled')}</span>
                   </span>
                   <button
                     onClick={() => setSelectedOrderId(order.id)}
                     className="h-8 px-3 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
                   >
                     <Eye size={12} />
-                    <span>{t('orderDetails', 'ពិនិត្យលម្អិត')}</span>
+                    <span>{t('orderDetails', 'View Details')}</span>
                   </button>
                 </div>
               </div>
@@ -475,11 +479,11 @@ const OrdersPage: React.FC = () => {
         open={filterDrawerOpen}
         onClose={() => setFilterDrawerOpen(false)}
         statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
+        setStatusFilter={(val) => setStatusFilter(val || '')}
         paymentStatusFilter={paymentStatusFilter}
-        setPaymentStatusFilter={setPaymentStatusFilter}
+        setPaymentStatusFilter={(val) => setPaymentStatusFilter(val || '')}
         fulfillmentStatusFilter={fulfillmentStatusFilter}
-        setFulfillmentStatusFilter={setFulfillmentStatusFilter}
+        setFulfillmentStatusFilter={(val) => setFulfillmentStatusFilter(val || '')}
         startDate={dateFrom}
         setStartDate={setDateFrom}
         endDate={dateTo}
@@ -497,7 +501,7 @@ const OrdersPage: React.FC = () => {
       <AnimatePresence>
         {selectedOrderId !== null && (
           <OrdersDetailDrawer
-            order={orderDetails}
+            order={orderDetails as any}
             isLoading={detailLoading}
             onClose={() => setSelectedOrderId(null)}
           />

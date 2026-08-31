@@ -4,9 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { AnimatePresence } from 'framer-motion'
 import {
-  Users, Plus, Search, Filter, RefreshCw, Download, Settings, X, UsersRound, MapPin, Trash2, AlertCircle
+  Users, Plus, Search, Filter, RefreshCw, Download, Settings, X, UsersRound, MapPin, Trash2, AlertCircle, CheckCircle2, ShieldAlert, ShieldCheck, UserX
 } from 'lucide-react'
-import api from '@/api/client'
+import { customerService } from '@/services/customerService'
+import { companyService } from '@/services/companyService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -14,9 +16,10 @@ import ResetButton from '@/components/shared/ResetButton'
 import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
-import { HeaderActionsGroup, AddButton, ExportButton } from '@/components/common'
+import { HeaderActionsGroup, AddButton, ExportButton, ImportButton } from '@/components/common'
 import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
 import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
+import type { ImportResult } from '@/components/shared/CsvImportModal'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { downloadCsv } from '@/utils/export'
@@ -29,6 +32,9 @@ import { CustomerFilterDrawer } from './components/CustomerFilterDrawer'
 import { CustomerDetailDrawer } from './components/CustomerDetailDrawer'
 import { CustomerFormModal } from './components/CustomerFormModal'
 import { CustomerTableSection } from './components/CustomerTableSection'
+import { CustomerImportModal } from './components/CustomerImportModal'
+import { CustomerDebtModal } from './components/CustomerDebtModal'
+import { CustomerStatementPrintModal } from './components/CustomerStatementPrintModal'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import type { Customer, CustomerFormData } from './types'
 
@@ -39,17 +45,52 @@ const CustomersPage: React.FC = () => {
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const activeTab = (searchParams.get('workspaceTab') as 'customers' | 'groups' | 'addresses') || 'customers'
 
+  const activeTab = searchParams.get('tab') || 'customers'
   const setActiveTab = (tab: string) => {
-    setSelectedRows([])
-    if (tab === 'customers') {
-      setSearchParams({})
-    } else {
-      setSearchParams({ workspaceTab: tab })
-    }
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('tab', tab)
+      return next
+    })
   }
 
+  // Filters & State
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [groupIdFilter, setGroupIdFilter] = useState<string>('')
+  const [genderFilter, setGenderFilter] = useState<string>('')
+  const [rfmFilter, setRfmFilter] = useState<string>('')
+  const [paymentTermsFilter, setPaymentTermsFilter] = useState<string>('')
+  const [creditHoldFilter, setCreditHoldFilter] = useState<string>('')
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [debtCustomer, setDebtCustomer] = useState<Customer | null>(null)
+  const [statementCustomer, setStatementCustomer] = useState<Customer | null>(null)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [viewCustomer, setViewCustomer] = useState<Customer | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoAction, setPhotoAction] = useState<'keep' | 'remove' | 'change'>('keep')
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    name: true,
+    email: true,
+    group: true,
+    credit: true,
+    wallet: true,
+    totalSpent: true,
+    orderCount: true,
+    status: true,
+  })
+  const [groupsActions, setGroupsActions] = useState<{ openAdd?: () => void; exportData?: () => void } | null>(null)
+  const [addressesActions, setAddressesActions] = useState<{ openAdd?: () => void; exportData?: () => void } | null>(null)
   const {
     page,
     setPage,
@@ -59,52 +100,24 @@ const CustomersPage: React.FC = () => {
     setSearch,
     debouncedSearch,
     reset: resetPagination,
-    adjustAfterDelete,
-  } = useServerPagination({ storageKey: 'customers' })
+    adjustAfterDelete
+  } = useServerPagination({ storageKey: 'customers-portal' })
 
-  // Bulk selection states
-  const [selectedRows, setSelectedRows] = useState<number[]>([])
-  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
-
-  // Modals & Drawers
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
-  const [viewCustomer, setViewCustomer] = useState<Customer | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
-  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    name: true,
-    email: true,
-    phone: true,
-    group: true,
-    totalSpent: true,
-    orderCount: true,
-    loyaltyPoints: true,
-    status: true,
-    actions: true,
-  })
-
-  // Filter States
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [groupIdFilter, setGroupIdFilter] = useState('')
-  const [genderFilter, setGenderFilter] = useState('')
-
-  // Subtab Action Delegators
-  const [groupsActions, setGroupsActions] = useState<{ openAdd: () => void; exportData: () => void } | null>(null)
-  const [addressesActions, setAddressesActions] = useState<{ openAdd: () => void; exportData: () => void } | null>(null)
-
-  // Photo upload states
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoAction, setPhotoAction] = useState<'keep' | 'remove' | 'change'>('keep')
+  const isFilterActive = 
+    (statusFilter !== 'all' && statusFilter !== '') || 
+    Boolean(groupIdFilter) || 
+    Boolean(genderFilter) || 
+    Boolean(rfmFilter) || 
+    Boolean(paymentTermsFilter) || 
+    Boolean(creditHoldFilter)
 
   // React Hook Form
   const {
     register,
     handleSubmit,
-    reset,
-    watch,
+    reset: resetForm,
     setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<CustomerFormData>({
     defaultValues: {
@@ -116,8 +129,14 @@ const CustomersPage: React.FC = () => {
       phone: '',
       gender: '',
       birth_date: '',
+      payment_terms: 'prepaid',
       credit_limit: '1000',
+      is_credit_hold: false,
+      wallet_balance: '0',
       tax_number: '',
+      tax_branch_code: '00001',
+      rfm_segment: 'new',
+      tags: '',
       notes: '',
       is_active: true
     }
@@ -126,46 +145,48 @@ const CustomersPage: React.FC = () => {
   // Queries
   const { data: companies } = useQuery({
     queryKey: ['companies-list-dropdown'],
-    queryFn: () => api.get('/companies', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getCompanies({ per_page: 100 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: groups } = useQuery({
     queryKey: ['customer-groups-list'],
-    queryFn: () => api.get('/customer-groups', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => customerService.groups({ per_page: 100 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: users } = useQuery({
     queryKey: ['users-list-dropdown'],
-    queryFn: () => api.get('/users', { params: { per_page: 200 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 200 }).then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['customers', page, debouncedSearch, perPage, statusFilter, groupIdFilter, genderFilter],
-    queryFn: () => api.get('/customers', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        status: statusFilter,
-        customer_group_id: groupIdFilter,
-        gender: genderFilter,
-      }
-    }).then(r => r.data),
+    queryKey: ['customers', page, debouncedSearch, perPage, statusFilter, groupIdFilter, genderFilter, rfmFilter, paymentTermsFilter, creditHoldFilter],
+    queryFn: () => customerService.list({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      status: statusFilter === 'all' ? '' : statusFilter,
+      customer_group_id: groupIdFilter,
+      gender: genderFilter,
+      rfm_segment: rfmFilter,
+      payment_terms: paymentTermsFilter,
+      is_credit_hold: creditHoldFilter,
+    }),
     placeholderData: (prev) => prev,
     enabled: activeTab === 'customers',
   })
 
   // Top stats cards remain active across tab changes for enterprise CRM overview
   const { data: statsData } = useQuery({
-    queryKey: ['customers-stats', debouncedSearch, statusFilter, groupIdFilter, genderFilter],
-    queryFn: () => api.get('/customers/stats', {
-      params: {
-        search: debouncedSearch,
-        status: statusFilter,
-        customer_group_id: groupIdFilter,
-        gender: genderFilter,
-      }
-    }).then(r => r.data.data),
+    queryKey: ['customers-stats', debouncedSearch, statusFilter, groupIdFilter, genderFilter, rfmFilter, paymentTermsFilter, creditHoldFilter],
+    queryFn: () => customerService.getStats({
+      search: debouncedSearch,
+      status: statusFilter === 'all' ? '' : statusFilter,
+      customer_group_id: groupIdFilter,
+      gender: genderFilter,
+      rfm_segment: rfmFilter,
+      payment_terms: paymentTermsFilter,
+      is_credit_hold: creditHoldFilter,
+    }),
   })
 
   const customers: Customer[] = data?.data ?? []
@@ -173,7 +194,7 @@ const CustomersPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (formData: FormData) => api.post('/customers', formData, {
+    mutationFn: (formData: FormData) => customerService.create(formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
     onSuccess: () => {
@@ -186,7 +207,7 @@ const CustomersPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormData }) => api.post(`/customers/${id}`, data, {
+    mutationFn: ({ id, data }: { id: number; data: FormData }) => customerService.update(id, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
     onSuccess: () => {
@@ -199,7 +220,7 @@ const CustomersPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/customers/${id}`),
+    mutationFn: (id: number) => customerService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
@@ -214,7 +235,7 @@ const CustomersPage: React.FC = () => {
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/customers/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => customerService.bulkDelete(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
       qc.invalidateQueries({ queryKey: ['customers-stats'] })
@@ -228,6 +249,59 @@ const CustomersPage: React.FC = () => {
       setBulkDeleteConfirmOpen(false)
     }
   })
+
+  const bulkActivateMutation = useMutation({
+    mutationFn: (ids: number[]) => customerService.bulkActivate(ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
+      toast.success(t('customers.bulkActivateSuccess', 'Successfully activated selected customers.'))
+      setSelectedRows([])
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to activate selected customers.'))
+    }
+  })
+
+  const bulkDeactivateMutation = useMutation({
+    mutationFn: (ids: number[]) => customerService.bulkDeactivate(ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
+      toast.success(t('customers.bulkDeactivateSuccess', 'Successfully deactivated selected customers.'))
+      setSelectedRows([])
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to deactivate selected customers.'))
+    }
+  })
+
+  const bulkToggleCreditHoldMutation = useMutation({
+    mutationFn: ({ ids, isHold }: { ids: number[]; isHold: boolean }) =>
+      customerService.bulkToggleCreditHold(ids, isHold),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
+      if (variables.isHold) {
+        toast.success(t('customers.bulkLockCreditSuccess', 'Successfully placed selected customers on credit hold.'))
+      } else {
+        toast.success(t('customers.bulkUnlockCreditSuccess', 'Successfully unlocked credit for selected customers.'))
+      }
+      setSelectedRows([])
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('toast.error', 'Failed to update credit hold.'))
+    }
+  })
+
+  // Selected customer states for smart contextual bulk action bar
+  const selectedCustomers = React.useMemo(() => {
+    return customers.filter((c) => selectedRows.includes(c.id))
+  }, [customers, selectedRows])
+
+  const hasInactive = selectedCustomers.some((c) => !c.is_active)
+  const hasActive = selectedCustomers.some((c) => c.is_active)
+  const allCreditHold = selectedCustomers.length > 0 && selectedCustomers.every((c) => c.is_credit_hold)
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -322,7 +396,7 @@ const CustomersPage: React.FC = () => {
           c.name || '',
           c.email || '',
           c.phone || '',
-          c.group?.name || t('customers.standardGroup', 'Standard'),
+          c.group?.name || '',
           c.total_spent || 0,
           c.order_count || 0,
           c.loyalty_points || 0,
@@ -342,8 +416,46 @@ const CustomersPage: React.FC = () => {
     setStatusFilter('all')
     setGroupIdFilter('')
     setGenderFilter('')
+    setRfmFilter('')
+    setPaymentTermsFilter('')
+    setCreditHoldFilter('')
     setSelectedRows([])
     resetPagination()
+  }
+
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!importFile) {
+      toast.error(t('customers.selectFileAlert', 'Please select a CSV file before proceeding.'))
+      return
+    }
+
+    setImporting(true)
+    setImportResult(null)
+
+    const formData = new FormData()
+    formData.append('file', importFile)
+
+    try {
+      const res = await customerService.import(formData)
+      const payload = res?.data ?? res
+      setImportResult({
+        success_count: payload?.success_count ?? 0,
+        errors: payload?.errors ?? [],
+      })
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers-stats'] })
+      toast.success(t('customers.toast.importSuccess', { count: payload?.success_count ?? 0, defaultValue: `Successfully imported ${payload?.success_count ?? 0} customers.` }))
+    } catch (err: any) {
+      const errData = err?.response?.data
+      setImportResult({
+        success_count: errData?.data?.success_count ?? 0,
+        errors: errData?.errors ?? [err?.message || 'Import failed'],
+      })
+      toast.error(errData?.message || t('toast.error', 'Failed to import customers.'))
+    } finally {
+      setImporting(false)
+    }
   }
 
   return (
@@ -379,35 +491,43 @@ const CustomersPage: React.FC = () => {
         <HeaderActionsGroup>
           {activeTab === 'customers' ? (
             <>
+              <ImportButton
+                onClick={() => {
+                  setImportFile(null)
+                  setImportResult(null)
+                  setImportModalOpen(true)
+                }}
+                label={t('customers.importCsv', 'Import CSV')}
+              />
               <ExportButton
                 onClick={handleExport}
-                label={t('customers.exportCsv', 'នាំចេញ CSV')}
+                label={t('customers.exportCsv', 'Export CSV')}
               />
               <AddButton
                 onClick={openCreateModal}
-                label={t('customers.addCustomer', 'បន្ថែមអតិថិជន')}
+                label={t('customers.addCustomer', 'Add Customer')}
               />
             </>
           ) : activeTab === 'groups' ? (
             <>
               <ExportButton
                 onClick={() => groupsActions?.exportData?.()}
-                label={t('customers.exportCsv', 'នាំចេញ CSV')}
+                label={t('customers.exportCsv', 'Export CSV')}
               />
               <AddButton
                 onClick={() => groupsActions?.openAdd?.()}
-                label={t('customers.addGroup', 'បន្ថែមក្រុមអតិថិជន')}
+                label={t('customers.addGroup', 'Add Customer Group')}
               />
             </>
           ) : (
             <>
               <ExportButton
                 onClick={() => addressesActions?.exportData?.()}
-                label={t('customers.exportCsv', 'នាំចេញ CSV')}
+                label={t('customers.exportCsv', 'Export CSV')}
               />
               <AddButton
                 onClick={() => addressesActions?.openAdd?.()}
-                label={t('customers.addAddress', 'បន្ថែមអាសយដ្ឋាន')}
+                label={t('customers.addAddress', 'Add Address')}
               />
             </>
           )}
@@ -415,7 +535,15 @@ const CustomersPage: React.FC = () => {
       </div>
 
       {/* Top Overview Cards (Clean Design & Always Visible at top across tab changes) */}
-      <CustomerStatsCards stats={statsData} totalFallback={pagination.total} />
+      <CustomerStatsCards 
+        stats={statsData} 
+        totalFallback={pagination.total}
+        selectedRfm={rfmFilter}
+        onSelectRfm={(seg) => {
+          setRfmFilter(seg)
+          setPage(1)
+        }}
+      />
 
       {/* Sub-tabs Navigation */}
       <WorkspaceTabs
@@ -442,27 +570,83 @@ const CustomersPage: React.FC = () => {
             onClear={() => setSelectedRows([])}
             deleteLabel={t('customers.deleteSelected', t('common.deleteSelected', 'Delete Selected'))}
             deleteLoading={bulkDeleteMutation.isPending}
+            extraActions={
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Dynamic Status: Only show Activate if there are inactive selected */}
+                {hasInactive && (
+                  <button
+                    type="button"
+                    onClick={() => bulkActivateMutation.mutate(selectedRows)}
+                    disabled={bulkActivateMutation.isPending}
+                    className="h-8 px-3 text-xs font-semibold rounded-xl bg-emerald-600/90 text-white hover:bg-emerald-600 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs active:scale-[0.98]"
+                    title={t('common.activate', 'Activate')}
+                  >
+                    <CheckCircle2 size={13} />
+                    <span>{t('common.activate', 'Activate')}</span>
+                  </button>
+                )}
+
+                {/* Dynamic Status: Only show Deactivate if there are active selected */}
+                {hasActive && (
+                  <button
+                    type="button"
+                    onClick={() => bulkDeactivateMutation.mutate(selectedRows)}
+                    disabled={bulkDeactivateMutation.isPending}
+                    className="h-8 px-3 text-xs font-semibold rounded-xl bg-amber-600/90 text-white hover:bg-amber-600 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs active:scale-[0.98]"
+                    title={t('common.deactivate', 'Deactivate')}
+                  >
+                    <UserX size={13} />
+                    <span>{t('common.deactivate', 'Deactivate')}</span>
+                  </button>
+                )}
+
+                {/* Dynamic Credit Hold: Toggle between Unlock Credit and Lock Credit */}
+                {allCreditHold ? (
+                  <button
+                    type="button"
+                    onClick={() => bulkToggleCreditHoldMutation.mutate({ ids: selectedRows, isHold: false })}
+                    disabled={bulkToggleCreditHoldMutation.isPending}
+                    className="h-8 px-3 text-xs font-semibold rounded-xl bg-teal-600/90 text-white hover:bg-teal-600 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs active:scale-[0.98]"
+                    title={t('customers.unlockCredit', 'Unlock Credit')}
+                  >
+                    <ShieldCheck size={13} />
+                    <span>{t('customers.unlockCredit', 'Unlock Credit')}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => bulkToggleCreditHoldMutation.mutate({ ids: selectedRows, isHold: true })}
+                    disabled={bulkToggleCreditHoldMutation.isPending}
+                    className="h-8 px-3 text-xs font-semibold rounded-xl bg-rose-600/90 text-white hover:bg-rose-600 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs active:scale-[0.98]"
+                    title={t('customers.lockCredit', 'Lock Credit')}
+                  >
+                    <ShieldAlert size={13} />
+                    <span>{t('customers.lockCredit', 'Credit Hold')}</span>
+                  </button>
+                )}
+              </div>
+            }
           />
 
           {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-sm print:hidden">
-            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto flex-1">
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm print:hidden">
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto flex-1">
               <div className="relative min-w-[280px] sm:min-w-[340px] md:w-96 max-w-md flex-1">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   placeholder={t('customers.searchPlaceholder', 'Search customer name, email, phone...')}
-                  className="w-full h-10 pl-10 pr-9 text-xs sm:text-sm rounded-xl border border-border bg-card hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-sm font-medium"
+                  className="w-full h-10 min-h-[40px] pl-9 pr-8 text-xs sm:text-[13px] rounded-lg border border-border/80 bg-background hover:border-muted-foreground/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground shadow-xs font-medium"
                 />
                 {search && (
                   <button
                     onClick={() => { setSearch(''); setPage(1); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
                     type="button"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 )}
               </div>
@@ -470,16 +654,16 @@ const CustomersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFilterDrawerOpen(true)}
-                className={`inline-flex items-center gap-2 h-10 px-3.5 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
-                  (statusFilter !== 'all' || groupIdFilter || genderFilter)
+                className={`inline-flex items-center gap-1.5 h-10 min-h-[40px] px-3.5 text-xs sm:text-[13px] font-medium rounded-lg border transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer select-none shrink-0 ${
+                  isFilterActive
                     ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
-                    : 'border-border bg-card hover:bg-muted/80 text-foreground'
+                    : 'border-border/80 bg-background hover:bg-muted text-foreground'
                 }`}
               >
-                <Filter size={15} className={(statusFilter !== 'all' || groupIdFilter || genderFilter) ? 'text-primary' : 'text-muted-foreground'} />
+                <Filter size={14} className={isFilterActive ? 'text-primary' : 'text-muted-foreground'} />
                 <span>{t('common.filter', 'Filter')}</span>
-                {(statusFilter !== 'all' || groupIdFilter || genderFilter) && (
-                  <span className="w-2 h-2 rounded-full bg-primary" />
+                {isFilterActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 )}
               </button>
 
@@ -490,21 +674,21 @@ const CustomersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => qc.invalidateQueries({ queryKey: ['customers'] })}
-                className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card hover:bg-muted/80 transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
+                className="h-10 w-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground border border-border/80 bg-background hover:bg-muted transition-all duration-200 shadow-xs hover:shadow active:scale-[0.98] cursor-pointer shrink-0"
                 title={t('common.refresh', 'Refresh')}
               >
-                <RefreshCw size={15} />
+                <RefreshCw size={14} />
               </button>
 
               <ColumnSettingsPopover
                 columns={[
-                  { key: 'name', label: t('customers.name', 'Customer Name') },
-                  { key: 'email', label: t('customers.email', 'Email') },
-                  { key: 'phone', label: t('customers.phone', 'Phone') },
-                  { key: 'group', label: t('customers.customerGroup', 'Group') },
+                  { key: 'name', label: t('customers.name', 'Customer Profile') },
+                  { key: 'email', label: t('customers.email', 'Email / Phone') },
+                  { key: 'group', label: t('customers.customerGroup', 'Group & Segment') },
+                  { key: 'credit', label: t('customers.creditAndTerms', 'Credit & Terms') },
+                  { key: 'wallet', label: t('customers.walletAndPoints', 'Wallet & Points') },
                   { key: 'totalSpent', label: t('customers.totalSpent', 'Total Spent') },
                   { key: 'orderCount', label: t('customers.ordersCount', 'Orders') },
-                  { key: 'loyaltyPoints', label: t('customers.loyaltyPoints', 'Loyalty Points') },
                   { key: 'status', label: t('common.status', 'Status') },
                 ]}
                 visibleColumns={visibleColumns}
@@ -523,6 +707,12 @@ const CustomersPage: React.FC = () => {
             setGroupIdFilter={setGroupIdFilter}
             genderFilter={genderFilter}
             setGenderFilter={setGenderFilter}
+            rfmFilter={rfmFilter}
+            setRfmFilter={setRfmFilter}
+            paymentTermsFilter={paymentTermsFilter}
+            setPaymentTermsFilter={setPaymentTermsFilter}
+            creditHoldFilter={creditHoldFilter}
+            setCreditHoldFilter={setCreditHoldFilter}
             groups={groups || []}
             onReset={resetAllFilters}
           />
@@ -539,6 +729,8 @@ const CustomersPage: React.FC = () => {
             openEditModal={openEditModal}
             setViewCustomer={setViewCustomer}
             setDeleteTarget={setDeleteTarget}
+            onSettleDebt={(c) => setDebtCustomer(c)}
+            onPrintStatement={(c) => setStatementCustomer(c)}
           />
 
           <Pagination
@@ -601,6 +793,39 @@ const CustomersPage: React.FC = () => {
             loading={bulkDeleteMutation.isPending}
             onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
             onCancel={() => setBulkDeleteConfirmOpen(false)}
+          />
+
+          {/* Global CSV Import Modal */}
+          <CustomerImportModal
+            isOpen={importModalOpen}
+            onClose={() => {
+              setImportModalOpen(false)
+              setImportFile(null)
+              setImportResult(null)
+            }}
+            importFile={importFile}
+            setImportFile={setImportFile}
+            isImporting={importing}
+            importResult={importResult}
+            onSubmit={handleImportSubmit}
+          />
+
+          {/* Quick Debt Settlement Modal */}
+          <CustomerDebtModal
+            isOpen={!!debtCustomer}
+            onClose={() => setDebtCustomer(null)}
+            customer={debtCustomer}
+            onSuccess={() => {
+              qc.invalidateQueries({ queryKey: ['customers'] })
+              qc.invalidateQueries({ queryKey: ['customers-stats'] })
+            }}
+          />
+
+          {/* Customer Statement GlobalPrint Modal */}
+          <CustomerStatementPrintModal
+            isOpen={!!statementCustomer}
+            onClose={() => setStatementCustomer(null)}
+            customer={statementCustomer}
           />
         </>
       )}

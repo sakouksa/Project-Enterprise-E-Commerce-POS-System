@@ -6,7 +6,9 @@ import {
   Package, Plus, Search, Filter, RefreshCw, Download, Upload, Settings, Trash2, X,
   FolderTree, Sparkles, Scale, SlidersHorizontal, Receipt
 } from 'lucide-react'
-import api from '@/api/client'
+import { productService } from '@/services/productService'
+import { categoryService } from '@/services/categoryService'
+import { brandService } from '@/services/brandService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -24,7 +26,7 @@ import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { formatCurrency } from '@/utils/formatters'
 
-import CategoriesPage from '@/modules/categories/pages/CategoriesPage'
+import CategoriesPage from '@/pages/categories/CategoriesPage'
 import BrandsPage from '@/pages/brands/BrandsPage'
 import UnitsPage from '@/pages/settings/UnitsPage'
 import AttributesPage from '@/pages/attributes/AttributesPage'
@@ -35,6 +37,8 @@ import { ProductFilterDrawer } from './components/ProductFilterDrawer'
 import { ProductDetailDrawer } from './components/ProductDetailDrawer'
 import { ProductImportModal } from './components/ProductImportModal'
 import { ProductTableSection } from './components/ProductTableSection'
+import { ProductBarcodePrintModal } from './components/ProductBarcodePrintModal'
+import { QuickStockAdjustModal } from './components/QuickStockAdjustModal'
 import { ColumnSettingsPopover } from '@/components/shared/ColumnSettingsPopover'
 import type { Product } from './types/productsPage.types'
 
@@ -83,6 +87,8 @@ const ProductsPage: React.FC = () => {
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<Product | null>(null)
+  const [barcodePrintProduct, setBarcodePrintProduct] = useState<Product | null>(null)
+  const [quickAdjustProduct, setQuickAdjustProduct] = useState<Product | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number | null; force: boolean; name?: string }>({
     open: false,
     id: null,
@@ -115,7 +121,7 @@ const ProductsPage: React.FC = () => {
   // Queries
   const { data: statsData } = useQuery({
     queryKey: ['products-dashboard-statistics'],
-    queryFn: () => api.get('/products/dashboard-statistics').then(r => r.data.data ?? r.data),
+    queryFn: () => productService.dashboardStatistics(),
     staleTime: 30000,
   })
 
@@ -125,21 +131,21 @@ const ProductsPage: React.FC = () => {
       statusFilter, categoryFilter, brandFilter, stockLevelFilter,
       priceMinFilter, priceMaxFilter, recycleBinMode
     ],
-    queryFn: () => api.get('/products', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-        status: recycleBinMode ? 'deleted' : statusFilter,
-        category_id: categoryFilter || undefined,
-        brand_id: brandFilter || undefined,
+    queryFn: () => productService.list({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      sort: sortBy,
+      order: sortOrder,
+      status: recycleBinMode ? 'deleted' : statusFilter,
+      category_id: categoryFilter || undefined,
+      brand_id: brandFilter || undefined,
+      ...((stockLevelFilter || priceMinFilter || priceMaxFilter) ? {
         inventory: stockLevelFilter || undefined,
         price_min: priceMinFilter || undefined,
         price_max: priceMaxFilter || undefined,
-      }
-    }).then(r => r.data),
+      } as any : {})
+    }),
     placeholderData: (prev) => prev,
     enabled: activeWorkspaceTab === 'products',
   })
@@ -150,12 +156,12 @@ const ProductsPage: React.FC = () => {
 
   const { data: categories } = useQuery({
     queryKey: ['categories-select'],
-    queryFn: () => api.get('/categories', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => categoryService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: brands } = useQuery({
     queryKey: ['brands-select'],
-    queryFn: () => api.get('/brands', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => brandService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const analytics = useMemo(() => {
@@ -191,7 +197,7 @@ const ProductsPage: React.FC = () => {
 
   // Mutations
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/products/${id}`),
+    mutationFn: (id: number) => productService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] })
       toast.success(t('toast.deleted'))
@@ -202,7 +208,7 @@ const ProductsPage: React.FC = () => {
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: number[]) => api.post('/products/bulk-delete', { ids }),
+    mutationFn: (ids: number[]) => productService.bulkDelete(ids),
     onSuccess: (_, ids) => {
       qc.invalidateQueries({ queryKey: ['products'] })
       toast.success(
@@ -222,7 +228,97 @@ const ProductsPage: React.FC = () => {
       )
   })
 
-  const handleExport = () => toast.info('Downloading products CSV export...')
+  // Duplicate Mutation
+  const duplicateMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      const copyName = `${product.name} (Copy)`
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+      const copySku = `${product.sku}-COPY-${randomSuffix}`
+
+      const payload: any = {
+        name: copyName,
+        sku: copySku,
+        barcode: product.barcode ? `${product.barcode}9` : null,
+        category_id: product.category?.id || (product as any).category_id || null,
+        brand_id: product.brand?.id || (product as any).brand_id || null,
+        unit_id: product.unit?.id || (product as any).unit_id || null,
+        tax_id: product.tax?.id || (product as any).tax_id || null,
+        cost_price: Number(product.cost_price || 0),
+        selling_price: Number(product.selling_price || 0),
+        compare_price: product.compare_price ? Number(product.compare_price) : null,
+        description: product.description || '',
+        short_description: product.short_description || '',
+        weight: product.weight ? Number(product.weight) : null,
+        length: product.length ? Number(product.length) : null,
+        width: product.width ? Number(product.width) : null,
+        height: product.height ? Number(product.height) : null,
+        track_inventory: product.track_inventory ?? true,
+        low_stock_threshold: product.low_stock_threshold || 5,
+        status: 'active',
+        is_featured: product.is_featured ?? false,
+        is_digital: product.is_digital ?? false,
+      }
+
+      return productService.create(payload)
+    },
+    onSuccess: (newProd) => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['products-dashboard-statistics'] })
+      toast.success(t('productDuplicateSuccess', 'Product duplicated successfully: "{{name}}"', { name: newProd?.name || 'Product' }))
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('productDuplicateFailed', 'Failed to duplicate product'))
+    }
+  })
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortOrder('asc')
+    }
+    setPage(1)
+  }
+
+  const handleExport = (exportOnlySelected = false) => {
+    const isExportingSelected = exportOnlySelected || selectedRows.length > 0
+    const exportItems = isExportingSelected
+      ? products.filter(p => selectedRows.includes(p.id))
+      : products
+
+    if (!exportItems || exportItems.length === 0) {
+      toast.error(t('common.noData', 'No data available to export'))
+      return
+    }
+
+    const headers = ['ID', 'Name', 'SKU', 'Barcode', 'Category', 'Brand', 'Selling Price ($)', 'Cost Price ($)', 'Stock', 'Status']
+    const rows = exportItems.map(p => [
+      p.id,
+      `"${(p.name || '').replace(/"/g, '""')}"`,
+      `"${(p.sku || '').replace(/"/g, '""')}"`,
+      `"${(p.barcode || '').replace(/"/g, '""')}"`,
+      `"${(p.category?.name || '').replace(/"/g, '""')}"`,
+      `"${(p.brand?.name || '').replace(/"/g, '""')}"`,
+      Number(p.selling_price || 0).toFixed(2),
+      Number(p.cost_price || 0).toFixed(2),
+      p.stock || 0,
+      p.status || (p as any).is_active ? 'active' : 'inactive'
+    ])
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', `products_${isExportingSelected ? 'selected_' : ''}export_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(
+      isExportingSelected
+        ? t('exportSelectedSuccess', 'Successfully exported {{count}} selected products to CSV!', { count: exportItems.length })
+        : t('exportSuccess', 'Successfully exported {{count}} products to CSV!', { count: exportItems.length })
+    )
+  }
 
   const handleImportSubmit = async () => {
     if (!importFile) return
@@ -261,7 +357,7 @@ const ProductsPage: React.FC = () => {
 
   return (
     <div className="space-y-5 print:p-0">
-      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Products' }]} />
+      <Breadcrumb items={[{ label: t('products', 'Products') }]} />
 
       {/* Hero Header */}
       <div className="bg-card border border-border p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
@@ -280,11 +376,15 @@ const ProductsPage: React.FC = () => {
             <>
               <ImportButton
                 onClick={() => setImportOpen(true)}
-                label={t('importCSV', 'នាំចូល CSV')}
+                label={t('importCSV', 'Import CSV')}
               />
               <ExportButton
-                onClick={handleExport}
-                label={t('exportCSV', 'នាំចេញ CSV')}
+                onClick={() => handleExport(false)}
+                label={
+                  selectedRows.length > 0
+                    ? `${t('exportSelectedCSV', 'Export Selected')} (${selectedRows.length})`
+                    : t('exportCSV', 'Export CSV')
+                }
               />
             </>
           )}
@@ -292,16 +392,16 @@ const ProductsPage: React.FC = () => {
             onClick={handleSubTabAddClick}
             label={
               activeWorkspaceTab === 'products'
-                ? t('addProduct', 'បន្ថែមទំនិញ')
+                ? t('addProduct', 'Add Product')
                 : activeWorkspaceTab === 'categories'
-                ? t('addCategory', 'បន្ថែមប្រភេទទំនិញ')
+                ? t('addCategory', 'Add Category')
                 : activeWorkspaceTab === 'brands'
-                ? t('addBrand', 'បន្ថែមម៉ាកយីហោ')
+                ? t('addBrand', 'Add Brand')
                 : activeWorkspaceTab === 'units'
-                ? t('addUnit', 'បន្ថែមឯកតារាប់')
+                ? t('addUnit', 'Add Unit')
                 : activeWorkspaceTab === 'attributes'
-                ? t('addAttribute', 'បន្ថែមគុណលក្ខណៈ')
-                : t('addTaxRule', 'បន្ថែមអត្រាពន្ធ')
+                ? t('addAttribute', 'Add Attribute')
+                : t('addTaxRule', 'Add Tax Rule')
             }
           />
         </HeaderActionsGroup>
@@ -446,9 +546,15 @@ const ProductsPage: React.FC = () => {
             recycleBinMode={recycleBinMode}
             selectedRows={selectedRows}
             setSelectedRows={setSelectedRows}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={handleSort}
             onView={(p) => setViewProduct(p)}
             onEdit={(p) => navigate(`/products/${p.id}/edit`)}
             onDelete={(p) => setDeleteConfirm({ open: true, id: p.id, force: false, name: p.name })}
+            onDuplicate={(p) => duplicateMutation.mutate(p)}
+            onPrintBarcode={(p) => setBarcodePrintProduct(p)}
+            onQuickStockAdjust={(p) => setQuickAdjustProduct(p)}
             onRestore={() => {}}
             onForceDelete={() => {}}
             formatCurrency={formatMoney}
@@ -468,6 +574,24 @@ const ProductsPage: React.FC = () => {
             product={viewProduct}
             onClose={() => setViewProduct(null)}
             onEdit={(p) => navigate(`/products/${p.id}/edit`)}
+            onDuplicate={(p) => duplicateMutation.mutate(p)}
+            onQuickStockAdjust={(p) => setQuickAdjustProduct(p)}
+            formatCurrency={formatMoney}
+          />
+
+          {/* Direct Barcode & Sticker Print Modal */}
+          <ProductBarcodePrintModal
+            isOpen={!!barcodePrintProduct}
+            onClose={() => setBarcodePrintProduct(null)}
+            product={barcodePrintProduct}
+            formatCurrency={formatMoney}
+          />
+
+          {/* Quick Stock Adjustment Modal */}
+          <QuickStockAdjustModal
+            isOpen={!!quickAdjustProduct}
+            onClose={() => setQuickAdjustProduct(null)}
+            product={quickAdjustProduct}
             formatCurrency={formatMoney}
           />
 

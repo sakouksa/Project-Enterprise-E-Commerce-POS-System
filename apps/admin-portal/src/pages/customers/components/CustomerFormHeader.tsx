@@ -22,18 +22,18 @@ export const CustomerFormHeader: React.FC<CustomerFormHeaderProps> = ({
     <FormHeader
       title={
         isEdit
-          ? t('customers.editCustomerTitle', 'កែសម្រួលអតិថិជន: {{name}}', { name: customerName || '' })
-          : t('customers.createCustomerTitle', 'បន្ថែមអតិថិជនថ្មី')
+          ? t('customers.editCustomerTitle', 'Edit Customer: {{name}}', { name: customerName || '' })
+          : t('customers.createCustomerTitle', 'Add New Customer')
       }
-      subtitle={t('customers.formSubtitle', 'គ្រប់គ្រង និងបំពេញព័ត៌មានអតិថិជនក្នុងប្រព័ន្ធ CRM')}
+      subtitle={t('customers.formSubtitle', 'Manage and complete customer profile in CRM')}
       icon={<User size={20} />}
       backPath="/customers"
-      backLabel={t('common.back', 'ត្រឡប់ក្រោយ')}
+      backLabel={t('common.back', 'Back')}
       isSubmitting={isSubmitting}
       submitLabel={
         isEdit
-          ? t('customers.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ')
-          : t('customers.saveCustomer', 'រក្សាទុកអតិថិជន')
+          ? t('customers.saveChanges', 'Save Changes')
+          : t('customers.saveCustomer', 'Save Customer')
       }
       onSubmit={onSubmit}
     />

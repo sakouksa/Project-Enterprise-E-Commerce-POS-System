@@ -2,7 +2,7 @@ import React from 'react'
 import { X, Receipt, User, ShieldCheck, CornerUpLeft, Loader2, CheckCircle2, Tag, DollarSign, CreditCard, FileText } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import StatusBadge from '@/components/common/StatusBadge'
+import { StatusBadge, CloseButton, CancelButton } from '@/components/common'
 
 interface SaleItem {
   id:               number
@@ -93,26 +93,21 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                {t('saleOrderDetail', 'ព័ត៌មានលម្អិតការលក់')}
+                {t('saleOrderDetail', 'Sale Order Details')}
               </h2>
               <p className="text-[11px] text-muted-foreground font-mono">
                 #{sale?.invoice_number || '—'}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+          <CloseButton onClose={onClose} size="md" color="rose" />
         </div>
 
         {/* Body */}
         {isLoading ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground font-medium">{t('loadingSaleOrderDetails', 'កំពុងដំណើរការព័ត៌មានលម្អិត...')}</p>
+            <p className="text-xs text-muted-foreground font-medium">{t('loadingSaleOrderDetails', 'Loading sale order details...')}</p>
           </div>
         ) : (
           <>
@@ -143,28 +138,28 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
               {/* Order Info Grid */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  {t('invoiceNumber', 'លេខវិក្កយបត្រ')} & {t('customer', 'អតិថិជន')}
+                  {t('invoiceNumber', 'Invoice Number')} & {t('customer', 'Customer')}
                 </h4>
                 <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs bg-card p-3.5 rounded-2xl border border-border/60">
                   <div>
-                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('invoiceNumber', 'លេខវិក្កយបត្រ')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('invoiceNumber', 'Invoice Number')}</span>
                     <span className="font-mono font-bold text-primary">#{sale?.invoice_number}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('date', 'កាលបរិច្ឆេទ')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('date', 'Date')}</span>
                     <span className="font-semibold text-foreground">
                       {sale?.created_at ? new Date(sale.created_at).toLocaleDateString() : sale?.date ? new Date(sale.date).toLocaleDateString() : '—'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('customer', 'អតិថិជន')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('customer', 'Customer')}</span>
                     <span className="font-bold text-foreground flex items-center gap-1">
                       <User size={12} className="text-muted-foreground" />
-                      {sale?.customer?.name || t('walkInCustomer', 'អតិថិជនដើរចូល')}
+                      {sale?.customer?.name || t('walkInCustomer', 'Walk-in Customer')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('cashier', 'អ្នកគិតប្រាក់')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('cashier', 'Cashier')}</span>
                     <span className="font-bold text-foreground flex items-center gap-1">
                       <ShieldCheck size={12} className="text-muted-foreground" />
                       {sale?.cashier?.name || t('superAdmin', 'Super Admin')}
@@ -172,13 +167,13 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
                   </div>
                   {sale?.payment_method && (
                     <div>
-                      <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('paymentMethod', 'វិធីទូទាត់')}</span>
+                      <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('paymentMethod', 'Payment Method')}</span>
                       <span className="font-bold text-foreground uppercase font-mono">{sale.payment_method.replace('_', ' ')}</span>
                     </div>
                   )}
                   {sale?.payment_status && (
                     <div>
-                      <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('paymentStatusLabel', 'ស្ថានភាពការទូទាត់')}</span>
+                      <span className="text-[10px] text-muted-foreground block font-medium mb-0.5">{t('paymentStatusLabel', 'Payment Status')}</span>
                       <span className="font-bold text-foreground capitalize">{sale.payment_status}</span>
                     </div>
                   )}
@@ -188,16 +183,16 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
               {/* Purchased Items */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  {t('purchasedItems', 'ទំនិញដែលបានទិញ')} ({itemsList.length})
+                  {t('purchasedItems', 'Purchased Items')} ({itemsList.length})
                 </h4>
                 <div className="border border-border/70 rounded-2xl overflow-hidden text-xs bg-card">
                   <table className="w-full text-left">
                     <thead className="bg-muted/40 text-[10px] font-bold text-muted-foreground uppercase border-b border-border/60">
                       <tr>
-                        <th className="p-3">{t('item', 'ទំនិញ')}</th>
-                        <th className="p-3 text-center">{t('qty', 'ចំនួន')}</th>
-                        <th className="p-3 text-right">{t('price', 'តម្លៃ')}</th>
-                        <th className="p-3 text-right">{t('total', 'សរុប')}</th>
+                        <th className="p-3">{t('item', 'Item')}</th>
+                        <th className="p-3 text-center">{t('qty', 'Qty')}</th>
+                        <th className="p-3 text-right">{t('price', 'Price')}</th>
+                        <th className="p-3 text-right">{t('total', 'Total')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
@@ -222,7 +217,7 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
                       {itemsList.length === 0 && (
                         <tr>
                           <td colSpan={4} className="p-6 text-center text-muted-foreground text-xs font-medium">
-                            {t('noSalesOrdersFound', 'រកមិនឃើញទំនិញ')}
+                            {t('noSalesOrdersFound', 'No items found')}
                           </td>
                         </tr>
                       )}
@@ -234,34 +229,34 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
               {/* Payment Summary */}
               <div className="space-y-3">
                 <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                  {t('paymentMethods', 'ការទូទាត់')}
+                  {t('paymentMethods', 'Payment Summary')}
                 </h4>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('subtotal', 'សរុបរង')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('subtotal', 'Subtotal')}</span>
                     <span className="font-extrabold font-mono text-foreground text-sm">${Number(sale?.subtotal || 0).toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('discount', 'បញ្ចុះតម្លៃ')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('discount', 'Discount')}</span>
                     <span className="font-extrabold font-mono text-rose-500 text-sm">-${Number(sale?.discount_amount || 0).toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('tax', 'ពន្ធ')}</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('tax', 'Tax')}</span>
                     <span className="font-extrabold font-mono text-foreground text-sm">${Number(sale?.tax_amount || 0).toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <span className="text-[10px] text-primary block font-bold uppercase tracking-wider mb-1">{t('grandTotal', 'សរុបចុងក្រោយ')}</span>
+                    <span className="text-[10px] text-primary block font-bold uppercase tracking-wider mb-1">{t('grandTotal', 'Grand Total')}</span>
                     <span className="font-black font-mono text-primary text-base">${Number(sale?.grand_total || 0).toFixed(2)}</span>
                   </div>
                   {sale?.paid_amount != null && sale.paid_amount > 0 && (
                     <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold uppercase tracking-wider mb-1">{t('paid', 'បានទូទាត់')}</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold uppercase tracking-wider mb-1">{t('paid', 'Paid')}</span>
                       <span className="font-extrabold font-mono text-emerald-600 dark:text-emerald-400 text-sm">${Number(sale.paid_amount).toFixed(2)}</span>
                     </div>
                   )}
                   {sale?.change_amount != null && sale.change_amount > 0 && (
                     <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                      <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('due', 'ប្រាក់អាប់')}</span>
+                      <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider mb-1">{t('due', 'Change Due')}</span>
                       <span className="font-extrabold font-mono text-foreground text-sm">${Number(sale.change_amount).toFixed(2)}</span>
                     </div>
                   )}
@@ -272,7 +267,7 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
               {sale?.notes && (
                 <div className="space-y-2">
                   <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5">
-                    {t('note', 'កំណត់ចំណាំ')}
+                    {t('note', 'Note')}
                   </h4>
                   <div className="p-3 rounded-xl bg-muted/20 border border-border/60 flex items-start gap-2">
                     <FileText size={14} className="text-muted-foreground mt-0.5 shrink-0" />
@@ -284,12 +279,7 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
 
             {/* Footer */}
             <div className="p-4 border-t border-border bg-card/90 backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
-              <button
-                onClick={onClose}
-                className="py-2.5 px-5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              >
-                {t('close', 'បិទ')}
-              </button>
+              <CancelButton onClick={onClose} label={t('close', 'Close')} />
               {sale?.status !== 'refunded' && sale?.status !== 'cancelled' && (
                 <button
                   onClick={onRefund}
@@ -300,7 +290,7 @@ export const SalesDetailDrawer: React.FC<SalesDetailDrawerProps> = ({
                     ? <Loader2 className="w-4 h-4 animate-spin" />
                     : <CornerUpLeft className="w-4 h-4" />
                   }
-                  {t('processReturnRefund', 'ដំណើរការការសងប្រាក់')}
+                  {t('processReturnRefund', 'Process Return & Refund')}
                 </button>
               )}
             </div>

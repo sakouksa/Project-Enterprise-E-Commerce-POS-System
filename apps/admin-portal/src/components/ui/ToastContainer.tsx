@@ -92,10 +92,17 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
     ? Math.max(0, Math.min(100, (remainingTime / toast.duration) * 100))
     : 0
 
+  const defaultTitles: Record<string, string> = {
+    success: t('common.success', 'ជោគជ័យ'),
+    error: t('common.error', 'កំហុស'),
+    warning: t('common.warning', 'ការព្រមាន'),
+    info: t('common.info', 'ព័ត៌មាន'),
+  }
+
   // Dynamically translate all toast contents based on the active language
   const resolvedTitle = toast.title
     ? translateString(toast.title)
-    : t(`errors.${toast.type}`, translateString(toast.type))
+    : (defaultTitles[toast.type] || translateString(toast.type))
 
   const resolvedMessage = toast.message
     ? translateString(toast.message)

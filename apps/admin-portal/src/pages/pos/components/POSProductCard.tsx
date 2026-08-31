@@ -41,7 +41,7 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
   const handleCardClick = () => {
     if (isOutOfStock) {
       sound.playError()
-      toast.error(t('productOutOfStock', `ទំនិញ "${product.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+      toast.error(t('productOutOfStock', `Product "${product.name}" is out of stock!`))
       return
     }
     sound.playClick()
@@ -52,7 +52,7 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
     e.stopPropagation()
     if (isOutOfStock) {
       sound.playError()
-      toast.error(t('productOutOfStock', `ទំនិញ "${product.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+      toast.error(t('productOutOfStock', `Product "${product.name}" is out of stock!`))
       return
     }
 
@@ -131,7 +131,7 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
         <div className="absolute bottom-2 left-2 z-10">
           {isOutOfStock ? (
             <span className="px-2 py-0.5 rounded-lg bg-rose-600 text-white font-extrabold text-[10px] shadow-sm flex items-center gap-1">
-              <Ban size={10} /> {t('outOfStock', 'អស់ពីស្តុក')}
+              <Ban size={10} /> {t('outOfStock', 'Out of Stock')}
             </span>
           ) : isLowStock ? (
             <span className="px-2 py-0.5 rounded-lg bg-amber-500 text-white font-extrabold text-[10px] shadow-sm">
@@ -184,10 +184,10 @@ export const POSProductCard: React.FC<POSProductCardProps> = ({
             disabled={true}
             onClick={handleAddClick}
             className="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 cursor-not-allowed shadow-none"
-            title={t('outOfStock', 'អស់ស្តុក')}
+            title={t('outOfStock', 'Out of Stock')}
           >
             <Ban size={12} className="text-rose-500" />
-            <span>{t('outOfStock', 'អស់ស្តុក')}</span>
+            <span>{t('outOfStock', 'Out of Stock')}</span>
           </button>
         ) : (
           <button

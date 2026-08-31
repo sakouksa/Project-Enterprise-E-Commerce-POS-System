@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { getAbsoluteImageUrl } from '@/utils/image'
 
-interface UserAvatarProps {
+export interface UserAvatarProps {
   src?: string | null
   name?: string | null
   className?: string

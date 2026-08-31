@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
+import { CloseButton } from '@/components/common'
 import type { NotificationItem, NotificationLogsResponse } from '@/types/notification'
 import notificationService from '@/services/notificationService'
 
@@ -72,12 +73,7 @@ const NotificationDetailDrawer: React.FC<NotificationDetailDrawerProps> = ({ ope
         </div>
       }
       extra={
-        <button
-          onClick={onClose}
-          className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <CloseButton onClose={onClose} size="md" color="rose" />
       }
       className="enterprise-drawer"
     >

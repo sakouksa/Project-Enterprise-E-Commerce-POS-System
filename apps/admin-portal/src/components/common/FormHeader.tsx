@@ -16,14 +16,14 @@ export interface FormHeaderProps {
   /** Leading Icon (optional) */
   icon?: React.ReactNode
   /** Color theme variant for icon container (legacy support) */
-  iconVariant?: FormHeaderIconVariant
+  iconBg?: string
   /** Optional Breadcrumb navigation items */
   breadcrumbs?: BreadcrumbItem[]
   /** Optional Status Badge on right of title */
   statusBadge?: React.ReactNode
-  /** Path for Back button (e.g. "/customers", "/suppliers", "/products"). If not provided, calls onBack or navigate(-1) */
+  /** Path for Back button. If not provided, calls onBack or navigate(-1) */
   backPath?: string
-  /** Label for Back button. Defaults to t('common.back', 'ត្រឡប់ក្រោយ') */
+  /** Label for Back button. Defaults to t('common.back', 'Back') */
   backLabel?: string
   /** Whether to show the back button (defaults to true) */
   showBack?: boolean
@@ -33,26 +33,23 @@ export interface FormHeaderProps {
   isSubmitting?: boolean
   /** Handler for submit button if header contains submit trigger */
   onSubmit?: (e: React.FormEvent) => void
-  /** Label for submit button */
+  /** Custom label for submit button if showSubmit is true */
   submitLabel?: string
-  /** Custom icon for submit button (defaults to Check) */
-  submitIcon?: React.ReactNode
-  /** Whether to show the submit button in the header (defaults to true on isEdit, false on create) */
+  /** Whether to render submit button directly inside header */
   showSubmit?: boolean
-  /** Extra custom action buttons (e.g. Live Preview, Reset, Price History, Audit Logs) */
+  /** Custom icon for submit button */
+  submitIcon?: React.ReactNode
+  /** Additional action buttons rendered beside Back/Submit buttons */
   extraActions?: React.ReactNode
-  /** Make header sticky at top (optional) */
-  sticky?: boolean
-  /** Custom children element rendered in the header */
-  children?: React.ReactNode
-  /** Custom CSS classes for the outer wrapper */
+  /** Additional classes for container */
   className?: string
 }
 
 export const FormHeader: React.FC<FormHeaderProps> = ({
   title,
   subtitle,
-  isEdit,
+  icon,
+  iconBg = 'bg-primary/10 text-primary border-primary/20',
   breadcrumbs,
   statusBadge,
   backPath,
@@ -62,16 +59,14 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
   isSubmitting = false,
   onSubmit,
   submitLabel,
-  submitIcon,
   showSubmit,
+  isEdit = false,
+  submitIcon,
   extraActions,
-  children,
   className = '',
 }) => {
-  const { t } = useTranslation(['common'])
   const navigate = useNavigate()
-
-  const shouldShowSubmit = showSubmit ?? false
+  const { t } = useTranslation(['common'])
 
   const handleBack = () => {
     if (onBack) {
@@ -83,34 +78,39 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
     }
   }
 
+  // Determine if submit button should be rendered
+  const shouldShowSubmit = showSubmit !== undefined ? showSubmit : !!onSubmit
+
   return (
-    <div className={`space-y-3 sm:space-y-3.5 ${className}`}>
-      {/* ─── Breadcrumb Navigation ─── */}
+    <div className={`p-4 sm:p-5 md:p-6 bg-card border-b border-border/80 dark:border-slate-800 space-y-3.5 transition-all shadow-2xs ${className}`}>
+      {/* Top: Breadcrumb Bar */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="px-0.5">
-          <Breadcrumb items={breadcrumbs} />
-        </div>
+        <Breadcrumb items={breadcrumbs} className="text-xs" />
       )}
 
-      {/* ─── Clean Modern Form Header Bar (Unboxed & Elegant) ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-0.5">
-        {/* Left: Clean Title, Status Badge & Subtitle */}
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground dark:text-slate-100 truncate">
-              {title}
-            </h1>
-            {statusBadge && <div className="shrink-0">{statusBadge}</div>}
-          </div>
-          {subtitle && (
-            <p className="text-xs sm:text-[13px] text-muted-foreground dark:text-slate-400 leading-relaxed max-w-3xl">
-              {subtitle}
-            </p>
+      {/* Main Header Content: Title, Subtitle, and Right Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Left: Icon + Title + Status Badge */}
+        <div className="flex items-center gap-3 min-w-0">
+          {icon && (
+            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center border shadow-xs shrink-0 ${iconBg}`}>
+              {icon}
+            </div>
           )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-base sm:text-lg md:text-xl font-black text-foreground tracking-tight truncate">
+                {title}
+              </h1>
+              {statusBadge}
+            </div>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium line-clamp-1">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
-
-        {/* Custom children slot between left and right if provided */}
-        {children && <div className="flex items-center gap-2 min-w-0">{children}</div>}
 
         {/* Right: Modern Action Controls Group */}
         <div className="flex items-center gap-2 self-start md:self-center flex-wrap shrink-0">
@@ -122,14 +122,14 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
               className="h-9 px-3.5 sm:px-4 rounded-xl border border-border/80 dark:border-slate-700 bg-card dark:bg-slate-900/90 text-muted-foreground dark:text-slate-300 hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-slate-800 text-xs sm:text-[13px] font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95"
             >
               <ArrowLeft size={14} />
-              <span>{backLabel || t('common.back', 'ត្រឡប់ក្រោយ')}</span>
+              <span>{backLabel || t('common.back', 'Back')}</span>
             </button>
           )}
 
           {/* Extra Custom Action Buttons (e.g. Live Preview) */}
           {extraActions}
 
-          {/* Submit Button (Only when explicitly requested with showSubmit={true}) */}
+          {/* Submit Button */}
           {shouldShowSubmit && (
             <button
               type={onSubmit ? 'button' : 'submit'}
@@ -142,7 +142,7 @@ export const FormHeader: React.FC<FormHeaderProps> = ({
               ) : (
                 submitIcon || <Check size={14} strokeWidth={2.5} />
               )}
-              <span>{submitLabel || (isEdit ? t('common.saveChanges', 'រក្សាទុកការផ្លាស់ប្តូរ') : t('common.save', 'រក្សាទុក'))}</span>
+              <span>{submitLabel || (isEdit ? t('common.saveChanges', 'Save Changes') : t('common.save', 'Save'))}</span>
             </button>
           )}
         </div>

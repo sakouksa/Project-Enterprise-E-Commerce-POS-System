@@ -12,7 +12,7 @@ import {
   Plus, Search, Edit2, Trash2, RefreshCw, X, Warehouse,
   ToggleLeft, ToggleRight, Eye, Phone, User, MapPin, Loader2, Star, Check
 } from 'lucide-react'
-import api from '@/api/client'
+import { companyService } from '@/services/companyService'
 import { useToast } from '@/hooks/useToast'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
@@ -65,17 +65,17 @@ const WarehousesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
 
   const { data: branches } = useQuery({
     queryKey: ['branches-list'],
-    queryFn: () => api.get('/branches').then(r => r.data.data ?? []),
+    queryFn: () => companyService.getBranches().then(r => r.data ?? []),
   })
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['warehouses', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/warehouses', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => companyService.getWarehouses({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const createMutation = useMutation({
-    mutationFn: (newWarehouse: any) => api.post('/warehouses', newWarehouse),
+    mutationFn: (newWarehouse: any) => companyService.createWarehouse(newWarehouse),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['warehouses'] })
       toast.success('Warehouse created successfully.')
@@ -88,7 +88,7 @@ const WarehousesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/warehouses/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => companyService.updateWarehouse(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['warehouses'] })
       toast.success('Warehouse updated successfully.')
@@ -101,7 +101,7 @@ const WarehousesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/warehouses/${id}`),
+    mutationFn: (id: number) => companyService.deleteWarehouse(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['warehouses'] })
       toast.success('Warehouse deleted successfully.')
@@ -398,10 +398,12 @@ const WarehousesPage: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-1">PIC Phone</label>
                     <input
+                      type="tel"
+                      inputMode="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="PIC Phone number"
-                      className="form-input"
+                      onChange={(e) => setPhone(e.target.value.replace(/[^\d+ -]/g, ''))}
+                      placeholder="012 345 678"
+                      className="form-input font-mono"
                     />
                   </div>
                 </div>

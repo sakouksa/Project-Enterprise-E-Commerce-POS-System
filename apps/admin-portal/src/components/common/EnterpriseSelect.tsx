@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Check, Search, X, Loader2, AlertCircle, RefreshCw, User, Package, Building2, Tag } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import api from '@/api/client'
-import { sound } from '@/utils/sound'
 import { getAbsoluteImageUrl } from '@/utils/image'
 
 export interface EnterpriseSelectOption {
@@ -276,7 +275,6 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
   // Handle option selection
   const handleSelect = (opt: EnterpriseSelectOption) => {
     if (opt.disabled) return
-    sound.playSuccess()
 
     if (multiple) {
       const currentValues = Array.isArray(value) ? value : []
@@ -297,14 +295,13 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation()
-    sound.playClick()
     onChange?.(multiple ? [] : '', multiple ? [] : undefined)
   }
 
   // Size styling - baseline standard is h-10 (40px)
   const sizeClasses = {
     sm: 'px-2.5 py-1.5 text-xs rounded-lg min-h-[34px] h-[34px] box-border font-medium',
-    md: 'px-3.5 py-2 text-xs sm:text-[13px] rounded-lg min-h-[40px] h-10 box-border font-medium',
+    md: 'px-3.5 py-2 text-xs sm:text-[13px] rounded-xl min-h-[40px] h-10 box-border font-medium',
     lg: 'px-4 py-2.5 text-sm rounded-xl min-h-[46px] h-[46px] box-border font-medium',
   }[size]
 
@@ -331,12 +328,11 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
         disabled={disabled}
         onClick={() => {
           if (disabled) return
-          sound.playClick()
           setIsOpen(!isOpen)
           setFilterText('')
         }}
-        className={`w-full flex items-center justify-between gap-2 bg-background dark:bg-slate-900/90 border text-foreground dark:text-slate-100 transition-all cursor-pointer shadow-2xs ${sizeClasses} ${
-          isOpen ? 'border-primary ring-2 ring-primary/20 shadow-xs' : 'border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 hover:bg-accent/40 dark:hover:bg-slate-800/60'
+        className={`w-full flex items-center justify-between gap-2 bg-card dark:bg-slate-900 border text-foreground dark:text-slate-100 transition-all cursor-pointer shadow-2xs ${sizeClasses} ${
+          isOpen ? 'border-primary ring-2 ring-primary/20 shadow-xs' : 'border-border/80 dark:border-slate-700/80 hover:border-primary/50 dark:hover:border-primary/60 hover:bg-muted/30 dark:hover:bg-slate-800/60'
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-muted dark:bg-slate-800' : ''} ${externalError ? 'border-rose-500 ring-2 ring-rose-500/20' : ''} ${buttonClassName}`}
       >
         <div className="flex items-center gap-2 min-w-0 truncate flex-1 text-left">
@@ -435,32 +431,34 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
                 maxWidth: `${Math.max(coords.width, 480)}px`,
                 zIndex: 99999,
               }}
-              className={`bg-card dark:bg-slate-900 border border-border dark:border-slate-800 rounded-2xl shadow-2xl p-2 space-y-1 ring-1 ring-black/5 dark:ring-white/10 ${dropdownClassName}`}
+              className={`bg-card dark:bg-slate-900 border border-border dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 space-y-1 ring-1 ring-black/5 dark:ring-white/10 ${dropdownClassName}`}
             >
-              {/* Quick Search Box */}
-              <div className="relative mb-1 px-1">
-                <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  placeholder={displaySearchPlaceholder}
-                  className="w-full bg-muted/40 dark:bg-slate-800/80 border border-border/70 dark:border-slate-700 rounded-xl pl-8 pr-8 py-1.5 text-xs text-foreground dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-muted-foreground dark:placeholder:text-slate-500"
-                />
-                {filterText && (
-                  <button
-                    type="button"
-                    onClick={() => setFilterText('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              {/* Quick Search Box (Shown when options > 5 or async search) */}
+              {(fetchUrl || asyncSearch || allOptions.length > 5) && (
+                <div className="relative mb-1 px-1">
+                  <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-slate-400" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    placeholder={displaySearchPlaceholder}
+                    className="w-full bg-muted/40 dark:bg-slate-800/80 border border-border/70 dark:border-slate-700 rounded-xl pl-8 pr-8 py-1.5 text-xs text-foreground dark:text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-muted-foreground dark:placeholder:text-slate-500"
+                  />
+                  {filterText && (
+                    <button
+                      type="button"
+                      onClick={() => setFilterText('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Options List Container */}
-              <div ref={listRef} className="max-h-64 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar">
+              <div ref={listRef} className="max-h-64 overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar">
                 {isLoading ? (
                   <div className="p-4 text-center space-y-2">
                     <Loader2 size={18} className="animate-spin text-primary mx-auto" />
@@ -500,32 +498,32 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
                         disabled={opt.disabled}
                         onClick={() => handleSelect(opt)}
                         onMouseEnter={() => setHighlightedIndex(idx)}
-                        className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs transition-all cursor-pointer text-left ${
+                        className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-[13px] transition-colors cursor-pointer text-left ${
                           isSelected
-                            ? 'bg-primary text-primary-foreground font-black shadow-xs'
+                            ? 'bg-primary/10 text-primary font-bold dark:bg-primary/20 dark:text-primary'
                             : isHighlighted
-                            ? 'bg-primary/15 text-primary font-bold dark:bg-primary/20 dark:text-primary-foreground'
-                            : 'text-foreground dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
+                            ? 'bg-muted/70 text-foreground dark:bg-slate-800/80 dark:text-slate-100 font-medium'
+                            : 'text-foreground/90 dark:text-slate-200 hover:bg-muted/50 dark:hover:bg-slate-800/50 font-normal'
                         } ${opt.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 truncate flex-1">
                           {opt.avatar ? (
-                            <img src={opt.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 border border-white/20" />
+                            <img src={opt.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 border border-border" />
                           ) : opt.icon ? (
                             <span className="shrink-0">{opt.icon}</span>
                           ) : null}
 
                           <div className="min-w-0 truncate">
                             <div className="flex items-center gap-1.5 truncate">
-                              <span className="truncate font-extrabold">{opt.title || opt.label}</span>
+                              <span className="truncate">{opt.title || opt.label}</span>
                               {opt.code && (
-                                <span className={`text-[10px] font-mono font-bold px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400'}`}>
+                                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${isSelected ? 'bg-primary/20 text-primary' : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400'}`}>
                                   {opt.code}
                                 </span>
                               )}
                             </div>
                             {(opt.subtitle || opt.description) && (
-                              <p className={`text-[10px] truncate ${isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground dark:text-slate-400'}`}>
+                              <p className={`text-[10px] truncate ${isSelected ? 'text-primary/80' : 'text-muted-foreground dark:text-slate-400'}`}>
                                 {opt.subtitle || opt.description}
                               </p>
                             )}
@@ -536,13 +534,13 @@ export const EnterpriseSelect: React.FC<EnterpriseSelectProps> = ({
                           {badgeText && (
                             <span
                               className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase ${
-                                isSelected ? 'bg-white/20 text-white' : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400'
+                                isSelected ? 'bg-primary/20 text-primary' : 'bg-muted dark:bg-slate-800 text-muted-foreground dark:text-slate-400'
                               }`}
                             >
                               {badgeText}
                             </span>
                           )}
-                          {isSelected && <Check size={14} className="shrink-0" />}
+                          {isSelected && <Check size={14} className="text-primary font-bold shrink-0" />}
                         </div>
                       </button>
                     )

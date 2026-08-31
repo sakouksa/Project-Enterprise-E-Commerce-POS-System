@@ -34,7 +34,7 @@ import {
   Camera,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import api from '@/api/client'
+import { settingsService } from '@/services/settingsService'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/hooks/useToast'
 import { useCompanyStore } from '@/stores/companyStore'
@@ -133,32 +133,28 @@ const SettingsPage: React.FC = () => {
   // Load Settings
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ['settings'],
-    queryFn: () => api.get('/settings').then(r => r.data.data),
+    queryFn: () => settingsService.getSettings(),
     enabled: activeTab === 'store',
   })
 
   // Load Helpers depending on tabs
   const { data: taxesResponse, isLoading: taxesLoading } = useQuery({
     queryKey: ['taxes', taxPagination.page, taxPagination.perPage, taxPagination.debouncedSearch],
-    queryFn: () => api.get('/taxes', {
-      params: {
-        page: taxPagination.page,
-        per_page: taxPagination.perPage,
-        search: taxPagination.debouncedSearch || undefined,
-      }
-    }).then(r => r.data),
+    queryFn: () => settingsService.getItems('/taxes', {
+      page: taxPagination.page,
+      per_page: taxPagination.perPage,
+      search: taxPagination.debouncedSearch || undefined,
+    }),
     enabled: activeTab === 'taxes_units' && subTabTaxesUnits === 'taxes',
   })
 
   const { data: unitsResponse, isLoading: unitsLoading } = useQuery({
     queryKey: ['units', unitPagination.page, unitPagination.perPage, unitPagination.debouncedSearch],
-    queryFn: () => api.get('/units', {
-      params: {
-        page: unitPagination.page,
-        per_page: unitPagination.perPage,
-        search: unitPagination.debouncedSearch || undefined,
-      }
-    }).then(r => r.data),
+    queryFn: () => settingsService.getItems('/units', {
+      page: unitPagination.page,
+      per_page: unitPagination.perPage,
+      search: unitPagination.debouncedSearch || undefined,
+    }),
     enabled: activeTab === 'taxes_units' && subTabTaxesUnits === 'units',
   })
 
@@ -188,37 +184,31 @@ const SettingsPage: React.FC = () => {
 
   const { data: countriesResponse, isLoading: countriesLoading } = useQuery({
     queryKey: ['countries', countryPagination.page, countryPagination.perPage, countryPagination.debouncedSearch],
-    queryFn: () => api.get('/countries', {
-      params: {
-        page: countryPagination.page,
-        per_page: countryPagination.perPage,
-        search: countryPagination.debouncedSearch || undefined,
-      }
-    }).then(r => r.data),
+    queryFn: () => settingsService.getItems('/countries', {
+      page: countryPagination.page,
+      per_page: countryPagination.perPage,
+      search: countryPagination.debouncedSearch || undefined,
+    }),
     enabled: activeTab === 'locations' && subTabLocations === 'countries',
   })
 
   const { data: provincesResponse, isLoading: provincesLoading } = useQuery({
     queryKey: ['provinces', provincePagination.page, provincePagination.perPage, provincePagination.debouncedSearch],
-    queryFn: () => api.get('/provinces', {
-      params: {
-        page: provincePagination.page,
-        per_page: provincePagination.perPage,
-        search: provincePagination.debouncedSearch || undefined,
-      }
-    }).then(r => r.data),
+    queryFn: () => settingsService.getItems('/provinces', {
+      page: provincePagination.page,
+      per_page: provincePagination.perPage,
+      search: provincePagination.debouncedSearch || undefined,
+    }),
     enabled: activeTab === 'locations' && subTabLocations === 'provinces',
   })
 
   const { data: citiesResponse, isLoading: citiesLoading } = useQuery({
     queryKey: ['cities', cityPagination.page, cityPagination.perPage, cityPagination.debouncedSearch],
-    queryFn: () => api.get('/cities', {
-      params: {
-        page: cityPagination.page,
-        per_page: cityPagination.perPage,
-        search: cityPagination.debouncedSearch || undefined,
-      }
-    }).then(r => r.data),
+    queryFn: () => settingsService.getItems('/cities', {
+      page: cityPagination.page,
+      per_page: cityPagination.perPage,
+      search: cityPagination.debouncedSearch || undefined,
+    }),
     enabled: activeTab === 'locations' && subTabLocations === 'cities',
   })
 
@@ -261,13 +251,13 @@ const SettingsPage: React.FC = () => {
   // Helper lists for selects in modal
   const { data: helperCountries } = useQuery({
     queryKey: ['helper_countries'],
-    queryFn: () => api.get('/countries', { params: { per_page: 200 } }).then(r => r.data.data ?? r.data),
+    queryFn: () => settingsService.getItems('/countries', { per_page: 200 }).then(r => r.data ?? r),
     enabled: modalOpen || (activeTab === 'locations' && subTabLocations === 'provinces'),
   })
 
   const { data: helperProvinces } = useQuery({
     queryKey: ['helper_provinces'],
-    queryFn: () => api.get('/provinces', { params: { per_page: 200 } }).then(r => r.data.data ?? r.data),
+    queryFn: () => settingsService.getItems('/provinces', { per_page: 200 }).then(r => r.data ?? r),
     enabled: modalOpen || (activeTab === 'locations' && subTabLocations === 'cities'),
   })
 
@@ -307,11 +297,9 @@ const SettingsPage: React.FC = () => {
       const formData = new FormData()
       formData.append('logo', file)
       formData.append('company_id', '1')
-      const res = await api.post('/settings/logo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      if (res.data?.data?.logo_url) {
-        const uploadedPath = res.data.data.logo_url
+      const res = await settingsService.uploadLogo(formData)
+      if (res.data?.logo_url || res.logo_url) {
+        const uploadedPath = res.data?.logo_url || res.logo_url
         setSiteLogo(uploadedPath)
         setLogoFile(null)
         updateBranding({
@@ -320,10 +308,10 @@ const SettingsPage: React.FC = () => {
         })
         qc.invalidateQueries({ queryKey: ['settings'] })
         qc.invalidateQueries({ queryKey: ['companies'] })
-        toast.success(t('settings.logoUploadSuccess', 'Logo បានផ្លាស់ប្តូរ និងរក្សាទុកដោយជោគជ័យ!'))
+        toast.success(t('settings.logoUploadSuccess', 'Logo updated and saved successfully!'))
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || t('settings.logoUploadFail', 'បរាជ័យក្នុងការ Upload Logo។'))
+      toast.error(err?.response?.data?.message || t('settings.logoUploadFail', 'Failed to upload logo.'))
     } finally {
       setIsUploadingLogo(false)
     }
@@ -337,17 +325,15 @@ const SettingsPage: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = ''
     updateBranding({ logo: fallbackLogo })
     try {
-      const res = await api.delete('/settings/logo', {
-        data: { company_id: 1 }
-      })
-      if (res.data?.data?.logo_url) {
-        setSiteLogo(res.data.data.logo_url)
-        updateBranding({ logo: res.data.data.logo_url })
+      const res = await settingsService.deleteLogo({ type: 'logo' })
+      if (res.data?.logo_url || res.logo_url) {
+        setSiteLogo(res.data?.logo_url || res.logo_url)
+        updateBranding({ logo: res.data?.logo_url || res.logo_url })
       }
       qc.invalidateQueries({ queryKey: ['settings'] })
       qc.invalidateQueries({ queryKey: ['companies'] })
       fetchBranding(true)
-      toast.success(t('settings.logoResetSuccess', 'បានលុបរូបចាស់ចេញពី Storage និងកំណត់ Logo ទៅកាន់លំនាំដើមវិញ!'))
+      toast.success(t('settings.logoResetSuccess', 'Old logo removed and reset to default!'))
     } catch {
       // ignore
     }
@@ -355,7 +341,7 @@ const SettingsPage: React.FC = () => {
 
   // Mutations
   const updateSettingsMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/settings', payload),
+    mutationFn: (payload: any) => settingsService.updateSettings(payload),
     onSuccess: () => {
       setSuccess(true)
       toast.success('Global settings updated successfully!')
@@ -379,11 +365,9 @@ const SettingsPage: React.FC = () => {
         const formData = new FormData()
         formData.append('logo', logoFile)
         formData.append('company_id', '1')
-        const res = await api.post('/settings/logo', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        if (res.data?.data?.logo_url) {
-          currentLogoPath = res.data.data.logo_url
+        const res = await settingsService.uploadLogo(formData)
+        if (res.data?.logo_url || res.logo_url) {
+          currentLogoPath = res.data?.logo_url || res.logo_url
           setSiteLogo(currentLogoPath)
           setLogoFile(null)
         }
@@ -418,7 +402,7 @@ const SettingsPage: React.FC = () => {
 
   // CRUD Mutations
   const createMutation = useMutation({
-    mutationFn: ({ path, payload }: { path: string; payload: any }) => api.post(path, payload),
+    mutationFn: ({ path, payload }: { path: string; payload: any }) => settingsService.createItem(path, payload),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: [variables.path.replace('/', '')] })
       setModalOpen(false)
@@ -430,7 +414,7 @@ const SettingsPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ path, id, payload }: { path: string; id: number; payload: any }) => api.put(`${path}/${id}`, payload),
+    mutationFn: ({ path, id, payload }: { path: string; id: number; payload: any }) => settingsService.updateItem(path, id, payload),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: [variables.path.replace('/', '')] })
       setModalOpen(false)
@@ -442,7 +426,7 @@ const SettingsPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: ({ path, id }: { path: string; id: number }) => api.delete(`${path}/${id}`),
+    mutationFn: ({ path, id }: { path: string; id: number }) => settingsService.deleteItem(path, id),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: [variables.path.replace('/', '')] })
       setConfirmOpen(false)
@@ -477,7 +461,7 @@ const SettingsPage: React.FC = () => {
   }
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: ({ path, ids }: { path: string; ids: number[] }) => api.post(`${path}/bulk-delete`, { ids }),
+    mutationFn: ({ path, ids }: { path: string; ids: number[] }) => settingsService.bulkDeleteItems(path, ids),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: [variables.path.replace('/', '')] })
       setBulkDeleteConfirmOpen(false)
@@ -500,10 +484,11 @@ const SettingsPage: React.FC = () => {
     setIsActive(true)
     setSymbol('')
     setDescription('')
-    setPhoneCode('')
-    setCountryId('')
+    setPhoneCode('+855')
+    const defaultCountryId = countriesData?.data?.[0]?.id ?? countriesData?.[0]?.id ?? 1
+    setCountryId(String(defaultCountryId))
     setProvinceId('')
-    setCityType('city')
+    setCityType('Khan')
     setPostalCode('')
     setModalOpen(true)
   }
@@ -661,10 +646,10 @@ const SettingsPage: React.FC = () => {
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div>
                         <label className="block text-xs font-black uppercase tracking-wider text-foreground">
-                          {t('settings.storeLogoLabel', 'LOGO ហាង / BRAND LOGO')}
+                          {t('settings.storeLogoLabel', 'Store Logo / Brand Logo')}
                         </label>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {t('settings.storeLogoHint', 'បង្ហាញលើ Header, Sidebar, Login, វិក្កយបត្រ POS និងរបាយការណ៍')}
+                          {t('settings.storeLogoHint', 'Displayed on header, sidebar, login page, POS receipts, and reports')}
                         </p>
                       </div>
                       {logoPreview || (siteLogo && siteLogo !== '/logo.svg') ? (
@@ -696,7 +681,7 @@ const SettingsPage: React.FC = () => {
                           className="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px] text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer text-[11px] font-bold gap-1"
                         >
                           <Camera className="w-5 h-5 text-primary" />
-                          <span>{t('settings.changeLogo', 'ផ្លាស់ប្តូរ Logo')}</span>
+                          <span>{t('settings.changeLogo', 'Change Logo')}</span>
                         </button>
                       </div>
 
@@ -718,7 +703,7 @@ const SettingsPage: React.FC = () => {
                             className="px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-95 active:scale-95 transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
                           >
                             {isUploadingLogo ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-                            <span>{t('settings.uploadLogoBtn', 'ជ្រើសរើសរូបភាព Logo')}</span>
+                            <span>{t('settings.uploadLogoBtn', 'Choose Logo Image')}</span>
                           </button>
 
                           {(logoPreview || (siteLogo && siteLogo !== '/logo.svg')) && (
@@ -729,17 +714,17 @@ const SettingsPage: React.FC = () => {
                               className="px-3.5 py-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-rose-500/20 disabled:opacity-50"
                             >
                               <Trash2 size={14} />
-                              <span>{t('settings.removeLogoBtn', 'ដក Logo')}</span>
+                              <span>{t('settings.removeLogoBtn', 'Remove Logo')}</span>
                             </button>
                           )}
                         </div>
 
                         <div className="space-y-1">
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
-                            គាំទ្រទម្រង់ <b>PNG, JPG, WebP, SVG</b> (ទំហំអតិបរមា 10MB)។
+                            {t('settings.logoSupportedFormats', 'Supports PNG, JPG, WebP, SVG (Max 10MB).')}
                           </p>
                           <p className="text-[11px] text-primary/80 font-medium">
-                            ✨ រូបភាពគ្រប់ទំហំនឹងត្រូវតម្រឹមឱ្យស្អាត (Clean Contain) ស្វ័យប្រវត្តិ មិនខូចទម្រង់ដើមឡើយ។
+                            {t('settings.logoContainNotice', '✨ Images of all sizes will automatically be cleanly contained without distortion.')}
                           </p>
                         </div>
                       </div>
@@ -1475,8 +1460,8 @@ const SettingsPage: React.FC = () => {
                       <div>
                         <label className="block text-xs font-bold text-muted-foreground mb-1">{t('settings.calculationType', 'Type')}</label>
                         <select value={taxType} onChange={e => setTaxType(e.target.value)} className="form-select text-xs w-full">
-                          <option value="percentage">{t('settings.percentage', 'ភាគរយ (%)')}</option>
-                          <option value="fixed">{t('settings.fixedAmount', 'ចំនួនថេរ')}</option>
+                          <option value="percentage">{t('settings.percentage', 'Percentage (%)')}</option>
+                          <option value="fixed">{t('settings.fixedAmount', 'Fixed Amount')}</option>
                         </select>
                       </div>
                     </div>

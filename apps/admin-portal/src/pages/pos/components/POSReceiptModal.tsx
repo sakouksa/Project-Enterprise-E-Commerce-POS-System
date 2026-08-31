@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Printer, CheckCircle2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import api from '@/api/client'
+import { settingsService } from '@/services/settingsService'
 import { useCompanyStore } from '@/stores/companyStore'
 import { useAuthStore } from '@/stores/authStore'
 import { getAbsoluteImageUrl } from '@/utils/image'
@@ -29,9 +29,9 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
   const [logoLoaded, setLogoLoaded] = useState(true)
 
   // Fetch global settings to capture live customized POS Receipt header/footer
-  const { data: settingsData } = useQuery({
+  const { data: settingsData } = useQuery<SettingItem[]>({
     queryKey: ['settings'],
-    queryFn: () => api.get('/settings').then(r => (r.data?.data ?? r.data) as SettingItem[]),
+    queryFn: () => settingsService.getSettings().then((r: any) => (Array.isArray(r) ? r : r?.data ?? []) as SettingItem[]),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -84,11 +84,11 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
 
   const receiptFooterMsg = 
     getSettingVal('pos_receipt_footer') || 
-    t('thankYou', 'សូមអរគុណសម្រាប់ការទិញទំនិញជាមួយយើង! សូមអញ្ជើញមកម្តងទៀត។')
+    t('thankYou', 'Thank you for shopping with us! Please come again.')
 
   const returnPolicyMsg = 
     getSettingVal('pos_return_policy') || 
-    t('returnPolicy', 'ទទួលប្តូរទំនិញវិញក្នុងរយៈពេល ៧ ថ្ងៃជាមួយនឹងវិក្កយបត្រត្រឹមត្រូវ។')
+    t('returnPolicy', 'Items eligible for exchange within 7 days with valid receipt voucher.')
 
   // ── Dual Currency calculation (USD & KHR) ──────────────────────────────────
   const exchangeRate = 4100
@@ -397,19 +397,19 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             <!-- 2. Transaction Metadata -->
             <div class="meta-grid">
               <div class="meta-col">
-                <span class="meta-label">${t('invoiceNo', 'លេខវិក្កយបត្រ:')}</span>
+                <span class="meta-label">${t('invoiceNo', 'Invoice #:')}</span>
                 <span class="meta-val font-mono">${receipt.order_number}</span>
                 <div style="margin-top: 3px;">
-                  <span class="meta-label">${t('cashier', 'អ្នកគិតលុយ:')}</span>
+                  <span class="meta-label">${t('cashier', 'Cashier:')}</span>
                   <span class="meta-val">${receipt.cashier_name || authUser?.name || 'Super Admin'}</span>
                 </div>
               </div>
               <div class="meta-col text-right">
-                <span class="meta-label">${t('dateTime', 'កាលបរិច្ឆេទ & ម៉ោង:')}</span>
+                <span class="meta-label">${t('dateTime', 'Date & Time:')}</span>
                 <span class="meta-val font-mono" style="font-size: 10px;">${receipt.date}</span>
                 <div style="margin-top: 3px;">
-                  <span class="meta-label">${t('customer', 'អតិថិជន:')}</span>
-                  <span class="meta-val">${receipt.customer?.name || t('walkInCustomerShort', 'អតិថិជនទូទៅ')}</span>
+                  <span class="meta-label">${t('customer', 'Customer:')}</span>
+                  <span class="meta-val">${receipt.customer?.name || t('walkInCustomerShort', 'General Customer')}</span>
                 </div>
               </div>
             </div>
@@ -419,9 +419,9 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             <!-- 3. Items List -->
             <div>
               <div class="items-header">
-                <span style="flex: 6;">${t('item', 'មុខទំនិញ')}</span>
-                <span style="flex: 2; text-align: center;">${t('qty', 'ចំនួន')}</span>
-                <span style="flex: 4; text-align: right;">${t('total', 'សរុប ($)')}</span>
+                <span style="flex: 6;">${t('item', 'Item')}</span>
+                <span style="flex: 2; text-align: center;">${t('qty', 'Qty')}</span>
+                <span style="flex: 4; text-align: right;">${t('total', 'Total ($)')}</span>
               </div>
 
               ${receipt.items.map((item) => {
@@ -447,19 +447,19 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             <!-- 4. Calculation Summary -->
             <div>
               <div class="calc-row">
-                <span>${t('subtotal', 'សរុបរង')}</span>
+                <span>${t('subtotal', 'Subtotal')}</span>
                 <span class="font-mono">$${receipt.subtotal.toFixed(2)}</span>
               </div>
               
               ${receipt.discount_amount > 0 ? `
                 <div class="calc-row font-bold" style="color: #16a34a;">
-                  <span>${t('discount', 'បញ្ចុះតម្លៃ')}</span>
+                  <span>${t('discount', 'Discount')}</span>
                   <span class="font-mono">-$${receipt.discount_amount.toFixed(2)}</span>
                 </div>
               ` : ''}
 
               <div class="calc-row">
-                <span>${t('vatTax10', 'ពន្ធ VAT (10%)')}</span>
+                <span>${t('vatTax10', 'VAT (10%)')}</span>
                 <span class="font-mono">$${receipt.tax_amount.toFixed(2)}</span>
               </div>
 
@@ -467,7 +467,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
               <div class="double-line">
                 <div class="grand-total-box">
                   <div>
-                    <div class="grand-total-label">${t('grandTotal', 'សរុបរួម')}</div>
+                    <div class="grand-total-label">${t('grandTotal', 'Grand Total')}</div>
                     <div style="font-size: 8.5px; color: #64748b; font-family: monospace;">(Rate: 1$ = 4,100 ៛)</div>
                   </div>
                   <div class="text-right">
@@ -482,11 +482,11 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
               <!-- Payment Method & Tendered -->
               <div class="meta-grid" style="font-size: 10px;">
                 <div>
-                  <span class="meta-label">${t('paymentMethod', 'វិធីសាស្ត្រទូទាត់:')}</span>
+                  <span class="meta-label">${t('paymentMethod', 'Payment Method:')}</span>
                   <span class="font-bold uppercase">${receipt.payment_method}</span>
                 </div>
                 <div class="text-right">
-                  <span class="meta-label">${t('tenderedChange', 'ទទួលបាន / ប្រាក់អាប់:')}</span>
+                  <span class="meta-label">${t('tenderedChange', 'Tendered / Change:')}</span>
                   <span class="font-mono font-bold">$${receipt.cash_tendered.toFixed(2)} / $${receipt.change_due.toFixed(2)}</span>
                 </div>
               </div>
@@ -495,7 +495,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
                 <div class="payment-box">
                   ${receipt.payment_details.txn_reference ? `
                     <div style="display: flex; justify-content: space-between; font-weight: 700;">
-                      <span>${t('transfer', 'វេរប្រាក់')} (${receipt.payment_details.bank_name})</span>
+                      <span>${t('transfer', 'Transfer')} (${receipt.payment_details.bank_name})</span>
                       ${receipt.payment_details.account_number ? `<span class="font-mono">#${receipt.payment_details.account_number}</span>` : ''}
                     </div>
                     <div style="display: flex; justify-content: space-between; font-family: monospace; color: #475569; margin-top: 1px;">
@@ -597,7 +597,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 size={20} />
             <span className="font-extrabold text-sm text-foreground">
-              {t('saleCompleted', 'ការលក់បានជោគជ័យ')}
+              {t('saleCompleted', 'Sale Completed Successfully')}
             </span>
           </div>
           <button 
@@ -668,7 +668,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
           <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[10.5px] border-b border-dashed border-slate-300 pb-2.5">
             <div>
               <span className="text-slate-500 block text-[9px] uppercase font-bold tracking-wider">
-                {t('invoiceNo', 'លេខវិក្កយបត្រ:')}
+                {t('invoiceNo', 'Invoice #:')}
               </span>
               <span className="font-mono font-bold text-slate-950 text-[11px]">
                 {receipt.order_number}
@@ -676,7 +676,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             </div>
             <div className="text-right">
               <span className="text-slate-500 block text-[9px] uppercase font-bold tracking-wider">
-                {t('dateTime', 'កាលបរិច្ឆេទ & ម៉ោង:')}
+                {t('dateTime', 'Date & Time:')}
               </span>
               <span className="font-mono text-[10px] font-semibold text-slate-800">
                 {receipt.date}
@@ -684,7 +684,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             </div>
             <div>
               <span className="text-slate-500 block text-[9px] uppercase font-bold tracking-wider">
-                {t('cashier', 'អ្នកគិតលុយ:')}
+                {t('cashier', 'Cashier:')}
               </span>
               <span className="font-semibold text-slate-900">
                 {receipt.cashier_name || authUser?.name || 'Super Admin'}
@@ -692,10 +692,10 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             </div>
             <div className="text-right">
               <span className="text-slate-500 block text-[9px] uppercase font-bold tracking-wider">
-                {t('customer', 'អតិថិជន:')}
+                {t('customer', 'Customer:')}
               </span>
               <span className="font-semibold text-slate-900">
-                {receipt.customer?.name || t('walkInCustomerShort', 'អតិថិជនទូទៅ')}
+                {receipt.customer?.name || t('walkInCustomerShort', 'General Customer')}
               </span>
               {receipt.customer?.phone && (
                 <span className="block font-mono text-[9px] text-slate-500">
@@ -708,9 +708,9 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
           {/* 3. Itemized Products Table */}
           <div className="space-y-1.5 border-b border-dashed border-slate-300 pb-3">
             <div className="grid grid-cols-12 text-[9.5px] font-black uppercase text-slate-600 border-b border-slate-200 pb-1 tracking-wider">
-              <span className="col-span-6">{t('item', 'មុខទំនិញ')}</span>
-              <span className="col-span-2 text-center">{t('qty', 'ចំនួន')}</span>
-              <span className="col-span-4 text-right">{t('total', 'សរុប ($)')}</span>
+              <span className="col-span-6">{t('item', 'Item')}</span>
+              <span className="col-span-2 text-center">{t('qty', 'Qty')}</span>
+              <span className="col-span-4 text-right">{t('total', 'Total ($)')}</span>
             </div>
 
             <div className="space-y-2 pt-1">
@@ -748,19 +748,19 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
           {/* 4. Financial Calculation Summary */}
           <div className="space-y-1 text-[10.5px] pt-0.5">
             <div className="flex justify-between text-slate-600">
-              <span>{t('subtotal', 'សរុបរង')}</span>
+              <span>{t('subtotal', 'Subtotal')}</span>
               <span className="font-mono">${receipt.subtotal.toFixed(2)}</span>
             </div>
 
             {receipt.discount_amount > 0 && (
               <div className="flex justify-between text-emerald-600 font-semibold">
-                <span>{t('discount', 'បញ្ចុះតម្លៃ')}</span>
+                <span>{t('discount', 'Discount')}</span>
                 <span className="font-mono">-${receipt.discount_amount.toFixed(2)}</span>
               </div>
             )}
 
             <div className="flex justify-between text-slate-600">
-              <span>{t('vatTax10', 'ពន្ធ VAT (10%)')}</span>
+              <span>{t('vatTax10', 'VAT (10%)')}</span>
               <span className="font-mono">${receipt.tax_amount.toFixed(2)}</span>
             </div>
 
@@ -768,7 +768,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             <div className="pt-2 border-t-2 border-slate-900 flex justify-between items-baseline font-black text-slate-950">
               <div>
                 <span className="text-xs uppercase tracking-wider block leading-none">
-                  {t('grandTotal', 'សរុបរួម')}
+                  {t('grandTotal', 'Grand Total')}
                 </span>
                 <span className="text-[8.5px] font-mono font-normal text-slate-500 block pt-0.5">
                   (Rate: 1$ = 4,100 ៛)
@@ -788,7 +788,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
             <div className="pt-2 border-t border-dashed border-slate-300 grid grid-cols-2 gap-1 text-[10px]">
               <div>
                 <span className="text-slate-500 block text-[9px] font-bold uppercase">
-                  {t('paymentMethod', 'វិធីសាស្ត្រទូទាត់:')}
+                  {t('paymentMethod', 'Payment Method:')}
                 </span>
                 <span className="font-extrabold text-slate-900 uppercase">
                   {receipt.payment_method}
@@ -796,7 +796,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
               </div>
               <div className="text-right">
                 <span className="text-slate-500 block text-[9px] font-bold uppercase">
-                  {t('tenderedChange', 'ទទួលបាន / ប្រាក់អាប់:')}
+                  {t('tenderedChange', 'Tendered / Change:')}
                 </span>
                 <span className="font-mono font-bold text-slate-900">
                   ${receipt.cash_tendered.toFixed(2)} / ${receipt.change_due.toFixed(2)}
@@ -810,7 +810,7 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
                 {receipt.payment_details.txn_reference ? (
                   <>
                     <div className="flex justify-between font-bold text-slate-800">
-                      <span>{t('transfer', 'វេរប្រាក់')} ({receipt.payment_details.bank_name})</span>
+                      <span>{t('transfer', 'Transfer')} ({receipt.payment_details.bank_name})</span>
                       {receipt.payment_details.account_number && (
                         <span className="font-mono">#{receipt.payment_details.account_number}</span>
                       )}
@@ -913,14 +913,14 @@ export const POSReceiptModal: React.FC<POSReceiptModalProps> = ({
               className="py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
             >
               <Printer size={16} />
-              <span>{t('printReceipt', 'បោះពុម្ពវិក្កយបត្រ')}</span>
+              <span>{t('printReceipt', 'Print Receipt')}</span>
             </button>
             <button
               type="button"
               onClick={onClose}
               className="py-3 px-4 rounded-2xl bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
             >
-              {t('common.close', 'បិទ')}
+              {t('common.close', 'Close')}
             </button>
           </div>
         </div>

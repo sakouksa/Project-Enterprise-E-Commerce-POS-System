@@ -2,6 +2,7 @@ import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Filter, X, RotateCcw, Check, Calendar, Shield, Building2, Layers, Radio } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { CloseButton } from '@/components/common'
 import { ModernSelect } from '@/pages/pos/components/ModernSelect'
 
 interface NotificationFilterDrawerProps {
@@ -96,12 +97,7 @@ const NotificationFilterDrawer: React.FC<NotificationFilterDrawerProps> = ({
                   </div>
                 </div>
 
-                <button
-                  onClick={onClose}
-                  className="p-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
+                <CloseButton onClose={onClose} size="md" color="rose" />
               </div>
 
               {/* Drawer Body */}

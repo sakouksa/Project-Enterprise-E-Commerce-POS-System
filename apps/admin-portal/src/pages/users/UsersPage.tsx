@@ -4,7 +4,8 @@ import { AnimatePresence } from 'framer-motion'
 import {
   Users, Plus, Search, Filter, RefreshCw, Download, Upload, Settings
 } from 'lucide-react'
-import api from '@/api/client'
+import { userService } from '@/services/userService'
+import { roleService } from '@/services/roleService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
@@ -12,6 +13,7 @@ import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { downloadCsv } from '@/utils/export'
+import { useTranslation } from 'react-i18next'
 
 import { UserStatsCards } from './components/UserStatsCards'
 import { UserFilterDrawer } from './components/UserFilterDrawer'
@@ -24,6 +26,7 @@ import { UserTableSection } from './components/UserTableSection'
 import { getAvatarUrl, type User } from './types'
 
 const UsersPage: React.FC = () => {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const toast = useToast()
 
@@ -102,10 +105,8 @@ const UsersPage: React.FC = () => {
     try {
       const formData = new FormData()
       formData.append('avatar', file)
-      const res = await api.post('/users/upload-avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      const uploadedUrl = res.data?.data?.url || res.data?.data?.avatar || res.data?.url
+      const res = await userService.uploadAvatar(formData)
+      const uploadedUrl = res?.data?.url || res?.data?.avatar || res?.url
       if (uploadedUrl) {
         setAvatar(uploadedUrl)
         toast.success('Avatar image uploaded successfully.')
@@ -128,19 +129,19 @@ const UsersPage: React.FC = () => {
   // Queries
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['users', page, debouncedSearch, perPage],
-    queryFn: () => api.get('/users', { params: { page, search: debouncedSearch, per_page: perPage } }).then(r => r.data),
+    queryFn: () => userService.list({ page, search: debouncedSearch, per_page: perPage }),
     placeholderData: (prev) => prev,
   })
 
   const { data: statsData } = useQuery({
     queryKey: ['users-dashboard-stats'],
-    queryFn: () => api.get('/users/stats').then(r => r.data.data ?? r.data),
+    queryFn: () => userService.getStats(),
     staleTime: 30000,
   })
 
   const { data: roles } = useQuery({
     queryKey: ['roles-list'],
-    queryFn: () => api.get('/roles').then(r => r.data.data ?? []),
+    queryFn: () => roleService.list().then(r => r.data ?? r ?? []),
   })
 
   const usersRaw: User[] = data?.data ?? []
@@ -199,7 +200,7 @@ const UsersPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (newUser: any) => api.post('/users', newUser),
+    mutationFn: (newUser: any) => userService.create(newUser),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       qc.invalidateQueries({ queryKey: ['users-dashboard-stats'] })
@@ -210,7 +211,7 @@ const UsersPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/users/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => userService.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       qc.invalidateQueries({ queryKey: ['users-dashboard-stats'] })
@@ -222,7 +223,7 @@ const UsersPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/users/${id}`),
+    mutationFn: (id: number) => userService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       qc.invalidateQueries({ queryKey: ['users-dashboard-stats'] })
@@ -237,7 +238,7 @@ const UsersPage: React.FC = () => {
   })
 
   const toggleActiveMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => api.put(`/users/${id}`, { is_active }),
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => userService.update(id, { is_active }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       qc.invalidateQueries({ queryKey: ['users-dashboard-stats'] })
@@ -342,7 +343,7 @@ const UsersPage: React.FC = () => {
     }
     setIsResettingPassword(true)
     try {
-      await api.put(`/users/${resetPwdUser.id}`, { password: newPassword })
+      await userService.updatePassword(resetPwdUser.id, newPassword)
       toast.success(`Password for ${resetPwdUser.name} reset successfully.`)
       setResetPwdUser(null)
       setNewPassword('')
@@ -365,7 +366,7 @@ const UsersPage: React.FC = () => {
   }
 
   const handleExportCSV = () => {
-    toast.info('Exporting users CSV dataset...')
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
     setTimeout(() => {
       const headers = ['ID', 'Name', 'Email', 'Phone', 'Avatar URL', 'Role', 'Status']
       const rows = (users.length > 0 ? users : usersRaw).map((u) => [
@@ -375,11 +376,12 @@ const UsersPage: React.FC = () => {
         u.phone || '',
         u.avatar || '',
         u.roles?.[0]?.name || 'Staff',
-        u.is_active ? 'Active' : 'Inactive',
+        u.is_active ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
       ])
       downloadCsv('users_directory', headers, rows)
-      toast.success(`Exported ${rows.length} users to CSV!`)
-    }, 300)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
   }
 
   const handleFileSelectForImport = (file: File) => {

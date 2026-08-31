@@ -7,6 +7,10 @@ export interface UserCompany {
   name: string
   logo?: string | null
   address?: string | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  tax_number?: string | null
   city?: string | null
   province?: string | null
   country?: string | null

@@ -1,22 +1,34 @@
-import React, { useState, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import React, { useState, useMemo, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
-  FileText, FolderOpen, Tag, File, HelpCircle, Image, Plus, Search, Filter, RefreshCw, Download, Upload, Settings
+  FileText,
+  FolderOpen,
+  Tag,
+  FileCode,
+  HelpCircle,
+  Image as ImageIcon,
+  Search,
+  X,
 } from 'lucide-react'
-import api from '@/api/client'
+import { cmsService } from '@/services/cmsService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
 import ResetButton from '@/components/shared/ResetButton'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import Breadcrumb from '@/components/common/Breadcrumb'
+import { HeaderActionsGroup, AddButton, ExportButton, ImportButton, FilterButton, RefreshButton } from '@/components/common'
+import { downloadCsv } from '@/utils/export'
+import WorkspaceTabs from '@/components/shared/WorkspaceTabs'
+import ColumnSettingsPopover from '@/components/shared/ColumnSettingsPopover'
+import BulkSelectionBanner from '@/components/shared/BulkSelectionBanner'
 import BannersPage from '@/pages/marketing/BannersPage'
 
 import { CMSStatsCards } from './components/CMSStatsCards'
 import { CMSFilterDrawer } from './components/CMSFilterDrawer'
-import { CMSFormDrawer } from './components/CMSFormDrawer'
+import { CMSFormModal } from './components/CMSFormModal'
 import { CMSImportModal } from './components/CMSImportModal'
 
 import { BlogsTab } from './components/tabs/BlogsTab'
@@ -27,11 +39,13 @@ import { FaqsTab } from './components/tabs/FaqsTab'
 import type { Tab } from './types'
 
 const ContentManagementPage: React.FC = () => {
+  const { t } = useTranslation(['cms', 'common', 'toast', 'confirm'])
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = (searchParams.get('tab') as Tab) || 'blogs'
-  const setActiveTab = (tab: Tab) => setSearchParams({ tab })
+  const setActiveTab = (tab: string) => setSearchParams({ tab })
 
   const {
     page,
@@ -44,6 +58,15 @@ const ContentManagementPage: React.FC = () => {
     reset,
     adjustAfterDelete,
   } = useServerPagination({ storageKey: `cms_${activeTab}` })
+
+  // Bulk Selection States
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+
+  // Clear selections when tab, search, or filters change
+  useEffect(() => {
+    setSelectedRows([])
+  }, [activeTab, page, debouncedSearch, perPage])
 
   // Modals & Drawers
   const [modalOpen, setModalOpen] = useState(false)
@@ -58,14 +81,11 @@ const ContentManagementPage: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false)
 
   // Column Settings
-  const [showColSettings, setShowColSettings] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    id: true,
     title: true,
     slug: true,
     category: true,
     status: true,
-    excerpt: true,
     actions: true,
   })
 
@@ -73,6 +93,14 @@ const ContentManagementPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterAuthor, setFilterAuthor] = useState<string>('all')
   const [filterCategory, setFilterCategory] = useState<string>('all')
+
+  const activeFilterCount = useMemo(() => {
+    return [
+      filterStatus !== 'all' ? filterStatus : null,
+      filterAuthor !== 'all' ? filterAuthor : null,
+      filterCategory !== 'all' ? filterCategory : null,
+    ].filter(Boolean).length
+  }, [filterStatus, filterAuthor, filterCategory])
 
   // Form Fields
   const [editingItem, setEditingItem] = useState<any>(null)
@@ -99,7 +127,7 @@ const ContentManagementPage: React.FC = () => {
     if (file) {
       setSelectedFile(file)
       setFeaturedImage(URL.createObjectURL(file))
-      toast.success(`File "${file.name}" selected.`)
+      toast.success(t('cms.fileSelected', { fileName: file.name, defaultValue: `File "${file.name}" selected.` }))
     }
   }
 
@@ -111,113 +139,106 @@ const ContentManagementPage: React.FC = () => {
   // API List
   const { data: listData, isLoading, isFetching } = useQuery({
     queryKey: [activeTab, page, debouncedSearch, perPage, filterStatus, filterCategory],
-    queryFn: () => api.get(`/${activeTab}`, {
-      params: {
+    queryFn: () =>
+      cmsService.getItemsByTab(activeTab, {
         page,
         search: debouncedSearch,
         per_page: perPage,
         ...(filterStatus !== 'all' && { status: filterStatus }),
-        ...(filterCategory !== 'all' && { category_id: filterCategory })
-      }
-    }).then(r => r.data),
+        ...(filterCategory !== 'all' && { category_id: filterCategory }),
+      }),
     placeholderData: (prev) => prev,
     enabled: activeTab !== 'banners',
   })
 
   const { data: categories } = useQuery({
     queryKey: ['blog-categories-list'],
-    queryFn: () => api.get('/blog-categories', { params: { per_page: 100 } }).then(r => r.data.data),
+    queryFn: () => cmsService.getCategories({ per_page: 100 }),
     enabled: activeTab === 'blogs',
+  })
+
+  // Global CMS stats across all resources
+  const { data: cmsStats } = useQuery({
+    queryKey: ['cms-stats'],
+    queryFn: () => cmsService.getStats(),
   })
 
   const records = listData?.data ?? []
   const pagination = listData?.pagination ?? { total: records.length, current_page: 1, last_page: 1 }
 
-  const analytics = useMemo(() => {
-    const totalCount = pagination.total || records.length || 0
-    let published = 0
-    let draft = 0
-    let archived = 0
-    let pending = 0
-    let publishedToday = 0
-    const todayStr = new Date().toISOString().split('T')[0]
-
-    records.forEach((r: any) => {
-      const st = (r.status || (r.is_active ? 'published' : 'draft')).toLowerCase()
-      if (st === 'published' || st === 'active') published++
-      else if (st === 'draft') draft++
-      else if (st === 'archived' || st === 'inactive') archived++
-      else if (st === 'pending') pending++
-
-      if (r.created_at?.split('T')[0] === todayStr && (st === 'published' || st === 'active')) {
-        publishedToday++
-      }
-    })
-
-    const totalContent = totalCount > 0 ? totalCount : 48
-    const publishedCount = published > 0 ? published : Math.round(totalContent * 0.75)
-    const draftCount = draft > 0 ? draft : Math.round(totalContent * 0.18)
-
-    return {
-      totalContent,
-      publishedCount,
-      draftCount,
-      archivedCount: Math.max(0, totalContent - publishedCount - draftCount),
-      pubToday: publishedToday || 6,
-      scheduled: 3,
-      pendingRev: pending || 2,
-      rejectedCnt: 1,
-      totalViews: totalContent * 1420 + 24500,
-      uniqueVisitors: Math.round((totalContent * 1420 + 24500) * 0.64),
-      avgReadingSecs: 252,
-      bounceRate: '34.3',
-      adRevenue: publishedCount * 185.5 + 4200,
-      affiliateRevenue: publishedCount * 124.2 + 2800,
-      subscriptionRevenue: publishedCount * 98.4 + 1950,
-      totalRevenue: (publishedCount * 185.5 + 4200) + (publishedCount * 124.2 + 2800) + (publishedCount * 98.4 + 1950),
-      todayArticles: publishedToday + 4,
-      todayViews: '12.4K',
-      todayNewVisitors: 450,
-      commentsPending: 18,
-      mediaUploadedToday: 42,
-      seoScore: 94.6,
-    }
-  }, [records, pagination.total])
-
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (payload: any) => api.post(`/${activeTab}`, payload),
+    mutationFn: (payload: any) => cmsService.createItemByTab(activeTab, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
+      qc.invalidateQueries({ queryKey: ['cms-stats'] })
       closeModal()
-      toast.success('Content created successfully.')
+      toast.success(t('cms.createdSuccess', 'Content created successfully.'))
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to create item.')
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('cms.createFailed', 'Failed to create item.')),
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/${activeTab}/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => cmsService.updateItemByTab(activeTab, id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
+      qc.invalidateQueries({ queryKey: ['cms-stats'] })
       closeModal()
-      toast.success('Content updated successfully.')
+      toast.success(t('cms.updatedSuccess', 'Content updated successfully.'))
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to update item.')
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('cms.updateFailed', 'Failed to update item.')),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/${activeTab}/${id}`),
+    mutationFn: (id: number) => cmsService.deleteItemByTab(activeTab, id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [activeTab] })
+      qc.invalidateQueries({ queryKey: ['cms-stats'] })
       setConfirmOpen(false)
-      toast.success('Deleted successfully.')
+      toast.success(t('cms.deletedSuccess', 'Deleted successfully.'))
       adjustAfterDelete(records.length)
+      setSelectedRows((prev) => (deleteId ? prev.filter((id) => id !== deleteId) : prev))
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Failed to delete item.')
+      toast.error(err?.response?.data?.message ?? t('cms.deleteFailed', 'Failed to delete item.'))
       setConfirmOpen(false)
-    }
+    },
   })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => cmsService.bulkDeleteItemsByTab(activeTab, ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [activeTab] })
+      qc.invalidateQueries({ queryKey: ['cms-stats'] })
+      setBulkDeleteConfirmOpen(false)
+      toast.success(
+        t('cms.bulkDeleteSuccess', {
+          count: selectedRows.length,
+          defaultValue: `Successfully deleted ${selectedRows.length} items.`,
+        })
+      )
+      adjustAfterDelete(records.length - selectedRows.length)
+      setSelectedRows([])
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('cms.deleteFailed', 'Failed to delete items.'))
+      setBulkDeleteConfirmOpen(false)
+    },
+  })
+
+  const toggleSelectAll = () => {
+    if (records.length > 0 && selectedRows.length === records.length) {
+      setSelectedRows([])
+    } else {
+      setSelectedRows(records.map((r: any) => r.id))
+    }
+  }
+
+  const toggleSelectRow = (id: number) => {
+    setSelectedRows((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
 
   const openCreateModal = () => {
     setEditingItem(null)
@@ -295,25 +316,53 @@ const ContentManagementPage: React.FC = () => {
 
   const getAddButtonLabel = () => {
     switch (activeTab) {
-      case 'blogs': return 'Add Blog'
-      case 'blog-categories': return 'Add Category'
-      case 'blog-tags': return 'Add Tag'
-      case 'pages': return 'Add Page'
-      case 'faqs': return 'Add FAQ'
-      case 'banners': return 'Add Banner'
-      default: return 'Add Content'
+      case 'blogs':
+        return t('cms.addBlog', 'Add Blog')
+      case 'blog-categories':
+        return t('cms.addCategory', 'Add Category')
+      case 'blog-tags':
+        return t('cms.addTag', 'Add Tag')
+      case 'pages':
+        return t('cms.addPage', 'Add Page')
+      case 'faqs':
+        return t('cms.addFaq', 'Add FAQ')
+      case 'banners':
+        return t('cms.addBanner', 'Add Banner')
+      default:
+        return t('cms.addContent', 'Add Content')
     }
   }
 
   const handleAddActionClick = () => {
-    if (activeTab === 'banners') {
-      setBannerAddTrigger(prev => prev + 1)
+    if (activeTab === 'blogs') {
+      navigate('/cms/blogs/create')
+    } else if (activeTab === 'banners') {
+      navigate('/cms/banners/create')
     } else {
       openCreateModal()
     }
   }
 
-  const handleExportCSV = () => toast.info(`Exporting ${activeTab} CSV dataset...`)
+  const handleExportCSV = () => {
+    if (!records.length) {
+      toast.error(t('common.noDataToExport', 'មិនមានទិន្នន័យដើម្បីនាំចេញទេ!'))
+      return
+    }
+    const toastId = toast.info(t('common.exportDownloading', 'កំពុងរៀបចំ និងទាញយកទិន្នន័យ...'))
+    setTimeout(() => {
+      const headers = ['ID', 'Title/Name', 'Type/Category', 'Status', 'Created At']
+      const rows = records.map((r: any) => [
+        r.id || '',
+        r.title || r.name || r.question || '',
+        r.category?.name || r.type || activeTab,
+        r.is_active !== false && r.status !== 'inactive' ? t('common.active', 'Active') : t('common.inactive', 'Inactive'),
+        r.created_at ? new Date(r.created_at).toLocaleDateString() : '',
+      ])
+      downloadCsv(`cms_${activeTab}`, headers, rows)
+      toast.dismiss(toastId)
+      toast.success(t('common.exportSuccess', 'បានទាញយកទិន្នន័យជាឯកសារ CSV ដោយជោគជ័យ!'))
+    }, 400)
+  }
 
   const handleFileSelectForImport = (file: File) => {
     setImportFile(file)
@@ -336,12 +385,12 @@ const ContentManagementPage: React.FC = () => {
     try {
       await new Promise((res) => setTimeout(res, 800))
       qc.invalidateQueries({ queryKey: [activeTab] })
-      toast.success('Successfully imported CMS dataset!')
+      toast.success(t('cms.importSuccess', 'Successfully imported CMS dataset!'))
       setImportModalOpen(false)
       setImportFile(null)
       setImportPreviewData(null)
     } catch {
-      toast.error('Failed to import dataset.')
+      toast.error(t('cms.importFailed', 'Failed to import dataset.'))
     } finally {
       setIsImporting(false)
     }
@@ -354,143 +403,166 @@ const ContentManagementPage: React.FC = () => {
     reset()
   }
 
+  const tabItems = [
+    { id: 'blogs', label: t('cms.tabBlogs', 'Blogs & Articles'), icon: FileText, count: activeTab === 'blogs' ? pagination.total : undefined },
+    { id: 'blog-categories', label: t('cms.tabCategories', 'Categories'), icon: FolderOpen },
+    { id: 'blog-tags', label: t('cms.tabTags', 'Tags'), icon: Tag },
+    { id: 'pages', label: t('cms.tabPages', 'Landing Pages'), icon: FileCode },
+    { id: 'faqs', label: t('cms.tabFaqs', 'FAQs & Help'), icon: HelpCircle },
+    { id: 'banners', label: t('cms.tabBanners', 'Banners & Media'), icon: ImageIcon },
+  ]
+
+  const columnOptions = useMemo(() => {
+    switch (activeTab) {
+      case 'blogs':
+        return [
+          { key: 'title', label: t('cms.colHeadline', 'Article Headline') },
+          { key: 'slug', label: t('cms.colSlug', 'URL Slug') },
+          { key: 'category', label: t('cms.colCategory', 'Category') },
+          { key: 'status', label: t('cms.colStatus', 'Status') },
+          { key: 'actions', label: t('cms.colActions', 'Actions') },
+        ]
+      case 'blog-categories':
+        return [
+          { key: 'title', label: t('cms.colCategoryName', 'Category Name') },
+          { key: 'slug', label: t('cms.colSlug', 'URL Slug') },
+          { key: 'status', label: t('cms.colStatus', 'Status') },
+          { key: 'actions', label: t('cms.colActions', 'Actions') },
+        ]
+      case 'blog-tags':
+        return [
+          { key: 'title', label: t('cms.colTagName', 'Tag Name') },
+          { key: 'slug', label: t('cms.colSlug', 'URL Slug') },
+          { key: 'actions', label: t('cms.colActions', 'Actions') },
+        ]
+      case 'pages':
+        return [
+          { key: 'title', label: t('cms.colPageTitle', 'Landing Page Title') },
+          { key: 'slug', label: t('cms.colSlug', 'URL Slug') },
+          { key: 'status', label: t('cms.colStatus', 'Status') },
+          { key: 'actions', label: t('cms.colActions', 'Actions') },
+        ]
+      case 'faqs':
+        return [
+          { key: 'title', label: t('cms.colQuestionAnswer', 'Question & Answer') },
+          { key: 'category', label: t('cms.colCategory', 'Category') },
+          { key: 'status', label: t('cms.colStatus', 'Status') },
+          { key: 'actions', label: t('cms.colActions', 'Actions') },
+        ]
+      default:
+        return [
+          { key: 'title', label: t('cms.colHeadline', 'Title') },
+          { key: 'slug', label: t('cms.colSlug', 'Slug') },
+          { key: 'actions', label: t('cms.colActions', 'Actions') },
+        ]
+    }
+  }, [activeTab, t])
+
   return (
     <div className="space-y-5 print:p-0">
-      <Breadcrumb items={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Content Management' }]} />
+      <Breadcrumb
+        items={[
+          { label: t('cms.dashboard', 'Dashboard'), path: '/dashboard' },
+          { label: t('cms.contentManagement', 'Content Management') }
+        ]}
+      />
 
       {/* Hero Header */}
-      <div className="bg-card border border-border p-6 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs print:hidden">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            <span>Content & CMS Management</span>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-primary/10 text-primary">
+              <FileText className="h-5 w-5" />
+            </span>
+            <span>{t('cms.cmsManagement', 'Content & CMS Management')}</span>
           </h1>
-          <p className="text-xs text-muted-foreground max-w-3xl leading-relaxed">
-            Create, edit, and publish blog articles, landing pages, categories, FAQs, and web banners.
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {t('cms.cmsSubtitle', 'Create, manage, and publish articles, landing pages, taxonomy, and media assets.')}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setImportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
-          >
-            <Upload size={15} />
-            <span>Import CSV</span>
-          </button>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-xs"
-          >
-            <Download size={15} />
-            <span>Export CSV</span>
-          </button>
-          <button
-            onClick={handleAddActionClick}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition-opacity shadow-xs"
-          >
-            <Plus size={16} />
-            <span>{getAddButtonLabel()}</span>
-          </button>
-        </div>
+        <HeaderActionsGroup>
+          <ImportButton onClick={() => setImportModalOpen(true)} label={t('cms.importCsv', 'Import CSV')} />
+          <ExportButton onClick={handleExportCSV} label={t('cms.exportCsv', 'Export CSV')} />
+          <AddButton onClick={handleAddActionClick} label={getAddButtonLabel()} />
+        </HeaderActionsGroup>
       </div>
 
-      {/* Sub-tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-border pb-1 overflow-x-auto no-scrollbar print:hidden">
-        {[
-          { id: 'blogs', label: 'Blogs & Articles', icon: <FileText size={15} /> },
-          { id: 'blog-categories', label: 'Categories', icon: <FolderOpen size={15} /> },
-          { id: 'blog-tags', label: 'Tags', icon: <Tag size={15} /> },
-          { id: 'pages', label: 'Landing Pages', icon: <File size={15} /> },
-          { id: 'faqs', label: 'FAQs & Help', icon: <HelpCircle size={15} /> },
-          { id: 'banners', label: 'Banners & Media', icon: <Image size={15} /> },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as Tab)}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Clean Workspace Tabs */}
+      <WorkspaceTabs
+        tabs={tabItems}
+        activeTab={activeTab}
+        onChange={(tabId) => setActiveTab(tabId)}
+        variant="pill"
+      />
 
       {activeTab === 'banners' ? (
         <BannersPage isTab triggerAdd={bannerAddTrigger} />
       ) : (
         <>
           {/* KPI Cards */}
-          <CMSStatsCards analytics={analytics} />
+          <CMSStatsCards
+            activeTab={activeTab}
+            records={records}
+            stats={cmsStats}
+            pagination={pagination}
+          />
 
-          {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 min-w-[260px] sm:max-w-xs">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          {/* Bulk Selection Banner (Enterprise Standard) */}
+          <BulkSelectionBanner
+            selectedCount={selectedRows.length}
+            onDelete={() => setBulkDeleteConfirmOpen(true)}
+            onClear={() => setSelectedRows([])}
+            deleteLabel={t('common.deleteSelected', 'Delete Selected')}
+            deleteLoading={bulkDeleteMutation.isPending}
+          />
+
+          {/* Clean Search & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-3 rounded-2xl border border-border shadow-xs print:hidden">
+            <div className="flex items-center gap-2.5 w-full sm:w-auto flex-1 max-w-lg">
+              <div className="relative flex-1">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="Search title, name or slug..."
-                  className="form-input pl-9 w-full text-xs rounded-xl border border-border bg-card text-foreground"
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setPage(1)
+                  }}
+                  placeholder={t('cms.searchPlaceholder', 'Search articles, slugs, categories...')}
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
 
-              <button
+              <FilterButton
                 onClick={() => setFilterDrawerOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-xs"
-              >
-                <Filter size={14} />
-                <span>Filter</span>
-              </button>
+                activeCount={activeFilterCount}
+              />
 
-              <ResetButton onClick={resetAllFilters} />
+              {(search || activeFilterCount > 0) && (
+                <ResetButton onClick={resetAllFilters} />
+              )}
             </div>
 
-            <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-              <button
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <RefreshButton
                 onClick={() => qc.invalidateQueries({ queryKey: [activeTab] })}
-                className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-                title="Refresh"
-              >
-                <RefreshCw size={14} />
-              </button>
+                loading={isFetching}
+              />
 
-              <div className="relative">
-                <button
-                  onClick={() => setShowColSettings(!showColSettings)}
-                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground border border-border bg-card transition-colors shadow-xs"
-                  title="Column Settings"
-                >
-                  <Settings size={14} />
-                </button>
-                <AnimatePresence>
-                  {showColSettings && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowColSettings(false)} />
-                      <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl p-2 z-20 space-y-1">
-                        <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase">Toggle Columns</p>
-                        {Object.keys(visibleColumns).map((col) => (
-                          <label key={col} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl text-xs cursor-pointer text-foreground capitalize">
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns[col]}
-                              onChange={(e) => setVisibleColumns((prev) => ({ ...prev, [col]: e.target.checked }))}
-                              className="form-checkbox h-3.5 w-3.5 text-primary rounded border-border"
-                            />
-                            <span>{col}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
+              <ColumnSettingsPopover
+                columns={columnOptions}
+                visibleColumns={visibleColumns}
+                onChange={setVisibleColumns}
+              />
             </div>
           </div>
 
@@ -516,6 +588,9 @@ const ContentManagementPage: React.FC = () => {
               visibleColumns={visibleColumns}
               openEditModal={openEditModal}
               confirmDelete={confirmDelete}
+              selectedRows={selectedRows}
+              onToggleSelectAll={toggleSelectAll}
+              onToggleSelectRow={toggleSelectRow}
             />
           ) : activeTab === 'blog-categories' ? (
             <BlogCategoriesTab
@@ -525,6 +600,9 @@ const ContentManagementPage: React.FC = () => {
               visibleColumns={visibleColumns}
               openEditModal={openEditModal}
               confirmDelete={confirmDelete}
+              selectedRows={selectedRows}
+              onToggleSelectAll={toggleSelectAll}
+              onToggleSelectRow={toggleSelectRow}
             />
           ) : activeTab === 'blog-tags' ? (
             <BlogTagsTab
@@ -534,6 +612,9 @@ const ContentManagementPage: React.FC = () => {
               visibleColumns={visibleColumns}
               openEditModal={openEditModal}
               confirmDelete={confirmDelete}
+              selectedRows={selectedRows}
+              onToggleSelectAll={toggleSelectAll}
+              onToggleSelectRow={toggleSelectRow}
             />
           ) : activeTab === 'pages' ? (
             <PagesTab
@@ -543,6 +624,9 @@ const ContentManagementPage: React.FC = () => {
               visibleColumns={visibleColumns}
               openEditModal={openEditModal}
               confirmDelete={confirmDelete}
+              selectedRows={selectedRows}
+              onToggleSelectAll={toggleSelectAll}
+              onToggleSelectRow={toggleSelectRow}
             />
           ) : (
             <FaqsTab
@@ -552,9 +636,13 @@ const ContentManagementPage: React.FC = () => {
               visibleColumns={visibleColumns}
               openEditModal={openEditModal}
               confirmDelete={confirmDelete}
+              selectedRows={selectedRows}
+              onToggleSelectAll={toggleSelectAll}
+              onToggleSelectRow={toggleSelectRow}
             />
           )}
 
+          {/* Pagination */}
           <Pagination
             currentPage={pagination.current_page}
             lastPage={pagination.last_page}
@@ -564,8 +652,8 @@ const ContentManagementPage: React.FC = () => {
             onPerPageChange={setPerPage}
           />
 
-          {/* Form Drawer */}
-          <CMSFormDrawer
+          {/* Enterprise Form Modal with Global Header & Footer */}
+          <CMSFormModal
             isOpen={modalOpen}
             onClose={closeModal}
             editingItem={editingItem}
@@ -621,13 +709,28 @@ const ContentManagementPage: React.FC = () => {
             handleConfirmImport={handleConfirmImport}
           />
 
-          {/* Delete Dialog */}
+          {/* Single Delete Dialog */}
           <ConfirmDialog
             open={confirmOpen}
-            title="Delete CMS Content"
-            message="Are you sure you want to delete this content item?"
+            title={t('cms.deleteTitle', 'Delete CMS Content')}
+            message={t('cms.deleteConfirmMessage', 'Are you sure you want to delete this content item? This action cannot be undone.')}
             onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
             onCancel={() => setConfirmOpen(false)}
+            confirmText={t('common.delete', 'Delete')}
+            cancelText={t('common.cancel', 'Cancel')}
+            loading={deleteMutation.isPending}
+          />
+
+          {/* Bulk Delete Dialog */}
+          <ConfirmDialog
+            open={bulkDeleteConfirmOpen}
+            title={t('cms.bulkDeleteTitle', { count: selectedRows.length, defaultValue: `Delete ${selectedRows.length} Selected Items` })}
+            message={t('cms.bulkDeleteConfirmMessage', { count: selectedRows.length, defaultValue: `Are you sure you want to delete ${selectedRows.length} selected items? This action cannot be undone.` })}
+            onConfirm={() => bulkDeleteMutation.mutate(selectedRows)}
+            onCancel={() => setBulkDeleteConfirmOpen(false)}
+            confirmText={t('common.delete', 'Delete')}
+            cancelText={t('common.cancel', 'Cancel')}
+            loading={bulkDeleteMutation.isPending}
           />
         </>
       )}

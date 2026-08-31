@@ -11,31 +11,31 @@ interface LayoutTabProps {
 }
 
 const shadowOptions = [
-  { value: 'none', labelKey: 'shadowNone', defaultLabel: 'គ្មានស្រមោល' },
-  { value: 'sm', labelKey: 'shadowSm', defaultLabel: 'ស្រមោលតូច' },
-  { value: 'md', labelKey: 'shadowMd', defaultLabel: 'ស្រមោលមធ្យម' },
-  { value: 'lg', labelKey: 'shadowLg', defaultLabel: 'ស្រមោលធំ' },
+  { value: 'none', labelKey: 'shadowNone', defaultLabel: 'No Shadow' },
+  { value: 'sm', labelKey: 'shadowSm', defaultLabel: 'Small Shadow' },
+  { value: 'md', labelKey: 'shadowMd', defaultLabel: 'Medium Shadow' },
+  { value: 'lg', labelKey: 'shadowLg', defaultLabel: 'Large Shadow' },
 ]
 
 const densityOptions = [
-  { value: 'compact', labelKey: 'densityCompact', defaultLabel: 'បង្រួមតូច' },
-  { value: 'comfortable', labelKey: 'densityComfortable', defaultLabel: 'ធម្មតា' },
-  { value: 'spacious', labelKey: 'densitySpacious', defaultLabel: 'ទូលាយ' },
+  { value: 'compact', labelKey: 'densityCompact', defaultLabel: 'Compact' },
+  { value: 'comfortable', labelKey: 'densityComfortable', defaultLabel: 'Comfortable' },
+  { value: 'spacious', labelKey: 'densitySpacious', defaultLabel: 'Spacious' },
 ]
 
 const radiusPresets = [
-  { value: '0px', labelKey: 'radiusSharp', defaultLabel: 'ស្រួច (0px)' },
-  { value: '0.25rem', labelKey: 'radiusSm', defaultLabel: 'តូច (4px)' },
-  { value: '0.5rem', labelKey: 'radiusMd', defaultLabel: 'មធ្យម (8px)' },
-  { value: '0.75rem', labelKey: 'radiusLg', defaultLabel: 'ធំ (12px)' },
-  { value: '1rem', labelKey: 'radiusXl', defaultLabel: 'ធំពិសេស (16px)' },
+  { value: '0px', labelKey: 'radiusSharp', defaultLabel: 'Sharp (0px)' },
+  { value: '0.25rem', labelKey: 'radiusSm', defaultLabel: 'Small (4px)' },
+  { value: '0.5rem', labelKey: 'radiusMd', defaultLabel: 'Medium (8px)' },
+  { value: '0.75rem', labelKey: 'radiusLg', defaultLabel: 'Large (12px)' },
+  { value: '1rem', labelKey: 'radiusXl', defaultLabel: 'Extra Large (16px)' },
 ]
 
 const paddingPresets = [
-  { value: '0.75rem', labelKey: 'paddingCompact', defaultLabel: 'បង្រួមតូច (12px)' },
-  { value: '1rem', labelKey: 'paddingNormal', defaultLabel: 'ធម្មតា (16px)' },
-  { value: '1.5rem', labelKey: 'paddingRelaxed', defaultLabel: 'ទូលាយ (24px)' },
-  { value: '2rem', labelKey: 'paddingSpacious', defaultLabel: 'ធំទូលាយ (32px)' },
+  { value: '0.75rem', labelKey: 'paddingCompact', defaultLabel: 'Compact (12px)' },
+  { value: '1rem', labelKey: 'paddingNormal', defaultLabel: 'Normal (16px)' },
+  { value: '1.5rem', labelKey: 'paddingRelaxed', defaultLabel: 'Relaxed (24px)' },
+  { value: '2rem', labelKey: 'paddingSpacious', defaultLabel: 'Spacious (32px)' },
 ]
 
 export const LayoutTab: React.FC<LayoutTabProps> = ({

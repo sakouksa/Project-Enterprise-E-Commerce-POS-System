@@ -1,4 +1,4 @@
-export type Language = 'km' | 'en' | 'th' | 'vi' | 'zh';
+export type Language = 'km' | 'en';
 
 export interface Translations {
   siteTitle: string;

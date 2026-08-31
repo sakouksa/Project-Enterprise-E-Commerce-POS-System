@@ -7,7 +7,12 @@ import {
   Sparkles, Layers, ChevronDown, CheckCircle, Ticket, Building, ShieldCheck, Heart,
   Mic, Camera
 } from 'lucide-react'
-import api from '@/api/client'
+import { posService } from '@/services/posService'
+import { productService } from '@/services/productService'
+import { categoryService } from '@/services/categoryService'
+import { brandService } from '@/services/brandService'
+import { customerService } from '@/services/customerService'
+import { companyService } from '@/services/companyService'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -102,15 +107,12 @@ const POSPage: React.FC = () => {
     initialLang: 'auto',
     onResult: async (spokenText) => {
       try {
-        const res = await api.post('/pos/voice-search', {
-          transcript: spokenText,
-          language: detectedLangInfo.langCode === 'auto' ? 'auto' : detectedLangInfo.langCode.split('-')[0],
-          warehouse_id: selectedWarehouseId,
-          branch_id: selectedBranchId,
-          company_id: (authUser as any)?.company_id ?? authUser?.company?.id ?? 1,
+        const res = await posService.voiceSearch({
+          query: spokenText,
+          branch_id: selectedBranchId ? Number(selectedBranchId) : undefined,
         })
-        if (res.data && res.data.success && res.data.query) {
-          const { query, total } = res.data
+        if (res && (res.success || res.query)) {
+          const { query, total } = res.data || res
           if (query.intent === 'greeting') {
             sound.playSuccess()
             toast.info(t('voiceGreeting', '👋 Hello! Please speak the product name you\'d like to search.'))
@@ -195,7 +197,7 @@ const POSPage: React.FC = () => {
       const matchStock = Number(localMatch.stock ?? 0)
       if (matchStock <= 0) {
         sound.playError()
-        toast.error(t('productOutOfStock', `ទំនិញ "${localMatch.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+        toast.error(t('productOutOfStock', `Product "${localMatch.name}" is out of stock!`))
         return
       }
       sound.playBarcode()
@@ -206,14 +208,12 @@ const POSPage: React.FC = () => {
 
     // 2. Direct backend search for exact barcode match
     try {
-      const res = await api.get('/pos/product-search', {
-        params: {
-          search: scannedCode.trim(),
-          warehouse_id: selectedWarehouseId,
-          branch_id: selectedBranchId,
-        },
+      const res = await posService.productSearch({
+        search: scannedCode.trim(),
+        warehouse_id: selectedWarehouseId,
+        branch_id: selectedBranchId,
       })
-      const foundProducts = res.data?.data || []
+      const foundProducts = res.data?.data || res.data || res || []
       const exactApiMatch = foundProducts.find(
         (p: Product) => (p.barcode && p.barcode.toLowerCase() === trimmed) || p.sku.toLowerCase() === trimmed
       ) || foundProducts[0]
@@ -222,7 +222,7 @@ const POSPage: React.FC = () => {
         const stockVal = Number(exactApiMatch.stock ?? 0)
         if (stockVal <= 0) {
           sound.playError()
-          toast.error(t('productOutOfStock', `ទំនិញ "${exactApiMatch.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+          toast.error(t('productOutOfStock', `Product "${exactApiMatch.name}" is out of stock!`))
           return
         }
         sound.playBarcode()
@@ -262,23 +262,21 @@ const POSPage: React.FC = () => {
 
   const { data: allCatalogProducts } = useQuery({
     queryKey: ['pos-all-catalog-products'],
-    queryFn: () => api.get('/products', { params: { per_page: 200 } }).then(r => r.data.data ?? []),
+    queryFn: () => productService.list({ per_page: 200 }).then(r => r.data?.data ?? r.data ?? []),
     staleTime: 60000,
   })
 
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: ['pos-products', search, selectedCat, selectedBrand, stockFilter, isFeaturedOnly, sortOrder],
-    queryFn: () => api.get('/products', {
-      params: {
-        search,
-        category_id: selectedCat || undefined,
-        brand_id: selectedBrand || undefined,
-        inventory: stockFilter !== 'all' ? stockFilter : undefined,
-        is_featured: isFeaturedOnly ? true : undefined,
-        sort_by: sortOrder,
-        per_page: 100,
-      }
-    }).then(r => r.data.data),
+    queryFn: () => productService.list({
+      search,
+      category_id: selectedCat || undefined,
+      brand_id: selectedBrand || undefined,
+      inventory: stockFilter !== 'all' ? stockFilter : undefined,
+      is_featured: isFeaturedOnly ? true : undefined,
+      sort_by: sortOrder,
+      per_page: 100,
+    }).then(r => r.data?.data ?? r.data),
     staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
@@ -286,17 +284,17 @@ const POSPage: React.FC = () => {
 
   const { data: categories } = useQuery({
     queryKey: ['pos-categories'],
-    queryFn: () => api.get('/categories').then(r => r.data.data),
+    queryFn: () => categoryService.list().then(r => r.data?.data ?? r.data),
   })
 
   const { data: brands } = useQuery({
     queryKey: ['pos-brands'],
-    queryFn: () => api.get('/brands').then(r => r.data.data),
+    queryFn: () => brandService.list().then(r => r.data?.data ?? r.data),
   })
 
   const { data: rawCustomers } = useQuery({
     queryKey: ['pos-customers'],
-    queryFn: () => api.get('/customers', { params: { per_page: 200 } }).then(r => r.data.data),
+    queryFn: () => customerService.list({ per_page: 200 }).then(r => r.data?.data ?? r.data),
   })
 
   const customers: Customer[] = useMemo(() => {
@@ -328,19 +326,19 @@ const POSPage: React.FC = () => {
   // ── Store / Branch / Warehouse context from API ─────────────────────────
   const { data: storesData } = useQuery({
     queryKey: ['pos-stores'],
-    queryFn: () => api.get('/stores', { params: { per_page: 50 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getStores().then(r => r.data?.data ?? r.data ?? []),
     staleTime: 60000,
   })
 
   const { data: branchesData } = useQuery({
     queryKey: ['pos-branches'],
-    queryFn: () => api.get('/branches', { params: { per_page: 50 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getBranches().then(r => r.data?.data ?? r.data ?? []),
     staleTime: 60000,
   })
 
   const { data: warehousesData } = useQuery({
     queryKey: ['pos-warehouses'],
-    queryFn: () => api.get('/warehouses', { params: { per_page: 50 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getWarehouses().then(r => r.data?.data ?? r.data ?? []),
     staleTime: 60000,
   })
 
@@ -394,7 +392,7 @@ const POSPage: React.FC = () => {
         const matchStock = Number(match.stock ?? 0)
         if (matchStock <= 0) {
           sound.playError()
-          toast.error(t('productOutOfStock', `ទំនិញ "${match.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+          toast.error(t('productOutOfStock', `Product "${match.name}" is out of stock!`))
           return
         }
         sound.playBarcode()
@@ -412,7 +410,7 @@ const POSPage: React.FC = () => {
         const bestStock = Number(best.stock ?? 0)
         if (bestStock <= 0) {
           sound.playError()
-          toast.error(t('productOutOfStock', `ទំនិញ "${best.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+          toast.error(t('productOutOfStock', `Product "${best.name}" is out of stock!`))
           return
         }
         sound.playSuccess()
@@ -432,7 +430,7 @@ const POSPage: React.FC = () => {
     const availableStock = Number(variant ? (variant.stock ?? product.stock ?? 0) : (product.stock ?? 0))
     if (availableStock <= 0) {
       sound.playError()
-      toast.error(t('productOutOfStock', `ទំនិញ "${product.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+      toast.error(t('productOutOfStock', `Product "${product.name}" is out of stock!`))
       return
     }
 
@@ -441,7 +439,7 @@ const POSPage: React.FC = () => {
     )
     if (existingItem && existingItem.quantity >= availableStock) {
       sound.playError()
-      toast.warning(t('exceedsStockLimit', `ចំនួនក្នុងរទេះបានដល់កំណត់ស្តុកអតិបរមាហើយ (${availableStock})`))
+      toast.warning(t('exceedsStockLimit', `Cart quantity reached maximum available stock (${availableStock})`))
       return
     }
 
@@ -499,7 +497,7 @@ const POSPage: React.FC = () => {
       )
       if (qty > availableStock) {
         sound.playError()
-        toast.warning(t('exceedsStockLimit', `ចំនួនក្នុងរទេះមិនអាចលើសពីស្តុកដែលមាន (${availableStock}) បានឡើយ!`))
+        toast.warning(t('exceedsStockLimit', `Cart quantity cannot exceed available stock (${availableStock})!`))
         return
       }
     }
@@ -536,18 +534,18 @@ const POSPage: React.FC = () => {
     if (!code) return
 
     try {
-      const res = await api.post('/coupons/validate', {
+      const res = await posService.validateCoupon({
         code: code,
-        amount: subtotal,
+        subtotal: subtotal,
       })
 
-      const data = res.data?.data
-      if (data) {
+      const data = res.data?.data || res.data || res
+      if (data && (data.discount !== undefined || data.discount_amount !== undefined)) {
         sound.playSuccess()
-        const disc = Number(data.discount) || 0
+        const disc = Number(data.discount ?? data.discount_amount ?? 0)
         setCouponDiscount(disc)
         setIsCouponApplied(true)
-        toast.success(`Coupon "${data.code}" applied! ($${disc.toFixed(2)} off)`)
+        toast.success(`Coupon "${data.code || code}" applied! ($${disc.toFixed(2)} off)`)
         return
       }
     } catch (err: any) {
@@ -617,12 +615,12 @@ const POSPage: React.FC = () => {
   // ── Checkout Mutation ─────────────────────────────────────────────────────
 
   const checkoutMutation = useMutation({
-    mutationFn: (payload: any) => api.post('/pos/sales', payload),  // ← fixed endpoint
+    mutationFn: (payload: any) => posService.checkout(payload),
     onSuccess: (res, variables) => {
       sound.playCheckout()
       toast.success(t('saleCompletedMsg', 'Sale completed & invoice generated!'))
       // Backend generates invoice_number; use it from response
-      const orderNo = res.data?.data?.invoice_number || res.data?.data?.sale?.invoice_number || 'POS-' + Math.floor(100000 + Math.random() * 900000)
+      const orderNo = res.data?.invoice_number || res.invoice_number || res.data?.sale?.invoice_number || 'POS-' + Math.floor(100000 + Math.random() * 900000)
 
       const payloadDetails = variables?.payment_details || cardDetails || transferDetails || undefined
       const cashierName = authUser?.name || 'Cashier'
@@ -671,12 +669,12 @@ const POSPage: React.FC = () => {
       )
       if (availableStock <= 0) {
         sound.playError()
-        toast.error(t('productOutOfStock', `ទំនិញ "${item.product.name}" អស់ពីស្តុកហើយ មិនអាចលក់បានទេ!`))
+        toast.error(t('productOutOfStock', `Product "${item.product.name}" is out of stock!`))
         return false
       }
       if (item.quantity > availableStock) {
         sound.playError()
-        toast.error(t('exceedsStockLimit', `ទំនិញ "${item.product.name}" មានចំនួន ${item.quantity} លើសពីស្តុកដែលមាន ${availableStock}!`))
+        toast.error(t('exceedsStockLimit', `Item "${item.product.name}" quantity ${item.quantity} exceeds available stock of ${availableStock}!`))
         return false
       }
     }
@@ -958,7 +956,7 @@ const POSPage: React.FC = () => {
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
               <ModernSelect
                 value={stockFilter}
-                onChange={(val) => setStockFilter(val)}
+                onChange={(val) => setStockFilter(val as any)}
                 options={[
                   { value: 'all', label: t('allStock', 'All Stock') },
                   { value: 'in_stock', label: t('inStockOnly', 'In Stock Only') },

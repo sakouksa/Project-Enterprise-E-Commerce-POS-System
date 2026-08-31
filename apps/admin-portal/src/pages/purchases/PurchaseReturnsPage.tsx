@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -8,8 +9,10 @@ import {
   Warehouse, Filter, Settings, Download, Sliders, AlertCircle
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
-import api from '@/api/client'
+import { purchaseService } from '@/services/purchaseService'
+import { supplierService } from '@/services/supplierService'
+import { companyService } from '@/services/companyService'
+import { userService } from '@/services/userService'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -119,22 +122,22 @@ const PurchaseReturnsPage: React.FC = () => {
   // Lookups
   const { data: filterSuppliers } = useQuery({
     queryKey: ['filter-suppliers-list'],
-    queryFn: () => api.get('/suppliers', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => supplierService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: filterWarehouses } = useQuery({
     queryKey: ['filter-warehouses-list'],
-    queryFn: () => api.get('/warehouses', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getWarehouses().then(r => r.data?.data ?? r.data ?? []),
   })
 
   const { data: filterUsers } = useQuery({
     queryKey: ['filter-users-list'],
-    queryFn: () => api.get('/users', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => userService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: purchasesData } = useQuery({
     queryKey: ['purchases-for-return-select'],
-    queryFn: () => api.get('/purchases', { params: { per_page: 200 } }).then(r => r.data.data ?? []),
+    queryFn: () => purchaseService.list({ per_page: 200 }).then(r => r.data ?? []),
   })
 
   // Create form state
@@ -155,7 +158,7 @@ const PurchaseReturnsPage: React.FC = () => {
 
   const { data: purchaseDetail, isLoading: loadingPurchaseDetails } = useQuery({
     queryKey: ['purchase-detail-for-return', purchaseId],
-    queryFn: () => api.get(`/purchases/${purchaseId}`).then(r => r.data.data),
+    queryFn: () => (purchaseId ? purchaseService.show(purchaseId) : null),
     enabled: !!purchaseId,
   })
 
@@ -197,25 +200,23 @@ const PurchaseReturnsPage: React.FC = () => {
       warehouseFilter, minReturnAmountFilter, maxReturnAmountFilter,
       returnDateStartFilter, returnDateEndFilter, createdByFilter
     ],
-    queryFn: () => api.get('/purchase-returns', {
-      params: {
-        page,
-        search: debouncedSearch,
-        per_page: perPage,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-        status: statusFilter || undefined,
-        refund_status: refundStatusFilter || undefined,
-        supplier_id: supplierFilter || undefined,
-        purchase_reference: purchaseRefFilter || undefined,
-        warehouse_id: warehouseFilter || undefined,
-        min_amount: minReturnAmountFilter || undefined,
-        max_amount: maxReturnAmountFilter || undefined,
-        return_date_start: returnDateStartFilter || undefined,
-        return_date_end: returnDateEndFilter || undefined,
-        created_by: createdByFilter || undefined
-      }
-    }).then(r => r.data),
+    queryFn: () => purchaseService.getReturns({
+      page,
+      search: debouncedSearch,
+      per_page: perPage,
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      status: statusFilter || undefined,
+      refund_status: refundStatusFilter || undefined,
+      supplier_id: supplierFilter || undefined,
+      purchase_reference: purchaseRefFilter || undefined,
+      warehouse_id: warehouseFilter || undefined,
+      min_amount: minReturnAmountFilter || undefined,
+      max_amount: maxReturnAmountFilter || undefined,
+      return_date_start: returnDateStartFilter || undefined,
+      return_date_end: returnDateEndFilter || undefined,
+      created_by: createdByFilter || undefined
+    }),
     placeholderData: (prev) => prev,
   })
 
@@ -224,7 +225,7 @@ const PurchaseReturnsPage: React.FC = () => {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (newReturn: any) => api.post('/purchase-returns', newReturn),
+    mutationFn: (newReturn: any) => purchaseService.createReturn(newReturn),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchase-returns'] })
       qc.invalidateQueries({ queryKey: ['purchases'] })
@@ -235,7 +236,7 @@ const PurchaseReturnsPage: React.FC = () => {
   })
 
   const approveMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/purchase-returns/${id}/approve`),
+    mutationFn: (id: number) => purchaseService.approveReturn(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchase-returns'] })
       qc.invalidateQueries({ queryKey: ['purchases'] })
@@ -247,7 +248,7 @@ const PurchaseReturnsPage: React.FC = () => {
   })
 
   const cancelMutation = useMutation({
-    mutationFn: (id: number) => api.post(`/purchase-returns/${id}/cancel`),
+    mutationFn: (id: number) => purchaseService.cancelReturn(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchase-returns'] })
       qc.invalidateQueries({ queryKey: ['purchases'] })
@@ -259,7 +260,7 @@ const PurchaseReturnsPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/purchase-returns/${id}`),
+    mutationFn: (id: number) => purchaseService.deleteReturn(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['purchase-returns'] })
       toast.success(t('purchases.toast.returnDeletedSuccess', 'Purchase return deleted successfully.'))
@@ -276,11 +277,11 @@ const PurchaseReturnsPage: React.FC = () => {
     for (const item of returnItems) {
       const qty = parseFloat(item.quantity) || 0
       if (qty < 0) {
-        toast.error('Return quantity cannot be negative.')
+        toast.error(t('purchases.returnQtyNegative', 'Return quantity cannot be negative.'))
         return
       }
       if (qty > item.available_to_return) {
-        toast.error(`Return quantity for "${item.product_name}" exceeds available quantity.`)
+        toast.error(t('purchases.returnQtyExceeds', 'Return quantity for "{{name}}" exceeds available quantity.', { name: item.product_name }))
         return
       }
     }
@@ -297,7 +298,7 @@ const PurchaseReturnsPage: React.FC = () => {
       .filter(item => item.quantity > 0)
 
     if (itemsPayload.length === 0) {
-      toast.error('Please input a return quantity greater than 0 for at least one item.')
+      toast.error(t('purchases.inputReturnQuantity', 'Please input a return quantity greater than 0 for at least one item.'))
       return
     }
 
@@ -478,7 +479,7 @@ const PurchaseReturnsPage: React.FC = () => {
                     {t('purchases.status', 'Status')} {renderSortIcon('status')}
                   </th>
                 )}
-                <th className="sticky right-0 z-10 bg-background border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[96px]">{t('common.actions', 'Actions')}</th>
+                <th className="sticky right-0 z-20 bg-card dark:bg-card border-l border-border text-center py-3.5 px-4 font-semibold text-xs uppercase text-muted-foreground whitespace-nowrap min-w-[96px]">{t('common.actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -504,7 +505,7 @@ const PurchaseReturnsPage: React.FC = () => {
                 </tr>
               ) : (
                 returns.map((ret) => (
-                  <tr key={ret.id} className="hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedReturn(ret)}>
+                  <tr key={ret.id} className="hover:bg-muted/40 dark:hover:bg-muted/20 transition-colors group cursor-pointer" onClick={() => setSelectedReturn(ret)}>
                     {visibleColumns.reference !== false && (
                       <td className="py-3 px-4 font-mono font-bold text-xs text-primary whitespace-nowrap">
                         {ret.reference_number}
@@ -539,14 +540,14 @@ const PurchaseReturnsPage: React.FC = () => {
                       <td className="py-3 px-4 whitespace-nowrap text-xs font-bold">
                         <span className={RETURN_STATUS_BADGE[ret.status] || 'inline-flex items-center justify-center px-2 py-0.5 rounded text-xs bg-muted'}>
                           {ret.status === 'completed' || ret.status === 'approved'
-                            ? t('purchases.approved', 'បានអនុម័ត')
+                            ? t('purchases.approved', 'Approved')
                             : ret.status === 'cancelled'
-                            ? t('purchases.cancelled', 'បានបោះបង់')
-                            : t('purchases.draft', 'សេចក្តីព្រាង')}
+                            ? t('purchases.cancelled', 'Cancelled')
+                            : t('purchases.draft', 'Draft')}
                         </span>
                       </td>
                     )}
-                    <td className="sticky right-0 z-10 bg-background group-hover:bg-muted border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]" onClick={(e) => e.stopPropagation()}>
+                    <td className="sticky right-0 z-10 bg-card group-hover:bg-muted/40 dark:group-hover:bg-muted/20 transition-colors border-l border-border py-3 px-4 text-center whitespace-nowrap min-w-[96px]" onClick={(e) => e.stopPropagation()}>
                       <TableActionMenu
                         onView={() => setSelectedReturn(ret)}
                         onPrint={() => handlePrint(ret)}
@@ -571,6 +572,7 @@ const PurchaseReturnsPage: React.FC = () => {
 
       {/* Detail Drawer */}
       <PurchaseReturnDetailDrawer
+        isOpen={Boolean(selectedReturn) && !approveTarget && !cancelTarget && !deleteTarget}
         selectedReturn={selectedReturn}
         onClose={() => setSelectedReturn(null)}
         onOpenApprove={(r) => setApproveTarget(r)}

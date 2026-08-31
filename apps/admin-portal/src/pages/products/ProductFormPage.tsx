@@ -8,8 +8,13 @@ import {
   Package, DollarSign, Layers, Box, Globe, SlidersHorizontal,
   ArrowRight, ArrowLeft, Sparkles, LayoutGrid, CheckCircle2, ChevronRight
 } from 'lucide-react'
-import api from '@/api/client'
 import { productService } from '@/services/productService'
+import { categoryService } from '@/services/categoryService'
+import { brandService } from '@/services/brandService'
+import { unitService } from '@/services/unitService'
+import { financeService } from '@/services/financeService'
+import { companyService } from '@/services/companyService'
+import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/useToast'
 import { LoadingSpinner, DeleteConfirmDialog } from '@/components/common'
 import CustomErrorMessage from '@/components/ui/CustomErrorMessage'
@@ -25,10 +30,10 @@ import { ProductAuditLogModal } from './components/ProductAuditLogModal'
 import { ProductLivePreviewDrawer } from './components/ProductLivePreviewDrawer'
 
 // Shared Form Sub-sections
-import { FlexiblePricingSection } from '@/components/products/FlexiblePricingSection'
-import { FlexibleInventorySection } from '@/components/products/FlexibleInventorySection'
-import { FlexibleDimensionsSection } from '@/components/products/FlexibleDimensionsSection'
-import { FlexibleSEOSection } from '@/components/products/FlexibleSEOSection'
+import { FlexiblePricingSection } from './components/FlexiblePricingSection'
+import { FlexibleInventorySection } from './components/FlexibleInventorySection'
+import { FlexibleDimensionsSection } from './components/FlexibleDimensionsSection'
+import { FlexibleSEOSection } from './components/FlexibleSEOSection'
 
 // Types & Helpers
 import { BLANK_FORM, type ProductForm, type CreateImagePreview, type CustomColorItem } from './types/productForm.types'
@@ -106,33 +111,33 @@ const ProductFormPage: React.FC = () => {
 
   const { data: categories } = useQuery({
     queryKey: ['categories-select'],
-    queryFn: () => api.get('/categories', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => categoryService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: brands } = useQuery({
     queryKey: ['brands-select'],
-    queryFn: () => api.get('/brands', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => brandService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: units } = useQuery({
     queryKey: ['units-select'],
-    queryFn: () => api.get('/units', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => unitService.list({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: taxes } = useQuery({
     queryKey: ['taxes-select'],
-    queryFn: () => api.get('/taxes', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => financeService.getTaxes({ per_page: 100 }).then(r => r.data ?? []),
   })
 
   const { data: warehousesData } = useQuery({
     queryKey: ['warehouses-select'],
-    queryFn: () => api.get('/warehouses', { params: { per_page: 100 } }).then(r => r.data.data ?? []),
+    queryFn: () => companyService.getWarehouses({ per_page: 100 }).then(r => r.data ?? []),
   })
   const warehouses = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data ?? [])
 
   const { data: movementsData, isLoading: isLoadingMovements } = useQuery({
     queryKey: ['product-stock-movements', productId],
-    queryFn: () => productId ? api.get('/stock-adjustments', { params: { search: productDetail?.sku || productDetail?.name || String(productId), per_page: 50 } }).then(r => r.data.data ?? []) : [],
+    queryFn: () => productId ? inventoryService.listAdjustments({ search: productDetail?.sku || productDetail?.name || String(productId), per_page: 50 }).then(r => r.data ?? []) : [],
     enabled: !!productId,
   })
 
@@ -148,7 +153,7 @@ const ProductFormPage: React.FC = () => {
       if (!productId) {
         throw new Error('Product must be saved before adding stock adjustment')
       }
-      return api.post('/stock-adjustments', {
+      return inventoryService.createAdjustment({
         warehouse_id: data.warehouse_id,
         type: data.type,
         reason: data.reason,
@@ -159,14 +164,14 @@ const ProductFormPage: React.FC = () => {
       })
     },
     onSuccess: () => {
-      toast.success(t('stockAdjustSuccess', 'បានកែប្រែចំនួនស្តុកជោគជ័យ'))
+      toast.success(t('stockAdjustSuccess', 'Stock level adjusted successfully'))
       qc.invalidateQueries({ queryKey: ['product-detail-page', productId] })
       qc.invalidateQueries({ queryKey: ['product-stock-movements', productId] })
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['inventory'] })
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || t('stockAdjustFailed', 'មិនអាចកែប្រែស្តុកបានទេ'))
+      toast.error(err?.response?.data?.message || t('stockAdjustFailed', 'Failed to adjust stock level'))
     }
   })
 
@@ -174,17 +179,17 @@ const ProductFormPage: React.FC = () => {
   const saveInventorySettingsMutation = useMutation({
     mutationFn: async () => {
       if (!productId) return
-      return api.put(`/products/${productId}`, {
+      return productService.update(productId, {
         track_inventory: form.track_inventory,
         low_stock_threshold: form.low_stock_threshold,
       })
     },
     onSuccess: () => {
-      toast.success(t('inventorySettingsSaved', 'បានរក្សាទុកការកំណត់ស្តុកជោគជ័យ'))
+      toast.success(t('inventorySettingsSaved', 'Inventory settings saved successfully'))
       qc.invalidateQueries({ queryKey: ['product-detail-page', productId] })
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || t('inventorySettingsFailed', 'មិនអាចរក្សាទុកបានទេ'))
+      toast.error(err?.response?.data?.message || t('inventorySettingsFailed', 'Failed to save inventory settings'))
     }
   })
 

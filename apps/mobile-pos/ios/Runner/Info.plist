@@ -53,6 +53,24 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSCameraUsageDescription</key>
+	<string>កម្មវិធីត្រូវការប្រើប្រាស់កាមេរ៉ា ដើម្បីស្កេន QR កូដវត្តមាន និងស្កេន Barcode ទំនិញ</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>កម្មវិធីត្រូវការប្រើប្រាស់ Face ID ដើម្បីផ្ទៀងផ្ទាត់សុវត្ថិភាពចូលប្រើប្រាស់ និងអនុម័តប្រតិបត្តិការ</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>កម្មវិធីត្រូវការចូលប្រើប្រាស់រូបថត ដើម្បីជ្រើសរើសរូបភាពបុគ្គលិក ឬវិក្កយបត្រ</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>កម្មវិធីត្រូវការសិទ្ធិរក្សាទុករូបភាពវិក្កយបត្រ និង QR Code ទៅក្នុង Gallery</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>កម្មវិធីត្រូវការទីតាំង GPS ដើម្បីផ្ទៀងផ្ទាត់វត្តមានក្នុងបរិវេណក្រុមហ៊ុន (Geofence)</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>កម្មវិធីត្រូវការទីតាំង GPS ដើម្បីផ្ទៀងផ្ទាត់វត្តមានបុគ្គលិក</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>កម្មវិធីត្រូវការ Bluetooth ដើម្បីភ្ជាប់ជាមួយម៉ាស៊ីនព្រីនវិក្កយបត្រ POS</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>កម្មវិធីត្រូវការ Bluetooth ដើម្បីភ្ជាប់ជាមួយម៉ាស៊ីនព្រីនវិក្កយបត្រ POS</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>កម្មវិធីត្រូវការភ្ជាប់បណ្តាញ Local Network ដើម្បីស្វែងរកម៉ាស៊ីនព្រីន និងម៉ាស៊ីនមេ</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

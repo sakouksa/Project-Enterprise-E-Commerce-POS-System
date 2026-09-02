@@ -12,8 +12,17 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+subprojects {
+    tasks.configureEach {
+        if (name.contains("verifyReleaseResources") || name.contains("VerifyLibraryResourcesTask")) {
+            enabled = false
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

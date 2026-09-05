@@ -1,0 +1,22 @@
+{
+  "shipping": "Shipping & Logistics",
+  "logisticsShipments": "Logistics Shipments",
+  "totalShipments": "Total Shipments",
+  "totalOrdersShipped": "Total orders processed for delivery",
+  "activeCouriers": "Active Couriers",
+  "courierFleet": "Active delivery courier fleet",
+  "inTransit": "In Transit",
+  "inTransitDesc": "Packages moving to destination",
+  "successRate": "Success Rate",
+  "onTimeDelivery": "On-Time Delivery SLA",
+  "delivered": "Delivered",
+  "pendingPickup": "Pending Pickup",
+  "returned": "Returned",
+  "failed": "Failed",
+  "avgSla": "Avg SLA",
+  "shippingRevenue": "Shipping Revenue",
+  "shippingProfit": "Net Shipping Margin",
+  "days": "Days",
+  "active": "Active",
+  "onTime": "On-Time"
+}

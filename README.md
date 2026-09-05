@@ -1,4 +1,4 @@
-# 🛍️ Enterprise Omnichannel E-Commerce & Point of Sale (POS) Platform
+# 🛍️ KHPosCommerce (Enterprise Omnichannel POS & E-Commerce)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=flat&logo=laravel&logoColor=white)](https://laravel.com)
@@ -7,7 +7,7 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com)
 [![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io)
 
-An enterprise-grade, high-performance omnichannel commerce platform designed for multi-store retail, warehouse distribution networks, and digital e-commerce storefronts.
+An enterprise-grade, high-performance unified commerce platform designed for multi-store retail, warehouse distribution networks, and digital e-commerce storefronts.
 
 ---
 
@@ -23,128 +23,89 @@ An enterprise-grade, high-performance omnichannel commerce platform designed for
 
 ---
 
-## 🏛️ Monorepo Directory Layout
+## 🏛️ Clean Monorepo Directory Layout
 
 ```text
-Project-Enterprise-E-Commerce-POS-System/
-├── apps/                               # 📱 All Client & Web Applications
-│   ├── storefront/                     # React 19 + TypeScript + Vite (Customer E-Commerce)
-│   ├── admin-portal/                   # React 19 + TypeScript + Vite (Admin & Web POS)
-│   ├── mobile-pos/                     # Flutter Multiplatform App (iOS, Android, POS Terminal)
-│   └── docs-portal/                    # Interactive Engineering Documentation Web Portal
+khposcommerce/
+├── backendkhposcommerce/               # ⚙️ Laravel 12 REST API & Business Logic
+│   ├── app/                            # Controllers, Models, Services & Domain Rules
+│   ├── routes/api.php                  # API Endpoints
+│   └── database/migrations             # PostgreSQL / SQLite Schemas
 │
-├── services/                           # ⚙️ Backend Services & APIs
-│   └── core-api/                       # Laravel 12 REST API Engine, PostgreSQL 16, Redis Queues
+├── apps/                               # 🖥️ Web Applications
+│   ├── adminkhposcommerce/             # 🖥️ React 19 Admin Dashboard & Web POS
+│   └── storefrontkhposcommerce/        # 🛒 React 19 Customer E-Commerce Store
 │
-├── infrastructure/                     # 🚀 DevOps, Gateway & Containerization
-│   └── docker/                         # Nginx Master Gateway & SSL Configurations
+├── appkhposcommerce/                   # 📱 Flutter Multiplatform App (iOS, Android, Mobile POS)
 │
-├── database/                           # 🗄️ Database dumps & seed archives
-├── docs/                               # 📚 System Architecture & Engineering Specifications
+├── docs/                               # 📚 Complete System Architecture & Specifications (Markdown)
 │   ├── architecture/                   # System, Frontend, Backend & Mobile Architecture
 │   ├── api/                            # REST API Standards & Endpoints Catalog
 │   └── database/                       # PostgreSQL/MySQL Schema Overview & Data Dictionary
 │
-├── scripts/                            # 🛠️ Deployment, Backup & Automation Scripts
-│
-├── .github/                            # 🤖 GitHub Actions CI/CD & Templates
-│   ├── workflows/                      # CI workflows for Core API, Admin, Storefront, Mobile
-│   ├── ISSUE_TEMPLATE/                 # Bug report & Feature request templates
-│   └── pull_request_template.md
-│
-├── docker-compose.yml                  # Root Development Docker Orchestration
-├── docker-compose.staging.yml          # Staging Docker Orchestration
-├── docker-compose.prod.yml             # Production Docker Orchestration
-└── package.json                        # Monorepo Workspace & Runner Scripts
+├── database/                           # 🗄️ Database dumps & seed archives
+├── infrastructure/                     # 🚀 DevOps, Nginx Gateway & Containerization
+├── scripts/                            # 🛠️ Maintenance & Deployment Scripts
+├── docker-compose.yml                  # Local Docker Orchestration
+└── package.json                        # Monorepo Workspace & 1-Click Dev Runner Scripts
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start Guide (Solo Developer Friendly)
 
-### Option 1: Monorepo Root Commands (Fastest)
+### 1. One-Time Setup
 
 ```bash
-# Install dependencies across all apps
+# Install root & app dependencies
 npm install
 
-# Run Core API, Admin Portal, and Storefront simultaneously
-npm run dev
-
-# Run everything including the Documentation Portal
-npm run dev:all
-```
-
----
-
-### Option 2: Run with Docker Compose (Recommended)
-
-```bash
-# 1. Start all backend and database containers
-docker compose up -d
-
-# 2. Initialize Laravel Core API
-docker compose exec app composer install
-docker compose exec app cp .env.example .env
-docker compose exec app php artisan key:generate
-docker compose exec app php artisan migrate --seed
-
-# 3. Access applications:
-# - Storefront:       http://localhost:5173
-# - Admin Portal:     http://localhost:5174
-# - Core API Backend: http://localhost:8000
-```
-
----
-
-### Option 3: Local Manual Setup
-
-#### 1. Backend Core API (Laravel)
-```bash
-cd services/core-api
+# Setup Laravel Backend API
+cd api
 composer install
-cp .env.example .env
+cp -n .env.example .env
 php artisan key:generate
 php artisan migrate --seed
-php artisan serve --port=8000
+cd ..
 ```
 
-#### 2. Admin Portal & POS (React 19)
+---
+
+### 2. Run Applications
+
 ```bash
-cd apps/admin-portal
-npm install
+# ⚡ Recommended for Solo Dev: Run API + Admin/POS concurrently
 npm run dev
-# Running at: http://localhost:5174
+
+# 🛒 Run API + Admin/POS + Storefront
+npm run dev:all
+
+# 📱 Run Flutter Mobile POS
+npm run dev:mobile
 ```
 
-#### 3. Customer Storefront (React 19)
-```bash
-cd apps/storefront
-npm install
-npm run dev
-# Running at: http://localhost:5173
-```
+> **Direct Access URLs:**
+> - **Admin Dashboard & Web POS**: [http://localhost:5174](http://localhost:5174)
+> - **Customer Storefront**: [http://localhost:5173](http://localhost:5173)
+> - **Laravel API Backend**: [http://localhost:8001](http://localhost:8001)
 
-#### 4. Mobile POS App (Flutter)
-```bash
-cd apps/mobile-pos
-flutter pub get
-flutter run
-```
+---
 
-#### 5. Documentation Portal
+### 3. Alternative: Run with Docker Compose
+
 ```bash
-cd apps/docs-portal
-npm install
-npm run dev
-# Running at: http://localhost:5175
+# Start all services with Docker
+npm run docker:up
+
+# Stop Docker services
+npm run docker:down
 ```
 
 ---
 
 ## 📚 Documentation Index
 
-For in-depth architecture diagrams, data models, and API specifications, consult the [**Documentation Hub**](./docs/README.md):
+All architectural specifications, database models, and API definitions are maintained in clean Markdown in the [**docs**](./docs/README.md) directory:
 
 - 🏗️ [System Architecture & Overview](./docs/architecture/system-overview.md)
 - ⚙️ [Backend Architecture & Patterns](./docs/architecture/backend-architecture.md)
@@ -157,15 +118,13 @@ For in-depth architecture diagrams, data models, and API specifications, consult
 
 ---
 
-## 🛡️ CI/CD & Contribution Guidelines
+## 🛡️ CI/CD & Workflows
 
-- **Pull Request Template**: See [`.github/pull_request_template.md`](./.github/pull_request_template.md).
-- **Issue Templates**: Bug reports and feature suggestions in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/).
-- **Automated CI Workflows**:
-  - `core-api-ci.yml`: Automated PHPUnit tests, migrations check, and PHP 8.2/8.3 matrix testing.
-  - `admin-portal-ci.yml`: Node 20/22 type checks & Vite build verification.
-  - `storefront-ci.yml`: Storefront build verification.
-  - `mobile-pos-ci.yml`: Flutter static analysis and tests.
+Automated GitHub Actions workflows in `.github/workflows/`:
+- `api-ci.yml`: Automated PHPUnit tests & migrations check.
+- `admin-ci.yml`: Node type checks & Vite build verification for Admin & POS.
+- `storefront-ci.yml`: Customer Storefront build verification.
+- `mobile-ci.yml`: Flutter static analysis and tests.
 
 ---
 

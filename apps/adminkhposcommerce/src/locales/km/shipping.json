@@ -1,0 +1,22 @@
+{
+  "shipping": "ការដឹកជញ្ជូន & ភស្តុភារ",
+  "logisticsShipments": "ប័ណ្ណដឹកជញ្ជូន",
+  "totalShipments": "ប័ណ្ណដឹកជញ្ជូនសរុប",
+  "totalOrdersShipped": "ការបញ្ជាទិញដែលបានបញ្ជូនចេញ",
+  "activeCouriers": "អ្នកដឹកជញ្ជូនសកម្ម",
+  "courierFleet": "បុគ្គលិកដឹកជញ្ជូនកំពុងបំពេញការងារ",
+  "inTransit": "កំពុងធ្វើដំណើរ",
+  "inTransitDesc": "កញ្ចប់ទំនិញកំពុងស្ថិតលើផ្លូវដឹកជញ្ជូន",
+  "successRate": "អត្រាជោគជ័យ",
+  "onTimeDelivery": "អត្រាដឹកទាន់ពេល SLA",
+  "delivered": "បានដឹកជញ្ជូន",
+  "pendingPickup": "រង់ចាំទទួល",
+  "returned": "បានត្រឡប់មកវិញ",
+  "failed": "បរាជ័យ",
+  "avgSla": "រយៈពេលមធ្យម",
+  "shippingRevenue": "ចំណូលថ្លៃដឹកជញ្ជូន",
+  "shippingProfit": "ប្រាក់ចំណេញសុទ្ធលើការដឹក",
+  "days": "ថ្ងៃ",
+  "active": "សកម្ម",
+  "onTime": "ទាន់ពេល"
+}

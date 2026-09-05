@@ -1,22 +1,29 @@
 {
-  "name": "enterprise-pos-system",
+  "name": "khposcommerce",
   "version": "1.0.0",
-  "description": "Enterprise E-Commerce + POS System",
+  "description": "KHPosCommerce - Unified Omnichannel POS & E-Commerce Ecosystem",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "services/*"
+    "apps/*"
   ],
   "scripts": {
-    "dev:api": "cd services/core-api && php artisan serve --port=8000",
-    "dev:admin": "cd apps/admin-portal && npm run dev",
-    "dev:storefront": "cd apps/storefront && npm run dev",
-    "dev:docs": "cd apps/docs-portal && npm run dev",
-    "build:docs": "cd apps/docs-portal && npm run build",
-    "dev": "npx concurrently -n \"API,ADMIN,STOREFRONT\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:storefront\"",
-    "dev:all": "npx concurrently -n \"API,ADMIN,STOREFRONT,DOCS\" -c \"blue,green,magenta,yellow\" \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:storefront\" \"npm run dev:docs\"",
+    "dev": "npx concurrently -n \"API,ADMIN\" -c \"blue,green\" \"npm run dev:api\" \"npm run dev:admin\"",
+    "dev:all": "npx concurrently -n \"API,ADMIN,STORE\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:storefront\"",
+    "dev:api": "cd backendkhposcommerce && php artisan serve --port=8001",
+    "dev:admin": "cd apps/adminkhposcommerce && npm run dev",
+    "dev:storefront": "cd apps/storefrontkhposcommerce && npm run dev",
+    "dev:mobile": "cd appkhposcommerce && flutter run",
+    "setup": "npm run setup:api && npm run setup:apps",
+    "setup:api": "cd backendkhposcommerce && composer install && cp -n .env.example .env && php artisan key:generate",
+    "setup:apps": "npm install",
+    "db:migrate": "cd backendkhposcommerce && php artisan migrate",
+    "db:seed": "cd backendkhposcommerce && php artisan db:seed",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
+

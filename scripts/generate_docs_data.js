@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 console.log('--- Generating Documentation Data from Real Project ---');
 
 // 1. Scan all Migrations to extract all 99 tables
-const migDir = path.join(__dirname, '../services/core-api/database/migrations');
+const migDir = path.join(__dirname, '../backendkhposcommerce/database/migrations');
 const migFiles = fs.readdirSync(migDir).filter(f => f.endsWith('.php'));
 const tablesMap = new Map();
 
@@ -115,7 +115,7 @@ fs.writeFileSync(path.join(__dirname, '../apps/docs-portal/src/data/databaseSche
 console.log(`Saved databaseSchemaData.ts with ${tablesMap.size} tables.`);
 
 // 2. Extract API routes from artisan route:list
-const rawRoutes = execSync('php artisan route:list --json', { cwd: path.join(__dirname, '../services/core-api'), encoding: 'utf8' });
+const rawRoutes = execSync('php artisan route:list --json', { cwd: path.join(__dirname, '../backendkhposcommerce'), encoding: 'utf8' });
 const allRoutes = JSON.parse(rawRoutes);
 const appRoutes = allRoutes.filter(r => r.uri.startsWith('api/'));
 
@@ -171,7 +171,7 @@ fs.writeFileSync(path.join(__dirname, '../apps/docs-portal/src/data/apiRoutesDat
 console.log(`Saved apiRoutesData.ts with ${formattedApiRoutes.length} endpoints.`);
 
 // 3. Extract Spatie Permissions
-const rolesPermissionsContent = fs.readFileSync(path.join(__dirname, '../services/core-api/database/seeders/RolesPermissionsSeeder.php'), 'utf8');
+const rolesPermissionsContent = fs.readFileSync(path.join(__dirname, '../backendkhposcommerce/database/seeders/RolesPermissionsSeeder.php'), 'utf8');
 const permNodes = [];
 
 const explicitPerms = [

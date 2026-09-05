@@ -1,7 +1,0 @@
-# OptaPOS Documentation Robots Configuration
-User-agent: *
-Allow: /
-
-# Sitemap
-Sitemap: https://optapos-docs.vercel.app/sitemap.xml
-Sitemap: https://enterprise-pos-docs.vercel.app/sitemap.xml

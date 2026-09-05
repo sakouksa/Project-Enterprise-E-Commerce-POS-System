@@ -75,6 +75,8 @@ export const BlogDetailDrawer: React.FC<BlogDetailDrawerProps> = ({
     blog.user?.name ||
     t('cms.systemAdmin', 'System Admin')
   const coverImage = blog.featured_image || blog.image || blog.image_url
+  const blogIndex = blog?.id ? ((Number(blog.id) - 1) % 10) + 1 : 1
+  const dynamicFallback = `/images/blogs/blog-${String(blogIndex).padStart(2, '0')}.jpg`
   const metaTitle = blog.meta_title || title
   const metaDescription = blog.meta_description || excerpt || title
   const createdAt = blog.created_at
@@ -180,8 +182,9 @@ export const BlogDetailDrawer: React.FC<BlogDetailDrawerProps> = ({
                     src={coverImage ? getAbsoluteImageUrl(coverImage) : undefined}
                     alt={title}
                     fallbackType="general"
-                    fallbackSrc="/images/blogs/blog-01.jpg"
+                    fallbackSrc={dynamicFallback}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                    preview={true}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-5 text-white">
                     <div className="flex flex-wrap items-center gap-2 mb-2">

@@ -621,4 +621,7 @@ Route::middleware('auth.jwt')->group(function () {
         Route::get('telegram-users',            [AdminChatbotController::class, 'telegramUsers']);
         Route::post('test-notification',        [AdminChatbotController::class, 'testNotification']);
     });
+
+    // ─── Telegram CMS Broadcast ──────────────────────────────────────────────
+    Route::post('telegram/broadcast',           [\App\Http\Controllers\Api\V1\Admin\CMS\BlogController::class, 'broadcastToTelegram']);
 });

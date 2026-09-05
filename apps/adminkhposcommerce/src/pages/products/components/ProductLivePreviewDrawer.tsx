@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, ShieldCheck, Truck, Package } from 'lucide-react'
+import { Image as AntImage } from 'antd'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import CloseButton from '@/components/common/CloseButton'
 
@@ -82,14 +83,23 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
             {/* Product Hero Image */}
             <div className="space-y-3">
               {allImages.length > 0 ? (
-                <>
+                <AntImage.PreviewGroup items={allImages}>
                   <div className="rounded-2xl overflow-hidden border border-border bg-muted/20 aspect-square relative shadow-xs">
-                    <img
+                    <AntImage
                       src={allImages[selectedImageIndex] || allImages[0]}
                       alt="Preview"
                       className="w-full h-full object-cover"
+                      wrapperClassName="w-full h-full flex items-center justify-center cursor-pointer"
+                      preview={{
+                        mask: (
+                          <div className="flex items-center gap-1 text-xs font-semibold text-white drop-shadow-md">
+                            <Eye size={14} />
+                            <span>Preview</span>
+                          </div>
+                        ),
+                      }}
                     />
-                    <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase">
+                    <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase pointer-events-none z-10">
                       {form?.is_featured ? t('products.featuredBadge', 'FEATURED') : categoryName}
                     </div>
                   </div>
@@ -112,7 +122,7 @@ export const ProductLivePreviewDrawer: React.FC<ProductLivePreviewDrawerProps> =
                       ))}
                     </div>
                   )}
-                </>
+                </AntImage.PreviewGroup>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border bg-muted/20 aspect-square flex flex-col items-center justify-center text-muted-foreground gap-2 p-6 text-center">
                   <Package size={32} className="opacity-40" />

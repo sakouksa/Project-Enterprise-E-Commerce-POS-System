@@ -76,9 +76,11 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                 ) : records.length === 0 ? (
                   <EmptyState cols={6} message={t('cms.noBlogs', 'No blog articles found matching query.')} />
                 ) : (
-                  records.map((r) => {
+                  records.map((r, idx) => {
                     const st = (r.status || 'published').toLowerCase()
                     const coverImage = r.featured_image || r.image || r.image_url
+                    const blogIndex = typeof r.id === 'number' ? ((r.id - 1) % 10) + 1 : (idx % 10) + 1
+                    const dynamicFallback = `/images/blogs/blog-${String(blogIndex).padStart(2, '0')}.jpg`
                     const categoryName = r.blog_category?.name || r.category_name || r.category?.name || t('cms.general', 'General')
                     const isSelected = selectedRows.includes(r.id)
 
@@ -109,7 +111,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                                   src={coverImage}
                                   alt={r.title}
                                   fallbackType="general"
-                                  fallbackSrc="/images/blogs/blog-01.jpg"
+                                  fallbackSrc={dynamicFallback}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>

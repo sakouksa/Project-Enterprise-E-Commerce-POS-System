@@ -134,8 +134,16 @@ export const cmsService = {
     })),
 
   // Broadcast to Telegram Channel
-  broadcastToTelegram: (payload: { title: string; message: string; link?: string; image_url?: string }) =>
-    api.post('/telegram/broadcast', payload).then(r => r.data).catch(() => ({ success: true, message: 'Message queued for broadcast' })),
+  broadcastToTelegram: (payload: {
+    title: string
+    message: string
+    category?: string
+    read_time?: string
+    link?: string
+    image_url?: string
+    channel_id?: string
+    locale?: 'km' | 'en'
+  }) => api.post('/telegram/broadcast', payload).then(r => r.data),
 
   // Dynamic Tab CRUD (ContentManagementPage)
   getItemsByTab: (tab: string, params: Record<string, any> = {}) =>

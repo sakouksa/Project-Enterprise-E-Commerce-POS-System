@@ -27,7 +27,7 @@ class StockAdjustmentController extends BaseApiController
                 $q->where(function ($sq) use ($lowerSearch) {
                     $sq->whereRaw('LOWER(reference_number) LIKE ?', ["%{$lowerSearch}%"])
                        ->orWhereRaw('LOWER(reason) LIKE ?', ["%{$lowerSearch}%"])
-                       ->orWhereRaw('LOWER(notes) LIKE ?', ["%{$lowerSearch}%"])
+                       ->orWhereHas('items', fn($iq) => $iq->whereRaw('LOWER(notes) LIKE ?', ["%{$lowerSearch}%"]))
                        ->orWhereHas('warehouse', fn($wq) => $wq->whereRaw('LOWER(name) LIKE ?', ["%{$lowerSearch}%"]))
                        ->orWhereHas('items.product', fn($pq) => $pq->whereRaw('LOWER(name) LIKE ?', ["%{$lowerSearch}%"])->orWhereRaw('LOWER(sku) LIKE ?', ["%{$lowerSearch}%"]));
                 });

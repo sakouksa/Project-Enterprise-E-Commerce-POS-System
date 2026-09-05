@@ -1,0 +1,35 @@
+<?php
+
+return [
+    'featured_post'        => 'FEATURED ARTICLE',
+    'category_label'       => 'Category',
+    'read_time'            => ':min min read',
+    'published_date'       => 'Published',
+    'executive_brief'      => 'Executive Brief',
+    'key_highlights'       => 'Key Highlights',
+    'highlight_automation' => 'Automation: Real-time inventory & multi-branch sales synchronization',
+    'highlight_payments'   => 'Smart Payments: Seamless KHQR & instant digital checkout',
+    'highlight_efficiency' => 'High Efficiency: Eliminate stock shrinkage & optimize fulfillment',
+    'brand_signature'      => 'NexTech Cambodia — Enterprise POS & E-Commerce',
+    'official_channel'     => 'Official Channel',
+    'read_article'         => '📖 Read Full Article',
+    'official_website'     => '🌐 Official Website',
+    'join_channel'         => '📢 Join Official Channel',
+    'broadcast_success'    => 'Article broadcasted to Telegram Channel successfully!',
+    'bot_not_admin'        => "Bot (@:bot) is not an Administrator in channel :channel. Please add @:bot as Admin in your Telegram Channel with 'Post Messages' permission.",
+
+    'categories' => [
+        'Retail Trends'            => 'Retail Trends',
+        'POS Technology'           => 'POS Technology',
+        'E-Commerce Tips'          => 'E-Commerce Tips',
+        'Inventory Best Practices' => 'Inventory Best Practices',
+        'Marketing Strategies'     => 'Marketing Strategies',
+        'Customer Loyalty'         => 'Customer Loyalty',
+        'Hardware Reviews'         => 'Hardware Reviews',
+        'Software Updates'         => 'Software Updates',
+        'Business Growth'          => 'Business Growth',
+        'Security Alerts'          => 'Security Alerts',
+        'General'                  => 'General News',
+        'Tech & Business'          => 'Tech & Business',
+    ],
+];

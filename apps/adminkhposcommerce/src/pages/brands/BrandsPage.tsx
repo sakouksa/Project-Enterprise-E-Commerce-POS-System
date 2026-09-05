@@ -12,6 +12,7 @@ import {
 import { brandService } from '@/services/brandService'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import { downloadBlob } from '@/utils/export'
+import { Image as AntImage } from 'antd'
 import { useToast } from '@/hooks/useToast'
 import Pagination from '@/components/shared/Pagination'
 import { useServerPagination } from '@/hooks/useServerPagination'
@@ -788,7 +789,12 @@ const BrandsPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ isTab,
                     {/* Visual Preview Box */}
                     <div className="w-16 h-16 rounded-2xl border border-border/80 overflow-hidden bg-background flex items-center justify-center shrink-0 shadow-2xs relative group">
                       {logoPreview ? (
-                        <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        <AntImage
+                          src={logoPreview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                          wrapperClassName="w-full h-full flex items-center justify-center cursor-pointer"
+                        />
                       ) : (
                         <ImageIcon className="text-muted-foreground/35" size={24} />
                       )}

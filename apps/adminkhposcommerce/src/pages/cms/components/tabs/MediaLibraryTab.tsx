@@ -193,6 +193,7 @@ export const MediaLibraryTab: React.FC<MediaLibraryTabProps> = ({
                     fallbackType="general"
                     fallbackSrc="/images/banners/banner-01.jpg"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    preview={true}
                   />
                   <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button

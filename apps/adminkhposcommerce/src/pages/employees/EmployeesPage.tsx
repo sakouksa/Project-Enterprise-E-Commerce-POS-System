@@ -988,7 +988,7 @@ const EmployeesPage: React.FC = () => {
         activeTab={activeTab}
         onChange={handleTabChange}
         size="md"
-        variant="pill"
+        variant="underline"
         rightContent={
           activeTab === 'attendance' ? (
             <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border">

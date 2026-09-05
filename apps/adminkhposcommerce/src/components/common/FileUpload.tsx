@@ -13,6 +13,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Image as AntImage } from 'antd'
 import { getStorageFileUrl } from '@/utils/image'
 import { useToast } from '@/hooks/useToast'
 
@@ -88,8 +89,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const isImage = Boolean(
     displayValue &&
     !isPdf &&
-    (displayValue.startsWith('data:image') ||
-      Boolean(displayValue.match(/\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i)))
+    allowImage &&
+    (
+      !allowPdf ||
+      displayValue.startsWith('data:image') ||
+      displayValue.startsWith('blob:') ||
+      Boolean(displayValue.match(/\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i)) ||
+      Boolean(displayValue.match(/(unsplash\.com|photo-|image|images|img|\/storage\/)/i)) ||
+      !Boolean(displayValue.match(/\.(pdf|doc|docx|xls|xlsx|csv|zip|rar|txt)(\?.*)?$/i))
+    )
   )
 
   // Derive a cache-busted preview URL for server-stored files.
@@ -254,25 +262,50 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
         {displayValue ? (
           <div className="space-y-3">
-            {/* 1. Image Preview Mode */}
+            {/* 1. Image Preview Mode using Ant Design Image Preview */}
             {isImage && !imageLoadError ? (
               <div
-                onClick={() => enableLightbox && setLightboxOpen(true)}
-                className={`relative rounded-xl overflow-hidden border border-border bg-black/5 dark:bg-black/40 flex items-center justify-center p-2 group shadow-xs ${getAspectClass()}`}
+                className={`relative rounded-xl overflow-hidden border border-border bg-black/5 dark:bg-black/40 flex items-center justify-center group shadow-xs ${
+                  aspectRatio !== 'auto' ? getAspectClass() : 'p-2'
+                }`}
               >
-                <img
+                <AntImage
                   key={imageKey}
                   src={previewUrl}
                   alt="File preview"
-                  className="object-contain max-h-52 w-full rounded-lg transition-transform group-hover:scale-[1.01]"
-                  onError={() => setImageLoadError(true)}
+                  className={`w-full rounded-xl transition-transform group-hover:scale-[1.01] ${
+                    aspectRatio !== 'auto' ? '!h-full object-cover' : 'object-contain max-h-52'
+                  }`}
+                  rootClassName={`w-full ${
+                    aspectRatio !== 'auto'
+                      ? 'h-full flex items-center justify-center [&_.ant-image]:w-full [&_.ant-image]:h-full [&_.ant-image-img]:h-full [&_.ant-image-img]:object-cover [&_.ant-image-mask]:rounded-xl'
+                      : ''
+                  }`}
+                  preview={
+                    enableLightbox
+                      ? {
+                          zIndex: 9999,
+                          mask: (
+                            <div className="flex items-center justify-center gap-1.5 text-white text-xs font-semibold">
+                              <Eye size={15} />
+                              <span>{t('common.view', 'Preview')}</span>
+                            </div>
+                          ),
+                        }
+                      : false
+                  }
+                  onError={() => {
+                    if (allowPdf) {
+                      setImageLoadError(true)
+                    }
+                  }}
                 />
-                {enableLightbox && (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-bold shadow-sm">
-                    <Maximize2 size={15} />
-                    <span>{t('common.view', 'Preview Fullscreen')}</span>
-                  </div>
-                )}
+              </div>
+            ) : isImage && imageLoadError && !allowPdf ? (
+              /* Fallback image box if load error occurs */
+              <div className={`relative rounded-xl overflow-hidden border border-border/80 bg-muted/30 flex flex-col items-center justify-center p-4 text-center gap-1 ${getAspectClass()}`}>
+                <span className="text-xs font-semibold text-muted-foreground">{t('common.image_failed_load', 'Image preview unavailable')}</span>
+                <span className="text-[11px] font-mono text-muted-foreground/60 truncate max-w-full px-2">{displayFilename}</span>
               </div>
             ) : (
               /* 2. PDF or Document Card Preview Mode */
@@ -340,7 +373,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/90 px-3.5 py-1.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer shadow-2xs select-none"
               >
                 <RefreshCw size={13} />
-                <span>{t('finance.change_receipt', t('common.changePhoto', 'Change File'))}</span>
+                <span>{allowPdf ? t('finance.change_receipt', 'Change File') : t('common.changePhoto', 'Change Photo')}</span>
               </button>
 
               <button
@@ -375,9 +408,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )}
       </div>
 
-      {/* ─── Lightbox / Interactive Modal for Fullscreen Preview ─── */}
+      {/* ─── Lightbox / Interactive Modal for Fullscreen PDF Preview ─── */}
       <AnimatePresence>
-        {lightboxOpen && value && (
+        {lightboxOpen && isPdf && value && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm pointer-events-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

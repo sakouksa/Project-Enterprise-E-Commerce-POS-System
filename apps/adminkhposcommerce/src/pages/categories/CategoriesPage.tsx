@@ -14,6 +14,7 @@ import {
 import { categoryService } from '@/services/categoryService'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import { downloadBlob } from '@/utils/export'
+import { Image as AntImage } from 'antd'
 import PageHeader from '@/components/common/PageHeader'
 import Breadcrumb from '@/components/common/Breadcrumb'
 import { useToast } from '@/hooks/useToast'
@@ -1029,7 +1030,12 @@ const CategoriesPage: React.FC<{ isTab?: boolean; triggerAdd?: number }> = ({ is
                     {/* Visual Preview Box */}
                     <div className="w-16 h-16 rounded-2xl border border-border/80 overflow-hidden bg-background flex items-center justify-center shrink-0 shadow-2xs relative group">
                       {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        <AntImage
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                          wrapperClassName="w-full h-full flex items-center justify-center cursor-pointer"
+                        />
                       ) : (
                         <ImageIcon className="text-muted-foreground/35" size={24} />
                       )}

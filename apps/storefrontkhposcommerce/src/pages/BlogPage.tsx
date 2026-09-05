@@ -54,19 +54,25 @@ const BlogPage: React.FC = () => {
         <div className="card p-12 text-center text-xs text-gray-500">No blog posts available right now.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {blogs.map((b) => (
-            <Link key={b.id} to={`/blog/${b.slug}`} className="card-hover overflow-hidden flex flex-col">
-              {b.thumbnail && <img src={b.thumbnail} alt={b.title} className="w-full h-48 object-cover" />}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="text-[10px] font-bold uppercase text-blue-600 mb-1">{b.category}</div>
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white line-clamp-2">{b.title}</h3>
-                  <p className="text-xs text-gray-500 line-clamp-3 mt-1">{b.excerpt}</p>
+          {blogs.map((b) => {
+            const imgSrc = b.featured_image || b.thumbnail || b.image_url || b.image
+            const catName = typeof b.category === 'object' && b.category !== null
+              ? (b.category.name || 'Retail')
+              : (typeof b.category === 'string' ? b.category : (b.category_name || 'Retail'))
+            return (
+              <Link key={b.id} to={`/blog/${b.slug}`} className="card-hover overflow-hidden flex flex-col">
+                {imgSrc && <img src={imgSrc} alt={b.title} className="w-full h-48 object-cover" />}
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase text-blue-600 mb-1">{catName}</div>
+                    <h3 className="font-bold text-base text-gray-900 dark:text-white line-clamp-2">{b.title}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-3 mt-1">{b.excerpt || b.summary}</p>
+                  </div>
+                  <div className="text-[10px] text-gray-400">{b.published_at ? new Date(b.published_at).toLocaleDateString() : ''}</div>
                 </div>
-                <div className="text-[10px] text-gray-400">{new Date(b.published_at).toLocaleDateString()}</div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       )}
     </PageTransition>

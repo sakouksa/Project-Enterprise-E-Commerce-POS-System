@@ -22,6 +22,7 @@ import {
   ModalHeader,
 } from '@/components/common'
 import { formatDisplayDate } from '@/utils/formatters'
+import { Image as AntImage } from 'antd'
 import type { Product } from '../types/productsPage.types'
 
 interface ProductDetailDrawerProps {
@@ -481,56 +482,60 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             <div className="p-5 rounded-3xl bg-muted/30 border border-border/70 shadow-2xs relative overflow-hidden">
               <div className="flex flex-col sm:flex-row gap-5">
                 {/* Product Image & Thumbnail Gallery */}
-                <div className="flex flex-col gap-2 shrink-0">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-card border border-border/80 flex items-center justify-center overflow-hidden relative shadow-2xs group">
-                    {allImages[selectedImageIndex] ? (
-                      <img
-                        src={allImages[selectedImageIndex]}
-                        alt={product?.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          const fallback = getDynamicColorMatchedImage('Black', product?.category?.name || product?.name)
-                          if (fallback && e.currentTarget.src !== fallback) {
-                            e.currentTarget.src = fallback
-                          } else {
-                            e.currentTarget.style.display = 'none'
-                          }
-                        }}
-                      />
-                    ) : (
-                      <Package size={38} className="text-muted-foreground/40" />
-                    )}
+                <AntImage.PreviewGroup items={allImages}>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-card border border-border/80 flex items-center justify-center overflow-hidden relative shadow-2xs group">
+                      {allImages[selectedImageIndex] ? (
+                        <AntImage
+                          src={allImages[selectedImageIndex]}
+                          alt={product?.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          wrapperClassName="w-full h-full flex items-center justify-center cursor-pointer"
+                          fallback={getDynamicColorMatchedImage('Black', product?.category?.name || product?.name)}
+                          preview={{
+                            mask: (
+                              <div className="flex items-center gap-1 text-[11px] font-semibold text-white drop-shadow-md">
+                                <Eye size={13} />
+                                <span>{t('common.view', 'Preview')}</span>
+                              </div>
+                            ),
+                          }}
+                        />
+                      ) : (
+                        <Package size={38} className="text-muted-foreground/40" />
+                      )}
 
-                    {product?.is_featured && (
-                      <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-black flex items-center gap-0.5 shadow-xs">
-                        <Star size={10} fill="currentColor" />
-                      </span>
-                    )}
+                      {product?.is_featured && (
+                        <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-black flex items-center gap-0.5 shadow-xs pointer-events-none z-10">
+                          <Star size={10} fill="currentColor" />
+                        </span>
+                      )}
 
-                    {discountPercent > 0 && (
-                      <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black shadow-xs">
-                        -{discountPercent}%
-                      </span>
+                      {discountPercent > 0 && (
+                        <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black shadow-xs pointer-events-none z-10">
+                          -{discountPercent}%
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Thumbnail Row */}
+                    {allImages.length > 1 && (
+                      <div className="flex items-center gap-1.5 max-w-[128px] overflow-x-auto py-0.5">
+                        {allImages.map((img, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedImageIndex(idx)}
+                            className={`w-7 h-7 rounded-lg overflow-hidden border shrink-0 transition-all cursor-pointer ${
+                              selectedImageIndex === idx ? 'border-primary ring-2 ring-primary/30 scale-105' : 'border-border opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
-
-                  {/* Thumbnail Row */}
-                  {allImages.length > 1 && (
-                    <div className="flex items-center gap-1.5 max-w-[128px] overflow-x-auto py-0.5">
-                      {allImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setSelectedImageIndex(idx)}
-                          className={`w-7 h-7 rounded-lg overflow-hidden border shrink-0 transition-all ${
-                            selectedImageIndex === idx ? 'border-primary ring-2 ring-primary/30 scale-105' : 'border-border opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <img src={img} alt="" className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                </AntImage.PreviewGroup>
 
                 {/* Info & Badges */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -883,7 +888,19 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                             {/* Variant Image / Icon */}
                             <div className="w-10 h-10 rounded-xl bg-muted border border-border/80 flex items-center justify-center shrink-0 overflow-hidden">
                               {v.image ? (
-                                <img src={getAbsoluteImageUrl(v.image)} alt={v.name} className="w-full h-full object-cover" />
+                                <AntImage
+                                  src={getAbsoluteImageUrl(v.image)}
+                                  alt={v.name}
+                                  className="w-full h-full object-cover"
+                                  wrapperClassName="w-full h-full flex items-center justify-center cursor-pointer"
+                                  preview={{
+                                    mask: (
+                                      <div className="flex items-center justify-center w-full h-full bg-black/40 text-white">
+                                        <Eye size={12} />
+                                      </div>
+                                    ),
+                                  }}
+                                />
                               ) : (
                                 <Package size={16} className="text-muted-foreground" />
                               )}

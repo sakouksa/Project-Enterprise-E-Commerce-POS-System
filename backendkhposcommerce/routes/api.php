@@ -59,6 +59,7 @@ Route::prefix('v1')->group(function () {
     Route::post('telegram/webhook',        [\App\Http\Controllers\Api\V1\TelegramWebhookController::class, 'handleWebhook']);
     Route::post('telegram/setup-webhook',  [\App\Http\Controllers\Api\V1\TelegramWebhookController::class, 'setupWebhook']);
     Route::get('telegram/webhook-info',    [\App\Http\Controllers\Api\V1\TelegramWebhookController::class, 'webhookInfo']);
+    Route::post('telegram/broadcast',       [\App\Http\Controllers\Api\V1\Admin\CMS\BlogController::class, 'broadcastToTelegram']);
 
     // Backward-compatibility direct root routes for Admin Dashboard & Mobile App
     require __DIR__ . '/api/v1/admin.php';

@@ -61,7 +61,7 @@ khposcommerce/
 npm install
 
 # Setup Laravel Backend API
-cd api
+cd backendkhposcommerce
 composer install
 cp -n .env.example .env
 php artisan key:generate

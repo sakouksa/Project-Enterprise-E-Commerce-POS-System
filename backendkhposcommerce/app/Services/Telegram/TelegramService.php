@@ -55,7 +55,7 @@ class TelegramService
     }
 
     /**
-     * Send photo with caption.
+     * Send photo with caption (supports both web URLs and local disk files).
      */
     public function sendPhoto(
         int|string $chatId,
@@ -68,23 +68,62 @@ class TelegramService
             return ['ok' => true, 'mock' => true];
         }
 
-        $payload = [
-            'chat_id'    => $chatId,
-            'photo'      => $photoUrl,
-            'caption'    => $caption,
-            'parse_mode' => 'HTML',
-        ];
+        // Check if $photoUrl points to a local file on disk
+        $localFilePath = null;
+        if (file_exists($photoUrl) && is_file($photoUrl)) {
+            $localFilePath = $photoUrl;
+        } else {
+            $parsedPath = parse_url($photoUrl, PHP_URL_PATH);
+            if ($parsedPath) {
+                $cleaned = ltrim(preg_replace('#^/api/v1/storage#', '', $parsedPath), '/');
+                $cleaned = ltrim(preg_replace('#^/storage#', '', $cleaned), '/');
 
-        if ($replyMarkup) {
-            $payload['reply_markup'] = json_encode($replyMarkup);
+                $candidates = [
+                    public_path($cleaned),
+                    storage_path('app/public/' . $cleaned),
+                    base_path('../apps/adminkhposcommerce/public/' . $cleaned),
+                ];
+                foreach ($candidates as $cand) {
+                    if (file_exists($cand) && is_file($cand)) {
+                        $localFilePath = $cand;
+                        break;
+                    }
+                }
+            }
         }
 
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/sendPhoto", $payload);
-            return $response->json() ?? ['ok' => false];
+            $payload = [
+                'chat_id'    => (string)$chatId,
+                'caption'    => $caption,
+                'parse_mode' => 'HTML',
+            ];
+            if ($replyMarkup) {
+                $payload['reply_markup'] = json_encode($replyMarkup);
+            }
+
+            if ($localFilePath && file_exists($localFilePath)) {
+                $req = Http::timeout(15)->asMultipart();
+                foreach ($payload as $k => $v) {
+                    $req->attach($k, $v);
+                }
+                $response = $req->attach('photo', file_get_contents($localFilePath), basename($localFilePath))
+                    ->post("{$this->baseUrl}/sendPhoto");
+            } else {
+                $payload['photo'] = $photoUrl;
+                $response = Http::timeout(10)->post("{$this->baseUrl}/sendPhoto", $payload);
+            }
+
+            $resData = $response->json() ?? ['ok' => false];
+            if (!($resData['ok'] ?? false) && !empty($caption)) {
+                Log::warning("Telegram sendPhoto failed, falling back to sendMessage: " . ($resData['description'] ?? ''));
+                return $this->sendMessage($chatId, $caption, $replyMarkup);
+            }
+
+            return $resData;
         } catch (\Throwable $e) {
             Log::error("Telegram sendPhoto error: " . $e->getMessage());
-            return ['ok' => false, 'error' => $e->getMessage()];
+            return $this->sendMessage($chatId, $caption, $replyMarkup);
         }
     }
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { getAbsoluteImageUrl } from '@/utils/image'
 import { getDynamicColorMatchedImage } from '../utils/colorResolver'
-import { Package } from 'lucide-react'
+import { Package, Eye } from 'lucide-react'
+import { Image as AntImage } from 'antd'
 
 interface ProductThumbnailProps {
   name: string
@@ -13,6 +14,7 @@ interface ProductThumbnailProps {
   className?: string
   rounded?: string
   alt?: string
+  preview?: boolean
 }
 
 const SIZE_MAP = {
@@ -33,6 +35,7 @@ export const ProductThumbnail: React.FC<ProductThumbnailProps> = ({
   className = '',
   rounded = 'rounded-xl',
   alt,
+  preview = true,
 }) => {
   const [step, setStep] = useState<0 | 1 | 2>(0) // 0: primary, 1: category fallback, 2: icon fallback
 
@@ -58,15 +61,37 @@ export const ProductThumbnail: React.FC<ProductThumbnailProps> = ({
     <div
       className={`${sizeClass} ${rounded} bg-muted border border-border/80 overflow-hidden flex items-center justify-center shrink-0 relative select-none ${className}`}
       title={name}
+      onClick={(e) => {
+        if (preview && currentSrc) {
+          e.stopPropagation()
+        }
+      }}
     >
       {currentSrc ? (
-        <img
-          src={currentSrc}
-          alt={alt || name}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-          loading="lazy"
-          onError={handleError}
-        />
+        preview ? (
+          <AntImage
+            src={currentSrc}
+            alt={alt || name}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            wrapperClassName="w-full h-full flex items-center justify-center cursor-pointer"
+            preview={{
+              mask: (
+                <div className="flex items-center justify-center w-full h-full bg-black/40 text-white">
+                  <Eye size={13} />
+                </div>
+              ),
+            }}
+            onError={handleError}
+          />
+        ) : (
+          <img
+            src={currentSrc}
+            alt={alt || name}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            loading="lazy"
+            onError={handleError}
+          />
+        )
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-xs">
           {name ? name.charAt(0).toUpperCase() : <Package size={16} />}
@@ -77,3 +102,4 @@ export const ProductThumbnail: React.FC<ProductThumbnailProps> = ({
 }
 
 export default ProductThumbnail
+

@@ -568,9 +568,7 @@ const ContentManagementPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-primary/10 text-primary">
-              <FileText className="h-5 w-5" />
-            </span>
+            <FileText className="h-6 w-6 text-primary shrink-0" />
             <span>{t('cms.cmsManagement', 'Content & CMS Management')}</span>
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
@@ -596,7 +594,7 @@ const ContentManagementPage: React.FC = () => {
         tabs={tabItems}
         activeTab={activeTab}
         onChange={(tabId) => setActiveTab(tabId)}
-        variant="pill"
+        variant="underline"
       />
 
       {/* KPI Cards - Only on Main Blogs/Articles Tab */}

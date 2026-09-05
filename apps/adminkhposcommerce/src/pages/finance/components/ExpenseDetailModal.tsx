@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/utils/formatters'
 import { getStorageFileUrl } from '@/utils/image'
 import { useToast } from '@/hooks/useToast'
+import { Image as AntImage } from 'antd'
 import {
   DetailDrawer,
   DetailDrawerHeader,
@@ -51,6 +52,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
   const toast = useToast()
   const [copied, setCopied] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [imagePreviewVisible, setImagePreviewVisible] = useState(false)
 
   if (!expense) return null
 
@@ -256,7 +258,13 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setLightboxOpen(true)}
+                      onClick={() => {
+                        if (isPdf) {
+                          setLightboxOpen(true)
+                        } else {
+                          setImagePreviewVisible(true)
+                        }
+                      }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-2xs cursor-pointer"
                     >
                       <Eye size={13} />
@@ -276,22 +284,23 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 
                 {/* Image Preview if it's an image */}
                 {!isPdf && (
-                  <div
-                    onClick={() => setLightboxOpen(true)}
-                    className="rounded-xl overflow-hidden border border-border bg-black/5 dark:bg-black/40 p-2 flex items-center justify-center cursor-pointer group relative"
-                  >
-                    <img
+                  <div className="rounded-xl overflow-hidden border border-border bg-black/5 dark:bg-black/40 p-2 flex items-center justify-center">
+                    <AntImage
                       src={receiptUrl}
                       alt="Receipt Preview"
-                      className="max-h-56 object-contain rounded-lg w-full transition-transform group-hover:scale-[1.01]"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none'
+                      className="max-h-56 object-contain rounded-lg w-full transition-transform hover:scale-[1.01]"
+                      wrapperClassName="w-full flex items-center justify-center cursor-pointer"
+                      preview={{
+                        visible: imagePreviewVisible,
+                        onVisibleChange: (val) => setImagePreviewVisible(val),
+                        mask: (
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-white drop-shadow-md">
+                            <Maximize2 size={15} />
+                            <span>{t('finance.fullscreen_preview', 'Preview Fullscreen')}</span>
+                          </div>
+                        ),
                       }}
                     />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2 text-white text-xs font-bold">
-                      <Maximize2 size={16} />
-                      <span>{t('finance.fullscreen_preview', 'Preview Fullscreen')}</span>
-                    </div>
                   </div>
                 )}
               </div>
@@ -415,7 +424,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
                   className="w-full h-[70vh] rounded-xl border border-border bg-white"
                 />
               ) : (
-                <img
+                <AntImage
                   src={receiptUrl}
                   alt="Receipt Attachment Preview"
                   className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-md"

@@ -58,7 +58,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
                 />
                 {post.category && (
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider">
-                    {post.category}
+                    {typeof post.category === 'object' ? ((post.category as any).name || 'Editorial') : post.category}
                   </span>
                 )}
               </div>
@@ -75,7 +75,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ posts }) => {
                     {post.author && (
                       <span className="flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        {post.author}
+                        {typeof post.author === 'object' ? ((post.author as any).name || 'Team') : post.author}
                       </span>
                     )}
                   </div>

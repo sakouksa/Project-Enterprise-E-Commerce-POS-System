@@ -49,7 +49,7 @@ export const getSiteUrl = (): string => {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin
   }
-  return 'https://enterprise-customer-store.vercel.app'
+  return 'https://storefrontkhposcommerce.vercel.app'
 }
 
 const siteUrl = getSiteUrl()

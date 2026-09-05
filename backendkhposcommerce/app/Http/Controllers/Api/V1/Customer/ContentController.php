@@ -50,7 +50,24 @@ class ContentController extends BaseApiController
                     $q->where('title', 'like', "%{$s}%")
                 )
                 ->orderBy('published_at', 'desc')
-                ->paginate($request->integer('per_page', 9));
+                ->paginate($request->integer('per_page', 9))
+                ->through(function ($post) {
+                    return [
+                        'id'               => $post->id,
+                        'title'            => $post->title,
+                        'slug'             => $post->slug,
+                        'excerpt'          => $post->summary ?? $post->excerpt,
+                        'summary'          => $post->summary ?? $post->excerpt,
+                        'featured_image'   => $post->featured_image,
+                        'image'            => $post->featured_image,
+                        'thumbnail'        => $post->featured_image,
+                        'published_at'     => $post->published_at?->toIso8601String(),
+                        'view_count'       => $post->view_count ?? 0,
+                        'category'         => $post->category?->name ?? 'Retail',
+                        'category_name'    => $post->category?->name ?? 'Retail',
+                        'author'           => $post->author?->name ?? 'Enterprise Team',
+                    ];
+                });
 
             return $this->paginatedResponse($blogs);
         } catch (\Throwable) {

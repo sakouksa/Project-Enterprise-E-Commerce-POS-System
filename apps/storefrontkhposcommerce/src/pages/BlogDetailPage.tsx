@@ -99,7 +99,7 @@ const BlogDetailPage: React.FC = () => {
         <div className="space-y-4">
           {post.category && (
             <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">
-              {post.category?.name || post.category}
+              {typeof post.category === 'object' ? (post.category.name || 'Retail') : post.category}
             </span>
           )}
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-display leading-tight">
@@ -116,7 +116,7 @@ const BlogDetailPage: React.FC = () => {
             {post.author && (
               <span className="flex items-center gap-1">
                 <User className="w-3.5 h-3.5" />
-                {post.author}
+                {typeof post.author === 'object' ? (post.author.name || 'Admin') : post.author}
               </span>
             )}
             {post.view_count > 0 && (

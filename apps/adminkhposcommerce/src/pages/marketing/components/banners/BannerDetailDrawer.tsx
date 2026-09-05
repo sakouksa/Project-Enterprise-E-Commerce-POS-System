@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import StatusBadge from '@/components/common/StatusBadge'
 import { getAbsoluteImageUrl } from '@/utils/image'
+import { Image as AntImage } from 'antd'
 import type { Banner } from '../../types/banner'
 
 interface BannerDetailDrawerProps {
@@ -29,6 +30,7 @@ export const BannerDetailDrawer: React.FC<BannerDetailDrawerProps> = ({
   onDuplicate,
 }) => {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile' | 'pos_cfd'>('desktop')
+  const [imagePreviewVisible, setImagePreviewVisible] = useState<boolean>(false)
 
   if (!banner) return null
 
@@ -83,60 +85,83 @@ export const BannerDetailDrawer: React.FC<BannerDetailDrawerProps> = ({
           <div className="p-6 space-y-5 overflow-y-auto flex-1">
             {/* Interactive Device Mockup Switcher */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <AntImage
+                src={getImageUrl(banner.image_url || banner.image)}
+                preview={{
+                  visible: imagePreviewVisible,
+                  onVisibleChange: (v) => setImagePreviewVisible(v),
+                }}
+                style={{ display: 'none' }}
+              />
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   Live Device Rendering Preview
                 </span>
-                <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-xl border border-border">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setPreviewDevice('desktop')}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                      previewDevice === 'desktop'
-                        ? 'bg-card text-foreground shadow-2xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    onClick={() => setImagePreviewVisible(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer border border-primary/20"
+                    title="Zoom, rotate and inspect full resolution banner"
                   >
-                    Desktop Web
+                    <Eye size={12} />
+                    <span>Inspect Fullscreen</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDevice('mobile')}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                      previewDevice === 'mobile'
-                        ? 'bg-card text-foreground shadow-2xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Mobile App
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDevice('pos_cfd')}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                      previewDevice === 'pos_cfd'
-                        ? 'bg-card text-foreground shadow-2xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    POS CFD Screen
-                  </button>
+                  <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-xl border border-border">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDevice('desktop')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        previewDevice === 'desktop'
+                          ? 'bg-card text-foreground shadow-2xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Desktop Web
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDevice('mobile')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        previewDevice === 'mobile'
+                          ? 'bg-card text-foreground shadow-2xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Mobile App
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDevice('pos_cfd')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        previewDevice === 'pos_cfd'
+                          ? 'bg-card text-foreground shadow-2xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      POS CFD Screen
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Rendered Device Frame */}
               <div className="rounded-2xl border border-border bg-slate-950 p-2 overflow-hidden shadow-inner flex items-center justify-center">
-                <div className={`relative overflow-hidden rounded-xl border border-white/10 ${
-                  previewDevice === 'desktop'
-                    ? 'w-full aspect-[21/9]'
-                    : previewDevice === 'mobile'
-                    ? 'w-60 aspect-[9/16]'
-                    : 'w-80 aspect-[4/3]'
-                }`}>
+                <div
+                  onClick={() => setImagePreviewVisible(true)}
+                  className={`relative overflow-hidden rounded-xl border border-white/10 cursor-pointer group ${
+                    previewDevice === 'desktop'
+                      ? 'w-full aspect-[21/9]'
+                      : previewDevice === 'mobile'
+                      ? 'w-60 aspect-[9/16]'
+                      : 'w-80 aspect-[4/3]'
+                  }`}
+                  title="Click to inspect banner in full resolution"
+                >
                   <img
                     src={getImageUrl(banner.image_url || banner.image)}
                     alt={banner.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                     onError={(e) => {
                       ;(e.target as HTMLImageElement).src = '/logo.png'
                     }}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { resolveMediaUrl, type MediaFallbackType, DEFAULT_FALLBACKS } from '@/utils/image'
-import { Image as ImageIcon } from 'lucide-react'
+import { Image as ImageIcon, Eye } from 'lucide-react'
+import { Image as AntImage, type ImageProps as AntImageProps } from 'antd'
 
-export interface AppImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+export interface AppImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src?: any
   fallbackType?: MediaFallbackType
   fallbackSrc?: string
@@ -12,6 +13,7 @@ export interface AppImageProps extends React.ImgHTMLAttributes<HTMLImageElement>
   aspectRatio?: 'square' | 'video' | 'portrait' | 'auto' | string
   objectFit?: 'cover' | 'contain' | 'fill' | 'scale-down'
   showSkeleton?: boolean
+  preview?: boolean | AntImageProps['preview']
 }
 
 export const AppImage: React.FC<AppImageProps> = ({
@@ -25,6 +27,7 @@ export const AppImage: React.FC<AppImageProps> = ({
   objectFit = 'cover',
   showSkeleton = true,
   loading = 'lazy',
+  preview = false,
   ...props
 }) => {
   const [loaded, setLoaded] = useState(false)
@@ -39,7 +42,7 @@ export const AppImage: React.FC<AppImageProps> = ({
     setError(false)
   }, [src, fallbackType, fallbackSrc])
 
-  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleError = (e: any) => {
     if (!error) {
       setError(true)
       const fallback = fallbackSrc || DEFAULT_FALLBACKS[fallbackType]
@@ -51,7 +54,7 @@ export const AppImage: React.FC<AppImageProps> = ({
     props.onError?.(e)
   }
 
-  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleLoad = (e: any) => {
     setLoaded(true)
     props.onLoad?.(e)
   }
@@ -74,29 +77,57 @@ export const AppImage: React.FC<AppImageProps> = ({
       ? 'object-fill'
       : 'object-scale-down'
 
+  const previewConfig = typeof preview === 'object'
+    ? preview
+    : preview
+    ? {
+        mask: (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-white drop-shadow-md">
+            <Eye size={15} />
+            <span>Preview</span>
+          </div>
+        ),
+      }
+    : false
+
   return (
     <div
       className={`relative overflow-hidden ${aspectClass} ${containerClassName}`}
     >
       {/* Loading Skeleton */}
       {showSkeleton && !loaded && !error && (
-        <div className="absolute inset-0 bg-muted/40 animate-pulse flex items-center justify-center">
+        <div className="absolute inset-0 bg-muted/40 animate-pulse flex items-center justify-center pointer-events-none">
           <ImageIcon className="w-5 h-5 text-muted-foreground/30 animate-pulse" />
         </div>
       )}
 
       {currentSrc ? (
-        <img
-          src={currentSrc}
-          alt={alt}
-          loading={loading}
-          onError={handleError}
-          onLoad={handleLoad}
-          className={`w-full h-full ${fitClass} transition-opacity duration-300 ${
-            loaded ? 'opacity-100' : 'opacity-0'
-          } ${className}`}
-          {...props}
-        />
+        preview ? (
+          <AntImage
+            src={currentSrc}
+            alt={alt}
+            preview={previewConfig}
+            onError={handleError}
+            onLoad={handleLoad}
+            className={`w-full h-full ${fitClass} transition-opacity duration-300 ${
+              loaded ? 'opacity-100' : 'opacity-0'
+            } ${className}`}
+            wrapperClassName="w-full h-full flex items-center justify-center"
+            fallback={fallbackSrc || DEFAULT_FALLBACKS[fallbackType]}
+          />
+        ) : (
+          <img
+            src={currentSrc}
+            alt={alt}
+            loading={loading}
+            onError={handleError}
+            onLoad={handleLoad}
+            className={`w-full h-full ${fitClass} transition-opacity duration-300 ${
+              loaded ? 'opacity-100' : 'opacity-0'
+            } ${className}`}
+            {...props}
+          />
+        )
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-muted/30 text-muted-foreground">
           <ImageIcon className="w-6 h-6 opacity-40" />
@@ -107,3 +138,4 @@ export const AppImage: React.FC<AppImageProps> = ({
 }
 
 export default AppImage
+

@@ -1,0 +1,35 @@
+<?php
+
+return [
+    'featured_post'        => 'អត្ថបទពិសេសប្រចាំថ្ងៃ',
+    'category_label'       => 'ប្រភេទទិន្នន័យ',
+    'read_time'            => 'អានត្រឹមតែ :min នាទី',
+    'published_date'       => 'ថ្ងៃចេញផ្សាយ',
+    'executive_brief'      => 'ខ្លឹមសារសង្ខេប',
+    'key_highlights'       => 'ចំណុចលេចធ្លោសំខាន់ៗ',
+    'highlight_automation' => 'ប្រព័ន្ធស្វ័យប្រវត្តិកម្ម៖ គ្រប់គ្រងស្តុក និងការលក់ឆ្លងសាខា Real-time',
+    'highlight_payments'   => 'ការទូទាត់ឆ្លាតវៃ៖ គាំទ្រ KHQR ស្កេនទូទាត់រហ័សទាន់ចិត្ត',
+    'highlight_efficiency' => 'ប្រសិទ្ធភាពខ្ពស់៖ កាត់បន្ថយការបាត់បង់ស្តុក និងពន្លឿនការលក់',
+    'brand_signature'      => 'NexTech Cambodia — ប្រព័ន្ធគ្រប់គ្រងការលក់ POS & E-Commerce',
+    'official_channel'     => 'ឆានែលផ្លូវការ',
+    'read_article'         => '📖 អានអត្ថបទលម្អិត',
+    'official_website'     => '🌐 គេហទំព័រផ្លូវការ',
+    'join_channel'         => '📢 ចូលរួមឆានែលផ្លូវការ',
+    'broadcast_success'    => 'បានផ្សព្វផ្សាយអត្ថបទទៅកាន់ Telegram Channel ដោយជោគជ័យ!',
+    'bot_not_admin'        => "Bot (@:bot) មិនទាន់ជា Administrator ក្នុង channel :channel នៅឡើយទេ។ សូមបន្ថែម @:bot ជា Admin ក្នុង Telegram Channel ដោយផ្ដល់សិទ្ធិ 'Post Messages'។",
+
+    'categories' => [
+        'Retail Trends'            => 'និន្នាការអាជីវកម្មលក់រាយ',
+        'POS Technology'           => 'បច្ចេកវិទ្យាប្រព័ន្ធ POS',
+        'E-Commerce Tips'          => 'គន្លឹះជោគជ័យ E-Commerce',
+        'Inventory Best Practices' => 'ការគ្រប់គ្រងស្តុកទំនិញ',
+        'Marketing Strategies'     => 'យុទ្ធសាស្ត្រទីផ្សារឌីជីថល',
+        'Customer Loyalty'         => 'ការថែទាំអតិថិជន និង Loyalty',
+        'Hardware Reviews'         => 'ការវាយតម្លៃឧបករណ៍ Hardware',
+        'Software Updates'         => 'ការអាប់ដេតកម្មវិធីថ្មីៗ',
+        'Business Growth'          => 'យុទ្ធសាស្ត្រពង្រីកអាជីវកម្ម',
+        'Security Alerts'          => 'សុវត្ថិភាព និងការការពារទិន្នន័យ',
+        'General'                  => 'ព័ត៌មានទូទៅ',
+        'Tech & Business'          => 'បច្ចេកវិទ្យា និងអាជីវកម្ម',
+    ],
+];

@@ -89,6 +89,8 @@ return [
         'bot_token'      => env('TELEGRAM_BOT_TOKEN'),
         'bot_username'   => env('TELEGRAM_BOT_USERNAME', 'EnterpriseShopBot'),
         'admin_chat_id'  => env('TELEGRAM_ADMIN_CHAT_ID'),
+        'channel_id'     => env('TELEGRAM_CHANNEL_ID', '@nextech_cambodia'),
+        'channel_url'    => env('TELEGRAM_CHANNEL_URL', 'https://t.me/nextech_cambodia'),
         'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 

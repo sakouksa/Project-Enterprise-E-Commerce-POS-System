@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
-#  Emergency Production Rollback Script for Enterprise POS System
+#  Emergency Production Rollback Script for KHPosCommerce System
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -eo pipefail

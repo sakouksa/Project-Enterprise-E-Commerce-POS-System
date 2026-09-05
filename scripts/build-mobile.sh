@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
-#  Flutter Mobile POS - Release APK Build & Distribution Helper
+#  KHPosCommerce Flutter Mobile POS - Release APK Build & Distribution Helper
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -eo pipefail
@@ -11,7 +11,7 @@ MOBILE_DIR="$ROOT_DIR/appkhposcommerce"
 DIST_DIR="$ROOT_DIR/storage/dist/mobile"
 
 echo "=========================================================================="
-echo " 📱 Building Flutter Mobile POS (Release APK)"
+echo " 📱 Building KHPosCommerce Flutter Mobile POS (Release APK)"
 echo "=========================================================================="
 
 mkdir -p "$DIST_DIR"
@@ -26,9 +26,9 @@ flutter build apk --split-per-abi --release
 APK_SOURCE="$MOBILE_DIR/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
 
 if [ -f "$APK_SOURCE" ]; then
-    TARGET_NAME="mobile-pos-arm64-$(date +'%Y%m%d_%H%M%S').apk"
+    TARGET_NAME="khposcommerce-mobile-arm64-$(date +'%Y%m%d_%H%M%S').apk"
     cp "$APK_SOURCE" "$DIST_DIR/$TARGET_NAME"
-    cp "$APK_SOURCE" "$DIST_DIR/mobile-pos-latest.apk"
+    cp "$APK_SOURCE" "$DIST_DIR/khposcommerce-mobile-latest.apk"
 
     echo "=========================================================================="
     echo " 🎉 Build Successful!"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
-#  Zero-Downtime Production Deployment Script for Enterprise POS & E-Commerce
+#  Zero-Downtime Production Deployment Script for KHPosCommerce
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -eo pipefail

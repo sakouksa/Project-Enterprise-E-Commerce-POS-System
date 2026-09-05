@@ -7,13 +7,13 @@ set -eo pipefail
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <path_to_backup_file.sql.gz>"
-    echo "Example: $0 /var/backups/enterprise_pos/postgres/daily/enterprise_pos_20260824.sql.gz"
+    echo "Example: $0 /var/backups/khposcommerce/postgres/daily/khposcommerce_20260905.sql.gz"
     exit 1
 fi
 
 BACKUP_FILE="$1"
 CONTAINER_NAME="${DB_CONTAINER:-enterprise_pos_postgres_prod}"
-DB_NAME="${DB_DATABASE:-enterprise_pos}"
+DB_NAME="${DB_DATABASE:-khposcommerce}"
 DB_USER="${DB_USERNAME:-postgres}"
 
 if [ ! -f "$BACKUP_FILE" ]; then

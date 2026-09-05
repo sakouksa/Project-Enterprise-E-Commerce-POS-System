@@ -6,14 +6,14 @@
 set -eo pipefail
 
 # Configuration
-BACKUP_DIR="${BACKUP_DIR:-/var/backups/enterprise_pos/postgres}"
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/khposcommerce/postgres}"
 CONTAINER_NAME="${DB_CONTAINER:-enterprise_pos_postgres_prod}"
-DB_NAME="${DB_DATABASE:-enterprise_pos}"
+DB_NAME="${DB_DATABASE:-khposcommerce}"
 DB_USER="${DB_USERNAME:-postgres}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 DATE_DAY=$(date +"%d")
 DATE_DOW=$(date +"%u") # 1 = Monday, 7 = Sunday
-BACKUP_FILE="${BACKUP_DIR}/enterprise_pos_${TIMESTAMP}.sql.gz"
+BACKUP_FILE="${BACKUP_DIR}/khposcommerce_${TIMESTAMP}.sql.gz"
 LOG_FILE="${BACKUP_DIR}/backup.log"
 
 # Ensure backup directory exists
